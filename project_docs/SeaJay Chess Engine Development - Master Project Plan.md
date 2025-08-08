@@ -33,6 +33,9 @@ Establish a complete, bug-free board representation and move generation system t
 - 12 bitboards for piece positions (6 piece types × 2 colors)
 - Occupied and empty square bitboards
 - Initial Zobrist key infrastructure for future hashing
+- Basic ray-based sliding piece move generation (temporary implementation)
+  - Simple loop-based rook/bishop/queen move generation
+  - Will be replaced with magic bitboards in Phase 3
 - **Milestone**: Unit tests pass for all board operations
 
 **Stage 2 - Position Management**
@@ -188,7 +191,32 @@ Implement critical performance optimizations that form the foundation of all com
 
 ### Core Components
 
-**Stage 10 - Move Ordering**
+**Stage 10 - Magic Bitboards for Sliding Pieces**
+
+- Pre-calculated attack table generation for rooks and bishops
+  - Magic number generation or use of proven magic constants
+  - Attack table initialization at startup
+  - Memory layout optimization for cache efficiency
+- Replace ray-based move generation with magic lookups
+  - Rook attack generation via magic bitboards
+  - Bishop attack generation via magic bitboards
+  - Queen attacks as combination of rook and bishop
+- Comprehensive validation suite:
+  - Perft tests must maintain 100% accuracy
+  - Attack generation validation for all 64 squares
+  - Blocker permutation testing (all possible occupancy patterns)
+  - Edge case validation (pieces on board edges/corners)
+  - Performance benchmarking vs ray-based approach
+- **Validation Requirements**:
+  - Generate and verify all 4096 blocker patterns for each rook square
+  - Generate and verify all 512 blocker patterns for each bishop square
+  - Cross-reference attacks with known correct implementations
+  - Memory usage under 2MB for all magic tables combined
+- **SPRT Validation**: Ray-based vs Magic bitboards
+- **Expected Outcome**: 3-5x speedup in move generation
+- **Milestone**: >1M positions/second in perft tests
+
+**Stage 11 - Move Ordering**
 
 - Most Valuable Victim - Least Valuable Attacker (MVV-LVA) implementation
 - Capture move prioritization for optimal alpha-beta performance
@@ -197,7 +225,7 @@ Implement critical performance optimizations that form the foundation of all com
 - **Expected Outcome**: +50-100 Elo improvement
 - **Milestone**: 30% reduction in nodes searched
 
-**Stage 11 - Transposition Tables**
+**Stage 12 - Transposition Tables**
 
 - Zobrist hashing implementation (64-bit keys)
 - Hash table with replacement strategy:
@@ -215,7 +243,7 @@ Implement critical performance optimizations that form the foundation of all com
 - **Expected Outcome**: +100-150 Elo improvement
 - **Milestone**: 50% reduction in search nodes for complex positions
 
-**Stage 12 - Iterative Deepening**
+**Stage 13 - Iterative Deepening**
 
 - Progressive depth search (1, 2, 3... until time limit)
 - Previous iteration best move extraction
@@ -228,7 +256,7 @@ Implement critical performance optimizations that form the foundation of all com
 - **Expected Outcome**: +50-100 Elo improvement
 - **Milestone**: Zero time losses in 1000 game test
 
-**Stage 13 - Quiescence Search**
+**Stage 14 - Quiescence Search**
 
 - Capture sequence extension to avoid horizon effect
 - Stand-pat evaluation (static eval as lower bound)
@@ -242,10 +270,15 @@ Implement critical performance optimizations that form the foundation of all com
 ### Phase Completion Criteria
 
 - Engine strength approximately 2000-2100 Elo
+- Magic bitboard implementation fully validated:
+  - All perft tests maintain 100% accuracy
+  - Attack generation validated for all squares and occupancy patterns
+  - 3-5x performance improvement in move generation confirmed
+  - Memory usage for magic tables under 2MB
 - Consistent tactical accuracy in test positions
 - Efficient time management across all time controls
 - Memory usage within design parameters (under 128MB default)
-- Performance benchmarks: >500K NPS on modern hardware
+- Performance benchmarks: >1M NPS on modern hardware (improved from >500K due to magic bitboards)
 
 ## Phase 4: NNUE Integration
 
@@ -255,7 +288,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 
 ### Core Components
 
-**Stage 14 - Network Infrastructure**
+**Stage 15 - Network Infrastructure**
 
 - NNUE file format parser (.nnue binary format)
 - Weight matrix loading and storage:
@@ -266,7 +299,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 - Support for multiple network architectures
 - **Milestone**: Correctly parse and load Stockfish NNUE file (~20-40MB)
 
-**Stage 15 - Accumulator Implementation**
+**Stage 16 - Accumulator Implementation**
 
 - HalfKAv2_hm feature extraction:
   - 41024 input features (641 * 64)
@@ -278,7 +311,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 - Make/unmake move integration with minimal overhead
 - **Milestone**: Accumulator values match reference implementation
 
-**Stage 16 - Forward Pass**
+**Stage 17 - Forward Pass**
 
 - Matrix multiplication routines (initially without SIMD)
 - ClippedReLU activation function (max(0, min(127, x)))
@@ -291,7 +324,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 - **Expected Outcome**: +600-800 Elo improvement
 - **Milestone**: Evaluation matches reference implementation outputs
 
-**Stage 17 - Performance Optimization**
+**Stage 18 - Performance Optimization**
 
 - SIMD instruction implementation:
   - AVX2 for modern processors
@@ -321,7 +354,7 @@ Implement sophisticated search optimizations that distinguish strong engines, ta
 
 ### Core Components
 
-**Stage 18 - Principal Variation Search**
+**Stage 19 - Principal Variation Search**
 
 - PV node identification and tracking
 - Zero-window searches for non-PV nodes
@@ -331,7 +364,7 @@ Implement sophisticated search optimizations that distinguish strong engines, ta
 - **Expected Outcome**: +20-40 Elo improvement
 - **Milestone**: 20% reduction in search nodes
 
-**Stage 19 - Null Move Pruning**
+**Stage 20 - Null Move Pruning**
 
 - Null move implementation (passing turn to opponent)
 - Adaptive reduction (R=2 or R=3 based on depth)
@@ -342,7 +375,7 @@ Implement sophisticated search optimizations that distinguish strong engines, ta
 - **Expected Outcome**: +30-50 Elo improvement
 - **Milestone**: Improved performance in winning positions
 
-**Stage 20 - Late Move Reductions**
+**Stage 21 - Late Move Reductions**
 
 - Depth reduction for moves late in move ordering:
   - Reduction formula based on depth and move number
@@ -357,7 +390,7 @@ Implement sophisticated search optimizations that distinguish strong engines, ta
 - **Expected Outcome**: +50-100 Elo improvement
 - **Milestone**: 2x effective search depth increase
 
-**Stage 21 - Killer Move Heuristic**
+**Stage 22 - Killer Move Heuristic**
 
 - Killer move table (2-3 moves per ply)
 - Integration with move ordering after hash move
@@ -366,7 +399,7 @@ Implement sophisticated search optimizations that distinguish strong engines, ta
 - **Expected Outcome**: +15-30 Elo improvement
 - **Milestone**: Improved cut-off rates in similar positions
 
-**Stage 22 - History Heuristic**
+**Stage 23 - History Heuristic**
 
 - Butterfly boards for move success tracking
 - History scoring and aging mechanism
@@ -391,7 +424,7 @@ Implement advanced pruning techniques and multi-threading support to reach compe
 
 ### Core Components
 
-**Stage 23 - Aspiration Windows**
+**Stage 24 - Aspiration Windows**
 
 - Initial window around previous iteration score
 - Dynamic window adjustment on fail-high/fail-low
@@ -400,7 +433,7 @@ Implement advanced pruning techniques and multi-threading support to reach compe
 - **Expected Outcome**: +10-20 Elo improvement
 - **Milestone**: Reduced search instability
 
-**Stage 24 - Futility Pruning**
+**Stage 25 - Futility Pruning**
 
 - Static evaluation-based pruning near leaf nodes
 - Futility margins based on depth
@@ -410,7 +443,7 @@ Implement advanced pruning techniques and multi-threading support to reach compe
 - **Expected Outcome**: +15-30 Elo improvement
 - **Milestone**: Faster searches in clearly decided positions
 
-**Stage 25 - Singular Extensions**
+**Stage 26 - Singular Extensions**
 
 - Singular move detection through reduced searches
 - Extension criteria and depth
@@ -419,7 +452,7 @@ Implement advanced pruning techniques and multi-threading support to reach compe
 - **Expected Outcome**: +10-25 Elo improvement
 - **Milestone**: Better tactical accuracy in critical positions
 
-**Stage 26 - Multi-threading**
+**Stage 27 - Multi-threading**
 
 - Lazy SMP (Shared Memory Parallelization) implementation
 - Thread-safe transposition table:
@@ -446,7 +479,7 @@ Develop capability to train custom neural networks optimized for the engine's sp
 
 ### Core Components
 
-**Stage 27 - Data Generation**
+**Stage 28 - Data Generation**
 
 - Self-play game generation at fixed depth (8-12 ply)
 - Position extraction with game outcome labeling
@@ -455,7 +488,7 @@ Develop capability to train custom neural networks optimized for the engine's sp
 - Target: 1-10 million positions
 - **Milestone**: Valid training dataset created and verified
 
-**Stage 28 - Training Infrastructure**
+**Stage 29 - Training Infrastructure**
 
 - Bullet trainer installation (Rust-based NNUE trainer)
 - Alternative: nnue-pytorch for research flexibility
@@ -470,7 +503,7 @@ Develop capability to train custom neural networks optimized for the engine's sp
   - Regularization parameters
 - **Milestone**: Training pipeline executes successfully
 
-**Stage 29 - Custom Network Development**
+**Stage 30 - Custom Network Development**
 
 - Initial network training on generated data
 - Validation set evaluation
@@ -480,7 +513,7 @@ Develop capability to train custom neural networks optimized for the engine's sp
 - **Expected Outcome**: Comparable or improved strength
 - **Milestone**: Custom network integrated and validated
 
-**Stage 30 - Automated Pipeline**
+**Stage 31 - Automated Pipeline**
 
 - End-to-end automation scripts:
   - Data generation scheduling
@@ -613,13 +646,14 @@ Each stage must satisfy the following criteria before proceeding:
 - Stage 6: ~800 Elo (material evaluation)
 - Stage 7: ~1200 Elo (multi-ply search)
 - Stage 9: ~1500 Elo (positional awareness)
-- Stage 11: ~1800 Elo (transposition tables)
-- Stage 13: ~2100 Elo (quiescence search)
-- Stage 16: ~2800 Elo (NNUE integration)
-- Stage 20: ~2950 Elo (late move reductions)
-- Stage 22: ~3000 Elo (refined search)
-- Stage 26: ~3100 Elo (multi-threading and advanced features)
-- Stage 30: ~3200+ Elo (custom NNUE networks)
+- Stage 10: ~1500 Elo (magic bitboards - no Elo gain, but 3-5x speedup)
+- Stage 12: ~1800 Elo (transposition tables)
+- Stage 14: ~2100 Elo (quiescence search)
+- Stage 17: ~2800 Elo (NNUE integration)
+- Stage 21: ~2950 Elo (late move reductions)
+- Stage 23: ~3000 Elo (refined search)
+- Stage 27: ~3100 Elo (multi-threading and advanced features)
+- Stage 31: ~3200+ Elo (custom NNUE networks)
 
 ## Resource Requirements
 

@@ -1,10 +1,10 @@
 # SeaJay Chess Engine - Stage 2: Position Management Implementation Plan
 
-**Document Version:** 1.1  
-**Date:** December 2024  
-**Author:** Brandon Harris  
-**Stage:** Phase 1, Stage 2 - Position Management  
-**Last Updated:** Incorporated chess-engine-expert feedback  
+**Document Version:** 1.1
+**Date:** August 2025
+**Author:** Brandon Harris
+**Stage:** Phase 1, Stage 2 - Position Management
+**Last Updated:** Incorporated chess-engine-expert feedback
 
 ## Executive Summary
 
@@ -68,7 +68,7 @@ class FenParser {
 private:
     // Zero-copy tokenization using string_view
     std::vector<std::string_view> tokenize(std::string_view fen);
-    
+
     // Component parsers
     Result<bool, FenErrorInfo> parseBoardPosition(Board& board, std::string_view);
     Result<bool, FenErrorInfo> parseSideToMove(Board& board, std::string_view);
@@ -76,7 +76,7 @@ private:
     Result<bool, FenErrorInfo> parseEnPassant(Board& board, std::string_view);
     Result<bool, FenErrorInfo> parseHalfmoveClock(Board& board, std::string_view);
     Result<bool, FenErrorInfo> parseFullmoveNumber(Board& board, std::string_view);
-    
+
 public:
     static Result<bool, FenErrorInfo> parse(Board& board, std::string_view fen);
 };
@@ -103,7 +103,7 @@ for (char c : boardStr) {
 for (char c : boardStr) {
     if (isdigit(c)) {
         int skip = c - '0';
-        if (sq + skip > 64) return FenErrorInfo{FenError::InvalidBoard, 
+        if (sq + skip > 64) return FenErrorInfo{FenError::InvalidBoard,
             "Square index overflow", position};
         sq += skip;
     }
@@ -113,18 +113,18 @@ for (char c : boardStr) {
 #### 2.2 Board Position Parsing
 ```cpp
 // Efficient character-to-piece lookup table
-alignas(64) static constexpr std::array<Piece, 256> PIECE_CHAR_LUT = 
+alignas(64) static constexpr std::array<Piece, 256> PIECE_CHAR_LUT =
     generatePieceCharLookup();
 
 // Parse with comprehensive bounds checking
 Result<bool, FenErrorInfo> parseBoardPosition(Board& board, std::string_view boardStr) {
     Square sq = SQ_A8;  // Start from a8
-    
+
     for (char c : boardStr) {
         if (c == '/') {
             // Validate rank transition
             if (fileOf(sq) != FILE_H) {
-                return FenErrorInfo{FenError::InvalidBoard, 
+                return FenErrorInfo{FenError::InvalidBoard,
                     "Incomplete rank before '/'", position};
             }
             sq -= 16;  // Move to next rank
@@ -136,11 +136,11 @@ Result<bool, FenErrorInfo> parseBoardPosition(Board& board, std::string_view boa
             board.setPiece(sq, PIECE_CHAR_LUT[c]);
             sq++;
         } else {
-            return FenErrorInfo{FenError::InvalidBoard, 
+            return FenErrorInfo{FenError::InvalidBoard,
                 "Invalid character in board position", position};
         }
     }
-    
+
     return true;
 }
 ```
@@ -168,17 +168,17 @@ Result<bool, FenErrorInfo> parseBoardPosition(Board& board, std::string_view boa
 bool validatePosition() const {
     // Both kings must be present (exactly one per side)
     if (!validateKings()) return false;
-    
+
     // No pawns on 1st or 8th rank
     if (!validatePawns()) return false;
-    
+
     // Valid piece counts (max 16 per side, max 8 pawns per side)
     if (!validatePieceCounts()) return false;
-    
+
     // CRITICAL: Side not to move cannot be in check (often missed!)
     // This is a chess rule violation that many engines fail to validate
     if (!validateNotInCheck()) return false;
-    
+
     return true;
 }
 ```
@@ -189,13 +189,13 @@ bool validateCastlingRights() const {
     // If white can castle kingside
     if (canCastle(WHITE_KINGSIDE)) {
         // King must be on e1, rook on h1
-        if (pieceAt(SQ_E1) != WHITE_KING || 
+        if (pieceAt(SQ_E1) != WHITE_KING ||
             pieceAt(SQ_H1) != WHITE_ROOK) {
             return false;
         }
     }
     // Similar checks for other castling rights...
-    
+
     return true;
 }
 ```
@@ -204,35 +204,35 @@ bool validateCastlingRights() const {
 ```cpp
 bool validateEnPassant() const {
     if (m_enPassantSquare == NO_SQUARE) return true;
-    
+
     // Check rank is correct for side to move
     Rank epRank = rankOf(m_enPassantSquare);
     if (m_sideToMove == WHITE && epRank != RANK_6) return false;
     if (m_sideToMove == BLACK && epRank != RANK_3) return false;
-    
+
     // Verify pawn could have made double push
-    Square pawnSq = m_sideToMove == WHITE ? 
+    Square pawnSq = m_sideToMove == WHITE ?
         m_enPassantSquare - 8 : m_enPassantSquare + 8;
-    
+
     Piece pawn = m_sideToMove == WHITE ? BLACK_PAWN : WHITE_PAWN;
     if (pieceAt(pawnSq) != pawn) return false;
-    
+
     // Verify capturing pawn exists
     bool hasCapturingPawn = false;
     if (fileOf(m_enPassantSquare) > FILE_A) {
-        Square leftSq = m_sideToMove == WHITE ? 
+        Square leftSq = m_sideToMove == WHITE ?
             m_enPassantSquare - 9 : m_enPassantSquare + 7;
-        if (pieceAt(leftSq) == (m_sideToMove == WHITE ? 
+        if (pieceAt(leftSq) == (m_sideToMove == WHITE ?
             WHITE_PAWN : BLACK_PAWN)) {
             hasCapturingPawn = true;
         }
     }
     // Similar check for right side...
-    
+
     // NOTE: Complex en passant pin validation deferred to Stage 4
     // The famous "illegal en passant" where the captured pawn is pinning
     // the king will be handled during move generation
-    
+
     return hasCapturingPawn;
 }
 ```
@@ -256,14 +256,14 @@ bool validateAdvanced() const {
     // Check promoted pieces don't exceed theoretical max
     // (e.g., can't have 10 queens without enough missing pawns)
     if (!validatePromotedPieceCounts()) return false;
-    
+
     // Verify pawn structure is achievable
     // (e.g., tripled pawns require specific capture patterns)
     if (!validatePawnStructure()) return false;
-    
+
     // Check material balance is theoretically possible
     if (!validateMaterialBalance()) return false;
-    
+
     return true;
 }
 ```
@@ -280,10 +280,10 @@ bool validateBitboardSync() const {
             if (!(m_colorBB[colorOf(p)] & squareBB(sq))) return false;
         }
     }
-    
+
     // Verify occupied bitboard matches
     if (m_occupied != (m_colorBB[WHITE] | m_colorBB[BLACK])) return false;
-    
+
     // Verify piece type bitboards sum correctly
     for (Color c : {WHITE, BLACK}) {
         Bitboard colorPieces = 0;
@@ -292,7 +292,7 @@ bool validateBitboardSync() const {
         }
         if (colorPieces != m_colorBB[c]) return false;
     }
-    
+
     return true;
 }
 ```
@@ -301,7 +301,7 @@ bool validateBitboardSync() const {
 ```cpp
 bool validateZobrist() const {
     Hash calculatedKey = 0;
-    
+
     // Recalculate from scratch
     for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
         Piece p = m_mailbox[sq];
@@ -309,17 +309,17 @@ bool validateZobrist() const {
             calculatedKey ^= s_zobristPieces[sq][p];
         }
     }
-    
+
     if (m_sideToMove == BLACK) {
         calculatedKey ^= s_zobristSideToMove;
     }
-    
+
     if (m_enPassantSquare != NO_SQUARE) {
         calculatedKey ^= s_zobristEnPassant[m_enPassantSquare];
     }
-    
+
     calculatedKey ^= s_zobristCastling[m_castlingRights];
-    
+
     return calculatedKey == m_zobristKey;
 }
 ```
@@ -330,14 +330,14 @@ bool validateZobrist() const {
 ```cpp
 std::string Board::toFEN() const {
     std::ostringstream fen;
-    
+
     // Board position
     for (Rank r = RANK_8; r >= RANK_1; --r) {
         int emptyCount = 0;
         for (File f = FILE_A; f <= FILE_H; ++f) {
             Square sq = makeSquare(f, r);
             Piece p = pieceAt(sq);
-            
+
             if (p == NO_PIECE) {
                 emptyCount++;
             } else {
@@ -351,14 +351,14 @@ std::string Board::toFEN() const {
         if (emptyCount > 0) fen << emptyCount;
         if (r > RANK_1) fen << '/';
     }
-    
+
     // Other fields...
     fen << ' ' << (m_sideToMove == WHITE ? 'w' : 'b');
     fen << ' ' << castlingRightsToString();
     fen << ' ' << enPassantToString();
     fen << ' ' << m_halfmoveClock;
     fen << ' ' << m_fullmoveNumber;
-    
+
     return fen.str();
 }
 ```
@@ -367,15 +367,15 @@ std::string Board::toFEN() const {
 ```cpp
 std::string Board::toString() const {
     std::ostringstream os;
-    
+
     os << "\n  +---+---+---+---+---+---+---+---+\n";
-    
+
     for (Rank r = RANK_8; r >= RANK_1; --r) {
         os << (char)('1' + r) << " |";
         for (File f = FILE_A; f <= FILE_H; ++f) {
             Square sq = makeSquare(f, r);
             Piece p = pieceAt(sq);
-            
+
             if (p == NO_PIECE) {
                 os << "   |";
             } else {
@@ -384,11 +384,11 @@ std::string Board::toString() const {
         }
         os << "\n  +---+---+---+---+---+---+---+---+\n";
     }
-    
+
     os << "    a   b   c   d   e   f   g   h\n";
     os << "\nFEN: " << toFEN() << "\n";
     os << "Zobrist: 0x" << std::hex << m_zobristKey << std::dec << "\n";
-    
+
     return os.str();
 }
 ```
@@ -398,21 +398,21 @@ std::string Board::toString() const {
 #ifdef DEBUG
 std::string Board::debugDisplay() const {
     std::ostringstream os;
-    
+
     os << "=== Board State Debug ===\n";
     os << toString();
     os << "\nBitboards:\n";
-    
+
     for (Color c : {WHITE, BLACK}) {
         os << (c == WHITE ? "White: " : "Black: ");
         os << bitboardToString(m_colorBB[c]) << "\n";
     }
-    
+
     os << "\nValidation Status:\n";
     os << "  Position valid: " << validatePosition() << "\n";
     os << "  Bitboard sync: " << validateBitboardSync() << "\n";
     os << "  Zobrist valid: " << validateZobrist() << "\n";
-    
+
     return os.str();
 }
 #endif
@@ -483,24 +483,24 @@ const char* INVALID_CASTLE_2 = "rn2k2r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq
 ```cpp
 TEST(FenParser, RoundTripConsistency) {
     const std::vector<std::string> testPositions = loadTestPositions();
-    
+
     for (const auto& fen : testPositions) {
         Board board1;
         ASSERT_TRUE(board1.fromFEN(fen));
-        
+
         std::string generatedFen = board1.toFEN();
-        
+
         Board board2;
         ASSERT_TRUE(board2.fromFEN(generatedFen));
-        
+
         // Verify boards are identical using position hash (not Zobrist)
         ASSERT_EQ(board1.positionHash(), board2.positionHash());
-        
+
         // Verify all validation passes
         ASSERT_TRUE(board1.validatePosition());
         ASSERT_TRUE(board1.validateBitboardSync());
         ASSERT_TRUE(board1.validateZobrist());
-        
+
         // Verify FEN strings match (canonical form)
         ASSERT_EQ(canonicalizeFEN(fen), generatedFen);
     }
@@ -527,13 +527,13 @@ uint64_t Board::positionHash() const {
 ```cpp
 TEST(FenParser, FuzzTesting) {
     std::mt19937 rng(12345);
-    
+
     for (int i = 0; i < 10000; ++i) {
         std::string randomFen = generateRandomString(rng, 1, 200);
-        
+
         Board board;
         auto result = board.fromFEN(randomFen);
-        
+
         // Should not crash
         // If successful, should pass validation
         if (result) {
@@ -548,9 +548,9 @@ TEST(FenParser, FuzzTesting) {
 ```cpp
 BENCHMARK(FenParsing) {
     Board board;
-    const std::string fen = 
+    const std::string fen =
         "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-    
+
     for (int i = 0; i < 1000000; ++i) {
         board.fromFEN(fen);
     }
