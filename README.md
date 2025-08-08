@@ -1,6 +1,12 @@
 # SeaJay Chess Engine
 
-A modern chess engine developed using C++20, featuring NNUE evaluation and advanced search techniques.
+<div align="center">
+  <img src="docs/assets/seajay-logo.png" alt="SeaJay Chess Engine Logo" width="200">
+</div>
+
+<p align="center">
+  A modern chess engine developed using C++20, featuring NNUE evaluation and advanced search techniques.
+</p>
 
 **Author:** Brandon Harris
 
