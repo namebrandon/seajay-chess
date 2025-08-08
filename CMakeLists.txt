@@ -22,15 +22,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-unused-parameter -Wno-unused-function)
 endif()
 
-# Source files (to be populated as we develop)
-set(SOURCES
-    # src/main.cpp will be added in Phase 1
+# Core library sources
+set(CORE_SOURCES
+    src/core/board.cpp
+    src/core/bitboard.h
+    src/core/board.h
+    src/core/types.h
 )
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# Main executable (commented until we have source files)
+# Core library
+add_library(seajay_core ${CORE_SOURCES})
+
+# Main executable (to be added later)
 # add_executable(seajay ${SOURCES})
 
 # Output directory
@@ -39,9 +45,30 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 # Install target
 # install(TARGETS seajay DESTINATION bin)
 
-# Testing setup (for later phases)
+# Testing setup
 enable_testing()
-# add_subdirectory(tests)
+
+# Unit tests
+add_executable(test_board tests/unit/test_board.cpp)
+target_link_libraries(test_board seajay_core)
+
+add_executable(test_fen_comprehensive tests/unit/test_fen_comprehensive.cpp)
+target_link_libraries(test_fen_comprehensive seajay_core)
+
+add_executable(test_fen_edge_cases tests/unit/test_fen_edge_cases.cpp)
+target_link_libraries(test_fen_edge_cases seajay_core)
+
+# Demo programs
+add_executable(fen_demo tests/demo/fen_demo.cpp)
+target_link_libraries(fen_demo seajay_core)
+
+add_executable(sliding_attacks_demo tests/demo/sliding_attacks_demo.cpp)
+target_link_libraries(sliding_attacks_demo seajay_core)
+
+# Add test cases
+add_test(NAME board_tests COMMAND test_board)
+add_test(NAME fen_comprehensive_tests COMMAND test_fen_comprehensive)
+add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
 
 # Benchmark target (for later phases)
 # add_custom_target(bench
