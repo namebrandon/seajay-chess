@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include <string>
+#include <string_view>
 #include <array>
 
 namespace seajay {
@@ -49,24 +50,57 @@ public:
     Hash zobristKey() const noexcept { return m_zobristKey; }
     
     std::string toFEN() const;
-    bool fromFEN(const std::string& fen);
+    bool fromFEN(const std::string& fen);  // Legacy interface
+    FenResult parseFEN(const std::string& fen);  // New safe interface
     
     std::string toString() const;
+    std::string debugDisplay() const;
+    
+    // Position hash for testing (separate from Zobrist)
+    uint64_t positionHash() const;
+    
+public:
+    // Static lookup tables for initialization
+    static std::array<Piece, 256> PIECE_CHAR_LUT;
+    static bool s_lutInitialized;
     
 private:
     void updateBitboards(Square s, Piece p, bool add);
     void initZobrist();
     void updateZobristKey(Square s, Piece p);
     
-    // FEN parsing helpers
-    bool parseBoardPosition(const std::string& boardStr);
-    bool parseCastlingRights(const std::string& castlingStr);
-    bool parseEnPassant(const std::string& epStr);
+    // FEN parsing helpers (new safe versions)
+    FenResult parseBoardPosition(std::string_view boardStr);
+    FenResult parseSideToMove(std::string_view stmStr);
+    FenResult parseCastlingRights(std::string_view castlingStr);
+    FenResult parseEnPassant(std::string_view epStr);
+    FenResult parseHalfmoveClock(std::string_view clockStr);
+    FenResult parseFullmoveNumber(std::string_view moveStr);
+    
+    // Legacy FEN parsing helpers (for backward compatibility)
+    bool parseBoardPositionLegacy(const std::string& boardStr);
+    bool parseCastlingRightsLegacy(const std::string& castlingStr);
+    bool parseEnPassantLegacy(const std::string& epStr);
+    
+public:
+    // Validation functions (public for testing)
     bool validatePosition() const;
     bool validatePieceCounts() const;
     bool validateKings() const;
     bool validateEnPassant() const;
     bool validateCastlingRights() const;
+    bool validateNotInCheck() const;  // Critical: side not to move cannot be in check
+    bool validateBitboardSync() const;  // Ensure bitboard/mailbox consistency
+    bool validateZobrist() const;       // Zobrist key matches actual position
+    
+    // TODO(Stage4): En passant pin validation - expensive, deferred to move generation
+    // See: deferred_items_tracker.md for details
+    // bool validateEnPassantPins() const;
+    
+    // Helper functions
+    void rebuildZobristKey();  // Rebuild Zobrist from scratch (used after FEN parsing)
+    
+private:
     
     std::array<Piece, 64> m_mailbox;
     
@@ -88,6 +122,12 @@ private:
     static std::array<Hash, 16> s_zobristCastling;
     static Hash s_zobristSideToMove;
     static bool s_zobristInitialized;
+    
+#ifdef DEBUG
+    // Debug validation macros - active in debug builds for Stage 4 debugging
+    void validateSync() const;
+    void validateZobristDebug() const;
+#endif
 };
 
 } // namespace seajay

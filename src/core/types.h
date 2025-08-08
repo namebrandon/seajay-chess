@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <concepts>
+#include <variant>
 
 namespace seajay {
 
@@ -25,7 +26,9 @@ enum Squares : Square {
     A5 = 32, B5, C5, D5, E5, F5, G5, H5,
     A6 = 40, B6, C6, D6, E6, F6, G6, H6,
     A7 = 48, B7, C7, D7, E7, F7, G7, H7,
-    A8 = 56, B8, C8, D8, E8, F8, G8, H8
+    A8 = 56, B8, C8, D8, E8, F8, G8, H8,
+    SQ_A1 = A1, SQ_H8 = H8, SQ_A8 = A8,  // Additional aliases
+    SQ_E1 = E1, SQ_E4 = E4, SQ_E5 = E5, SQ_E8 = E8, SQ_H1 = H1
 };
 constexpr int NUM_FILES = 8;
 constexpr int NUM_RANKS = 8;
@@ -88,7 +91,7 @@ enum Direction : int8_t {
 };
 
 constexpr Square makeSquare(File f, Rank r) {
-    return r * 8 + f;
+    return static_cast<Square>(r * 8 + f);
 }
 
 constexpr File fileOf(Square s) {
@@ -144,8 +147,8 @@ inline std::string squareToString(Square s) {
 inline Square stringToSquare(const std::string& str) {
     if (str.length() != 2) return NO_SQUARE;
     
-    File f = str[0] - 'a';
-    Rank r = str[1] - '1';
+    File f = static_cast<File>(str[0] - 'a');
+    Rank r = static_cast<Rank>(str[1] - '1');
     
     if (f >= NUM_FILES || r >= NUM_RANKS) return NO_SQUARE;
     
@@ -189,7 +192,7 @@ constexpr Square to(Move m) {
 }
 
 constexpr uint8_t flags(Move m) {
-    return m >> 12;
+    return static_cast<uint8_t>(m >> 12);
 }
 
 constexpr Move makeMove(Square from, Square to, uint8_t flags = 0) {
@@ -206,5 +209,125 @@ enum MoveFlags : uint8_t {
     PROMO_ROOK = PROMOTION | 2,
     PROMO_QUEEN = PROMOTION | 3
 };
+
+// Result<T,E> type for C++20 (std::expected is C++23)
+template<typename T, typename E>
+class Result {
+public:
+    using ValueType = T;
+    using ErrorType = E;
+    
+private:
+    std::variant<T, E> m_value;
+    
+public:
+    // Constructors
+    constexpr Result(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        : m_value(value) {}
+    
+    constexpr Result(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        : m_value(std::move(value)) {}
+    
+    constexpr Result(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
+        : m_value(error) {}
+    
+    constexpr Result(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
+        : m_value(std::move(error)) {}
+    
+    // Query functions
+    constexpr bool hasValue() const noexcept {
+        return std::holds_alternative<T>(m_value);
+    }
+    
+    constexpr bool hasError() const noexcept {
+        return std::holds_alternative<E>(m_value);
+    }
+    
+    constexpr explicit operator bool() const noexcept {
+        return hasValue();
+    }
+    
+    // Access functions
+    constexpr T& value() & {
+        return std::get<T>(m_value);
+    }
+    
+    constexpr const T& value() const & {
+        return std::get<T>(m_value);
+    }
+    
+    constexpr T&& value() && {
+        return std::get<T>(std::move(m_value));
+    }
+    
+    constexpr const T&& value() const && {
+        return std::get<T>(std::move(m_value));
+    }
+    
+    constexpr E& error() & {
+        return std::get<E>(m_value);
+    }
+    
+    constexpr const E& error() const & {
+        return std::get<E>(m_value);
+    }
+    
+    constexpr E&& error() && {
+        return std::get<E>(std::move(m_value));
+    }
+    
+    constexpr const E&& error() const && {
+        return std::get<E>(std::move(m_value));
+    }
+    
+    // Value or default
+    template<typename U>
+    constexpr T valueOr(U&& defaultValue) const & {
+        return hasValue() ? value() : static_cast<T>(std::forward<U>(defaultValue));
+    }
+    
+    template<typename U>
+    constexpr T valueOr(U&& defaultValue) && {
+        return hasValue() ? std::move(value()) : static_cast<T>(std::forward<U>(defaultValue));
+    }
+};
+
+// FEN parsing error types
+enum class FenError : uint8_t {
+    InvalidFormat,        // Wrong number of fields
+    InvalidBoard,         // Board position parsing failed
+    InvalidSideToMove,    // Not 'w' or 'b'
+    InvalidCastling,      // Invalid castling rights format
+    InvalidEnPassant,     // Invalid en passant square
+    InvalidClocks,        // Invalid halfmove/fullmove values
+    PositionValidationFailed,  // Position fails chess rules
+    BoardOverflow,        // Square index overflow during parsing
+    InvalidPieceChar,     // Invalid piece character
+    IncompleteRank,       // Rank doesn't have 8 squares
+    PawnOnBackRank,       // Pawn on 1st or 8th rank
+    TooManyRanks,         // More than 8 ranks
+    KingNotFound,         // Missing king(s)
+    KingsAdjacent,        // Kings are adjacent
+    SideNotToMoveInCheck, // Side not to move is in check
+    BitboardDesync,       // Bitboard/mailbox out of sync
+    ZobristMismatch       // Zobrist key doesn't match position
+};
+
+struct FenErrorInfo {
+    FenError error;
+    std::string message;
+    size_t position;      // Character position in FEN string
+    
+    FenErrorInfo(FenError err, std::string msg, size_t pos = 0)
+        : error(err), message(std::move(msg)), position(pos) {}
+};
+
+// Convenience type aliases
+using FenResult = Result<bool, FenErrorInfo>;
+
+// Helper function to create error results
+inline FenResult makeFenError(FenError error, const std::string& message, size_t position = 0) {
+    return FenErrorInfo{error, message, position};
+}
 
 } // namespace seajay
