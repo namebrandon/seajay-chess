@@ -1,0 +1,118 @@
+{
+    "name": "SeaJay Chess Engine Development",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "TZ": "America/Chicago"
+        }
+    },
+    
+    // Use the project root as workspace
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+    
+    // Container capabilities
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",           // For GDB/LLDB debugging
+        "--security-opt", "seccomp=unconfined",  // For valgrind
+        "--shm-size=2gb",                 // Shared memory for parallel testing
+        "--platform=linux/amd64"          // Force x86_64 architecture
+    ],
+    
+    // Persistent volumes for user data
+    "mounts": [
+        "source=seajay-bashhistory,target=/home/developer/.bash_history,type=volume",
+        "source=seajay-zshhistory,target=/home/developer/.zsh_history,type=volume",
+        "source=seajay-config,target=/home/developer/.config,type=volume",
+        "source=seajay-ccache,target=/home/developer/.ccache,type=volume"
+    ],
+    
+    // Environment variables
+    "containerEnv": {
+        "WORKSPACE": "/workspace",
+        "EXTERNAL_DIR": "/workspace/external",
+        "MAKEFLAGS": "-j$(nproc)",
+        "CLAUDE_CONFIG_DIR": "/home/developer/.config/claude",
+        "CXXFLAGS": "-march=x86-64-v3",
+        "ASAN_OPTIONS": "symbolize=1:print_stats=1:check_initialization_order=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1",
+        "SEAJAY_TEST_SUITE": "/workspace/tests/positions"
+    },
+    
+    // VSCode customizations
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                // C++ development
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "xaver.clang-format",
+                
+                // Debugging
+                "vadimcn.vscode-lldb",
+                
+                // Git integration
+                "eamodio.gitlens",
+                
+                // General development
+                "gruntfuggly.todo-tree",
+                "wayou.vscode-todo-highlight",
+                "streetsidesoftware.code-spell-checker",
+                
+                // Documentation
+                "yzhang.markdown-all-in-one",
+                "bierner.markdown-preview-github-styles"
+            ],
+            "settings": {
+                // C++ configuration
+                "C_Cpp.default.cppStandard": "c++20",
+                "C_Cpp.default.intelliSenseMode": "linux-clang-x64",
+                "C_Cpp.clang_format_style": "file",
+                
+                // CMake configuration
+                "cmake.configureOnOpen": true,
+                "cmake.generator": "Ninja",
+                "cmake.buildDirectory": "${workspaceFolder}/build",
+                
+                // Clangd configuration
+                "clangd.fallbackFlags": [
+                    "-std=c++20",
+                    "-Wall",
+                    "-Wextra",
+                    "-Wpedantic"
+                ],
+                
+                // Editor configuration
+                "editor.formatOnSave": true,
+                "editor.rulers": [100],
+                "files.trimTrailingWhitespace": true,
+                "files.insertFinalNewline": true,
+                
+                // Terminal configuration
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/bin/zsh"
+                    }
+                },
+                
+                // Git configuration
+                "git.autofetch": true,
+                "git.confirmSync": false
+            }
+        }
+    },
+    
+    // Use developer user
+    "remoteUser": "developer",
+    
+    // Post-create setup
+    "postCreateCommand": "/workspace/.devcontainer/post-create.sh",
+    
+    // Host requirements
+    "hostRequirements": {
+        "cpus": 4,
+        "memory": "8gb"
+    }
+}
