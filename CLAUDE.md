@@ -166,8 +166,14 @@ All these positions MUST pass before moving past Phase 1:
 
 - **Stockfish Binary**: Available at `/workspace/external/engines/stockfish/stockfish`
   - **⚠️ CRITICAL TESTING DIRECTIVE:** ALWAYS validate perft test positions with Stockfish before debugging our engine
-  - Use: `echo "position fen [FEN] | go perft [depth] | quit" | ./external/engines/stockfish/stockfish`
+  - **MANDATORY VALIDATION PROCESS:**
+    1. When any test fails, FIRST verify the expected values with Stockfish
+    2. Use: `echo "position fen [FEN]" | ./external/engines/stockfish/stockfish` then `go perft [depth]`
+    3. Or one-liner: `echo -e "position fen [FEN]\ngo perft [depth]\nquit" | ./external/engines/stockfish/stockfish`
+    4. For perft divide: Add `2>/dev/null | grep -B20 "Nodes searched"` to see move breakdown
+  - **Why This Matters:** We've resolved 4+ "bugs" (#004, #005, #006, #007) that were actually incorrect test data
   - This prevents wasting hours debugging correct engine behavior against incorrect test expectations
+  - If Stockfish and SeaJay agree but differ from test expectations, update the test data, not the engine
 
 - **External Tools**: Run setup if needed
   ```bash
