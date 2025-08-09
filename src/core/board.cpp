@@ -1,4 +1,5 @@
 #include "board.h"
+#include "board_safety.h"
 #include "bitboard.h"
 #include "move_generation.h"
 #include <sstream>
@@ -8,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <iostream>
 #include <cassert>
 #include <iostream>
 
@@ -68,15 +70,24 @@ void Board::setPiece(Square s, Piece p) {
     if (!isValidSquare(s) || p > NO_PIECE) [[unlikely]] return;
     
     Piece oldPiece = m_mailbox[s];
+    
+    // Update mailbox first
+    m_mailbox[s] = p;
+    
+    // Then update bitboards
     if (oldPiece != NO_PIECE) {
         updateBitboards(s, oldPiece, false);
-        updateZobristKey(s, oldPiece);
     }
-    
-    m_mailbox[s] = p;
     if (p != NO_PIECE) {
         updateBitboards(s, p, true);
-        updateZobristKey(s, p);
+    }
+    
+    // Finally update zobrist (single XOR for difference)
+    if (oldPiece != NO_PIECE) {
+        m_zobristKey ^= s_zobristPieces[s][oldPiece];
+    }
+    if (p != NO_PIECE) {
+        m_zobristKey ^= s_zobristPieces[s][p];
     }
 }
 
@@ -90,23 +101,25 @@ void Board::movePiece(Square from, Square to) {
     Piece p = m_mailbox[from];
     if (p == NO_PIECE) return;
     
-    // Remove captured piece if any
     Piece captured = m_mailbox[to];
-    if (captured != NO_PIECE) {
-        updateBitboards(to, captured, false);
-        m_zobristKey ^= s_zobristPieces[to][captured];
-    }
     
-    // Move the piece
+    // Update mailbox
     m_mailbox[to] = p;
     m_mailbox[from] = NO_PIECE;
     
+    // Update bitboards
     updateBitboards(from, p, false);
     updateBitboards(to, p, true);
+    if (captured != NO_PIECE) {
+        updateBitboards(to, captured, false);
+    }
     
-    // Update Zobrist key correctly
+    // Update Zobrist key (avoiding double XOR)
     m_zobristKey ^= s_zobristPieces[from][p];  // Remove from source
     m_zobristKey ^= s_zobristPieces[to][p];    // Add to destination
+    if (captured != NO_PIECE) {
+        m_zobristKey ^= s_zobristPieces[to][captured];  // Remove captured
+    }
 }
 
 void Board::updateBitboards(Square s, Piece p, bool add) {
@@ -872,12 +885,99 @@ void Board::validateSync() const {
 void Board::validateZobristDebug() const {
     assert(validateZobrist());
 }
+
+void Board::validateStateIntegrity() const {
+    assert(BoardStateValidator::validateFullIntegrity(*this));
+}
 #endif
 
+// ============================================================================
+// Incremental Zobrist Updates - Prevent double XOR issues
+// ============================================================================
+
+void Board::updateZobristForMove(Move move, Piece movingPiece, Piece capturedPiece) {
+    Square from = moveFrom(move);
+    Square to = moveTo(move);
+    uint8_t flags = moveFlags(move);
+    
+    // Remove moving piece from origin
+    m_zobristKey ^= s_zobristPieces[from][movingPiece];
+    
+    // Handle captures
+    if (capturedPiece != NO_PIECE && flags != EN_PASSANT) {
+        m_zobristKey ^= s_zobristPieces[to][capturedPiece];
+    }
+    
+    // Add piece to destination (or promoted piece)
+    if (flags & PROMOTION) {
+        PieceType promotedType = promotionType(move);
+        Piece promotedPiece = makePiece(colorOf(movingPiece), promotedType);
+        m_zobristKey ^= s_zobristPieces[to][promotedPiece];
+    } else {
+        m_zobristKey ^= s_zobristPieces[to][movingPiece];
+    }
+}
+
+void Board::updateZobristForCastling(Color us, bool kingside) {
+    if (us == WHITE) {
+        if (kingside) {
+            // King: E1 -> G1
+            m_zobristKey ^= s_zobristPieces[E1][WHITE_KING];
+            m_zobristKey ^= s_zobristPieces[G1][WHITE_KING];
+            // Rook: H1 -> F1
+            m_zobristKey ^= s_zobristPieces[H1][WHITE_ROOK];
+            m_zobristKey ^= s_zobristPieces[F1][WHITE_ROOK];
+        } else {
+            // King: E1 -> C1
+            m_zobristKey ^= s_zobristPieces[E1][WHITE_KING];
+            m_zobristKey ^= s_zobristPieces[C1][WHITE_KING];
+            // Rook: A1 -> D1
+            m_zobristKey ^= s_zobristPieces[A1][WHITE_ROOK];
+            m_zobristKey ^= s_zobristPieces[D1][WHITE_ROOK];
+        }
+    } else {
+        if (kingside) {
+            // King: E8 -> G8
+            m_zobristKey ^= s_zobristPieces[E8][BLACK_KING];
+            m_zobristKey ^= s_zobristPieces[G8][BLACK_KING];
+            // Rook: H8 -> F8
+            m_zobristKey ^= s_zobristPieces[H8][BLACK_ROOK];
+            m_zobristKey ^= s_zobristPieces[F8][BLACK_ROOK];
+        } else {
+            // King: E8 -> C8
+            m_zobristKey ^= s_zobristPieces[E8][BLACK_KING];
+            m_zobristKey ^= s_zobristPieces[C8][BLACK_KING];
+            // Rook: A8 -> D8
+            m_zobristKey ^= s_zobristPieces[A8][BLACK_ROOK];
+            m_zobristKey ^= s_zobristPieces[D8][BLACK_ROOK];
+        }
+    }
+}
+
+void Board::updateZobristForEnPassant(Square oldEP, Square newEP) {
+    if (oldEP != NO_SQUARE) {
+        m_zobristKey ^= s_zobristEnPassant[oldEP];
+    }
+    if (newEP != NO_SQUARE) {
+        m_zobristKey ^= s_zobristEnPassant[newEP];
+    }
+}
+
+void Board::updateZobristForCastlingRights(uint8_t oldRights, uint8_t newRights) {
+    if (oldRights != newRights) {
+        m_zobristKey ^= s_zobristCastling[oldRights];
+        m_zobristKey ^= s_zobristCastling[newRights];
+    }
+}
+
+void Board::updateZobristSideToMove() {
+    m_zobristKey ^= s_zobristSideToMove;
+}
+
 bool Board::isAttacked(Square s, Color byColor) const {
-    // Use the MoveGenerator's comprehensive attack detection
+    // Use the move generator's comprehensive attack detection
     // This checks for attacks from all piece types: pawns, knights, bishops, rooks, queens, and kings
-    return MoveGenerator::isSquareAttacked(*this, s, byColor);
+    return seajay::isSquareAttacked(*this, s, byColor);
 }
 
 Square Board::kingSquare(Color c) const {
@@ -894,11 +994,76 @@ Square Board::kingSquare(Color c) const {
     return lsb(kingBB);
 }
 
+// Public interface with safety checks
 void Board::makeMove(Move move, UndoInfo& undo) {
+#ifdef DEBUG
+    VALIDATE_STATE_GUARD(*this, "makeMove");
+    validateStateIntegrity();
+#endif
+    
+    makeMoveInternal(move, undo);
+    
+#ifdef DEBUG
+    validateStateIntegrity();
+#endif
+}
+
+void Board::unmakeMove(Move move, const UndoInfo& undo) {
+#ifdef DEBUG
+    VALIDATE_STATE_GUARD(*this, "unmakeMove");
+    validateStateIntegrity();
+#endif
+    
+    unmakeMoveInternal(move, undo);
+    
+#ifdef DEBUG
+    validateStateIntegrity();
+#endif
+}
+
+// Enhanced interface with complete undo info
+void Board::makeMove(Move move, CompleteUndoInfo& undo) {
+#ifdef DEBUG
+    VALIDATE_STATE_GUARD(*this, "makeMove-complete");
+    validateStateIntegrity();
+    undo.positionHash = positionHash();
+    undo.occupiedChecksum = m_occupied;
+    undo.colorChecksum[WHITE] = m_colorBB[WHITE];
+    undo.colorChecksum[BLACK] = m_colorBB[BLACK];
+#endif
+    
+    makeMoveInternal(move, undo);
+    
+#ifdef DEBUG
+    validateStateIntegrity();
+#endif
+}
+
+void Board::unmakeMove(Move move, const CompleteUndoInfo& undo) {
+#ifdef DEBUG
+    VALIDATE_STATE_GUARD(*this, "unmakeMove-complete");
+    validateStateIntegrity();
+#endif
+    
+    unmakeMoveInternal(move, undo);
+    
+#ifdef DEBUG
+    validateStateIntegrity();
+    // Verify complete restoration
+    assert(undo.positionHash == positionHash());
+    assert(undo.occupiedChecksum == m_occupied);
+    assert(undo.colorChecksum[WHITE] == m_colorBB[WHITE]);
+    assert(undo.colorChecksum[BLACK] == m_colorBB[BLACK]);
+#endif
+}
+
+// Internal implementation for legacy UndoInfo
+void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     // Save current state for undo
     undo.castlingRights = m_castlingRights;
     undo.enPassantSquare = m_enPassantSquare;
     undo.halfmoveClock = m_halfmoveClock;
+    undo.fullmoveNumber = m_fullmoveNumber;  // FIXED: Save fullmove number!
     undo.zobristKey = m_zobristKey;
     
     Square from = moveFrom(move);
@@ -908,107 +1073,149 @@ void Board::makeMove(Move move, UndoInfo& undo) {
     
     undo.capturedPiece = capturedPiece;
     
+    // Save old zobrist components for proper incremental update
+    uint8_t oldCastlingRights = m_castlingRights;
+    Square oldEnPassant = m_enPassantSquare;
+    
     // Handle special moves
     uint8_t moveType = moveFlags(move);
     
     if (moveType == CASTLING) {
-        // Handle castling - move both king and rook
+        // Handle castling WITHOUT using setPiece (which modifies zobrist)
         Color us = colorOf(movingPiece);
+        bool kingside = (to == G1 || to == G8);
         
-        if (to == G1 || to == G8) { // Kingside castling
-            Square rookFrom = (us == WHITE) ? H1 : H8;
-            Square rookTo = (us == WHITE) ? F1 : F8;
-            
-            // Move king
-            removePiece(from);
-            setPiece(to, movingPiece);
-            
-            // Move rook
-            Piece rook = pieceAt(rookFrom);
-            removePiece(rookFrom);
-            setPiece(rookTo, rook);
-        } else { // Queenside castling
-            Square rookFrom = (us == WHITE) ? A1 : A8;
-            Square rookTo = (us == WHITE) ? D1 : D8;
-            
-            // Move king
-            removePiece(from);
-            setPiece(to, movingPiece);
-            
-            // Move rook
-            Piece rook = pieceAt(rookFrom);
-            removePiece(rookFrom);
-            setPiece(rookTo, rook);
+        Square rookFrom, rookTo;
+        if (kingside) {
+            rookFrom = (us == WHITE) ? H1 : H8;
+            rookTo = (us == WHITE) ? F1 : F8;
+        } else {
+            rookFrom = (us == WHITE) ? A1 : A8;
+            rookTo = (us == WHITE) ? D1 : D8;
         }
+        
+        Piece rook = pieceAt(rookFrom);
+        
+        // Update mailbox directly
+        m_mailbox[from] = NO_PIECE;
+        m_mailbox[to] = movingPiece;
+        m_mailbox[rookFrom] = NO_PIECE;
+        m_mailbox[rookTo] = rook;
+        
+        // Update bitboards
+        updateBitboards(from, movingPiece, false);
+        updateBitboards(to, movingPiece, true);
+        updateBitboards(rookFrom, rook, false);
+        updateBitboards(rookTo, rook, true);
+        
+        // Single zobrist update for castling
+        updateZobristForCastling(us, kingside);
+        
     } else if (moveType == EN_PASSANT) {
-        // Handle en passant - remove the captured pawn
+        // Handle en passant
         Color us = colorOf(movingPiece);
         Square capturedSquare = (us == WHITE) ? to - 8 : to + 8;
-        undo.capturedPiece = pieceAt(capturedSquare); // Save the actual captured pawn
+        Piece capturedPawn = pieceAt(capturedSquare);
+        undo.capturedPiece = capturedPawn;  // Save the actual captured pawn
         
-        // Move the pawn
-        removePiece(from);
-        setPiece(to, movingPiece);
+        // Update mailbox directly
+        m_mailbox[from] = NO_PIECE;
+        m_mailbox[to] = movingPiece;
+        m_mailbox[capturedSquare] = NO_PIECE;
         
-        // Remove the captured pawn
-        removePiece(capturedSquare);
+        // Update bitboards
+        updateBitboards(from, movingPiece, false);
+        updateBitboards(to, movingPiece, true);
+        updateBitboards(capturedSquare, capturedPawn, false);
+        
+        // Update zobrist for en passant
+        m_zobristKey ^= s_zobristPieces[from][movingPiece];
+        m_zobristKey ^= s_zobristPieces[to][movingPiece];
+        m_zobristKey ^= s_zobristPieces[capturedSquare][capturedPawn];
+        
     } else if (moveType & PROMOTION) {
         // Handle promotion
         PieceType promotedType = promotionType(move);
         Color us = colorOf(movingPiece);
         Piece promotedPiece = makePiece(us, promotedType);
         
-        // Remove pawn from origin
-        removePiece(from);
+        // Update mailbox directly
+        m_mailbox[from] = NO_PIECE;
+        m_mailbox[to] = promotedPiece;
         
-        // Remove captured piece if any
+        // Update bitboards
+        updateBitboards(from, movingPiece, false);  // Remove pawn
         if (capturedPiece != NO_PIECE) {
-            removePiece(to);
+            updateBitboards(to, capturedPiece, false);  // Remove captured
         }
+        updateBitboards(to, promotedPiece, true);  // Add promoted piece
         
-        // Place promoted piece
-        setPiece(to, promotedPiece);
+        // Update zobrist for promotion
+        m_zobristKey ^= s_zobristPieces[from][movingPiece];  // Remove pawn
+        if (capturedPiece != NO_PIECE) {
+            m_zobristKey ^= s_zobristPieces[to][capturedPiece];  // Remove captured
+        }
+        m_zobristKey ^= s_zobristPieces[to][promotedPiece];  // Add promoted
+        
     } else {
         // Normal move
-        removePiece(from);
+        // Update mailbox directly
+        m_mailbox[from] = NO_PIECE;
+        m_mailbox[to] = movingPiece;
         
-        // Remove captured piece if any
+        // Update bitboards
+        updateBitboards(from, movingPiece, false);
         if (capturedPiece != NO_PIECE) {
-            removePiece(to);
+            updateBitboards(to, capturedPiece, false);
         }
+        updateBitboards(to, movingPiece, true);
         
-        setPiece(to, movingPiece);
+        // Update zobrist
+        updateZobristForMove(move, movingPiece, capturedPiece);
     }
     
     // Update castling rights
+    uint8_t newCastlingRights = m_castlingRights;
     if (typeOf(movingPiece) == KING) {
         // King moved - lose all castling rights
         Color us = colorOf(movingPiece);
         if (us == WHITE) {
-            m_castlingRights &= ~(WHITE_KINGSIDE | WHITE_QUEENSIDE);
+            newCastlingRights &= ~(WHITE_KINGSIDE | WHITE_QUEENSIDE);
         } else {
-            m_castlingRights &= ~(BLACK_KINGSIDE | BLACK_QUEENSIDE);
+            newCastlingRights &= ~(BLACK_KINGSIDE | BLACK_QUEENSIDE);
         }
     } else if (typeOf(movingPiece) == ROOK) {
         // Rook moved - lose castling rights for that side
-        if (from == A1) m_castlingRights &= ~WHITE_QUEENSIDE;
-        else if (from == H1) m_castlingRights &= ~WHITE_KINGSIDE;
-        else if (from == A8) m_castlingRights &= ~BLACK_QUEENSIDE;
-        else if (from == H8) m_castlingRights &= ~BLACK_KINGSIDE;
+        if (from == A1) newCastlingRights &= ~WHITE_QUEENSIDE;
+        else if (from == H1) newCastlingRights &= ~WHITE_KINGSIDE;
+        else if (from == A8) newCastlingRights &= ~BLACK_QUEENSIDE;
+        else if (from == H8) newCastlingRights &= ~BLACK_KINGSIDE;
     }
     
     // Check if a rook was captured (affects castling rights)
-    if (to == A1) m_castlingRights &= ~WHITE_QUEENSIDE;
-    else if (to == H1) m_castlingRights &= ~WHITE_KINGSIDE;
-    else if (to == A8) m_castlingRights &= ~BLACK_QUEENSIDE;
-    else if (to == H8) m_castlingRights &= ~BLACK_KINGSIDE;
+    if (to == A1) newCastlingRights &= ~WHITE_QUEENSIDE;
+    else if (to == H1) newCastlingRights &= ~WHITE_KINGSIDE;
+    else if (to == A8) newCastlingRights &= ~BLACK_QUEENSIDE;
+    else if (to == H8) newCastlingRights &= ~BLACK_KINGSIDE;
+    
+    // Update zobrist for castling rights change
+    if (newCastlingRights != oldCastlingRights) {
+        updateZobristForCastlingRights(oldCastlingRights, newCastlingRights);
+    }
+    m_castlingRights = newCastlingRights;
     
     // Update en passant square
-    m_enPassantSquare = NO_SQUARE;
+    Square newEnPassant = NO_SQUARE;
     if (typeOf(movingPiece) == PAWN && std::abs(to - from) == 16) {
         // Pawn moved two squares - set en passant square
-        m_enPassantSquare = (from + to) / 2;
+        newEnPassant = (from + to) / 2;
     }
+    
+    // Update zobrist for en passant change
+    if (newEnPassant != oldEnPassant) {
+        updateZobristForEnPassant(oldEnPassant, newEnPassant);
+    }
+    m_enPassantSquare = newEnPassant;
     
     // Update halfmove clock
     if (typeOf(movingPiece) == PAWN || capturedPiece != NO_PIECE) {
@@ -1017,18 +1224,33 @@ void Board::makeMove(Move move, UndoInfo& undo) {
         m_halfmoveClock++;
     }
     
-    // Switch side to move
-    m_sideToMove = ~m_sideToMove;
+    // Update fullmove number (after black's move)
+    if (m_sideToMove == BLACK) {
+        m_fullmoveNumber++;
+    }
     
-    // Update zobrist key (simplified - just rebuild it)
-    rebuildZobristKey();
+    // Switch side to move and update zobrist
+    m_sideToMove = ~m_sideToMove;
+    updateZobristSideToMove();
+    
+#ifdef DEBUG
+    // Verify zobrist consistency
+    Hash reconstructed = ZobristKeyManager::computeKey(*this);
+    if (reconstructed != 0 && reconstructed != m_zobristKey) {
+        std::cerr << "Zobrist mismatch after make!\n";
+        std::cerr << "  Expected: 0x" << std::hex << reconstructed << "\n";
+        std::cerr << "  Actual:   0x" << m_zobristKey << std::dec << "\n";
+    }
+#endif
 }
 
-void Board::unmakeMove(Move move, const UndoInfo& undo) {
-    // Restore state
+// Internal implementation for legacy UndoInfo
+void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
+    // Restore state first (before any piece movements)
     m_castlingRights = undo.castlingRights;
     m_enPassantSquare = undo.enPassantSquare;
     m_halfmoveClock = undo.halfmoveClock;
+    m_fullmoveNumber = undo.fullmoveNumber;  // FIXED: Restore fullmove number!
     m_zobristKey = undo.zobristKey;
     
     // Switch side back
@@ -1041,70 +1263,121 @@ void Board::unmakeMove(Move move, const UndoInfo& undo) {
     uint8_t moveType = moveFlags(move);
     
     if (moveType == CASTLING) {
-        // Handle castling - move both pieces back
+        // Handle castling - restore pieces WITHOUT using setPiece
         Color us = colorOf(movingPiece);
+        bool kingside = (to == G1 || to == G8);
         
-        if (to == G1 || to == G8) { // Kingside castling
-            Square rookFrom = (us == WHITE) ? F1 : F8;
-            Square rookTo = (us == WHITE) ? H1 : H8;
-            
-            // Move king back
-            removePiece(to);
-            setPiece(from, movingPiece);
-            
-            // Move rook back
-            Piece rook = pieceAt(rookFrom);
-            removePiece(rookFrom);
-            setPiece(rookTo, rook);
-        } else { // Queenside castling
-            Square rookFrom = (us == WHITE) ? D1 : D8;
-            Square rookTo = (us == WHITE) ? A1 : A8;
-            
-            // Move king back
-            removePiece(to);
-            setPiece(from, movingPiece);
-            
-            // Move rook back
-            Piece rook = pieceAt(rookFrom);
-            removePiece(rookFrom);
-            setPiece(rookTo, rook);
+        Square rookFrom, rookTo;
+        if (kingside) {
+            rookFrom = (us == WHITE) ? F1 : F8;
+            rookTo = (us == WHITE) ? H1 : H8;
+        } else {
+            rookFrom = (us == WHITE) ? D1 : D8;
+            rookTo = (us == WHITE) ? A1 : A8;
         }
+        
+        Piece rook = pieceAt(rookFrom);
+        
+        // Restore mailbox directly (zobrist already restored)
+        m_mailbox[to] = NO_PIECE;
+        m_mailbox[from] = movingPiece;
+        m_mailbox[rookFrom] = NO_PIECE;
+        m_mailbox[rookTo] = rook;
+        
+        // Restore bitboards
+        updateBitboards(to, movingPiece, false);
+        updateBitboards(from, movingPiece, true);
+        updateBitboards(rookFrom, rook, false);
+        updateBitboards(rookTo, rook, true);
     } else if (moveType == EN_PASSANT) {
         // Handle en passant - restore the captured pawn
         Color us = colorOf(movingPiece);
         Square capturedSquare = (us == WHITE) ? to - 8 : to + 8;
         
-        // Move pawn back
-        removePiece(to);
-        setPiece(from, movingPiece);
+        // Restore mailbox directly (zobrist already restored)
+        m_mailbox[to] = NO_PIECE;
+        m_mailbox[from] = movingPiece;
+        m_mailbox[capturedSquare] = undo.capturedPiece;
         
-        // Restore captured pawn
-        setPiece(capturedSquare, undo.capturedPiece);
+        // Restore bitboards
+        updateBitboards(to, movingPiece, false);
+        updateBitboards(from, movingPiece, true);
+        updateBitboards(capturedSquare, undo.capturedPiece, true);
     } else if (moveType & PROMOTION) {
         // Handle promotion - restore original pawn
         Color us = colorOf(movingPiece);
         Piece originalPawn = makePiece(us, PAWN);
         
-        // Remove promoted piece
-        removePiece(to);
+        // Restore mailbox directly (zobrist already restored)
+        m_mailbox[to] = undo.capturedPiece;  // May be NO_PIECE
+        m_mailbox[from] = originalPawn;
         
-        // Restore original pawn
-        setPiece(from, originalPawn);
-        
-        // Restore captured piece if any
+        // Restore bitboards
+        updateBitboards(to, movingPiece, false);  // Remove promoted piece
+        updateBitboards(from, originalPawn, true);  // Restore pawn
         if (undo.capturedPiece != NO_PIECE) {
-            setPiece(to, undo.capturedPiece);
+            updateBitboards(to, undo.capturedPiece, true);  // Restore captured
         }
     } else {
         // Normal move
-        removePiece(to);
-        setPiece(from, movingPiece);
+        // Restore mailbox directly (zobrist already restored)
+        m_mailbox[to] = undo.capturedPiece;  // May be NO_PIECE
+        m_mailbox[from] = movingPiece;
         
-        // Restore captured piece if any
+        // Restore bitboards
+        updateBitboards(to, movingPiece, false);
+        updateBitboards(from, movingPiece, true);
         if (undo.capturedPiece != NO_PIECE) {
-            setPiece(to, undo.capturedPiece);
+            updateBitboards(to, undo.capturedPiece, true);
         }
     }
+    
+#ifdef DEBUG
+    // Verify state restoration
+    if (m_zobristKey != undo.zobristKey) {
+        std::cerr << "Zobrist key not properly restored!\n";
+        std::cerr << "  Expected: 0x" << std::hex << undo.zobristKey << "\n";
+        std::cerr << "  Actual:   0x" << m_zobristKey << std::dec << "\n";
+    }
+#endif
+}
+
+// Implementation for CompleteUndoInfo
+void Board::makeMoveInternal(Move move, CompleteUndoInfo& undo) {
+    // Save complete state
+    undo.capturedPiece = pieceAt(moveTo(move));
+    undo.capturedSquare = moveTo(move);  // Default to 'to' square
+    undo.castlingRights = m_castlingRights;
+    undo.enPassantSquare = m_enPassantSquare;
+    undo.halfmoveClock = m_halfmoveClock;
+    undo.fullmoveNumber = m_fullmoveNumber;
+    undo.zobristKey = m_zobristKey;
+    undo.moveType = moveFlags(move);
+    undo.movingPiece = pieceAt(moveFrom(move));
+    
+    // Special handling for en passant capture square
+    if (undo.moveType == EN_PASSANT) {
+        Color us = colorOf(undo.movingPiece);
+        undo.capturedSquare = (us == WHITE) ? moveTo(move) - 8 : moveTo(move) + 8;
+        undo.capturedPiece = pieceAt(undo.capturedSquare);
+    }
+    
+    // Use the standard make implementation
+    UndoInfo basicUndo;
+    makeMoveInternal(move, basicUndo);
+}
+
+void Board::unmakeMoveInternal(Move move, const CompleteUndoInfo& undo) {
+    // Convert to basic undo and use standard unmake
+    UndoInfo basicUndo;
+    basicUndo.capturedPiece = undo.capturedPiece;
+    basicUndo.castlingRights = undo.castlingRights;
+    basicUndo.enPassantSquare = undo.enPassantSquare;
+    basicUndo.halfmoveClock = undo.halfmoveClock;
+    basicUndo.fullmoveNumber = undo.fullmoveNumber;
+    basicUndo.zobristKey = undo.zobristKey;
+    
+    unmakeMoveInternal(move, basicUndo);
 }
 
 } // namespace seajay

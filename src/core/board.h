@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "board_safety.h"  // Safety infrastructure
 #include <string>
 #include <string_view>
 #include <array>
@@ -11,6 +12,10 @@ class Board {
 public:
     Board();
     ~Board() = default;
+    
+    // Copy constructor and assignment (needed for validation)
+    Board(const Board&) = default;
+    Board& operator=(const Board&) = default;
     
     void clear();
     void setStartingPosition();
@@ -69,6 +74,13 @@ private:
     void initZobrist();
     void updateZobristKey(Square s, Piece p);
     
+    // New: Incremental zobrist updates without double-XOR issues
+    void updateZobristForMove(Move move, Piece movingPiece, Piece capturedPiece);
+    void updateZobristForCastling(Color us, bool kingside);
+    void updateZobristForEnPassant(Square oldEP, Square newEP);
+    void updateZobristForCastlingRights(uint8_t oldRights, uint8_t newRights);
+    void updateZobristSideToMove();
+    
     // FEN parsing helpers (new safe versions)
     FenResult parseBoardPosition(std::string_view boardStr);
     FenResult parseSideToMove(std::string_view stmStr);
@@ -104,18 +116,30 @@ public:
     bool isAttacked(Square s, Color byColor) const;
     Square kingSquare(Color c) const;
     
-    // Minimal make/unmake for legal move validation
-    // Simple structure to save/restore position state
+    // Enhanced make/unmake with safety infrastructure
+    // Legacy UndoInfo for backward compatibility
     struct UndoInfo {
         Piece capturedPiece;
         uint8_t castlingRights;
         Square enPassantSquare;
         uint16_t halfmoveClock;
+        uint16_t fullmoveNumber;  // ADDED: Was missing!
         Hash zobristKey;
     };
     
+    // Public interface with safety checks
     void makeMove(Move move, UndoInfo& undo);
     void unmakeMove(Move move, const UndoInfo& undo);
+    
+    // Enhanced interface with complete state tracking
+    void makeMove(Move move, CompleteUndoInfo& undo);
+    void unmakeMove(Move move, const CompleteUndoInfo& undo);
+    
+    // Internal implementation (called by safe wrappers)
+    void makeMoveInternal(Move move, UndoInfo& undo);
+    void unmakeMoveInternal(Move move, const UndoInfo& undo);
+    void makeMoveInternal(Move move, CompleteUndoInfo& undo);
+    void unmakeMoveInternal(Move move, const CompleteUndoInfo& undo);
     
 private:
     
@@ -144,7 +168,13 @@ private:
     // Debug validation macros - active in debug builds for Stage 4 debugging
     void validateSync() const;
     void validateZobristDebug() const;
+    void validateStateIntegrity() const;  // Full state validation
 #endif
+    
+    // Friend classes for safety infrastructure
+    friend class BoardStateValidator;
+    friend class ZobristKeyManager;
+    friend class SafeMoveExecutor;
 };
 
 } // namespace seajay
