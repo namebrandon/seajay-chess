@@ -44,6 +44,7 @@ perf.data
 *.local
 CLAUDE.md         # AI context file (may contain sensitive information)
 container-config.sh  # Container configuration script
+yolo.sh           # Claude permission bypass script
 
 # Test outputs
 *.log
