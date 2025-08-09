@@ -42,14 +42,24 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 # Core library
 add_library(seajay_core ${CORE_SOURCES})
 
-# Main executable (to be added later)
-# add_executable(seajay ${SOURCES})
+# UCI and benchmark sources
+set(UCI_SOURCES
+    src/uci/uci.cpp
+    src/benchmark/benchmark.cpp
+)
+
+# Main executable
+add_executable(seajay 
+    src/main.cpp
+    ${UCI_SOURCES}
+)
+target_link_libraries(seajay seajay_core)
 
 # Output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 
 # Install target
-# install(TARGETS seajay DESTINATION bin)
+install(TARGETS seajay DESTINATION bin)
 
 # Testing setup
 enable_testing()
@@ -89,9 +99,9 @@ add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
 add_test(NAME board_safety_tests COMMAND test_board_safety)
 add_test(NAME en_passant_check_evasion_tests COMMAND test_en_passant_check_evasion)
 
-# Benchmark target (for later phases)
-# add_custom_target(bench
-#     COMMAND seajay bench
-#     DEPENDS seajay
-#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-# )
+# Benchmark target
+add_custom_target(bench
+    COMMAND seajay bench
+    DEPENDS seajay
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)

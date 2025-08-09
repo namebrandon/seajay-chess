@@ -112,6 +112,7 @@ configure_cmake() {
     cd "$BUILD_DIR"
     
     # CMake configuration optimized for Apple Silicon
+    # Note: We don't override CMAKE_RUNTIME_OUTPUT_DIRECTORY to respect CMakeLists.txt settings
     cmake "$PROJECT_ROOT" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_COMPILER=clang++ \
@@ -119,7 +120,6 @@ configure_cmake() {
         -DCMAKE_CXX_FLAGS="-O3 -arch arm64 -mtune=native -flto -ffast-math -DNDEBUG" \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
-        -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$OUTPUT_DIR" \
         || error "CMake configuration failed"
     
     success "CMake configuration complete"
@@ -147,10 +147,13 @@ build_engine() {
 finalize_binary() {
     log "Finalizing binary..."
     
-    # Find the built binary
-    if [[ -f "$OUTPUT_DIR/seajay" ]]; then
-        # Rename with -macos suffix
-        mv "$OUTPUT_DIR/seajay" "$OUTPUT_DIR/$ENGINE_NAME"
+    # The binary is built in build-macos/bin/ by CMake
+    BUILT_BINARY="$BUILD_DIR/bin/seajay"
+    
+    # Check if the binary exists
+    if [[ -f "$BUILT_BINARY" ]]; then
+        # Copy to output directory with -macos suffix
+        cp "$BUILT_BINARY" "$OUTPUT_DIR/$ENGINE_NAME"
         
         # Make sure it's executable
         chmod +x "$OUTPUT_DIR/$ENGINE_NAME"
@@ -163,7 +166,9 @@ finalize_binary() {
         
         success "Binary created: $OUTPUT_DIR/$ENGINE_NAME"
     else
-        error "Binary not found at expected location"
+        error "Binary not found at expected location: $BUILT_BINARY"
+        log "Checking build directory structure..."
+        find "$BUILD_DIR" -name "seajay*" -type f 2>/dev/null || true
     fi
 }
 
