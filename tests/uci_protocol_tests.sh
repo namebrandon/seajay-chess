@@ -209,11 +209,11 @@ test_uci_command "Node count reporting" "uci\nposition startpos\ngo movetime 200
 echo
 echo "=== Endgame Position Tests ==="
 
-# Test 26: Checkmate position (no legal moves)
-test_uci_command "Checkmate position" "uci\nposition fen rnb1kbnr/pppp1ppp/4p3/8/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq -\ngo movetime 100\nquit" "bestmove 0000\\|bestmove (none)"
+# Test 26: Checkmate position (no legal moves) - Fool's Mate position
+test_uci_command "Checkmate position" "uci\nposition fen rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1\ngo movetime 100\nquit" "bestmove 0000\\|bestmove (none)"
 
-# Test 27: Stalemate position
-test_uci_command "Stalemate position" "uci\nposition fen k7/8/1K6/8/8/8/8/1Q6 b - -\ngo movetime 100\nquit" "bestmove 0000\\|bestmove (none)"
+# Test 27: Stalemate position - Classic stalemate with king trapped
+test_uci_command "Stalemate position" "uci\nposition fen 7k/5Q2/5K2/8/8/8/8/8 b - - 0 1\ngo movetime 100\nquit" "bestmove 0000\\|bestmove (none)"
 
 echo
 echo "=== Final Results ==="
