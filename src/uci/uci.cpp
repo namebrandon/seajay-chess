@@ -1,5 +1,7 @@
 #include "uci.h"
+#include "../benchmark/benchmark.h"
 #include <iostream>
+#include <iomanip>
 #include <random>
 #include <algorithm>
 #include <thread>
@@ -37,6 +39,9 @@ void UCIEngine::run() {
         }
         else if (command == "quit") {
             handleQuit();
+        }
+        else if (command == "bench") {
+            handleBench(tokens);
         }
         // Ignore unknown commands (UCI protocol requirement)
     }
@@ -329,6 +334,33 @@ void UCIEngine::handleStop() {
 
 void UCIEngine::handleQuit() {
     m_quit = true;
+}
+
+void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
+    // Parse optional depth parameter
+    int depth = 0;  // 0 means use default depths
+    
+    if (tokens.size() > 1) {
+        try {
+            depth = std::stoi(tokens[1]);
+            if (depth < 1 || depth > 10) {
+                sendInfo("Invalid bench depth. Using default depths.");
+                depth = 0;
+            }
+        } catch (...) {
+            sendInfo("Invalid bench parameter. Usage: bench [depth]");
+            depth = 0;
+        }
+    }
+    
+    // Run the benchmark suite
+    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    
+    // Send final summary as info string for GUI compatibility
+    std::ostringstream oss;
+    oss << "Benchmark complete: " << result.totalNodes << " nodes, "
+        << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
+    sendInfo(oss.str());
 }
 
 void UCIEngine::sendInfo(const std::string& message) {

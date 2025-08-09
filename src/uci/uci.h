@@ -41,6 +41,7 @@ private:
     void handleGo(const std::vector<std::string>& tokens);
     void handleStop();
     void handleQuit();
+    void handleBench(const std::vector<std::string>& tokens);
     
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);

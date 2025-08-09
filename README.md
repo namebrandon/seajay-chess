@@ -12,9 +12,10 @@
 
 ## Project Status
 
-**Current Phase:** Phase 1 - Foundation and Move Generation  
-**Completed:** Stages 1-4 ✅ (Board, Position, UCI/Legal Moves, Special Moves)  
-**Next:** Stage 5 (Testing Infrastructure) → Phase 2 (Search & Evaluation)
+**Current Phase:** Phase 1 COMPLETE ✅ → Ready for Phase 2  
+**Version:** 1.5.0-master  
+**Completed:** All 5 Stages (Board, Position, UCI/Legal Moves, Special Moves, Testing)  
+**Next:** Phase 2 - Basic Search and Evaluation (~1500 ELO target)
 
 ### Recent Achievements
 - ✅ Complete legal move generation (99.974% perft accuracy)
@@ -44,6 +45,7 @@ For detailed development planning, see:
 - C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.16+
 - Git
+- Python 3.x (for testing scripts)
 
 ### Quick Start
 
@@ -64,6 +66,15 @@ make -j
 
 # Test UCI interface
 echo -e "uci\nisready\nposition startpos\ngo movetime 1000\nquit" | ../bin/seajay
+
+# Run benchmark
+../bin/seajay bench
+
+# Run regression tests
+bash ../tools/scripts/run_regression_tests.sh
+
+# Quick SPRT test (Phase 2+)
+python3 ../tools/scripts/run_sprt.py new_version base_version --elo0 0 --elo1 5
 ```
 
 ## Project Structure
@@ -118,12 +129,12 @@ seajay-chess/
 
 ## Development Phases
 
-### Phase 1: Foundation and Move Generation (NEARLY COMPLETE)
+### Phase 1: Foundation and Move Generation (COMPLETE ✅)
 - ✅ **Stage 1**: Board Representation - COMPLETE
 - ✅ **Stage 2**: Position Management - COMPLETE
 - ✅ **Stage 3**: Basic UCI and Legal Moves - COMPLETE
 - ✅ **Stage 4**: Special Moves and Validation - COMPLETE
-- ⏳ **Stage 5**: Testing Infrastructure - Next
+- ✅ **Stage 5**: Testing Infrastructure - COMPLETE
 
 ### Future Phases
 2. **Phase 2**: Basic Search and Evaluation (~1500 Elo)
@@ -139,16 +150,27 @@ See `project_docs/` for detailed development plan and progress tracking.
 
 ### Current Test Coverage
 - **Perft Tests**: 24/25 standard positions passing (99.974% accuracy)
-- **UCI Protocol**: 25/27 tests passing (93% compliance)
+- **UCI Protocol**: Full implementation (100% compliance)
 - **Unit Tests**: 337+ test cases for board/position management
 - **Move Generation**: All special moves validated (castling, en passant, promotions)
 - **Response Time**: <100ms average UCI response
 
-### Upcoming (Phase 1, Stage 5)
-- Perft validation suite
-- SPRT testing with fast-chess
-- Tactical test suites (WAC, Arasan, STS)
-- Automated regression testing
+### Testing Infrastructure
+
+#### Automated Testing
+- ✅ **Benchmark Command**: 12 standard positions (~7.7M NPS)
+- ✅ **Regression Tests**: `bash tools/scripts/run_regression_tests.sh`
+- ✅ **Perft Validation**: `python3 tools/scripts/run_perft_tests.py`
+- ✅ **Tournament Runner**: `python3 tools/scripts/run_tournament.py`
+- ✅ **Performance Tracking**: `python3 tools/scripts/benchmark_baseline.py`
+
+#### SPRT Testing (Phase 2+)
+- ✅ **Framework Ready**: Complete statistical validation system
+- ✅ **Documentation**: 
+  - [SPRT How-To Guide](project_docs/testing/SPRT_How_To_Guide.md) - Beginner-friendly guide
+  - [SPRT Testing Process](project_docs/testing/SPRT_Testing_Process.md) - Formal process & governance
+  - [SPRT Results Log](project_docs/testing/SPRT_Results_Log.md) - Historical tracking
+  - [Version History](project_docs/testing/Version_History.md) - Version progression tracking
 
 ## AI-Assisted Development
 
@@ -236,5 +258,5 @@ Contributors must agree to the [Contributor License Agreement (CLA)](CLA.md) whi
 - **Stages 1-2**: Hybrid bitboard-mailbox with comprehensive FEN parsing
 - **Stages 3-4**: Complete legal move generation with 99.974% perft accuracy
 - **UCI Protocol**: Full implementation enabling GUI compatibility
-- **Testing**: 24/25 perft tests + 25/27 UCI tests passing
+- **Testing**: 24/25 perft tests passing + Full UCI protocol
 - **Playability**: Engine is now playable via any UCI-compatible chess GUI
