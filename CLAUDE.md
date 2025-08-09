@@ -164,6 +164,11 @@ All these positions MUST pass before moving past Phase 1:
   - `sts/` - Strategic Test Suite for positional play
   - `perft.txt` - Perft validation positions
 
+- **Stockfish Binary**: Available at `/workspace/external/engines/stockfish/stockfish`
+  - **⚠️ CRITICAL TESTING DIRECTIVE:** ALWAYS validate perft test positions with Stockfish before debugging our engine
+  - Use: `echo "position fen [FEN] | go perft [depth] | quit" | ./external/engines/stockfish/stockfish`
+  - This prevents wasting hours debugging correct engine behavior against incorrect test expectations
+
 - **External Tools**: Run setup if needed
   ```bash
   ./tools/scripts/setup-external-tools.sh

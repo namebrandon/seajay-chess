@@ -180,6 +180,13 @@ private:
     // Helper functions
     static bool isValidMove(const Board& board, Move move);
     
+    // Check evasion helpers
+    static void generateCheckEvasions(const Board& board, MoveList& moves);
+    static void generateKingEvasions(const Board& board, MoveList& moves, Square kingSquare);
+    static void generateCapturesOf(const Board& board, MoveList& moves, Square target);
+    static void generateBlockingMoves(const Board& board, MoveList& moves, Bitboard blockSquares);
+    static Bitboard getCheckers(const Board& board, Square kingSquare, Color attackingColor);
+    
 public:
     // Pin detection and legal move helpers (made public for testing)
     static bool leavesKingInCheck(const Board& board, Move move);

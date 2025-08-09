@@ -1,6 +1,7 @@
 #include "move_generation.h"
 #include "bitboard.h"
 #include <algorithm>
+#include <cstdlib>
 
 namespace seajay {
 
@@ -115,13 +116,22 @@ void MoveGenerator::generatePseudoLegalMoves(const Board& board, MoveList& moves
 }
 
 void MoveGenerator::generateLegalMoves(const Board& board, MoveList& moves) {
-    MoveList pseudoLegalMoves;
-    generatePseudoLegalMoves(board, pseudoLegalMoves);
+    Color us = board.sideToMove();
     
-    // Filter out moves that leave the king in check
-    for (Move move : pseudoLegalMoves) {
-        if (!leavesKingInCheck(board, move)) {
-            moves.push_back(move);
+    // CRITICAL FIX: Check if we're in check FIRST
+    if (inCheck(board, us)) {
+        // When in check, generate only check evasion moves
+        generateCheckEvasions(board, moves);
+    } else {
+        // Not in check - generate all pseudo-legal moves and filter
+        MoveList pseudoLegalMoves;
+        generatePseudoLegalMoves(board, pseudoLegalMoves);
+        
+        // Filter out moves that leave the king in check
+        for (Move move : pseudoLegalMoves) {
+            if (!leavesKingInCheck(board, move)) {
+                moves.push_back(move);
+            }
         }
     }
 }
@@ -180,11 +190,27 @@ void MoveGenerator::generatePawnCaptures(const Board& board, MoveList& moves) {
         }
         
         // En passant capture
-        if (epSquare != NO_SQUARE && (attacks & squareBB(epSquare))) {
-            // Verify there's actually an enemy pawn to capture
-            Square captureSquare = (us == WHITE) ? epSquare - 8 : epSquare + 8;
-            if (board.pieceAt(captureSquare) == makePiece(them, PAWN)) {
-                moves.addMove(from, epSquare, EN_PASSANT);
+        if (epSquare != NO_SQUARE) {
+            // Check if this pawn can capture en passant
+            int pawnRank = rankOf(from);
+            int pawnFile = fileOf(from);
+            int epFile = fileOf(epSquare);
+            int epRank = rankOf(epSquare);
+            
+            // White pawns must be on rank 5 (0-indexed as 4), en passant to rank 6 (0-indexed as 5)
+            // Black pawns must be on rank 4 (0-indexed as 3), en passant to rank 3 (0-indexed as 2)
+            bool correctRank = (us == WHITE && pawnRank == 4 && epRank == 5) || 
+                               (us == BLACK && pawnRank == 3 && epRank == 2);
+            
+            // Pawn must be adjacent to the en passant file
+            bool adjacentFile = std::abs(pawnFile - epFile) == 1;
+            
+            if (correctRank && adjacentFile) {
+                // Verify there's actually an enemy pawn to capture
+                Square captureSquare = (us == WHITE) ? epSquare - 8 : epSquare + 8;
+                if (board.pieceAt(captureSquare) == makePiece(them, PAWN)) {
+                    moves.addMove(from, epSquare, EN_PASSANT);
+                }
             }
         }
     }
@@ -441,6 +467,7 @@ void MoveGenerator::generateCastlingMoves(const Board& board, MoveList& moves) {
     Color us = board.sideToMove();
     Color them = ~us;
     
+    // FIX: Cannot castle when in check (this check is already correct)
     if (inCheck(board, us)) {
         return; // Cannot castle when in check
     }
@@ -635,93 +662,31 @@ size_t MoveGenerator::countLegalMoves(const Board& board) {
 
 // Helper functions
 bool MoveGenerator::leavesKingInCheck(const Board& board, Move move) {
-    // Proper legal move validation using make/unmake pattern
-    
-    Square from = moveFrom(move);
-    Square to = moveTo(move);
-    Piece movingPiece = board.pieceAt(from);
-    
-    if (movingPiece == NO_PIECE) return true; // Invalid move
+    // FIX: Always use make/unmake for correct validation
+    // The optimizations were incomplete and causing bugs
     
     Color us = board.sideToMove();
     Color opponent = ~us;
     
-    // Handle special cases efficiently without make/unmake when possible
+    // Create a copy and make the move
+    Board tempBoard = board;
+    Board::UndoInfo undo;
     
-    // Case 1: King moves - check if destination is attacked
-    if (typeOf(movingPiece) == KING) {
-        // For castling, we need additional checks
-        if (isCastling(move)) {
-            // King cannot castle through check or from check
-            if (isSquareAttacked(board, from, opponent)) {
-                return true; // Cannot castle from check
-            }
-            
-            // Check intermediate square for castling
-            Square intermediate;
-            if (to == G1 || to == G8) {
-                // Kingside castling
-                intermediate = (us == WHITE) ? F1 : F8;
-            } else {
-                // Queenside castling  
-                intermediate = (us == WHITE) ? D1 : D8;
-            }
-            
-            if (isSquareAttacked(board, intermediate, opponent) || 
-                isSquareAttacked(board, to, opponent)) {
-                return true; // Cannot castle through or to check
-            }
-            
-            return false; // Castling is legal
-        } else {
-            // Normal king move - just check if destination is attacked
-            return isSquareAttacked(board, to, opponent);
-        }
-    }
+    tempBoard.makeMove(move, undo);
     
-    // Case 2: En passant moves - need special handling for discovered checks
-    if (isEnPassant(move)) {
-        // En passant can expose the king to check in complex ways
-        // We need make/unmake for this
-        Board tempBoard = board; // Create a proper copy
-        Board::UndoInfo undo;
-        
-        tempBoard.makeMove(move, undo);
-        bool inCheck = isSquareAttacked(tempBoard, tempBoard.kingSquare(us), opponent);
+    // Check if our king is in check after the move
+    Square kingSquare = tempBoard.kingSquare(us);
+    if (kingSquare == NO_SQUARE) {
+        // No king found - this shouldn't happen in a valid position
         tempBoard.unmakeMove(move, undo);
-        
-        return inCheck;
+        return true;
     }
     
-    // Case 3: Check if the moving piece is pinned
-    Square kingSquare = board.kingSquare(us);
-    if (kingSquare == NO_SQUARE) return true; // No king found - illegal position
+    bool inCheck = isSquareAttacked(tempBoard, kingSquare, opponent);
     
-    if (isPinned(board, from, us)) {
-        // Piece is pinned - check if move is along the pin ray
-        Bitboard pinRay = getPinRay(board, from, kingSquare);
-        if (!(pinRay & squareBB(to))) {
-            return true; // Move not along pin ray - leaves king in check
-        }
-    }
+    tempBoard.unmakeMove(move, undo);
     
-    // Case 4: Check for discovered attacks
-    // If the moving piece is between the king and an enemy sliding piece,
-    // moving it might expose the king to check
-    if (couldDiscoverCheck(board, from, kingSquare, opponent)) {
-        // Use make/unmake to verify
-        Board tempBoard = board; // Create a proper copy
-        Board::UndoInfo undo;
-        
-        tempBoard.makeMove(move, undo);
-        bool inCheck = isSquareAttacked(tempBoard, tempBoard.kingSquare(us), opponent);
-        tempBoard.unmakeMove(move, undo);
-        
-        return inCheck;
-    }
-    
-    // No special cases detected - move is likely legal
-    return false;
+    return inCheck;
 }
 
 // Pin detection implementation
@@ -861,6 +826,242 @@ bool MoveGenerator::couldDiscoverCheck(const Board& board, Square from, Square k
     }
     
     return false;
+}
+
+// New helper functions for check evasion
+
+Bitboard MoveGenerator::getCheckers(const Board& board, Square kingSquare, Color attackingColor) {
+    Bitboard checkers = 0;
+    
+    // Check for pawn checks
+    Bitboard pawnAttacks = getPawnAttacks(kingSquare, ~attackingColor);
+    checkers |= pawnAttacks & board.pieces(attackingColor, PAWN);
+    
+    // Check for knight checks
+    Bitboard knightAttacks = getKnightAttacks(kingSquare);
+    checkers |= knightAttacks & board.pieces(attackingColor, KNIGHT);
+    
+    // Check for bishop/queen checks
+    Bitboard bishopAttacks = ::seajay::bishopAttacks(kingSquare, board.occupied());
+    checkers |= bishopAttacks & (board.pieces(attackingColor, BISHOP) | board.pieces(attackingColor, QUEEN));
+    
+    // Check for rook/queen checks
+    Bitboard rookAttacks = ::seajay::rookAttacks(kingSquare, board.occupied());
+    checkers |= rookAttacks & (board.pieces(attackingColor, ROOK) | board.pieces(attackingColor, QUEEN));
+    
+    // King cannot give check (but include for completeness)
+    Bitboard kingAttacks = getKingAttacks(kingSquare);
+    checkers |= kingAttacks & board.pieces(attackingColor, KING);
+    
+    return checkers;
+}
+
+void MoveGenerator::generateCheckEvasions(const Board& board, MoveList& moves) {
+    Color us = board.sideToMove();
+    Color them = ~us;
+    
+    Square kingSquare = board.kingSquare(us);
+    if (kingSquare == NO_SQUARE) return; // No king - invalid position
+    
+    // Find all checking pieces
+    Bitboard checkers = getCheckers(board, kingSquare, them);
+    int numCheckers = popCount(checkers);
+    
+    if (numCheckers == 0) {
+        // Not in check - shouldn't happen if this function is called correctly
+        // Generate all legal moves as fallback
+        MoveList pseudoLegalMoves;
+        generatePseudoLegalMoves(board, pseudoLegalMoves);
+        for (Move move : pseudoLegalMoves) {
+            if (!leavesKingInCheck(board, move)) {
+                moves.push_back(move);
+            }
+        }
+        return;
+    }
+    
+    // Always generate king moves (king must move away from check)
+    generateKingEvasions(board, moves, kingSquare);
+    
+    // If double check, only king moves are possible
+    if (numCheckers > 1) {
+        return;
+    }
+    
+    // Single check - can also block or capture the checking piece
+    Square checkerSquare = lsb(checkers);
+    
+    // Generate captures of the checking piece
+    generateCapturesOf(board, moves, checkerSquare);
+    
+    // For sliding piece checks, generate blocking moves
+    Piece checkerPiece = board.pieceAt(checkerSquare);
+    PieceType checkerType = typeOf(checkerPiece);
+    
+    if (checkerType == BISHOP || checkerType == ROOK || checkerType == QUEEN) {
+        // Can block sliding piece attacks
+        Bitboard blockSquares = ::seajay::between(checkerSquare, kingSquare);
+        if (blockSquares) {
+            generateBlockingMoves(board, moves, blockSquares);
+        }
+    }
+    
+    // Filter out any moves that still leave king in check
+    // (necessary for complex cases like pinned pieces)
+    MoveList validMoves;
+    for (Move move : moves) {
+        if (!leavesKingInCheck(board, move)) {
+            validMoves.push_back(move);
+        }
+    }
+    moves = validMoves;
+}
+
+void MoveGenerator::generateKingEvasions(const Board& board, MoveList& moves, Square kingSquare) {
+    Color us = board.sideToMove();
+    Color them = ~us;
+    
+    Bitboard kingMoves = getKingAttacks(kingSquare);
+    Bitboard ourPieces = board.pieces(us);
+    
+    // Remove squares occupied by our pieces
+    kingMoves &= ~ourPieces;
+    
+    while (kingMoves) {
+        Square to = popLsb(kingMoves);
+        
+        // Check if this square is safe
+        if (!isSquareAttacked(board, to, them)) {
+            if (board.pieceAt(to) != NO_PIECE) {
+                moves.addMove(kingSquare, to, CAPTURE);
+            } else {
+                moves.addMove(kingSquare, to, NORMAL);
+            }
+        }
+    }
+}
+
+void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Square target) {
+    Color us = board.sideToMove();
+    Color them = ~us;
+    
+    Bitboard targetBB = squareBB(target);
+    
+    // Pawn captures
+    Bitboard ourPawns = board.pieces(us, PAWN);
+    while (ourPawns) {
+        Square from = popLsb(ourPawns);
+        Bitboard attacks = getPawnAttacks(from, us);
+        if (attacks & targetBB) {
+            // Check for promotion
+            if ((us == WHITE && rankOf(from) == 6) || (us == BLACK && rankOf(from) == 1)) {
+                moves.addMove(from, target, PROMO_QUEEN_CAPTURE);
+                moves.addMove(from, target, PROMO_KNIGHT_CAPTURE);
+                moves.addMove(from, target, PROMO_ROOK_CAPTURE);
+                moves.addMove(from, target, PROMO_BISHOP_CAPTURE);
+            } else {
+                moves.addMove(from, target, CAPTURE);
+            }
+        }
+    }
+    
+    // Knight captures
+    Bitboard ourKnights = board.pieces(us, KNIGHT);
+    while (ourKnights) {
+        Square from = popLsb(ourKnights);
+        if (getKnightAttacks(from) & targetBB) {
+            moves.addMove(from, target, CAPTURE);
+        }
+    }
+    
+    // Bishop captures
+    Bitboard ourBishops = board.pieces(us, BISHOP);
+    while (ourBishops) {
+        Square from = popLsb(ourBishops);
+        if (bishopAttacks(from, board.occupied()) & targetBB) {
+            moves.addMove(from, target, CAPTURE);
+        }
+    }
+    
+    // Rook captures
+    Bitboard ourRooks = board.pieces(us, ROOK);
+    while (ourRooks) {
+        Square from = popLsb(ourRooks);
+        if (rookAttacks(from, board.occupied()) & targetBB) {
+            moves.addMove(from, target, CAPTURE);
+        }
+    }
+    
+    // Queen captures
+    Bitboard ourQueens = board.pieces(us, QUEEN);
+    while (ourQueens) {
+        Square from = popLsb(ourQueens);
+        if (queenAttacks(from, board.occupied()) & targetBB) {
+            moves.addMove(from, target, CAPTURE);
+        }
+    }
+}
+
+void MoveGenerator::generateBlockingMoves(const Board& board, MoveList& moves, Bitboard blockSquares) {
+    Color us = board.sideToMove();
+    Bitboard occupied = board.occupied();
+    
+    // Generate moves to block squares
+    while (blockSquares) {
+        Square blockSq = popLsb(blockSquares);
+        
+        // Pawn blocks
+        Bitboard ourPawns = board.pieces(us, PAWN);
+        int pawnDirection = (us == WHITE) ? 8 : -8;  // WHITE moves +8 (up), BLACK moves -8 (down)
+        
+        // Single pawn push to block
+        Square pawnFrom = static_cast<Square>(blockSq - pawnDirection);
+        if (isValidSquare(pawnFrom) && board.pieceAt(pawnFrom) == makePiece(us, PAWN)) {
+            // Check for promotion
+            if ((us == WHITE && rankOf(pawnFrom) == 6) || (us == BLACK && rankOf(pawnFrom) == 1)) {
+                moves.addPromotionMoves(pawnFrom, blockSq);
+            } else {
+                moves.addMove(pawnFrom, blockSq, NORMAL);
+            }
+        }
+        
+        // Double pawn push to block
+        int startRank = (us == WHITE) ? 1 : 6;
+        Square doublePawnFrom = static_cast<Square>(blockSq - 2 * pawnDirection);
+        if (isValidSquare(doublePawnFrom) && rankOf(doublePawnFrom) == startRank &&
+            board.pieceAt(doublePawnFrom) == makePiece(us, PAWN) &&
+            board.pieceAt(static_cast<Square>(blockSq - pawnDirection)) == NO_PIECE) {
+            moves.addMove(doublePawnFrom, blockSq, DOUBLE_PAWN);
+        }
+        
+        // Knight blocks
+        Bitboard knightAttackers = getKnightAttacks(blockSq) & board.pieces(us, KNIGHT);
+        while (knightAttackers) {
+            Square from = popLsb(knightAttackers);
+            moves.addMove(from, blockSq, NORMAL);
+        }
+        
+        // Bishop blocks
+        Bitboard bishopAttackers = bishopAttacks(blockSq, occupied) & board.pieces(us, BISHOP);
+        while (bishopAttackers) {
+            Square from = popLsb(bishopAttackers);
+            moves.addMove(from, blockSq, NORMAL);
+        }
+        
+        // Rook blocks
+        Bitboard rookAttackers = rookAttacks(blockSq, occupied) & board.pieces(us, ROOK);
+        while (rookAttackers) {
+            Square from = popLsb(rookAttackers);
+            moves.addMove(from, blockSq, NORMAL);
+        }
+        
+        // Queen blocks
+        Bitboard queenAttackers = queenAttacks(blockSq, occupied) & board.pieces(us, QUEEN);
+        while (queenAttackers) {
+            Square from = popLsb(queenAttackers);
+            moves.addMove(from, blockSq, NORMAL);
+        }
+    }
 }
 
 } // namespace seajay

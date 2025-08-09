@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include <bit>
+#include <cstdlib>
 
 namespace seajay {
 
@@ -67,28 +68,26 @@ inline bool testBit(Bitboard bb, Square s) {
 }
 
 inline Bitboard between(Square s1, Square s2) {
-    const Bitboard m1 = Bitboard(-1);
-    const Bitboard a2a7 = 0x0001010101010100ULL;
-    const Bitboard b2g7 = 0x0040201008040200ULL;
-    const Bitboard h1b7 = 0x0002040810204080ULL;
+    Bitboard result = 0;
     
-    Bitboard btwn, line, r, f;
+    int f1 = fileOf(s1), r1 = rankOf(s1);
+    int f2 = fileOf(s2), r2 = rankOf(s2);
     
-    btwn = (m1 << s1) ^ (m1 << s2);
-    f = fileOf(s2) - fileOf(s1);
-    r = rankOf(s2) - rankOf(s1);
+    int df = (f2 > f1) ? 1 : (f2 < f1) ? -1 : 0;
+    int dr = (r2 > r1) ? 1 : (r2 < r1) ? -1 : 0;
     
-    if (!f) {
-        line = fileBB(fileOf(s1));
-    } else if (!r) {
-        line = rankBB(rankOf(s1));
-    } else if (f == r) {
-        line = (((s1 % 9) < 8) ? a2a7 : b2g7) << (s1 / 8 * 8 + s1 % 8);
-    } else {
-        line = (((s1 % 7) > 0) ? h1b7 : b2g7) << (s1 / 8 * 8 + 7 - s1 % 8);
+    // Not on same line
+    if (df == 0 && dr == 0) return 0;
+    if (df != 0 && dr != 0 && std::abs(f2-f1) != std::abs(r2-r1)) return 0;
+    
+    int f = f1 + df, r = r1 + dr;
+    while (f != f2 || r != r2) {
+        result |= squareBB(makeSquare(f, r));
+        f += df;
+        r += dr;
     }
     
-    return line & btwn;
+    return result;
 }
 
 inline Bitboard ray(Square s, Direction d) {

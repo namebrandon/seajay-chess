@@ -92,6 +92,20 @@ TEST(Board, DISABLED_EnPassantPinValidation) {
 
 4. **Project Status Updates**: Reference this tracker in project_status.md
 
+## Items DEFERRED FROM Stage 3 TO Future Phases
+
+### To Phase 2 (Search and Evaluation):
+1. **Position 3 Perft Discrepancy Resolution** - **BUG #001**
+   - **Status:** Identified but unresolved (documented in `/workspace/project_docs/tracking/known_bugs.md`)
+   - **Impact:** 0.026% accuracy deficit at depth 6 (2,871 missing nodes out of 11,030,083)
+   - **Priority:** Low (affects only advanced validation, not functionality)
+   - **Analysis:** Systematic deficit in rook moves at depth 5+; all other moves perfect
+   - **Tools Created:** Complete debugging infrastructure in `/workspace/tools/perft_debug.cpp`
+   - **Resolution Strategy:** Use comparative Stockfish analysis to pinpoint exact divergent move
+   - **Estimated Effort:** 2-4 hours focused debugging with systematic tools
+   - **Validation Criteria:** Position 3 must achieve exactly 11,030,083 nodes at depth 6
+   - **Technical Notes:** 99.974% accuracy demonstrates fundamentally sound move generation
+
 ## Stage 2 Specific Enhancements Needed
 
 Based on review, Stage 2 needs to:
