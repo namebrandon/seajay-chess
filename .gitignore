@@ -8,6 +8,11 @@
 *.out
 *.app
 
+# macOS build directories
+/build-macos/
+/build-macos-cross/
+/bin-macos/
+
 # External tools and engines (downloaded separately)
 /external/
 
