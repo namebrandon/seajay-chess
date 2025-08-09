@@ -167,8 +167,102 @@ constexpr Bitboard fileBB(File f) {
     return 0x0101010101010101ULL << f;
 }
 
+// Move representation using 16-bit encoding
+// Bits 0-5:   From square (0-63)
+// Bits 6-11:  To square (0-63) 
+// Bits 12-15: Move flags (special moves)
 using Move = uint16_t;
 constexpr Move NO_MOVE = 0;
+
+// Move flag encoding (bits 12-15)
+enum MoveFlags : uint8_t {
+    NORMAL = 0,           // Normal move
+    DOUBLE_PAWN = 1,      // Double pawn push
+    CASTLING = 2,         // Castling move
+    CAPTURE = 4,          // Capture flag
+    EN_PASSANT = 5,       // En passant capture
+    PROMOTION = 8,        // Promotion flag (bit 3)
+    PROMO_KNIGHT = PROMOTION | 0,  // Promote to knight
+    PROMO_BISHOP = PROMOTION | 1,  // Promote to bishop
+    PROMO_ROOK = PROMOTION | 2,    // Promote to rook
+    PROMO_QUEEN = PROMOTION | 3,   // Promote to queen
+    PROMO_KNIGHT_CAPTURE = PROMOTION | CAPTURE | 0,  // Promote to knight with capture
+    PROMO_BISHOP_CAPTURE = PROMOTION | CAPTURE | 1,  // Promote to bishop with capture
+    PROMO_ROOK_CAPTURE = PROMOTION | CAPTURE | 2,    // Promote to rook with capture
+    PROMO_QUEEN_CAPTURE = PROMOTION | CAPTURE | 3    // Promote to queen with capture
+};
+
+// Move accessor functions
+constexpr Square moveFrom(Move m) noexcept {
+    return static_cast<Square>(m & 0x3F);
+}
+
+constexpr Square moveTo(Move m) noexcept {
+    return static_cast<Square>((m >> 6) & 0x3F);
+}
+
+constexpr uint8_t moveFlags(Move m) noexcept {
+    return static_cast<uint8_t>(m >> 12);
+}
+
+constexpr PieceType promotionType(Move m) noexcept {
+    return static_cast<PieceType>(((m >> 12) & 0x3) + 1);
+}
+
+constexpr bool isPromotion(Move m) noexcept {
+    return (m >> 12) & PROMOTION;
+}
+
+constexpr bool isCapture(Move m) noexcept {
+    uint8_t flags = moveFlags(m);
+    return (flags & CAPTURE) || (flags == EN_PASSANT);
+}
+
+constexpr bool isEnPassant(Move m) noexcept {
+    return moveFlags(m) == EN_PASSANT;
+}
+
+constexpr bool isCastling(Move m) noexcept {
+    return moveFlags(m) == CASTLING;
+}
+
+constexpr bool isDoublePawnPush(Move m) noexcept {
+    return moveFlags(m) == DOUBLE_PAWN;
+}
+
+// Move construction functions
+constexpr Move makeMove(Square from, Square to, uint8_t flags = NORMAL) noexcept {
+    return static_cast<Move>(from | (to << 6) | (flags << 12));
+}
+
+constexpr Move makePromotionMove(Square from, Square to, PieceType promoteTo) noexcept {
+    return makeMove(from, to, PROMOTION | static_cast<uint8_t>(promoteTo - 1));
+}
+
+constexpr Move makeCastlingMove(Square from, Square to) noexcept {
+    return makeMove(from, to, CASTLING);
+}
+
+constexpr Move makeEnPassantMove(Square from, Square to) noexcept {
+    return makeMove(from, to, EN_PASSANT);
+}
+
+constexpr Move makeDoublePawnMove(Square from, Square to) noexcept {
+    return makeMove(from, to, DOUBLE_PAWN);
+}
+
+constexpr Move makeCaptureMove(Square from, Square to) noexcept {
+    return makeMove(from, to, CAPTURE);
+}
+
+constexpr Move makePromotionCaptureMove(Square from, Square to, PieceType promoteTo) noexcept {
+    return makeMove(from, to, PROMOTION | CAPTURE | static_cast<uint8_t>(promoteTo - 1));
+}
+
+// Legacy function aliases for compatibility
+constexpr Square from(Move m) noexcept { return moveFrom(m); }
+constexpr Square to(Move m) noexcept { return moveTo(m); }
+constexpr uint8_t flags(Move m) noexcept { return moveFlags(m); }
 
 // C++20 Concepts for type safety
 template<typename T>
@@ -183,32 +277,16 @@ concept ValidPiece = requires(T p) {
     requires p >= WHITE_PAWN && p <= NO_PIECE;
 };
 
-constexpr Square from(Move m) {
-    return m & 0x3F;
-}
-
-constexpr Square to(Move m) {
-    return (m >> 6) & 0x3F;
-}
-
-constexpr uint8_t flags(Move m) {
-    return static_cast<uint8_t>(m >> 12);
-}
-
-constexpr Move makeMove(Square from, Square to, uint8_t flags = 0) {
-    return from | (to << 6) | (flags << 12);
-}
-
-enum MoveFlags : uint8_t {
-    NORMAL = 0,
-    PROMOTION = 8,
-    EN_PASSANT = 4,
-    CASTLING = 2,
-    PROMO_KNIGHT = PROMOTION | 0,
-    PROMO_BISHOP = PROMOTION | 1,
-    PROMO_ROOK = PROMOTION | 2,
-    PROMO_QUEEN = PROMOTION | 3
+template<typename T>
+concept ValidMove = requires(T m) {
+    { static_cast<Move>(m) } -> std::convertible_to<Move>;
+    { moveFrom(m) } -> std::convertible_to<Square>;
+    { moveTo(m) } -> std::convertible_to<Square>;
 };
+
+// Forward declarations for move generation
+class MoveList;
+class Board;
 
 // Result<T,E> type for C++20 (std::expected is C++23)
 template<typename T, typename E>

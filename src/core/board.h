@@ -100,6 +100,23 @@ public:
     // Helper functions
     void rebuildZobristKey();  // Rebuild Zobrist from scratch (used after FEN parsing)
     
+    // Attack detection (needed for move generation)
+    bool isAttacked(Square s, Color byColor) const;
+    Square kingSquare(Color c) const;
+    
+    // Minimal make/unmake for legal move validation
+    // Simple structure to save/restore position state
+    struct UndoInfo {
+        Piece capturedPiece;
+        uint8_t castlingRights;
+        Square enPassantSquare;
+        uint16_t halfmoveClock;
+        Hash zobristKey;
+    };
+    
+    void makeMove(Move move, UndoInfo& undo);
+    void unmakeMove(Move move, const UndoInfo& undo);
+    
 private:
     
     std::array<Piece, 64> m_mailbox;

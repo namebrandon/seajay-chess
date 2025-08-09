@@ -37,7 +37,6 @@ RUN apt-get update && apt-get install -y \
     iwyu \
     # Version control
     git \
-    git-delta \
     gh \
     # Python and package management
     python3.11 \
@@ -93,10 +92,15 @@ RUN pip3 install --upgrade pip && \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:$PATH"
 
-# Install Node.js for Claude CLI and other tools
+# Install git-delta from GitHub releases
+RUN DELTA_VERSION="0.17.0" && \
+    wget -q https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/git-delta_${DELTA_VERSION}_amd64.deb && \
+    dpkg -i git-delta_${DELTA_VERSION}_amd64.deb && \
+    rm git-delta_${DELTA_VERSION}_amd64.deb
+
+# Install Node.js (Claude CLI can be installed later if needed)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g @anthropic/claude-code
+    apt-get install -y nodejs
 
 # Create non-root user
 RUN useradd -m -s /bin/zsh -G sudo developer && \

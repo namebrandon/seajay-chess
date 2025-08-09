@@ -95,8 +95,11 @@ inline Bitboard ray(Square s, Direction d) {
     Bitboard bb = 0;
     Bitboard sq = squareBB(s);
     
-    while (sq) {
-        sq = shift(sq, d);
+    // Generate ray in the given direction, stopping at board edges
+    for (int i = 0; i < 8; ++i) {  // Maximum 7 steps in any direction
+        Bitboard nextSq = shift(sq, d);
+        if (!nextSq) break;  // Hit the edge of the board
+        sq = nextSq;
         bb |= sq;
     }
     

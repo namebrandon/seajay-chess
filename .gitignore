@@ -43,6 +43,7 @@ perf.data
 .env.local
 *.local
 CLAUDE.md         # AI context file (may contain sensitive information)
+container-config.sh  # Container configuration script
 
 # Test outputs
 *.log

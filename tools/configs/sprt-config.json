@@ -1,0 +1,24 @@
+{
+  "default": {
+    "elo0": 0,
+    "elo1": 5,
+    "alpha": 0.05,
+    "beta": 0.05,
+    "time_control": "8+0.08",
+    "games": 30000,
+    "concurrency": 4,
+    "book": "./external/books/4moves_test.pgn"
+  },
+  "major_feature": {
+    "elo0": 0,
+    "elo1": 10,
+    "alpha": 0.05,
+    "beta": 0.05
+  },
+  "non_regression": {
+    "elo0": -3,
+    "elo1": 0,
+    "alpha": 0.05,
+    "beta": 0.05
+  }
+}

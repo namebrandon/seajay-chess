@@ -25,8 +25,12 @@ endif()
 # Core library sources
 set(CORE_SOURCES
     src/core/board.cpp
+    src/core/move_generation.cpp
+    src/core/move_list.cpp
     src/core/bitboard.h
     src/core/board.h
+    src/core/move_generation.h
+    src/core/move_list.h
     src/core/types.h
 )
 
@@ -64,6 +68,9 @@ target_link_libraries(fen_demo seajay_core)
 
 add_executable(sliding_attacks_demo tests/demo/sliding_attacks_demo.cpp)
 target_link_libraries(sliding_attacks_demo seajay_core)
+
+add_executable(move_generation_demo tests/demo/move_generation_demo.cpp)
+target_link_libraries(move_generation_demo seajay_core)
 
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)

@@ -1,0 +1,543 @@
+-platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.3s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.4s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.6s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.7s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.8s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 6.9s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.0s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.1s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.3s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.4s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.6s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.6s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.7s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 7.9s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.0s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.2s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.3s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.4s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.5s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.7s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 8.8s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.0s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.1s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.3s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.4s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.5s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.7s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 9.8s (5/16)                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.0s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.1s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.3s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.4s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.5s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.7s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.7s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.9s (5/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.9s (6/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s
+[+] Building 10.9s (6/16)                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile-with-features         0.0s
+ => => transferring dockerfile: 6.24kB                                     0.0s
+ => WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should no  0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:22.04            1.0s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io              0.0s 
+ => [internal] load .dockerignore                                          0.0s 
+ => => transferring context: 2B                                            0.0s 
+ => [dev_container_auto_added_stage_label  1/12] FROM docker.io/library/u  2.3s 
+ => => resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d2  0.0s 
+ => => sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81 6.69kB / 6.69kB  0.0s 
+ => => sha256:da5fdf346e5313bef2a3dd2476c0251d48103213a5e3a0c 424B / 424B  0.0s
+ => => sha256:1d3ca894b30cbedfe4217dc20baaa99475eac44046a 2.29kB / 2.29kB  0.0s
+ => => sha256:1d387567261efec2a352c45b8d512a8db5c246122 29.54MB / 29.54MB  0.7s
+ => => extracting sha256:1d387567261efec2a352c45b8d512a8db5c246122fb9f246  1.4s
+ => ERROR [dev_container_auto_added_stage_label  2/12] RUN apt-get update  7.6s
+------
+ > [dev_container_auto_added_stage_label  2/12] RUN apt-get update && apt-get install -y     build-essential     cmake     ninja-build     make     ccache     pkg-config     gcc-12     g++-12     clang-15     clang-tools-15     clang-format-15     clang-tidy-15     libc++-15-dev     libc++abi-15-dev     lld-15     llvm-15     gdb     lldb-15     valgrind     linux-tools-generic     linux-cloud-tools-generic     google-perftools     cppcheck     iwyu     git     git-delta     gh     python3.11     python3.11-dev     python3-pip     python3-venv     curl     wget     unzip     sudo     tzdata     locales     htop     ncdu     tree     ripgrep     fd-find     bat     jq     zsh     fzf     nano     vim     pandoc     doxygen     graphviz     && rm -rf /var/lib/apt/lists/*:
+0.559 Get:1 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+0.632 Get:2 http://archive.ubuntu.com/ubuntu jammy InRelease [270 kB]
+1.193 Get:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+1.329 Get:4 http://archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+1.580 Get:5 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [48.5 kB]
+1.668 Get:6 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1270 kB]
+1.808 Get:7 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages [3207 kB]
+1.878 Get:8 http://security.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [5103 kB]
+2.521 Get:9 http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages [1792 kB]
+2.947 Get:10 http://archive.ubuntu.com/ubuntu jammy/universe amd64 Packages [17.5 MB]
+3.462 Get:11 http://archive.ubuntu.com/ubuntu jammy/multiverse amd64 Packages [266 kB]
+3.469 Get:12 http://archive.ubuntu.com/ubuntu jammy/restricted amd64 Packages [164 kB]
+3.566 Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [75.9 kB]
+3.567 Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3518 kB]
+3.610 Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1575 kB]
+3.685 Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [5290 kB]
+4.301 Get:17 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [35.2 kB]
+4.413 Get:18 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [83.2 kB]
+5.069 Fetched 40.6 MB in 5s (8562 kB/s)
+5.069 Reading package lists...
+6.200 Reading package lists...
+7.226 Building dependency tree...
+7.429 Reading state information...
+7.447 E: Unable to locate package git-delta
+------
+
+ 1 warning found (use docker --debug to expand):
+ - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 4)
+Dockerfile-with-features:11
+--------------------
+  10 |     # Update and install base packages
+  11 | >>> RUN apt-get update && apt-get install -y \
+  12 | >>>     # Build essentials
+  13 | >>>     build-essential \
+  14 | >>>     cmake \
+  15 | >>>     ninja-build \
+  16 | >>>     make \
+  17 | >>>     ccache \
+  18 | >>>     pkg-config \
+  19 | >>>     # Compilers
+  20 | >>>     gcc-12 \
+  21 | >>>     g++-12 \
+  22 | >>>     clang-15 \
+  23 | >>>     clang-tools-15 \
+  24 | >>>     clang-format-15 \
+  25 | >>>     clang-tidy-15 \
+  26 | >>>     libc++-15-dev \
+  27 | >>>     libc++abi-15-dev \
+  28 | >>>     lld-15 \
+  29 | >>>     llvm-15 \
+  30 | >>>     # Debugging and profiling
+  31 | >>>     gdb \
+  32 | >>>     lldb-15 \
+  33 | >>>     valgrind \
+  34 | >>>     linux-tools-generic \
+  35 | >>>     linux-cloud-tools-generic \
+  36 | >>>     google-perftools \
+  37 | >>>     # Static analysis
+  38 | >>>     cppcheck \
+  39 | >>>     iwyu \
+  40 | >>>     # Version control
+  41 | >>>     git \
+  42 | >>>     git-delta \
+  43 | >>>     gh \
+  44 | >>>     # Python and package management
+  45 | >>>     python3.11 \
+  46 | >>>     python3.11-dev \
+  47 | >>>     python3-pip \
+  48 | >>>     python3-venv \
+  49 | >>>     # Network and system tools
+  50 | >>>     curl \
+  51 | >>>     wget \
+  52 | >>>     unzip \
+  53 | >>>     sudo \
+  54 | >>>     tzdata \
+  55 | >>>     locales \
+  56 | >>>     # Development helpers
+  57 | >>>     htop \
+  58 | >>>     ncdu \
+  59 | >>>     tree \
+  60 | >>>     ripgrep \
+  61 | >>>     fd-find \
+  62 | >>>     bat \
+  63 | >>>     jq \
+  64 | >>>     # Shell and terminal
+  65 | >>>     zsh \
+  66 | >>>     fzf \
+  67 | >>>     # Editors
+  68 | >>>     nano \
+  69 | >>>     vim \
+  70 | >>>     # Documentation tools
+  71 | >>>     pandoc \
+  72 | >>>     doxygen \
+  73 | >>>     graphviz \
+  74 | >>>     && rm -rf /var/lib/apt/lists/*
+  75 |     
+--------------------
+ERROR: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y     build-essential     cmake     ninja-build     make     ccache     pkg-config     gcc-12     g++-12     clang-15     clang-tools-15     clang-format-15     clang-tidy-15     libc++-15-dev     libc++abi-15-dev     lld-15     llvm-15     gdb     lldb-15     valgrind     linux-tools-generic     linux-cloud-tools-generic     google-perftools     cppcheck     iwyu     git     git-delta     gh     python3.11     python3.11-dev     python3-pip     python3-venv     curl     wget     unzip     sudo     tzdata     locales     htop     ncdu     tree     ripgrep     fd-find     bat     jq     zsh     fzf     nano     vim     pandoc     doxygen     graphviz     && rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+[11813 ms] Error: Command failed: docker buildx build --load --build-arg BUILDKIT_INLINE_CACHE=1 -f /var/folders/ht/yjmm7jss4y96_2zdcw1vzrmm0000gn/T/devcontainercli/container-features/0.79.0-1754616360688/Dockerfile-with-features -t vsc-seajay-chess-3660eb0964b19e876afccb6e010c7efa348d7e8e5cf22c42747e8a2e7468e774 --target dev_containers_target_stage --build-arg TZ=America/Chicago --build-arg _DEV_CONTAINERS_BASE_IMAGE=dev_container_auto_added_stage_label /Users/brandon/Documents/repos/seajay-chess/.devcontainer
+[11813 ms]     at y6 (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:468:1933)
+[11813 ms]     at async pw (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:467:1886)
+[11813 ms]     at async ax (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:467:608)
+[11813 ms]     at async H6 (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:484:3842)
+[11813 ms]     at async BC (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:484:4957)
+[11813 ms]     at async d7 (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:665:202)
+[11813 ms]     at async f7 (/Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:664:14804)
+[11813 ms]     at async /Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js:484:1188
+[11817 ms] Exit code 1
+[11820 ms] Command failed: /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin) /Users/brandon/.vscode/extensions/ms-vscode-remote.remote-containers-0.422.1/dist/spec-node/devContainersSpecCLI.js up --user-data-folder /Users/brandon/Library/Application Support/Code/User/globalStorage/ms-vscode-remote.remote-containers/data --container-session-data-folder /tmp/devcontainers-e22191f6-640e-4ecf-9dff-a4c139d2e5041754616359550 --workspace-folder /Users/brandon/Documents/repos/seajay-chess --workspace-mount-consistency cached --gpu-availability detect --id-label devcontainer.local_folder=/Users/brandon/Documents/repos/seajay-chess --id-label devcontainer.config_file=/Users/brandon/Documents/repos/seajay-chess/.devcontainer/devcontainer.json --log-level debug --log-format json --config /Users/brandon/Documents/repos/seajay-chess/.devcontainer/devcontainer.json --default-user-env-probe loginInteractiveShell --mount type=volume,source=vscode,target=/vscode,external=true --skip-post-create --update-remote-user-uid-default on --mount-workspace-git-root --include-configuration --include-merged-configuration
+[11820 ms] Exit code 1

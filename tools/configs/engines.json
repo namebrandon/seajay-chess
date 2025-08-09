@@ -1,0 +1,15 @@
+{
+  "engines": {
+    "seajay": {
+      "path": "./bin/seajay",
+      "options": {}
+    },
+    "stockfish": {
+      "path": "./external/engines/stockfish/src/stockfish",
+      "options": {
+        "Threads": 1,
+        "Hash": 64
+      }
+    }
+  }
+}
