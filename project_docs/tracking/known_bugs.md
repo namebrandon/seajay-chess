@@ -601,19 +601,63 @@ With 99.99999% accuracy, this is not a practical issue. It should be investigate
 
 ---
 
+## Bug #009: Position 6 Test Data Inconsistency
+
+**Status:** Identified - Test data error, not engine bug  
+**Priority:** Low (test data issue)  
+**Discovery Date:** 2025-08-09  
+**Impact:** False positive test failures
+
+### Summary
+
+The perft test suite contains incorrect expected values for a test labeled "Position 6". Investigation reveals that the correct Position 6 from the Master Project Plan works perfectly with SeaJay.
+
+### Investigation Results
+
+**Correct Position 6 (from Master Project Plan):**
+- **FEN:** `r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10`
+- **Depth 1:** 46 moves ✅ (SeaJay correct)
+- **Depth 2:** 2,079 nodes ✅ (SeaJay correct) 
+- **Depth 3:** 89,890 nodes ✅ (SeaJay correct)
+- **Depth 4:** 3,894,594 nodes ✅ (SeaJay correct)
+
+**Test Output Shows Different Position:**
+The test output shows a position with:
+- 31 moves at depth 1 (instead of 46)
+- 824 nodes at depth 2 (instead of 2,079)
+- Move list starting with "d4e5" (not present in actual Position 6)
+
+This indicates either:
+1. The test file has been corrupted or modified
+2. There's a duplicate/incorrect test overriding Position 6
+3. The test is using a different FEN than specified
+
+### Verification with perft_debug Tool
+
+```bash
+./tools/debugging/perft_debug compare "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10" 2
+# Result: ✅ All moves match perfectly with Stockfish
+```
+
+### Resolution
+
+1. The engine is **working correctly** for Position 6
+2. The test file needs to be corrected or rebuilt
+3. No engine bug exists for this position
+
+---
+
 ## General Testing Recommendation
 
 **IMPORTANT:** For all perft test failures, we should:
 
 1. **Always validate test expectations with Stockfish first** before debugging
-2. Use the following command pattern:
+2. Use the perft_debug tool for validation:
 ```bash
-echo "position fen [FEN_STRING]" | \
-./external/engines/stockfish/stockfish | \
-grep "perft [DEPTH]"
+./tools/debugging/perft_debug compare "[FEN_STRING]" [DEPTH]
 ```
 
-3. If Stockfish values differ from our test expectations, update the test data
+3. If our engine matches Stockfish but differs from test expectations, update the test data
 4. Only debug actual discrepancies after confirming test values are correct
 
-This will prevent wasting time debugging "failures" that are actually incorrect test data, as we discovered with Position 6 earlier.
+This will prevent wasting time debugging "failures" that are actually incorrect test data, as we discovered with multiple positions (Position 6, Position 7, etc.).
