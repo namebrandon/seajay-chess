@@ -147,13 +147,15 @@ build_engine() {
 finalize_binary() {
     log "Finalizing binary..."
     
-    # The binary is built in build-macos/bin/ by CMake
-    BUILT_BINARY="$BUILD_DIR/bin/seajay"
+    # CMake places the binary directly in bin-macos/ due to CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    # which is set to ${CMAKE_BINARY_DIR}/../bin, and our build dir is build-macos
+    # So the binary ends up in bin-macos/seajay
+    BUILT_BINARY="$OUTPUT_DIR/seajay"
     
     # Check if the binary exists
     if [[ -f "$BUILT_BINARY" ]]; then
-        # Copy to output directory with -macos suffix
-        cp "$BUILT_BINARY" "$OUTPUT_DIR/$ENGINE_NAME"
+        # Rename with -macos suffix
+        mv "$BUILT_BINARY" "$OUTPUT_DIR/$ENGINE_NAME"
         
         # Make sure it's executable
         chmod +x "$OUTPUT_DIR/$ENGINE_NAME"
@@ -167,8 +169,9 @@ finalize_binary() {
         success "Binary created: $OUTPUT_DIR/$ENGINE_NAME"
     else
         error "Binary not found at expected location: $BUILT_BINARY"
-        log "Checking build directory structure..."
+        log "Checking possible locations..."
         find "$BUILD_DIR" -name "seajay*" -type f 2>/dev/null || true
+        find "$OUTPUT_DIR" -name "seajay*" -type f 2>/dev/null || true
     fi
 }
 
