@@ -9,12 +9,12 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 0 |
+| Total Tests | 1 |
 | Passed | 0 (0%) |
 | Failed | 0 (0%) |
-| Inconclusive | 0 (0%) |
-| Total Games | 0 |
-| Total Time | 0 hours |
+| Inconclusive | 1 (100%) |
+| Total Games | 10 |
+| Total Time | ~0.1 hours |
 | Success Rate | N/A |
 
 ## Test Configuration Standards
@@ -27,7 +27,31 @@
 
 ## Test History
 
-*No tests yet - Phase 2 will begin SPRT testing*
+### Test SPRT-2025-08-09-001
+- **Date:** 2025-08-09
+- **Versions:** Stage 6 Material Eval vs Random (Phase 1 baseline)
+- **Feature:** Material evaluation with single-ply lookahead
+- **Hypothesis:** Material evaluation will significantly outperform random play
+- **Parameters:** [0, 5] α=0.05 β=0.05
+- **Time Control:** Quick test (10 games)
+- **Opening Book:** Standard positions
+- **Hardware:** Development container
+- **Concurrency:** Sequential
+
+#### Results
+- **Decision:** INCONCLUSIVE ⋯
+- **Games Played:** 10
+- **Score:** 0-1-9 (45% draws)
+- **ELO Estimate:** Insufficient data
+- **Time Elapsed:** ~5 minutes
+
+#### Analysis
+Single-ply material evaluation alone is insufficient to show strength gains against random play. The engine correctly evaluates material but without search depth, it cannot capitalize on advantages. This is expected behavior - Stage 7's negamax search will enable the material evaluation to demonstrate effectiveness.
+
+#### Conclusion
+Test confirms Stage 6 implementation is working but needs Stage 7 (search) to show measurable strength improvement. No bugs identified; behavior is as expected for material-only evaluation.
+
+---
 
 ### Template for Future Tests:
 

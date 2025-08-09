@@ -1,5 +1,6 @@
 #include "uci.h"
 #include "../benchmark/benchmark.h"
+#include "../search/search.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -278,8 +279,8 @@ int UCIEngine::SearchParams::calculateSearchTime(Color sideToMove) const {
 void UCIEngine::search(const SearchParams& params) {
     auto startTime = std::chrono::steady_clock::now();
     
-    // For Stage 3: simple random move selection
-    Move bestMove = selectRandomMove();
+    // Stage 6: Use material evaluation for move selection
+    Move bestMove = search::selectBestMove(m_board);
     
     // Calculate actual search time
     auto endTime = std::chrono::steady_clock::now();
@@ -290,13 +291,16 @@ void UCIEngine::search(const SearchParams& params) {
     SearchInfo info;
     updateSearchInfo(info, bestMove, searchTimeMs);
     
-    // Send info and best move
+    // Add evaluation score to info output
+    eval::Score score = m_board.evaluate();
+    std::cout << "info depth " << info.depth 
+              << " score cp " << score.to_cp()
+              << " nodes " << info.nodes
+              << " time " << info.timeMs
+              << " pv " << info.pv << std::endl;
+    
+    // Send best move
     if (bestMove != Move()) {
-        std::cout << "info depth " << info.depth 
-                  << " nodes " << info.nodes
-                  << " time " << info.timeMs
-                  << " pv " << info.pv << std::endl;
-        
         sendBestMove(bestMove);
     } else {
         // No legal moves (checkmate or stalemate)

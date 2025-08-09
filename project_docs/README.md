@@ -26,6 +26,7 @@ This directory contains all project documentation, organized by category to ensu
 ### 📁 /stage_implementations/
 **Purpose:** Detailed documentation of completed stage implementations
 
+- `stage_completion_checklist.md` - MANDATORY stage completion checklist
 - `stage1_board_representation_summary.md` - Stage 1 implementation details
 - `stage2_position_management_summary.md` - Stage 2 implementation details
 - Future stage summaries will be added here
@@ -51,10 +52,12 @@ This directory contains all project documentation, organized by category to ensu
 3. Track any newly deferred items
 
 #### After Completing Each Stage:
-1. Create comprehensive summary in `/stage_implementations/`
-2. Update `project_status.md` with completion status
-3. Update `deferred_items_tracker.md` with any new deferrals
-4. Add development diary entry in `dev_diary.md`
+1. **MANDATORY**: Complete the [Stage Completion Checklist](stage_implementations/stage_completion_checklist.md)
+2. Create comprehensive summary in `/stage_implementations/`
+3. Update `project_status.md` with completion status
+4. Update `deferred_items_tracker.md` with any new deferrals
+5. Add development diary entry in `dev_diary.md`
+6. Archive completed checklist with stage documentation
 
 ## Documentation Standards
 
@@ -114,6 +117,7 @@ Before committing documentation:
 - [Current Status](project_status.md)
 - [Deferred Items](tracking/deferred_items_tracker.md)
 - [Pre-Stage Planning Template](planning/pre_stage_development_planning_template.md)
+- [Stage Completion Checklist](stage_implementations/stage_completion_checklist.md) - **MANDATORY**
 
 ### Latest Stage Documentation
 - [Stage 1 Summary](stage_implementations/stage1_board_representation_summary.md)

@@ -24,6 +24,7 @@ Check `project_docs/project_status.md` for detailed progress tracking.
 4. **Performance First**: Target architecture is x86-64 (AMD64) with modern CPU features
 5. **Hybrid Architecture**: Combine bitboard and mailbox representations for optimal performance
 6. **Test Everything**: Every stage has specific validation requirements (especially perft tests)
+7. **Stage Completion Checklist**: MANDATORY completion of `/workspace/project_docs/stage_implementations/stage_completion_checklist.md` before marking any stage as COMPLETE
 
 ### Why Pre-Stage Planning is Non-Negotiable
 - Prevents subtle bugs from propagating to future stages
@@ -94,8 +95,10 @@ Before ANY new stage development:
 3. Update `project_status.md` to mark stage as "in_progress"
 4. Implement feature following single-feature focus
 5. Run validation tests (perft for Phase 1)
-6. Update status document with completion
-7. Create diary entry documenting the experience
+6. **MANDATORY**: Complete Stage Completion Checklist (`/workspace/project_docs/stage_implementations/stage_completion_checklist.md`)
+7. Update status document with completion
+8. Create diary entry documenting the experience
+9. Archive completed checklist with stage documentation
 
 ### Testing Commands:
 ```bash

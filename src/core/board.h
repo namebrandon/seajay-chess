@@ -2,6 +2,8 @@
 
 #include "types.h"
 #include "board_safety.h"  // Safety infrastructure
+#include "../evaluation/material.h"
+#include "../evaluation/types.h"
 #include <string>
 #include <string_view>
 #include <array>
@@ -53,6 +55,10 @@ public:
     void incrementFullmoveNumber() noexcept { m_fullmoveNumber++; }
     
     Hash zobristKey() const noexcept { return m_zobristKey; }
+    
+    // Material evaluation
+    const eval::Material& material() const noexcept { return m_material; }
+    eval::Score evaluate() const noexcept;
     
     std::string toFEN() const;
     bool fromFEN(const std::string& fen);  // Legacy interface
@@ -157,6 +163,11 @@ private:
     uint16_t m_fullmoveNumber;
     
     Hash m_zobristKey;
+    
+    // Material tracking
+    eval::Material m_material;
+    mutable eval::Score m_evalCache{eval::Score::zero()};
+    mutable bool m_evalCacheValid{false};
     
     static std::array<std::array<Hash, NUM_PIECES>, NUM_SQUARES> s_zobristPieces;
     static std::array<Hash, NUM_SQUARES> s_zobristEnPassant;

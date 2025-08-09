@@ -2,6 +2,7 @@
 #include "board_safety.h"
 #include "bitboard.h"
 #include "move_generation.h"
+#include "../evaluation/evaluate.h"
 #include <sstream>
 #include <random>
 #include <algorithm>
@@ -60,6 +61,10 @@ void Board::clear() {
     m_halfmoveClock = 0;
     m_fullmoveNumber = 1;
     m_zobristKey = 0;
+    
+    // Clear material tracking
+    m_material.clear();
+    m_evalCacheValid = false;
 }
 
 void Board::setStartingPosition() {
@@ -77,9 +82,13 @@ void Board::setPiece(Square s, Piece p) {
     // Then update bitboards
     if (oldPiece != NO_PIECE) {
         updateBitboards(s, oldPiece, false);
+        // Update material tracking
+        m_material.remove(oldPiece);
     }
     if (p != NO_PIECE) {
         updateBitboards(s, p, true);
+        // Update material tracking
+        m_material.add(p);
     }
     
     // Finally update zobrist (single XOR for difference)
@@ -89,6 +98,9 @@ void Board::setPiece(Square s, Piece p) {
     if (p != NO_PIECE) {
         m_zobristKey ^= s_zobristPieces[s][p];
     }
+    
+    // Invalidate evaluation cache
+    m_evalCacheValid = false;
 }
 
 void Board::removePiece(Square s) {
@@ -755,10 +767,16 @@ FenResult Board::parseFEN(const std::string& fen) {
     tempBoard.m_colorBB.fill(0);
     tempBoard.m_occupied = 0;
     
+    // CRITICAL: Reset material counts before rebuilding!
+    tempBoard.m_material.clear();
+    tempBoard.m_evalCacheValid = false;
+    
     for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
         Piece p = tempBoard.m_mailbox[sq];
         if (p != NO_PIECE) {
             tempBoard.updateBitboards(sq, p, true);
+            // Rebuild material counts
+            tempBoard.m_material.add(p);
         }
     }
     
@@ -1111,6 +1129,9 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         // Single zobrist update for castling
         updateZobristForCastling(us, kingside);
         
+        // Material unchanged for castling!
+        m_evalCacheValid = false;
+        
     } else if (moveType == EN_PASSANT) {
         // Handle en passant
         Color us = colorOf(movingPiece);
@@ -1132,6 +1153,10 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_zobristKey ^= s_zobristPieces[from][movingPiece];
         m_zobristKey ^= s_zobristPieces[to][movingPiece];
         m_zobristKey ^= s_zobristPieces[capturedSquare][capturedPawn];
+        
+        // Update material for en passant capture
+        m_material.remove(capturedPawn);  // Remove captured pawn
+        m_evalCacheValid = false;
         
     } else if (moveType & PROMOTION) {
         // Handle promotion
@@ -1157,6 +1182,14 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         }
         m_zobristKey ^= s_zobristPieces[to][promotedPiece];  // Add promoted
         
+        // Update material for promotion
+        m_material.remove(movingPiece);  // Remove pawn
+        if (capturedPiece != NO_PIECE) {
+            m_material.remove(capturedPiece);  // Remove captured
+        }
+        m_material.add(promotedPiece);  // Add promoted piece
+        m_evalCacheValid = false;
+        
     } else {
         // Normal move
         // Update mailbox directly
@@ -1172,6 +1205,12 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         
         // Update zobrist
         updateZobristForMove(move, movingPiece, capturedPiece);
+        
+        // Update material for normal moves (only if capture)
+        if (capturedPiece != NO_PIECE) {
+            m_material.remove(capturedPiece);
+            m_evalCacheValid = false;
+        }
     }
     
     // Update castling rights
@@ -1289,6 +1328,9 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         updateBitboards(from, movingPiece, true);
         updateBitboards(rookFrom, rook, false);
         updateBitboards(rookTo, rook, true);
+        
+        // Material unchanged for castling
+        m_evalCacheValid = false;
     } else if (moveType == EN_PASSANT) {
         // Handle en passant - restore the captured pawn
         Color us = colorOf(movingPiece);
@@ -1303,6 +1345,10 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         updateBitboards(to, movingPiece, false);
         updateBitboards(from, movingPiece, true);
         updateBitboards(capturedSquare, undo.capturedPiece, true);
+        
+        // Restore material for en passant
+        m_material.add(undo.capturedPiece);
+        m_evalCacheValid = false;
     } else if (moveType & PROMOTION) {
         // Handle promotion - restore original pawn
         Color us = colorOf(movingPiece);
@@ -1318,6 +1364,14 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         if (undo.capturedPiece != NO_PIECE) {
             updateBitboards(to, undo.capturedPiece, true);  // Restore captured
         }
+        
+        // Restore material for promotion
+        m_material.remove(movingPiece);  // Remove promoted piece
+        m_material.add(originalPawn);     // Restore pawn
+        if (undo.capturedPiece != NO_PIECE) {
+            m_material.add(undo.capturedPiece);  // Restore captured
+        }
+        m_evalCacheValid = false;
     } else {
         // Normal move
         // Restore mailbox directly (zobrist already restored)
@@ -1329,6 +1383,12 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         updateBitboards(from, movingPiece, true);
         if (undo.capturedPiece != NO_PIECE) {
             updateBitboards(to, undo.capturedPiece, true);
+        }
+        
+        // Restore material for normal move
+        if (undo.capturedPiece != NO_PIECE) {
+            m_material.add(undo.capturedPiece);
+            m_evalCacheValid = false;
         }
     }
     
@@ -1378,6 +1438,14 @@ void Board::unmakeMoveInternal(Move move, const CompleteUndoInfo& undo) {
     basicUndo.zobristKey = undo.zobristKey;
     
     unmakeMoveInternal(move, basicUndo);
+}
+
+eval::Score Board::evaluate() const noexcept {
+    if (!m_evalCacheValid) {
+        m_evalCache = eval::evaluate(*this);
+        m_evalCacheValid = true;
+    }
+    return m_evalCache;
 }
 
 } // namespace seajay

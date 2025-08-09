@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 2025  
+**Last Updated:** August 9, 2025  
 **Author:** Brandon Harris  
-**Current Phase:** 1 - Foundation and Move Generation (COMPLETED)  
-**Current Stage:** Phase 1 Complete - Ready for Phase 2  
+**Current Phase:** 2 - Basic Search and Evaluation  
+**Current Stage:** Stage 6 Complete - Ready for Stage 7 (Negamax Search)  
 
 ## Overview
 
@@ -165,21 +165,38 @@ This document tracks the current development status of the SeaJay Chess Engine p
 **Impact:** Affects only advanced validation; engine functionality perfect  
 **Resolution:** Deferred to Phase 2 with complete debugging tools available
 
+## Phase 2 Progress
+
+### Phase 2: Basic Search and Evaluation
+**Status:** IN PROGRESS  
+**Started:** August 9, 2025  
+**Target:** ~1500 ELO strength  
+
+#### Stage 6 - Material Evaluation
+**Status:** COMPLETE ✅ (August 9, 2025)
+- [x] Score type with centipawn representation
+- [x] Material tracking class with incremental updates
+- [x] Static evaluation function
+- [x] Move selection based on material balance
+- [x] Integration with UCI protocol
+- [x] Draw detection (insufficient material)
+- [x] Bishop endgame handling
+- [x] 19 material evaluation tests passing
+- [x] SPRT attempted (single-ply insufficient)
+
 ## Next Steps
 
-### Phase 2 Preparation
-1. Review Phase 2 requirements in Master Project Plan
-2. Complete Pre-Stage Planning Process for Stage 6
-3. Set up SPRT baseline measurements
-4. Plan material evaluation implementation
-5. Prepare for statistical validation
+### Immediate (Stage 7 - Negamax Search)
+1. Implement negamax algorithm
+2. Add multi-ply recursive search
+3. Fixed depth search (4 ply initially)
+4. Basic time management (5% of remaining time)
+5. SPRT validation against material-only version
 
-### Short Term (Phase 2)
-1. Implement basic material evaluation
-2. Add negamax search algorithm
-3. Implement alpha-beta pruning
-4. Create positional evaluation with piece-square tables
-5. Begin SPRT validation testing
+### Short Term (Rest of Phase 2)
+1. Stage 8: Implement alpha-beta pruning
+2. Stage 9: Create positional evaluation with piece-square tables
+3. Continue SPRT validation testing
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces

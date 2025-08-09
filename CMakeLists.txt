@@ -36,11 +36,25 @@ set(CORE_SOURCES
     src/core/types.h
 )
 
+# Evaluation sources
+set(EVAL_SOURCES
+    src/evaluation/evaluate.cpp
+    src/evaluation/evaluate.h
+    src/evaluation/material.h
+    src/evaluation/types.h
+)
+
+# Search sources  
+set(SEARCH_SOURCES
+    src/search/search.cpp
+    src/search/search.h
+)
+
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Core library
-add_library(seajay_core ${CORE_SOURCES})
+add_library(seajay_core ${CORE_SOURCES} ${EVAL_SOURCES} ${SEARCH_SOURCES})
 
 # UCI and benchmark sources
 set(UCI_SOURCES
@@ -91,6 +105,10 @@ target_link_libraries(test_board_safety seajay_core)
 # En passant check evasion test (Bug #001 regression test)
 add_executable(test_en_passant_check_evasion tests/test_en_passant_check_evasion.cpp)
 target_link_libraries(test_en_passant_check_evasion seajay_core)
+
+# Material evaluation test
+add_executable(test_material_evaluation tests/test_material_evaluation.cpp)
+target_link_libraries(test_material_evaluation seajay_core)
 
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)
