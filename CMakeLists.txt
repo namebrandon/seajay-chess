@@ -78,11 +78,16 @@ target_link_libraries(move_generation_demo seajay_core)
 add_executable(test_board_safety tests/test_board_safety.cpp)
 target_link_libraries(test_board_safety seajay_core)
 
+# En passant check evasion test (Bug #001 regression test)
+add_executable(test_en_passant_check_evasion tests/test_en_passant_check_evasion.cpp)
+target_link_libraries(test_en_passant_check_evasion seajay_core)
+
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)
 add_test(NAME fen_comprehensive_tests COMMAND test_fen_comprehensive)
 add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
 add_test(NAME board_safety_tests COMMAND test_board_safety)
+add_test(NAME en_passant_check_evasion_tests COMMAND test_en_passant_check_evasion)
 
 # Benchmark target (for later phases)
 # add_custom_target(bench

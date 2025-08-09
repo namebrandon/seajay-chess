@@ -4,14 +4,22 @@ This document tracks identified but unresolved bugs in the SeaJay chess engine, 
 
 ## Bug #001: Position 3 Systematic Perft Deficit at Depth 6
 
-**Status:** Identified but unresolved  
-**Priority:** Low (affects only advanced validation, not functionality)  
+**Status:** RESOLVED - En Passant Check Evasion Fixed  
+**Priority:** Low (resolved)  
 **Discovery Date:** 2025-08-09  
-**Impact:** 0.026% accuracy deficit (2,871 missing nodes out of 11,030,083)
+**Resolution Date:** 2025-08-09  
+**Impact:** Was 0.026% accuracy deficit (2,871 missing nodes out of 11,030,083)
 
 ### Summary
 
-Position 3 shows a systematic perft deficit at depth 6, with missing nodes distributed across all root moves. The engine generates 11,027,212 nodes instead of the expected 11,030,083 nodes (verified with Stockfish 17.1).
+Position 3 showed a systematic perft deficit at depth 6. The engine was generating 11,027,212 nodes instead of the expected 11,030,083 nodes (verified with Stockfish 17.1).
+
+**ROOT CAUSE:** SeaJay failed to generate en passant captures when the king was in check. The bug occurred because the `generateCheckEvasions` function didn't consider en passant captures as valid check evasion moves.
+
+**RESOLUTION:** Fixed by adding en passant handling to the `generateCheckEvasions` function in `/workspace/src/core/move_generation.cpp` (lines 908-945). The fix properly handles:
+1. En passant captures that block sliding piece checks
+2. En passant captures of the checking piece (if it's the pawn that just moved)
+3. Validation that the en passant move doesn't leave the king in check
 
 ### Position Details
 
@@ -136,11 +144,52 @@ Once fixed, validate with:
 3. **Tactical test positions:** Verify fix doesn't break other complex positions
 4. **Performance validation:** Ensure fix doesn't impact search speed
 
-### Notes
+### Specific Problem Positions Identified
 
-This represents an excellent implementation with 99.974% accuracy. The systematic nature of the bug suggests it's a subtle edge case in complex tactical position handling rather than a fundamental flaw. The debugging infrastructure created will enable efficient resolution when prioritized.
+Through systematic debugging with the perft_debug tool, the following positions exhibit the en passant bug:
 
-**Expert Opinion:** This level of accuracy demonstrates a fundamentally sound move generation system. The remaining 0.026% discrepancy is typical of final refinement stages and won't affect practical engine functionality.
+#### Position 1: Missing b5xc6
+**FEN:** `8/8/8/1Ppp3r/1K3p1k/8/4P1P1/1R6 w - c6 0 1`
+- **Expected moves:** 7 (Stockfish)
+- **SeaJay generates:** 6 moves
+- **Missing move:** b5xc6 (en passant capture)
+
+#### Position 2: Missing b5xc6 and d5xc6
+**FEN:** `8/8/8/1PpP3r/1K3p1k/8/6P1/1R6 w - c6 0 1`
+- **Expected moves:** 9 (Stockfish)
+- **SeaJay generates:** 7 moves  
+- **Missing moves:** b5xc6, d5xc6 (both en passant captures)
+
+#### Position 3: Black en passant working correctly
+**FEN:** `8/8/3k4/8/1pPp4/8/1K6/8 b - c3 0 1`
+- **Expected moves:** 11 (Stockfish)
+- **SeaJay generates:** 11 moves ✓
+- **Note:** Black's en passant capture b4xc3 is correctly generated
+
+### Root Cause Analysis
+
+The bug is specifically in WHITE pawn en passant capture generation. Black's en passant captures work correctly. The issue manifests when:
+1. Black makes a double pawn push (e.g., c7-c5)
+2. This creates an en passant square (e.g., c6)
+3. White has a pawn on the 5th rank that could capture
+4. SeaJay fails to generate the white pawn's en passant capture
+
+### Resolution Details
+
+**Fix Applied:** The bug was fixed by the cpp-pro agent after analysis by the chess-engine-expert. The solution added en passant move generation to the check evasion logic.
+
+**Test Results After Fix:**
+- Position 1: Now generates 7 moves correctly ✓
+- Position 2: Now generates 9 moves correctly ✓  
+- Position 3: Continues to work correctly (11 moves) ✓
+- Position 3 depth 6: Now generates exactly 11,030,083 nodes ✓
+
+**Test Coverage Created:**
+- `/workspace/tests/test_en_passant_check_evasion.cpp` - Comprehensive test suite
+- Regression tests added to prevent reintroduction
+- Performance benchmarks established
+
+**Verification:** All perft tests now pass with 100% accuracy. The systematic debugging approach using the `perft_debug` tool was instrumental in identifying this subtle bug.
 
 ---
 

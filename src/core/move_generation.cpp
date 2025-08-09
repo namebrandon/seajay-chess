@@ -906,6 +906,39 @@ void MoveGenerator::generateCheckEvasions(const Board& board, MoveList& moves) {
         }
     }
     
+    // CRITICAL FIX: Handle en passant in check evasion
+    // En passant can evade check by:
+    // 1. Capturing the checking pawn (if it just moved two squares)
+    // 2. Blocking a sliding piece check
+    Square epSquare = board.enPassantSquare();
+    if (epSquare != NO_SQUARE) {
+        // Find pawns that can capture en passant
+        Bitboard ourPawns = board.pieces(us, PAWN);
+        
+        // Determine the rank and file for en passant
+        int epRank = rankOf(epSquare);
+        int epFile = fileOf(epSquare);
+        
+        // Check correct rank for en passant
+        int requiredPawnRank = (us == WHITE) ? 4 : 3;  // 0-indexed
+        
+        while (ourPawns) {
+            Square from = popLsb(ourPawns);
+            int pawnRank = rankOf(from);
+            int pawnFile = fileOf(from);
+            
+            // Check if this pawn can capture en passant
+            if (pawnRank == requiredPawnRank && std::abs(pawnFile - epFile) == 1) {
+                // Verify the en passant square is correct
+                if ((us == WHITE && epRank == 5) || (us == BLACK && epRank == 2)) {
+                    // The en passant capture could potentially evade check
+                    // Add it to the move list - it will be validated later
+                    moves.addMove(from, epSquare, EN_PASSANT);
+                }
+            }
+        }
+    }
+    
     // Filter out any moves that still leave king in check
     // (necessary for complex cases like pinned pieces)
     MoveList validMoves;
