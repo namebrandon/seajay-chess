@@ -122,7 +122,7 @@ configure_cmake() {
     log "Build timestamp: $BUILD_TIMESTAMP"
     
     # CMake configuration optimized for Apple Silicon
-    # Note: We don't override CMAKE_RUNTIME_OUTPUT_DIRECTORY to respect CMakeLists.txt settings
+    # Override output directory to ensure binary is in a predictable location
     cmake "$PROJECT_ROOT" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_COMPILER=clang++ \
@@ -130,6 +130,7 @@ configure_cmake() {
         -DCMAKE_CXX_FLAGS="-O3 -arch arm64 -mtune=native -flto -ffast-math -DNDEBUG -DBUILD_TIMESTAMP='\"$BUILD_TIMESTAMP\"'" \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+        -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$BUILD_DIR" \
         || error "CMake configuration failed"
     
     success "CMake configuration complete"
@@ -157,14 +158,41 @@ build_engine() {
 finalize_binary() {
     log "Finalizing binary..."
     
-    # CMake places the binary in ${CMAKE_BINARY_DIR}/../bin due to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    # Since our build dir is build-macos, the binary ends up in bin/seajay (not bin-macos)
-    BUILT_BINARY="$PROJECT_ROOT/bin/seajay"
+    # First, let's find where the binary actually is
+    log "Searching for the built binary..."
+    BUILT_BINARY=""
+    
+    # Check common locations where CMake might place the binary
+    POSSIBLE_LOCATIONS=(
+        "$BUILD_DIR/seajay"
+        "$BUILD_DIR/bin/seajay"
+        "$PROJECT_ROOT/bin/seajay"
+        "$BUILD_DIR/src/seajay"
+        "$BUILD_DIR/Release/seajay"
+        "$BUILD_DIR/Debug/seajay"
+    )
+    
+    for location in "${POSSIBLE_LOCATIONS[@]}"; do
+        if [[ -f "$location" ]]; then
+            BUILT_BINARY="$location"
+            log "Found binary at: $BUILT_BINARY"
+            break
+        fi
+    done
+    
+    # If still not found, search the build directory
+    if [[ -z "$BUILT_BINARY" ]]; then
+        log "Binary not in expected locations, searching build directory..."
+        BUILT_BINARY=$(find "$BUILD_DIR" -name "seajay" -type f 2>/dev/null | head -1)
+        if [[ -n "$BUILT_BINARY" ]]; then
+            log "Found binary at: $BUILT_BINARY"
+        fi
+    fi
     
     # Check if the binary exists
-    if [[ -f "$BUILT_BINARY" ]]; then
-        # Rename with -macos suffix
-        mv "$BUILT_BINARY" "$OUTPUT_DIR/$ENGINE_NAME"
+    if [[ -n "$BUILT_BINARY" ]] && [[ -f "$BUILT_BINARY" ]]; then
+        # Copy (not move) to preserve the original for debugging
+        cp "$BUILT_BINARY" "$OUTPUT_DIR/$ENGINE_NAME"
         
         # Make sure it's executable
         chmod +x "$OUTPUT_DIR/$ENGINE_NAME"
@@ -177,11 +205,15 @@ finalize_binary() {
         
         success "Binary created: $OUTPUT_DIR/$ENGINE_NAME"
     else
-        error "Binary not found at expected location: $BUILT_BINARY"
-        log "Checking possible locations..."
-        find "$BUILD_DIR" -name "seajay*" -type f 2>/dev/null || true
-        find "$PROJECT_ROOT/bin" -name "seajay*" -type f 2>/dev/null || true
-        find "$OUTPUT_DIR" -name "seajay*" -type f 2>/dev/null || true
+        error "Binary not found in any expected location!"
+        log "Build directory contents:"
+        ls -la "$BUILD_DIR" 2>/dev/null || true
+        log ""
+        log "Searching entire build directory for any executable:"
+        find "$BUILD_DIR" -type f -perm +111 2>/dev/null | head -20 || true
+        log ""
+        log "Please check the build output above for errors."
+        exit 1
     fi
 }
 
