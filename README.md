@@ -13,14 +13,16 @@
 ## Project Status
 
 **Current Phase:** Phase 2 IN PROGRESS - Basic Search and Evaluation  
-**Version:** 2.7.0-negamax  
-**Completed:** Phase 1 (5 stages) + Stage 6-7 (Material Evaluation + Negamax Search)  
-**Next:** Stage 8 - Alpha-Beta Pruning (~800 ELO target)
+**Version:** 2.8.0-alphabeta  
+**Completed:** Phase 1 (5 stages) + Stage 6-8 (Material Evaluation + Negamax + Alpha-Beta)  
+**Next:** Stage 9 - Positional Evaluation with Piece-Square Tables (~800 ELO target)
 
 ### Recent Achievements
-- ✅ **NEW: 4-ply negamax search with iterative deepening (Stage 7)**
-- ✅ **NEW: SPRT validated +293 Elo improvement over material-only**
-- ✅ **NEW: Tactical awareness - finds checkmates consistently**
+- ✅ **NEW: Alpha-beta pruning with 90% node reduction (Stage 8)**
+- ✅ **NEW: SPRT validated +191 Elo improvement over plain negamax**
+- ✅ **NEW: Reaches depth 6 in under 1 second from start position**
+- ✅ 4-ply negamax search with iterative deepening (Stage 7)
+- ✅ Tactical awareness - finds checkmates consistently
 - ✅ Material evaluation with piece values (Stage 6)
 - ✅ Intelligent move selection based on search
 - ✅ Draw detection for insufficient material

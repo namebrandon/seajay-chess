@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Version History
 
-**Current Version:** 1.5.0-master  
-**Release Date:** August 9, 2025  
-**Estimated Strength:** ~100 ELO (random play baseline)  
-**Status:** Phase 1 Complete, Ready for Phase 2  
+**Current Version:** 2.8.0-alphabeta  
+**Release Date:** August 10, 2025  
+**Estimated Strength:** ~600 ELO (4-ply alpha-beta tactical engine)  
+**Status:** Stage 8 Complete, Ready for Stage 9  
 
 ## Version Numbering System
 
@@ -86,28 +86,48 @@ Format: **MAJOR.MINOR.PATCH-TAG**
   - Master Project Plan
 - **Status:** Development begun
 
+### Phase 2: Basic Search and Evaluation (IN PROGRESS)
+
+#### v2.8.0-alphabeta (CURRENT)
+- **Date:** August 10, 2025
+- **Stage:** Alpha-Beta Pruning
+- **Features:**
+  - Beta cutoffs activated
+  - Basic move ordering (promotions → captures → quiet)
+  - Search statistics (EBF, move ordering efficiency)
+  - 90% node reduction at depth 5
+  - Reaches depth 6 in <1 second
+- **Performance:** 1.49M NPS
+- **SPRT:** PASSED vs v2.7.0 (+191 Elo, H1 accepted after 28 games)
+- **Strength:** ~600 ELO
+
+#### v2.7.0-negamax
+- **Date:** August 9, 2025
+- **Stage:** Negamax Search
+- **Features:**
+  - 4-ply negamax search
+  - Iterative deepening
+  - Time management
+  - Mate detection and scoring
+- **SPRT:** PASSED vs v2.6.0 (+293 Elo, H1 accepted after 16 games)
+- **Strength:** ~400 ELO
+
+#### v2.6.0-material
+- **Date:** August 9, 2025
+- **Stage:** Material Evaluation
+- **Features:**
+  - Material tracking class
+  - Piece values implemented
+  - Static evaluation function
+  - Draw detection (insufficient material)
+- **Testing:** 19 material tests passing
+- **Strength:** ~100 ELO (limited by single-ply search)
+
 ## Future Versions (Planned)
 
-### Phase 2: Basic Search and Evaluation (~1500 ELO)
+### Phase 2: Basic Search and Evaluation (Remaining)
 
-#### v2.1.0-material (Planned)
-- Material evaluation
-- Piece values (P=100, N=320, B=330, R=500, Q=900)
-- Single-ply evaluation
-- **Expected:** +800 ELO
-
-#### v2.2.0-negamax (Planned)
-- Negamax search framework
-- 4-ply fixed depth
-- Basic time management
-- **Expected:** +200-300 ELO
-
-#### v2.3.0-alphabeta (Planned)
-- Alpha-beta pruning
-- Search tree reduction
-- **Expected:** +100-150 ELO
-
-#### v2.4.0-pst (Planned)
+#### v2.9.0-pst (Planned)
 - Piece-square tables
 - Positional evaluation
 - Tapered evaluation

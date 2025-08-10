@@ -66,31 +66,93 @@ This document defines the standardized process for conducting SPRT (Sequential P
 
 ## SPRT Testing Process - SeaJay Implementation
 
-### Step 1: Prepare Test Binaries
+### Step 1: Prepare Test Binaries Using Git
+
+**IMPORTANT**: Always use git to retrieve the actual code from the previous stage's completion commit. Never attempt to disable features in current code to simulate an older version.
 
 Create two binaries for comparison:
 
-1. **Base Binary**: The current accepted version (e.g., Stage N-1)
+1. **Save Current Work** (if any uncommitted changes):
    ```bash
-   # Checkout base version
-   git checkout <base-commit>
-   cd /workspace/build && make clean && make seajay
-   cp seajay ../bin/seajay_base
+   # First, save your current work
+   git stash save "Current stage development - preparing for SPRT test"
+   # Or commit your changes if ready:
+   # git add -A && git commit -m "Stage N implementation complete"
    ```
 
-2. **Test Binary**: The new version with improvements (e.g., Stage N)
+2. **Build Base Binary** from previous stage's completion commit:
    ```bash
-   # Checkout or apply test changes
-   git checkout <test-branch>
-   cd /workspace/build && make clean && make seajay
-   cp seajay ../bin/seajay_test
+   # Find the commit for the previous stage completion
+   git log --oneline | grep -i "stage"  # Find the Stage N-1 completion commit
+   
+   # Checkout the previous stage's code
+   git checkout <stage-n-1-commit-hash>
+   
+   # Build the base binary
+   cd /workspace/build
+   cmake .. && make clean && make -j
+   
+   # Save it with a descriptive name
+   cp bin/seajay ../bin/seajay_stage<N-1>_<feature>
+   # Example: cp bin/seajay ../bin/seajay_stage7_no_alphabeta
    ```
 
-3. **Verify Both Work**:
+3. **Build Test Binary** from current stage:
    ```bash
-   echo -e "position startpos\ngo depth 1" | ../bin/seajay_base
-   echo -e "position startpos\ngo depth 1" | ../bin/seajay_test
+   # Return to your current stage code
+   git checkout <your-branch>  # or git stash pop if you stashed
+   
+   # Build the test binary
+   cd /workspace/build
+   cmake .. && make clean && make -j
+   
+   # Save it with a descriptive name
+   cp bin/seajay ../bin/seajay_stage<N>_<feature>
+   # Example: cp bin/seajay ../bin/seajay_stage8_alphabeta
    ```
+
+4. **Verify Both Binaries Work**:
+   ```bash
+   # Test the base binary
+   echo -e "position startpos\ngo depth 1\nquit" | ../bin/seajay_stage<N-1>_<feature>
+   
+   # Test the new binary
+   echo -e "position startpos\ngo depth 1\nquit" | ../bin/seajay_stage<N>_<feature>
+   ```
+
+5. **Restore Your Working State** (if needed):
+   ```bash
+   # If you stashed changes earlier
+   git stash pop
+   # Your working directory is now back to where you were
+   ```
+
+### Why This Approach is Critical
+
+1. **Accuracy**: You're testing the actual code that was marked complete for each stage
+2. **Reproducibility**: Anyone can recreate your test by checking out the same commits
+3. **Reliability**: No risk of accidentally leaving features partially disabled
+4. **History**: Git maintains the complete development history for reference
+5. **Simplicity**: No need to modify code to create test versions
+
+### Example: Testing Stage 8 (Alpha-Beta) vs Stage 7 (Negamax)
+
+```bash
+# Save current work
+git stash save "Stage 8 alpha-beta implementation"
+
+# Build Stage 7 binary (without alpha-beta)
+git checkout c09a377  # Stage 7 completion commit
+cd /workspace/build && cmake .. && make clean && make -j
+cp bin/seajay ../bin/seajay_stage7_no_alphabeta
+
+# Build Stage 8 binary (with alpha-beta)
+git stash pop  # Return to Stage 8 code
+cd /workspace/build && cmake .. && make clean && make -j
+cp bin/seajay ../bin/seajay_stage8_alphabeta
+
+# Now you have both binaries ready for SPRT testing
+```
 
 ### Step 2: Pre-Test Validation
 
