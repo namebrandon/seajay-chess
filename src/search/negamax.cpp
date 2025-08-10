@@ -1,4 +1,5 @@
 #include "negamax.h"
+#include "search_info.h"
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -62,7 +63,8 @@ eval::Score negamax(Board& board,
                    int ply,
                    eval::Score alpha,
                    eval::Score beta,
-                   SearchInfo& info) {
+                   SearchInfo& searchInfo,
+                   SearchData& info) {
     
     // Debug output at root
     if (ply == 0 && depth >= 4) {
@@ -102,8 +104,26 @@ eval::Score negamax(Board& board,
         return board.evaluate();
     }
     
+    // Stage 9b: Check for draws BEFORE evaluation
+    // CRITICAL: Check checkmate BEFORE repetition (expert requirement)
     // Generate all legal moves
     MoveList moves = generateLegalMoves(board);
+    
+    // Check for checkmate or stalemate first (has priority over draws)
+    if (moves.empty()) {
+        if (inCheck(board)) {
+            // Checkmate - return mate score (checkmate has priority over draws)
+            return eval::Score(-32000 + ply);
+        } else {
+            // Stalemate - return draw score
+            return eval::Score::draw();
+        }
+    }
+    
+    // Check other draws AFTER confirming not checkmate
+    if (board.isDrawInSearch(searchInfo, ply)) {
+        return eval::Score::draw();  // Draw score
+    }
     
     // Order moves for better alpha-beta pruning
     // Promotions first (especially queen), then captures, then quiet moves
@@ -114,17 +134,6 @@ eval::Score negamax(Board& board,
         std::cerr << "Root: generated " << moves.size() << " moves, depth=" << depth << "\n";
     }
     
-    // Check for checkmate or stalemate
-    if (moves.empty()) {
-        if (inCheck(board)) {
-            // Checkmate - we are mated
-            // Return negative mate score adjusted by ply
-            // (Prefer shorter mates)
-            return eval::Score(-32000 + ply);
-        }
-        // Stalemate - draw
-        return eval::Score::draw();
-    }
     
     // Debug: Validate board state before search
 #ifdef DEBUG
@@ -143,6 +152,9 @@ eval::Score negamax(Board& board,
         moveCount++;
         info.totalMoves++;  // Track total moves examined
         
+        // Push position to search stack BEFORE making the move
+        searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
+        
         // Make the move
         Board::UndoInfo undo;
         board.makeMove(move, undo);
@@ -150,7 +162,7 @@ eval::Score negamax(Board& board,
         // Recursive search with negation and swapped window
         // Note: When negating, we swap alpha and beta
         eval::Score score = -negamax(board, depth - 1, ply + 1, 
-                                    -beta, -alpha, info);
+                                    -beta, -alpha, searchInfo, info);
         
         // Unmake the move
         board.unmakeMove(move, undo);
@@ -210,7 +222,12 @@ Move search(Board& board, const SearchLimits& limits) {
     std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
     std::cerr << "Search: movetime=" << limits.movetime.count() << "ms" << std::endl;
     
-    SearchInfo info;
+    // Initialize search tracking
+    SearchInfo searchInfo;  // For repetition detection
+    searchInfo.clear();
+    searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
+    
+    SearchData info;  // For search statistics
     info.timeLimit = calculateTimeLimit(limits, board);
     std::cerr << "Search: calculated timeLimit=" << info.timeLimit.count() << "ms" << std::endl;
     
@@ -231,7 +248,7 @@ Move search(Board& board, const SearchLimits& limits) {
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   info);
+                                   searchInfo, info);
         
         // Only update best move if search completed
         if (!info.stopped) {
@@ -311,7 +328,7 @@ std::chrono::milliseconds calculateTimeLimit(const SearchLimits& limits,
 }
 
 // Send UCI info output
-void sendSearchInfo(const SearchInfo& info) {
+void sendSearchInfo(const SearchData& info) {
     std::cout << "info"
               << " depth " << info.depth
               << " seldepth " << info.seldepth;

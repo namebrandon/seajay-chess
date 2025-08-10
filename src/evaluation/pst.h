@@ -80,10 +80,12 @@ public:
     // Validate PST tables at compile time (public for static_assert)
     static consteval bool validateTables() noexcept {
         // Ensure no pawn values on 1st/8th ranks
-        for (Square sq = A1; sq <= H1; ++sq) {
+        for (int i = A1; i <= H1; ++i) {
+            Square sq = static_cast<Square>(i);
             if (s_pstTables[PAWN][sq].mg.value() != 0) return false;
         }
-        for (Square sq = A8; sq <= H8; ++sq) {
+        for (int i = A8; i <= H8; ++i) {
+            Square sq = static_cast<Square>(i);
             if (s_pstTables[PAWN][sq].mg.value() != 0) return false;
         }
         return true;
@@ -267,7 +269,8 @@ private:
 // Compile-time validation
 static_assert(PST::validateTables(), "PST tables have invalid values");
 
-// Cache line alignment for performance
-alignas(64) inline constexpr auto pstTables = PST();
+// Global PST object removed - causes static initialization issues
+// The PST class uses static methods and static data members internally
+// alignas(64) inline constexpr auto pstTables = PST();  // REMOVED: Bug #010 fix
 
 } // namespace seajay::eval

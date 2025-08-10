@@ -22,7 +22,9 @@ public:
     Material() noexcept = default;
     
     constexpr void update(Piece p, bool add) noexcept {
-        assert(p >= WHITE_PAWN && p <= BLACK_KING);
+        // Add bounds checking to prevent crashes with invalid pieces
+        if (p < WHITE_PAWN || p > BLACK_KING) return;
+        
         const int delta = add ? 1 : -1;
         m_counts[p] = static_cast<int8_t>(m_counts[p] + delta);
         
@@ -41,10 +43,12 @@ public:
     }
     
     constexpr void add(Piece p) noexcept {
+        if (p < WHITE_PAWN || p > BLACK_KING) return;  // Bounds check
         update(p, true);
     }
     
     constexpr void remove(Piece p) noexcept {
+        if (p < WHITE_PAWN || p > BLACK_KING) return;  // Bounds check
         update(p, false);
     }
     

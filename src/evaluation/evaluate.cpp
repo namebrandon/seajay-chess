@@ -72,7 +72,8 @@ bool verifyMaterialIncremental(const Board& board) {
     // Recount material from scratch
     Material scratch;
     
-    for (Square s = A1; s <= H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         Piece p = board.pieceAt(s);
         if (p != NO_PIECE) {
             scratch.add(p);

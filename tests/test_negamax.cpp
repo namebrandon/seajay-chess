@@ -3,6 +3,7 @@
 #include "../src/core/move_generation.h"
 #include "../src/search/negamax.h"
 #include "../src/search/types.h"
+#include "../src/search/search_info.h"
 #include <iostream>
 #include <cassert>
 
@@ -93,13 +94,17 @@ void testDepthSearch() {
         limits.maxDepth = 1;
         limits.movetime = std::chrono::milliseconds(100);
         
-        search::SearchInfo info;
+        SearchInfo searchInfo;
+        searchInfo.clear();
+        searchInfo.setRootHistorySize(board.gameHistorySize());
+        
+        search::SearchData info;
         info.timeLimit = limits.movetime;
         
         eval::Score score = search::negamax(board, 1, 0, 
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   info);
+                                   searchInfo, info);
         
         std::cout << "Depth 1: " << info.nodes << " nodes, score: " 
                   << score.to_cp() << " cp\n";
@@ -113,13 +118,17 @@ void testDepthSearch() {
         limits.maxDepth = 2;
         limits.movetime = std::chrono::milliseconds(1000);
         
-        search::SearchInfo info;
+        SearchInfo searchInfo;
+        searchInfo.clear();
+        searchInfo.setRootHistorySize(board.gameHistorySize());
+        
+        search::SearchData info;
         info.timeLimit = limits.movetime;
         
         eval::Score score = search::negamax(board, 2, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   info);
+                                   searchInfo, info);
         
         std::cout << "Depth 2: " << info.nodes << " nodes, score: " 
                   << score.to_cp() << " cp\n";
@@ -133,13 +142,17 @@ void testDepthSearch() {
         limits.maxDepth = 3;
         limits.movetime = std::chrono::milliseconds(2000);
         
-        search::SearchInfo info;
+        SearchInfo searchInfo;
+        searchInfo.clear();
+        searchInfo.setRootHistorySize(board.gameHistorySize());
+        
+        search::SearchData info;
         info.timeLimit = limits.movetime;
         
         eval::Score score = search::negamax(board, 3, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   info);
+                                   searchInfo, info);
         
         std::cout << "Depth 3: " << info.nodes << " nodes, score: " 
                   << score.to_cp() << " cp, NPS: " << info.nps() << "\n";

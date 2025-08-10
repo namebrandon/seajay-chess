@@ -29,7 +29,7 @@ struct SearchLimits {
 };
 
 // Search statistics and state information
-struct SearchInfo {
+struct SearchData {
     // Node statistics
     uint64_t nodes = 0;           // Total nodes searched
     uint64_t betaCutoffs = 0;     // Total beta cutoffs
@@ -50,7 +50,7 @@ struct SearchInfo {
     bool stopped = false;          // Search has been stopped
     
     // Constructor
-    SearchInfo() : startTime(std::chrono::steady_clock::now()) {}
+    SearchData() : startTime(std::chrono::steady_clock::now()) {}
     
     // Calculate nodes per second
     uint64_t nps() const {

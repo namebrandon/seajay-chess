@@ -37,12 +37,15 @@ Move selectRandomMove(Board& board) {
         return Move();  // Invalid move
     }
     
-    // Select random move
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    // Select random move using lazy initialization to avoid static init hang
+    static auto getRandomGenerator = []() -> std::mt19937& {
+        static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
+        return gen;
+    };
+    
     std::uniform_int_distribution<> dis(0, moves.size() - 1);
     
-    return moves[dis(gen)];
+    return moves[dis(getRandomGenerator())];
 }
 
 } // namespace seajay::search

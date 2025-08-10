@@ -7,6 +7,7 @@
 #include "../core/board.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
+#include "../core/types.h"  // For Hash type
 
 namespace seajay {
 
@@ -34,9 +35,16 @@ private:
     Board m_board;
     bool m_quit;
     
+    // Helper methods for draw detection
+    void updateGameHistory();
+    void clearGameHistory();
+    void reportDrawIfDetected();
+    int countRepetitionsInGame(Hash key) const;
+    
     // UCI command handlers
     void handleUCI();
     void handleIsReady();
+    void handleUCINewGame();
     void handlePosition(const std::vector<std::string>& tokens);
     void handleGo(const std::vector<std::string>& tokens);
     void handleStop();

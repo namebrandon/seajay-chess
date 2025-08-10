@@ -14,6 +14,8 @@ using namespace seajay;
 UCIEngine::UCIEngine() : m_quit(false) {
     // Initialize board to starting position
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    m_board.clearGameHistory();
+    // No need to push - board tracks its own history
 }
 
 void UCIEngine::run() {
@@ -30,6 +32,9 @@ void UCIEngine::run() {
         }
         else if (command == "isready") {
             handleIsReady();
+        }
+        else if (command == "ucinewgame") {
+            handleUCINewGame();
         }
         else if (command == "position") {
             handlePosition(tokens);
@@ -84,7 +89,12 @@ void UCIEngine::handlePosition(const std::vector<std::string>& tokens) {
 bool UCIEngine::setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index) {
     if (type == "startpos") {
         index++; // Move past "startpos"
-        return m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        bool result = m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        if (result) {
+            m_board.clearGameHistory();  // New game, clear history
+            // No need to push - board tracks its own history
+        }
+        return result;
     }
     else if (type == "fen") {
         index++; // Move past "fen"
@@ -104,7 +114,12 @@ bool UCIEngine::setupPosition(const std::string& type, const std::vector<std::st
             }
         }
         
-        return m_board.fromFEN(fen);
+        bool result = m_board.fromFEN(fen);
+        if (result) {
+            m_board.clearGameHistory();  // New position, clear history
+            // No need to push - board tracks its own history
+        }
+        return result;
     }
     
     return false; // Unknown position type
@@ -138,6 +153,7 @@ bool UCIEngine::applyMoves(const std::vector<std::string>& moveStrings) {
         // Apply the move
         Board::UndoInfo undo;
         m_board.makeMove(move, undo);
+        // makeMove automatically pushes to game history
     }
     
     return true;
@@ -286,6 +302,29 @@ int UCIEngine::SearchParams::calculateSearchTime(Color sideToMove) const {
 }
 
 void UCIEngine::search(const SearchParams& params) {
+    // Stage 9b: Check for immediate draw before searching
+    if (m_board.isDraw()) {
+        reportDrawIfDetected();
+        
+        // Get any legal move to return
+        MoveList legalMoves;
+        MoveGenerator::generateLegalMoves(m_board, legalMoves);
+        if (legalMoves.size() > 0) {
+            Move anyMove = legalMoves[0];
+            
+            // Report draw score and return a move
+            std::cout << "info depth 1 score cp 0 nodes 1 pv " 
+                     << moveToUCI(anyMove) << std::endl;
+            std::cout << "bestmove " << moveToUCI(anyMove) << std::endl;
+            return;
+        } else {
+            // No legal moves (checkmate or stalemate)
+            std::cout << "info depth 1 score mate 0 nodes 1" << std::endl;
+            std::cout << "bestmove 0000" << std::endl;
+            return;
+        }
+    }
+    
     // Convert UCI parameters to search limits
     search::SearchLimits limits;
     
@@ -330,12 +369,15 @@ Move UCIEngine::selectRandomMove() {
         return Move(); // No legal moves
     }
     
-    // Simple random selection
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
+    // Simple random selection using lazy initialization to avoid static init hang
+    static auto getRandomGenerator = []() -> std::mt19937& {
+        static std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
+        return gen;
+    };
+    
     std::uniform_int_distribution<size_t> dist(0, legalMoves.size() - 1);
     
-    return legalMoves[dist(gen)];
+    return legalMoves[dist(getRandomGenerator())];
 }
 
 void UCIEngine::updateSearchInfo(SearchInfo& info, Move bestMove, int64_t searchTimeMs) {
@@ -399,4 +441,38 @@ std::vector<std::string> UCIEngine::tokenize(const std::string& line) {
     }
     
     return tokens;
+}
+
+// Stage 9b: Draw detection helper methods
+void UCIEngine::clearGameHistory() {
+    m_board.clearGameHistory();  // Clear board's game history
+}
+
+void UCIEngine::updateGameHistory() {
+    // Push current position to board's game history
+    m_board.pushGameHistory();
+}
+
+int UCIEngine::countRepetitionsInGame(Hash key) const {
+    // This method is not needed - Board class handles repetition counting
+    return 0;
+}
+
+void UCIEngine::reportDrawIfDetected() {
+    // Check for draws and report via info string
+    if (m_board.isRepetitionDraw()) {
+        std::cout << "info string Draw by threefold repetition detected" << std::endl;
+    } else if (m_board.isFiftyMoveRule()) {
+        std::cout << "info string Draw by fifty-move rule detected" << std::endl;
+    } else if (m_board.isInsufficientMaterial()) {
+        std::cout << "info string Draw by insufficient material detected" << std::endl;
+    }
+}
+
+void UCIEngine::handleUCINewGame() {
+    // Clear all game state for a new game
+    m_board.clear();
+    m_board.setStartingPosition();
+    m_board.clearGameHistory();
+    // No need to push - board tracks its own history
 }

@@ -3,6 +3,7 @@
 #include "../src/core/move_generation.h"
 #include "../src/search/negamax.h"
 #include "../src/search/types.h"
+#include "../src/search/search_info.h"
 #include "../src/core/board_safety.h"
 #include <iostream>
 #include <vector>
@@ -34,7 +35,7 @@ protected:
         return Move();
     }
     // Helper function to search without alpha-beta pruning
-    eval::Score negamaxNoPruning(Board& board, int depth, int ply, SearchInfo& info) {
+    eval::Score negamaxNoPruning(Board& board, int depth, int ply, SearchData& info) {
         // Terminal node
         if (depth <= 0) {
             info.nodes++;
@@ -95,18 +96,21 @@ protected:
         // Search WITH alpha-beta pruning
         Board board1;
         board1.fromFEN(fen);
-        SearchInfo infoWithAB;
+        SearchInfo searchInfoAB;
+        searchInfoAB.clear();
+        searchInfoAB.setRootHistorySize(board1.gameHistorySize());
+        SearchData infoWithAB;
         result.scoreWithAB = negamax(board1, depth, 0,
                                      eval::Score::minus_infinity(),
                                      eval::Score::infinity(),
-                                     infoWithAB);
+                                     searchInfoAB, infoWithAB);
         result.moveWithAB = infoWithAB.bestMove;
         result.nodesWithAB = infoWithAB.nodes;
         
         // Search WITHOUT alpha-beta pruning (full minimax)
         Board board2;
         board2.fromFEN(fen);
-        SearchInfo infoWithoutAB;
+        SearchData infoWithoutAB;
         result.scoreWithoutAB = negamaxNoPruning(board2, depth, 0, infoWithoutAB);
         result.moveWithoutAB = infoWithoutAB.bestMove;
         result.nodesWithoutAB = infoWithoutAB.nodes;
@@ -226,8 +230,11 @@ TEST_F(AlphaBetaValidationTest, MoveOrderingEfficiency) {
     Board board;
     board.fromFEN(fen);
     
-    SearchInfo info;
-    negamax(board, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), info);
+    SearchInfo searchInfo;
+    searchInfo.clear();
+    searchInfo.setRootHistorySize(board.gameHistorySize());
+    SearchData info;
+    negamax(board, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo, info);
     
     double efficiency = info.moveOrderingEfficiency();
     
@@ -275,16 +282,19 @@ TEST_F(AlphaBetaValidationTest, PerformanceBenchmark) {
     // Time search WITH alpha-beta
     Board board1;
     board1.fromFEN(fen);
-    SearchInfo info1;
+    SearchInfo searchInfo1;
+    searchInfo1.clear();
+    searchInfo1.setRootHistorySize(board1.gameHistorySize());
+    SearchData info1;
     auto start1 = std::chrono::steady_clock::now();
-    negamax(board1, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), info1);
+    negamax(board1, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo1, info1);
     auto end1 = std::chrono::steady_clock::now();
     auto timeWithAB = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
     
     // Time search WITHOUT alpha-beta
     Board board2;
     board2.fromFEN(fen);
-    SearchInfo info2;
+    SearchData info2;
     auto start2 = std::chrono::steady_clock::now();
     negamaxNoPruning(board2, 5, 0, info2);
     auto end2 = std::chrono::steady_clock::now();

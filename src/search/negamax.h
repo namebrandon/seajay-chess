@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "search_info.h"
 #include "../core/types.h"
 #include "../evaluation/types.h"
 
@@ -18,13 +19,15 @@ namespace seajay::search {
 //   ply   - Current distance from root (for mate score adjustment)
 //   alpha - Lower bound of the search window
 //   beta  - Upper bound of the search window
+//   searchInfo - Search stack for repetition detection
 //   info  - Search statistics and control information
 eval::Score negamax(Board& board, 
                    int depth, 
                    int ply,
                    eval::Score alpha,
                    eval::Score beta,
-                   SearchInfo& info);
+                   SearchInfo& searchInfo,
+                   SearchData& info);
 
 // Iterative deepening search controller
 // Returns the best move found within the given limits
@@ -44,6 +47,6 @@ std::chrono::milliseconds calculateTimeLimit(const SearchLimits& limits,
 // Send UCI info output during search
 // Parameters:
 //   info - Current search statistics
-void sendSearchInfo(const SearchInfo& info);
+void sendSearchInfo(const SearchData& info);
 
 } // namespace seajay::search

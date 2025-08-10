@@ -3,6 +3,8 @@
 #include "bitboard.h"
 #include "move_generation.h"
 #include "../evaluation/evaluate.h"
+#include "../evaluation/pst.h"  // For PST::value
+#include "../search/search_info.h"
 #include <sstream>
 #include <random>
 #include <algorithm>
@@ -45,6 +47,11 @@ Board::Board() {
     if (!s_lutInitialized) {
         initPieceCharLookup();
     }
+    
+    // Stage 9b: Initialize position history
+    m_gameHistory.reserve(MAX_GAME_HISTORY);
+    m_lastIrreversiblePly = 0;
+    
     clear();
 }
 
@@ -68,61 +75,78 @@ void Board::clear() {
     // Clear PST score (Stage 9)
     m_pstScore = eval::MgEgScore();
     
+    // Stage 9b: Clear game history
+    m_gameHistory.clear();
+    m_lastIrreversiblePly = 0;
+    
     // Bug #002 fix: Properly initialize zobrist key even for empty board
     // Must be done after setting all state variables
     rebuildZobristKey();
 }
 
 void Board::setStartingPosition() {
-    // Use fromFEN which properly initializes everything including zobrist
     fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    // Note: fromFEN -> parseFEN -> rebuildZobristKey() ensures proper initialization
-    // This fixes Bug #002: Zobrist Key Initialization Inconsistency
 }
 
 void Board::setPiece(Square s, Piece p) {
-    if (!isValidSquare(s) || p > NO_PIECE) [[unlikely]] return;
+    // Validate square bounds
+    if (!isValidSquare(s)) return;
+    
+    // Validate piece value (NO_PIECE is 12, valid pieces are 0-11)
+    if (p != NO_PIECE && p >= NUM_PIECES) return;
     
     Piece oldPiece = m_mailbox[s];
     
     // Update mailbox first
     m_mailbox[s] = p;
     
-    // Then update bitboards
-    if (oldPiece != NO_PIECE) {
-        updateBitboards(s, oldPiece, false);
-        // Update material tracking
-        m_material.remove(oldPiece);
-        // Update PST score (Stage 9) - remove old piece value
+    // Handle removal of old piece
+    if (oldPiece != NO_PIECE && oldPiece < NUM_PIECES) {
+        // Safely extract color and type with validation
         Color oldColor = colorOf(oldPiece);
         PieceType oldType = typeOf(oldPiece);
-        // PST values are from white's perspective, negate for black
-        if (oldColor == WHITE) {
-            m_pstScore -= eval::PST::value(oldType, s, WHITE);
-        } else {
-            m_pstScore += eval::PST::value(oldType, s, BLACK);
+        
+        // Additional safety check
+        if (oldColor < NUM_COLORS && oldType < NUM_PIECE_TYPES) {
+            updateBitboards(s, oldPiece, false);
+            // Update material tracking
+            m_material.remove(oldPiece);
+            // Update PST score (Stage 9) - remove old piece value
+            // PST values are from white's perspective, negate for black
+            if (oldColor == WHITE) {
+                m_pstScore -= eval::PST::value(oldType, s, WHITE);
+            } else {
+                m_pstScore += eval::PST::value(oldType, s, BLACK);
+            }
         }
     }
-    if (p != NO_PIECE) {
-        updateBitboards(s, p, true);
-        // Update material tracking
-        m_material.add(p);
-        // Update PST score (Stage 9) - add new piece value
+    
+    // Handle addition of new piece
+    if (p != NO_PIECE && p < NUM_PIECES) {
+        // Safely extract color and type with validation
         Color newColor = colorOf(p);
         PieceType newType = typeOf(p);
-        // PST values are from white's perspective, negate for black
-        if (newColor == WHITE) {
-            m_pstScore += eval::PST::value(newType, s, WHITE);
-        } else {
-            m_pstScore -= eval::PST::value(newType, s, BLACK);
+        
+        // Additional safety check
+        if (newColor < NUM_COLORS && newType < NUM_PIECE_TYPES) {
+            updateBitboards(s, p, true);
+            // Update material tracking
+            m_material.add(p);
+            // Update PST score (Stage 9) - add new piece value
+            // PST values are from white's perspective, negate for black
+            if (newColor == WHITE) {
+                m_pstScore += eval::PST::value(newType, s, WHITE);
+            } else {
+                m_pstScore -= eval::PST::value(newType, s, BLACK);
+            }
         }
     }
     
     // Finally update zobrist (single XOR for difference)
-    if (oldPiece != NO_PIECE) {
+    if (oldPiece != NO_PIECE && oldPiece < NUM_PIECES) {
         m_zobristKey ^= s_zobristPieces[s][oldPiece];
     }
-    if (p != NO_PIECE) {
+    if (p != NO_PIECE && p < NUM_PIECES) {
         m_zobristKey ^= s_zobristPieces[s][p];
     }
     
@@ -131,6 +155,9 @@ void Board::setPiece(Square s, Piece p) {
 }
 
 void Board::removePiece(Square s) {
+    // Validate square bounds
+    if (!isValidSquare(s)) return;
+    
     setPiece(s, NO_PIECE);
 }
 
@@ -162,19 +189,27 @@ void Board::movePiece(Square from, Square to) {
 }
 
 void Board::updateBitboards(Square s, Piece p, bool add) {
-    if (!isValidSquare(s) || p >= NUM_PIECES) return;  // Bounds checking
+    // Validate inputs
+    if (!isValidSquare(s) || p >= NUM_PIECES) return;
+    
+    // Additional safety for color and type extraction
+    Color c = colorOf(p);
+    PieceType pt = typeOf(p);
+    
+    // Validate derived values
+    if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
     
     Bitboard bb = squareBB(s);
     
     if (add) {
         m_pieceBB[p] |= bb;
-        m_pieceTypeBB[typeOf(p)] |= bb;
-        m_colorBB[colorOf(p)] |= bb;
+        m_pieceTypeBB[pt] |= bb;
+        m_colorBB[c] |= bb;
         m_occupied |= bb;
     } else {
         m_pieceBB[p] &= ~bb;
-        m_pieceTypeBB[typeOf(p)] &= ~bb;
-        m_colorBB[colorOf(p)] &= ~bb;
+        m_pieceTypeBB[pt] &= ~bb;
+        m_colorBB[c] &= ~bb;
         m_occupied &= ~bb;
     }
 }
@@ -543,7 +578,8 @@ bool Board::validateNotInCheck() const {
 
 bool Board::validateBitboardSync() const {
     // Verify every piece in mailbox is in corresponding bitboard
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Piece p = m_mailbox[sq];
         if (p != NO_PIECE) {
             if (!(m_pieceBB[p] & squareBB(sq))) return false;
@@ -571,7 +607,8 @@ bool Board::validateZobrist() const {
     Hash calculatedKey = 0;
     
     // Recalculate from scratch
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Piece p = m_mailbox[sq];
         if (p != NO_PIECE) {
             calculatedKey ^= s_zobristPieces[sq][p];
@@ -720,16 +757,15 @@ bool Board::validateCastlingRights() const {
     return true;
 }
 
-// New safe FEN parser with comprehensive error handling
+// Atomic FEN parser with chess engine best practices
 FenResult Board::parseFEN(const std::string& fen) {
     if (fen.empty()) {
         return makeFenError(FenError::InvalidFormat, "Empty FEN string");
     }
     
-    // Parse-to-temp-validate-swap pattern for safety
-    // Create temp board without calling static initialization again
-    Board tempBoard;
-    // Don't call clear() yet, we'll set up the board state manually
+    // Atomic parsing approach - parse directly into primitive data structures
+    // This eliminates recursive Board construction during parsing
+    FenParseData parseData;
     
     // Zero-copy tokenization using string_view
     std::vector<std::string_view> tokens;
@@ -757,89 +793,51 @@ FenResult Board::parseFEN(const std::string& fen) {
             std::string("FEN must have exactly 6 fields, got ") + std::to_string(tokens.size()));
     }
     
-    // Parse each component into temporary board
-    auto boardResult = tempBoard.parseBoardPosition(tokens[0]);
+    // Parse each component directly into primitive data structures
+    auto boardResult = parseBoardPositionDirect(tokens[0], parseData.mailbox);
     if (!boardResult) {
         return boardResult.error();
     }
     
-    auto stmResult = tempBoard.parseSideToMove(tokens[1]);
+    auto stmResult = parseSideToMoveDirect(tokens[1], parseData.sideToMove);
     if (!stmResult) {
         return stmResult.error();
     }
     
-    auto castlingResult = tempBoard.parseCastlingRights(tokens[2]);
+    auto castlingResult = parseCastlingRightsDirect(tokens[2], parseData.castlingRights);
     if (!castlingResult) {
         return castlingResult.error();
     }
     
-    auto epResult = tempBoard.parseEnPassant(tokens[3]);
+    auto epResult = parseEnPassantDirect(tokens[3], parseData.enPassantSquare);
     if (!epResult) {
         return epResult.error();
     }
     
-    auto halfmoveResult = tempBoard.parseHalfmoveClock(tokens[4]);
+    auto halfmoveResult = parseHalfmoveClockDirect(tokens[4], parseData.halfmoveClock);
     if (!halfmoveResult) {
         return halfmoveResult.error();
     }
     
-    auto fullmoveResult = tempBoard.parseFullmoveNumber(tokens[5]);
+    auto fullmoveResult = parseFullmoveNumberDirect(tokens[5], parseData.fullmoveNumber);
     if (!fullmoveResult) {
         return fullmoveResult.error();
     }
     
-    // Rebuild bitboards from mailbox
-    tempBoard.m_pieceBB.fill(0);
-    tempBoard.m_pieceTypeBB.fill(0);
-    tempBoard.m_colorBB.fill(0);
-    tempBoard.m_occupied = 0;
-    
-    // CRITICAL: Reset material counts before rebuilding!
-    tempBoard.m_material.clear();
-    tempBoard.m_evalCacheValid = false;
-    tempBoard.m_pstScore = eval::MgEgScore();  // Reset PST score (Stage 9)
-    
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
-        Piece p = tempBoard.m_mailbox[sq];
-        if (p != NO_PIECE) {
-            tempBoard.updateBitboards(sq, p, true);
-            // Rebuild material counts
-            tempBoard.m_material.add(p);
-        }
+    // Validate parsed data before applying to board
+    if (!isValidFenData(parseData)) {
+        return makeFenError(FenError::PositionValidationFailed, "Invalid FEN data validation failed");
     }
     
-    // Rebuild PST score from scratch (Stage 9)
-    tempBoard.recalculatePSTScore();
-    
-    // Rebuild Zobrist key from scratch (never incremental after FEN)
-    tempBoard.rebuildZobristKey();
-    
-    // Comprehensive validation
-    // Comprehensive validation
-    if (!tempBoard.validatePosition()) {
-        return makeFenError(FenError::PositionValidationFailed, "Position validation failed");
-    }
-    
-    if (!tempBoard.validateNotInCheck()) {
-        return makeFenError(FenError::SideNotToMoveInCheck, "Side not to move is in check");
-    }
-    
-    if (!tempBoard.validateBitboardSync()) {
-        return makeFenError(FenError::BitboardDesync, "Bitboard/mailbox synchronization failed");
-    }
-    
-    if (!tempBoard.validateZobrist()) {
-        return makeFenError(FenError::ZobristMismatch, "Zobrist key validation failed");
-    }
-    
-    // All validation passed - safely move to this board
-    *this = std::move(tempBoard);
+    // Apply parsed data atomically to this board
+    applyFenData(parseData);
     
     return true;
 }
 
 // Legacy interface for backward compatibility
 bool Board::fromFEN(const std::string& fen) {
+    // Debug: Check if parseFEN hangs
     auto result = parseFEN(fen);
     return result.hasValue();
 }
@@ -848,9 +846,10 @@ void Board::rebuildZobristKey() {
     m_zobristKey = 0;
     
     // Recalculate from scratch
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Piece p = m_mailbox[sq];
-        if (p != NO_PIECE) {
+        if (p != NO_PIECE && p < NUM_PIECES) {  // Added bounds check
             m_zobristKey ^= s_zobristPieces[sq][p];
         }
     }
@@ -911,7 +910,8 @@ uint64_t Board::positionHash() const {
     uint64_t hash = 0;
     
     // Hash mailbox state
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         hash = hash * 31 + m_mailbox[sq];
     }
     
@@ -1108,6 +1108,9 @@ void Board::unmakeMove(Move move, const CompleteUndoInfo& undo) {
 
 // Internal implementation for legacy UndoInfo
 void Board::makeMoveInternal(Move move, UndoInfo& undo) {
+    // Stage 9b: Track position before making move
+    pushGameHistory();
+    
     // Save current state for undo
     undo.castlingRights = m_castlingRights;
     undo.enPassantSquare = m_enPassantSquare;
@@ -1120,6 +1123,12 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     Square to = moveTo(move);
     Piece movingPiece = pieceAt(from);
     Piece capturedPiece = pieceAt(to);
+    
+    // Stage 9b: Check if move is irreversible (pawn move or capture)
+    if (capturedPiece != NO_PIECE || typeOf(movingPiece) == PAWN) {
+        // Mark this as last irreversible move
+        m_lastIrreversiblePly = m_gameHistory.size();  // Correct index (will be position after push)
+    }
     
     undo.capturedPiece = capturedPiece;
     
@@ -1507,6 +1516,11 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         std::cerr << "  Actual:   0x" << m_zobristKey << std::dec << "\n";
     }
 #endif
+    
+    // Stage 9b: Remove position from history on unmake
+    if (!m_gameHistory.empty()) {
+        m_gameHistory.pop_back();
+    }
 }
 
 // Implementation for CompleteUndoInfo
@@ -1560,11 +1574,15 @@ void Board::recalculatePSTScore() {
     // Recalculate PST score from scratch (Stage 9)
     m_pstScore = eval::MgEgScore();
     
-    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Piece p = m_mailbox[sq];
-        if (p != NO_PIECE) {
+        if (p != NO_PIECE && p < NUM_PIECES) {  // Added bounds check
             Color c = colorOf(p);
             PieceType pt = typeOf(p);
+            
+            // Additional validation
+            if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) continue;
             
             // PST values are from white's perspective
             // Add for white pieces, subtract for black pieces
@@ -1575,6 +1593,396 @@ void Board::recalculatePSTScore() {
             }
         }
     }
+}
+
+// Direct FEN parsing helpers (atomic approach)
+FenResult Board::parseBoardPositionDirect(std::string_view boardStr, std::array<Piece, 64>& mailbox) {
+    // Clear the mailbox first
+    mailbox.fill(NO_PIECE);
+    
+    int rank = 7;  // Start at rank 8 (index 7)
+    int file = 0;
+    
+    for (char c : boardStr) {
+        if (c == '/') {
+            if (rank == 0) {
+                return makeFenError(FenError::InvalidFormat, "Too many ranks in board position");
+            }
+            rank--;
+            file = 0;
+        } else if (c >= '1' && c <= '8') {
+            int empty = c - '0';
+            file += empty;
+            if (file > 8) {
+                return makeFenError(FenError::InvalidFormat, "Too many files in rank");
+            }
+        } else {
+            if (file >= 8) {
+                return makeFenError(FenError::InvalidFormat, "Too many pieces in rank");
+            }
+            
+            Piece piece = NO_PIECE;
+            switch (c) {
+                case 'P': piece = WHITE_PAWN; break;
+                case 'N': piece = WHITE_KNIGHT; break;
+                case 'B': piece = WHITE_BISHOP; break;
+                case 'R': piece = WHITE_ROOK; break;
+                case 'Q': piece = WHITE_QUEEN; break;
+                case 'K': piece = WHITE_KING; break;
+                case 'p': piece = BLACK_PAWN; break;
+                case 'n': piece = BLACK_KNIGHT; break;
+                case 'b': piece = BLACK_BISHOP; break;
+                case 'r': piece = BLACK_ROOK; break;
+                case 'q': piece = BLACK_QUEEN; break;
+                case 'k': piece = BLACK_KING; break;
+                default:
+                    return makeFenError(FenError::InvalidFormat, 
+                        std::string("Invalid piece character: ") + c);
+            }
+            
+            Square sq = makeSquare(File(file), Rank(rank));
+            mailbox[sq] = piece;
+            file++;
+        }
+    }
+    
+    if (rank != 0 || file != 8) {
+        return makeFenError(FenError::InvalidFormat, "Incomplete board position");
+    }
+    
+    return true;
+}
+
+FenResult Board::parseSideToMoveDirect(std::string_view stmStr, Color& sideToMove) {
+    if (stmStr.empty()) {
+        return makeFenError(FenError::InvalidFormat, "Empty side to move");
+    }
+    
+    if (stmStr[0] == 'w') {
+        sideToMove = WHITE;
+    } else if (stmStr[0] == 'b') {
+        sideToMove = BLACK;
+    } else {
+        return makeFenError(FenError::InvalidFormat, "Invalid side to move (must be 'w' or 'b')");
+    }
+    
+    return true;
+}
+
+FenResult Board::parseCastlingRightsDirect(std::string_view castlingStr, uint8_t& castlingRights) {
+    castlingRights = 0;
+    
+    if (castlingStr == "-") {
+        return true;
+    }
+    
+    for (char c : castlingStr) {
+        switch (c) {
+            case 'K': castlingRights |= WHITE_KINGSIDE; break;
+            case 'Q': castlingRights |= WHITE_QUEENSIDE; break;
+            case 'k': castlingRights |= BLACK_KINGSIDE; break;
+            case 'q': castlingRights |= BLACK_QUEENSIDE; break;
+            default:
+                return makeFenError(FenError::InvalidFormat, 
+                    std::string("Invalid castling rights character: ") + c);
+        }
+    }
+    
+    return true;
+}
+
+FenResult Board::parseEnPassantDirect(std::string_view epStr, Square& enPassantSquare) {
+    if (epStr == "-") {
+        enPassantSquare = NO_SQUARE;
+        return true;
+    }
+    
+    if (epStr.length() != 2) {
+        return makeFenError(FenError::InvalidFormat, "Invalid en passant square format");
+    }
+    
+    char fileChar = epStr[0];
+    char rankChar = epStr[1];
+    
+    if (fileChar < 'a' || fileChar > 'h' || rankChar < '1' || rankChar > '8') {
+        return makeFenError(FenError::InvalidFormat, "Invalid en passant square coordinates");
+    }
+    
+    File file = File(fileChar - 'a');
+    Rank rank = Rank(rankChar - '1');
+    enPassantSquare = makeSquare(file, rank);
+    
+    return true;
+}
+
+FenResult Board::parseHalfmoveClockDirect(std::string_view clockStr, uint16_t& halfmoveClock) {
+    try {
+        int value = std::stoi(std::string(clockStr));
+        if (value < 0) {
+            return makeFenError(FenError::InvalidFormat, "Halfmove clock cannot be negative");
+        }
+        halfmoveClock = static_cast<uint16_t>(value);
+        return true;
+    } catch (const std::exception&) {
+        return makeFenError(FenError::InvalidFormat, "Invalid halfmove clock format");
+    }
+}
+
+FenResult Board::parseFullmoveNumberDirect(std::string_view moveStr, uint16_t& fullmoveNumber) {
+    try {
+        int value = std::stoi(std::string(moveStr));
+        if (value <= 0) {
+            return makeFenError(FenError::InvalidFormat, "Fullmove number must be positive");
+        }
+        fullmoveNumber = static_cast<uint16_t>(value);
+        return true;
+    } catch (const std::exception&) {
+        return makeFenError(FenError::InvalidFormat, "Invalid fullmove number format");
+    }
+}
+
+bool Board::isValidFenData(const FenParseData& parseData) const {
+    // Basic validation of parsed FEN data
+    // Count kings
+    int whiteKings = 0, blackKings = 0;
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
+        Piece p = parseData.mailbox[sq];
+        if (p == WHITE_KING) whiteKings++;
+        if (p == BLACK_KING) blackKings++;
+    }
+    
+    // Must have exactly one king of each color
+    if (whiteKings != 1 || blackKings != 1) {
+        return false;
+    }
+    
+    // Validate en passant square if set
+    if (parseData.enPassantSquare != NO_SQUARE) {
+        Rank epRank = rankOf(parseData.enPassantSquare);
+        if (parseData.sideToMove == WHITE && epRank != 5) {  // Rank 6 (0-indexed as 5)
+            return false;
+        }
+        if (parseData.sideToMove == BLACK && epRank != 2) {  // Rank 3 (0-indexed as 2)
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+void Board::applyFenData(const FenParseData& parseData) {
+    // Apply parsed data atomically to this board
+    m_mailbox = parseData.mailbox;
+    m_sideToMove = parseData.sideToMove;
+    m_castlingRights = parseData.castlingRights;
+    m_enPassantSquare = parseData.enPassantSquare;
+    m_halfmoveClock = parseData.halfmoveClock;
+    m_fullmoveNumber = parseData.fullmoveNumber;
+    
+    // Rebuild all derived state
+    m_pieceBB.fill(0);
+    m_pieceTypeBB.fill(0);
+    m_colorBB.fill(0);
+    m_occupied = 0;
+    m_material.clear();
+    m_evalCacheValid = false;
+    m_pstScore = eval::MgEgScore();
+    
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
+        Piece p = m_mailbox[sq];
+        if (p != NO_PIECE && p < NUM_PIECES) {  // Added bounds check
+            updateBitboards(sq, p, true);
+            m_material.add(p);
+        }
+    }
+    
+    // Rebuild PST score from scratch
+    recalculatePSTScore();
+    
+    // Rebuild Zobrist key from scratch
+    rebuildZobristKey();
+}
+
+// Stage 9b Repetition Detection methods
+void Board::clearGameHistory() {
+    m_gameHistory.clear();
+    m_lastIrreversiblePly = 0;
+}
+
+bool Board::isRepetitionDraw() const {
+    if (m_gameHistory.empty()) return false;
+    
+    Hash currentKey = zobristKey();
+    int repetitions = 0;
+    
+    // Can only repeat positions since last irreversible move
+    size_t searchLimit = std::min(m_gameHistory.size(), 
+                                  static_cast<size_t>(m_halfmoveClock));
+    
+    // Determine starting index based on parity of history size
+    // If history has even entries, current player (who hasn't moved yet) matches even indices
+    // If history has odd entries, current player matches odd indices
+    size_t startIdx = (m_gameHistory.size() % 2 == 0) ? 0 : 1;
+    
+    // Search forward through history for positions with same side to move
+    for (size_t i = startIdx; i < searchLimit; i += 2) {
+        if (m_gameHistory[i] == currentKey) {
+            repetitions++;
+            // Current + 2 previous = threefold
+            if (repetitions >= 2) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+bool Board::isFiftyMoveRule() const {
+    // Check for fifty-move rule (100 half moves)
+    return m_halfmoveClock >= 100;
+}
+
+bool Board::isDraw() const {
+    return isRepetitionDraw() || 
+           isFiftyMoveRule() || 
+           isInsufficientMaterial();
+    // Note: Stalemate is handled separately in search
+}
+
+bool Board::isInsufficientMaterial() const {
+    // Simple insufficient material detection
+    // K vs K, KN vs K, KB vs K, KB vs KB (same color)
+    
+    uint32_t whiteQueens = std::popcount(pieces(WHITE, QUEEN));
+    uint32_t blackQueens = std::popcount(pieces(BLACK, QUEEN));
+    uint32_t whiteRooks = std::popcount(pieces(WHITE, ROOK));
+    uint32_t blackRooks = std::popcount(pieces(BLACK, ROOK));
+    uint32_t whitePawns = std::popcount(pieces(WHITE, PAWN));
+    uint32_t blackPawns = std::popcount(pieces(BLACK, PAWN));
+    
+    // If there are pawns, queens, or rooks, material is sufficient
+    if (whiteQueens || blackQueens || whiteRooks || blackRooks || 
+        whitePawns || blackPawns) {
+        return false;
+    }
+    
+    uint32_t whiteBishops = std::popcount(pieces(WHITE, BISHOP));
+    uint32_t blackBishops = std::popcount(pieces(BLACK, BISHOP));
+    uint32_t whiteKnights = std::popcount(pieces(WHITE, KNIGHT));
+    uint32_t blackKnights = std::popcount(pieces(BLACK, KNIGHT));
+    
+    uint32_t whiteMinor = whiteBishops + whiteKnights;
+    uint32_t blackMinor = blackBishops + blackKnights;
+    
+    // K vs K
+    if (whiteMinor == 0 && blackMinor == 0) return true;
+    
+    // KN vs K or KB vs K
+    if ((whiteMinor == 1 && blackMinor == 0) || 
+        (whiteMinor == 0 && blackMinor == 1)) {
+        return true;
+    }
+    
+    // KB vs KB (same color squares)
+    if (whiteBishops == 1 && blackBishops == 1 && 
+        whiteKnights == 0 && blackKnights == 0) {
+        // Check if bishops are on same color squares
+        Bitboard whiteBishopBB = pieces(WHITE, BISHOP);
+        Bitboard blackBishopBB = pieces(BLACK, BISHOP);
+        
+        // Make sure bitboards are not empty before calling lsb
+        if (whiteBishopBB && blackBishopBB) {
+            Square whiteBishopSq = lsb(whiteBishopBB);
+            Square blackBishopSq = lsb(blackBishopBB);
+            if ((whiteBishopSq + rankOf(whiteBishopSq)) % 2 == 
+                (blackBishopSq + rankOf(blackBishopSq)) % 2) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+void Board::pushGameHistory() {
+    // Add current position to game history
+    m_gameHistory.push_back(zobristKey());
+    
+    // Prevent unbounded growth in very long games
+    if (m_gameHistory.size() > MAX_GAME_HISTORY) {
+        // Remove oldest entries, keeping most recent MAX_GAME_HISTORY/2
+        m_gameHistory.erase(m_gameHistory.begin(), 
+                           m_gameHistory.begin() + MAX_GAME_HISTORY/2);
+        // Adjust irreversible ply marker
+        if (m_lastIrreversiblePly >= MAX_GAME_HISTORY/2) {
+            m_lastIrreversiblePly -= MAX_GAME_HISTORY/2;
+        } else {
+            m_lastIrreversiblePly = 0;
+        }
+    }
+}
+
+void Board::clearHistoryBeforeIrreversible() {
+    // Keep only positions since last irreversible move
+    if (m_lastIrreversiblePly < m_gameHistory.size()) {
+        // Erase from beginning to irreversible position
+        m_gameHistory.erase(m_gameHistory.begin(), 
+                           m_gameHistory.begin() + m_lastIrreversiblePly);
+        m_lastIrreversiblePly = 0;
+    }
+}
+
+size_t Board::gameHistorySize() const {
+    return m_gameHistory.size();
+}
+
+Hash Board::gameHistoryAt(size_t index) const {
+    if (index >= m_gameHistory.size()) {
+        return Hash(0);  // Explicit Hash constructor
+    }
+    return m_gameHistory[index];
+}
+
+// Stage 9b Phase 2: Search-specific draw detection
+bool Board::isRepetitionDrawInSearch(const SearchInfo& searchInfo, int searchPly) const {
+    Hash currentKey = zobristKey();
+    
+    // PHASE 1: Check for repetition within search path (1 repetition = draw)
+    if (searchInfo.isRepetitionInSearch(currentKey, searchPly)) {
+        return true;
+    }
+    
+    // PHASE 2: Check game history before search started
+    // Need 2 repetitions in game history (+ current = threefold)
+    int repetitionsInGameHistory = 0;
+    size_t gameHistorySize = m_gameHistory.size();
+    
+    // Search within halfmove clock boundary
+    size_t searchLimit = std::min(gameHistorySize, 
+                                  static_cast<size_t>(m_halfmoveClock));
+    
+    // Search backwards through game history (every 2nd position for same side to move)
+    for (size_t i = 0; i < searchLimit; i += 2) {
+        size_t idx = gameHistorySize - 1 - i;
+        if (idx < m_gameHistory.size() && m_gameHistory[idx] == currentKey) {
+            repetitionsInGameHistory++;
+            if (repetitionsInGameHistory >= 2) {
+                return true;  // Threefold repetition
+            }
+        }
+    }
+    
+    return false;
+}
+
+bool Board::isDrawInSearch(const SearchInfo& searchInfo, int searchPly) const {
+    return isRepetitionDrawInSearch(searchInfo, searchPly) ||
+           isFiftyMoveRule() ||
+           isInsufficientMaterial();
+    // Note: Stalemate is handled separately in negamax
 }
 
 } // namespace seajay

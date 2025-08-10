@@ -8,8 +8,19 @@
 #include <string>
 #include <string_view>
 #include <array>
+#include <vector>
 
 namespace seajay {
+
+// Forward declaration for FEN parsing
+struct FenParseData {
+    std::array<Piece, 64> mailbox{};
+    Color sideToMove = Color::WHITE;
+    uint8_t castlingRights = 0;
+    Square enPassantSquare = NO_SQUARE;
+    uint16_t halfmoveClock = 0;
+    uint16_t fullmoveNumber = 1;
+};
 
 class Board {
 public:
@@ -78,6 +89,25 @@ public:
     // Position hash for testing (separate from Zobrist)
     uint64_t positionHash() const;
     
+    // Stage 9b Repetition Detection methods
+    void clearGameHistory();           // Clear position history for repetition detection  
+    bool isRepetitionDraw() const;     // Check for threefold repetition
+    bool isFiftyMoveRule() const;      // Check for fifty-move rule
+    
+    // Stage 9b: Complete draw detection
+    bool isDraw() const;                    // Check all draw conditions
+    bool isInsufficientMaterial() const;   // Check insufficient material
+    
+    // Stage 9b: Game History Management
+    void pushGameHistory();                       // Push current position to history
+    void clearHistoryBeforeIrreversible();       // Clear history before irreversible moves
+    size_t gameHistorySize() const;              // Get current history size
+    
+    // Stage 9b Phase 2: Search-specific draw detection
+    bool isRepetitionDrawInSearch(const class SearchInfo& searchInfo, int searchPly) const;
+    bool isDrawInSearch(const class SearchInfo& searchInfo, int searchPly) const;
+    Hash gameHistoryAt(size_t index) const;      // Get history entry at index
+    
 public:
     // Static lookup tables for initialization
     static std::array<Piece, 256> PIECE_CHAR_LUT;
@@ -102,6 +132,18 @@ private:
     FenResult parseEnPassant(std::string_view epStr);
     FenResult parseHalfmoveClock(std::string_view clockStr);
     FenResult parseFullmoveNumber(std::string_view moveStr);
+    
+    // Direct parsing helpers (atomic parsing approach)
+    FenResult parseBoardPositionDirect(std::string_view boardStr, std::array<Piece, 64>& mailbox);
+    FenResult parseSideToMoveDirect(std::string_view stmStr, Color& sideToMove);
+    FenResult parseCastlingRightsDirect(std::string_view castlingStr, uint8_t& castlingRights);
+    FenResult parseEnPassantDirect(std::string_view epStr, Square& enPassantSquare);
+    FenResult parseHalfmoveClockDirect(std::string_view clockStr, uint16_t& halfmoveClock);
+    FenResult parseFullmoveNumberDirect(std::string_view moveStr, uint16_t& fullmoveNumber);
+    
+    // FEN data validation and application
+    bool isValidFenData(const FenParseData& parseData) const;
+    void applyFenData(const FenParseData& parseData);
     
     // Legacy FEN parsing helpers (for backward compatibility)
     bool parseBoardPositionLegacy(const std::string& boardStr);
@@ -198,6 +240,11 @@ private:
     friend class BoardStateValidator;
     friend class ZobristKeyManager;
     friend class SafeMoveExecutor;
+    
+    // Stage 9b: Position History for Draw Detection
+    static constexpr size_t MAX_GAME_HISTORY = 1024;  // Support long games
+    std::vector<Hash> m_gameHistory;              // Game position history  
+    size_t m_lastIrreversiblePly;                 // Last pawn/capture move
 };
 
 } // namespace seajay

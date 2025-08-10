@@ -12,7 +12,8 @@ namespace seajay {
 
 BoardStateValidator::StateSnapshot::StateSnapshot(const Board& board) {
     // Copy all state
-    for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         mailbox[s] = board.pieceAt(s);
     }
     
@@ -38,7 +39,8 @@ BoardStateValidator::StateSnapshot::StateSnapshot(const Board& board) {
 
 bool BoardStateValidator::StateSnapshot::operator==(const StateSnapshot& other) const {
     // Check mailbox
-    for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         if (mailbox[s] != other.mailbox[s]) return false;
     }
     
@@ -70,7 +72,8 @@ std::string BoardStateValidator::StateSnapshot::compareWith(const StateSnapshot&
     std::ostringstream ss;
     
     // Check mailbox differences
-    for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         if (mailbox[s] != other.mailbox[s]) {
             ss << "Mailbox differs at " << squareToString(s) 
                << ": was " << PIECE_CHARS[mailbox[s]]
@@ -134,7 +137,8 @@ bool BoardStateValidator::checkBitboardMailboxSync(const Board& board) {
     std::array<Bitboard, NUM_PIECE_TYPES> reconstructedTypeBB = {0};
     std::array<Bitboard, NUM_COLORS> reconstructedColorBB = {0};
     
-    for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         Piece p = board.pieceAt(s);
         if (p != NO_PIECE) {
             Bitboard bb = squareBB(s);
@@ -188,7 +192,8 @@ bool BoardStateValidator::checkPieceCountLimits(const Board& board) {
     // Count pieces and validate limits
     int pieceCounts[NUM_COLORS][NUM_PIECE_TYPES] = {0};
     
-    for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+    for (int i = 0; i < 64; ++i) {
+        Square s = static_cast<Square>(i);
         Piece p = board.pieceAt(s);
         if (p != NO_PIECE) {
             pieceCounts[colorOf(p)][typeOf(p)]++;

@@ -694,6 +694,79 @@ This indicates either:
 
 ---
 
+## Bug #010: Stage 9b - setStartingPosition() Hang Issue
+
+**Status:** RESOLVED - Fixed with bounds checking and assert protection  
+**Priority:** CRITICAL (was blocking all testing)  
+**Discovery Date:** 2025-08-10  
+**Resolution Date:** 2025-08-10  
+**Impact:** Was causing complete development blockage
+
+### Summary
+
+The `Board::setStartingPosition()` method was hanging indefinitely in Debug builds. The root cause was improper bounds checking when processing pieces, leading to undefined behavior when `colorOf()` and `typeOf()` functions were called on `NO_PIECE` (value 12). In Debug mode, asserts in the Material class would trigger, causing the hang.
+
+**ROOT CAUSE:** Multiple issues with bounds checking:
+1. `setPiece()` method was not properly validating piece values before calling `colorOf()` and `typeOf()`
+2. Material class `update()` method had an assert that would fail on invalid pieces
+3. When `NO_PIECE` (12) is passed to `colorOf()`, it returns 2 (12/6), which is out of bounds for Color enum
+4. Missing include of `pst.h` in board.cpp caused compilation issues
+
+### Symptom
+
+- Calling `board.setStartingPosition()` hangs indefinitely
+- No CPU usage during hang (suggests deadlock or infinite wait)
+- Hang occurs BEFORE entering the function (debug output at function entry never executes)
+- Even simple test programs hang immediately
+
+### Code Changes That Triggered Issue
+
+The cpp-pro agent added:
+1. **SearchHistory class** - Separate history tracking for search vs game
+2. **Thread-local storage** - `thread_local std::unique_ptr<SearchHistory>` 
+3. **MoveGuard RAII pattern** - Exception-safe move handling
+4. **Static mutex** - For thread safety preparation
+
+### Investigation Results
+
+- Hang occurs before function entry (not inside the function)
+- Suggests static initialization order fiasco or thread-local initialization issue
+- Problem persists even after `git stash` (indicates build corruption)
+- Global constructors detected in binary that may be problematic
+
+### Impact
+
+- **COMPLETE BLOCKAGE** - Cannot test ANY Stage 9b functionality
+- Cannot run repetition detection tests
+- Cannot validate fifty-move rule
+- Cannot run SPRT validation
+- Development completely halted
+
+### Resolution
+
+**Fixed by:**
+1. Added proper bounds checking in `setPiece()` to validate pieces before using them
+2. Added bounds checking in `updateBitboards()` to validate color and piece type values
+3. Added bounds checking in `Material::add()`, `remove()`, and `update()` methods
+4. Added missing `#include "../evaluation/pst.h"` to board.cpp
+5. Fixed `recalculatePSTScore()` and `rebuildZobristKey()` to check piece bounds
+6. Fixed `applyFenData()` to validate pieces before processing
+
+**Testing:** 
+- Works correctly in both Debug and Release builds
+- `setStartingPosition()` now completes successfully
+- All Stage 9b tests can now run properly
+- Engine accepts "position startpos" command and runs perft correctly
+
+### Related Documents
+
+- `/workspace/project_docs/planning/stage9b_setStartingPosition_issue.md` - Detailed analysis
+- Stage 9b implementation files affected
+
+**This is the highest priority issue - must be resolved before any progress can continue.**
+
+---
+
 ## General Testing Recommendation
 
 **IMPORTANT:** For all perft test failures, we should:

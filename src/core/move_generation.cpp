@@ -18,7 +18,8 @@ void MoveGenerator::initializeAttackTables() {
     // Initialize knight attack table
     constexpr int knightOffsets[8] = {-17, -15, -10, -6, 6, 10, 15, 17};
     
-    for (Square sq = 0; sq < 64; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Bitboard attacks = 0;
         int file = fileOf(sq);
         int rank = rankOf(sq);
@@ -44,7 +45,8 @@ void MoveGenerator::initializeAttackTables() {
     // Initialize king attack table
     constexpr int kingOffsets[8] = {-9, -8, -7, -1, 1, 7, 8, 9};
     
-    for (Square sq = 0; sq < 64; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         Bitboard attacks = 0;
         int file = fileOf(sq);
         int rank = rankOf(sq);
@@ -68,7 +70,8 @@ void MoveGenerator::initializeAttackTables() {
     }
     
     // Initialize pawn attack tables
-    for (Square sq = 0; sq < 64; ++sq) {
+    for (int i = 0; i < 64; ++i) {
+        Square sq = static_cast<Square>(i);
         int file = fileOf(sq);
         int rank = rankOf(sq);
         
