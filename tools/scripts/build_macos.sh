@@ -5,8 +5,9 @@
 # It creates a separate build directory to avoid interfering with Linux development.
 # The resulting binary is renamed with -macos suffix for clarity.
 #
-# Usage: ./build_macos.sh [clean]
-#        clean - removes the macOS build directory before building
+# Usage: ./build_macos.sh [noclean]
+#        Default behavior: Performs a clean build (removes old build directories)
+#        noclean - skips the clean step (faster but may use stale object files)
 
 set -e  # Exit on error
 
@@ -89,13 +90,18 @@ check_requirements() {
     log "Found CMake: $(cmake --version | head -1)"
 }
 
-# Clean build directory if requested
+# Clean build directory if requested or by default for safety
 clean_build() {
-    if [[ "$1" == "clean" ]]; then
-        log "Cleaning previous macOS build..."
+    if [[ "$1" == "clean" ]] || [[ "$1" != "noclean" ]]; then
+        log "Cleaning previous macOS build to ensure fresh compilation..."
         rm -rf "$BUILD_DIR"
-        rm -rf "$OUTPUT_DIR"
+        # Don't delete OUTPUT_DIR, just the old binary
+        rm -f "$OUTPUT_DIR/$ENGINE_NAME"
+        # Also clean the intermediate bin directory that CMake creates
+        rm -f "$PROJECT_ROOT/bin/seajay"
         success "Clean complete"
+    else
+        warning "Skipping clean build (noclean specified) - may use stale object files!"
     fi
 }
 
@@ -111,13 +117,17 @@ configure_cmake() {
     log "Configuring CMake for macOS ARM64..."
     cd "$BUILD_DIR"
     
+    # Add build timestamp for verification
+    BUILD_TIMESTAMP=$(date '+%Y%m%d-%H%M%S')
+    log "Build timestamp: $BUILD_TIMESTAMP"
+    
     # CMake configuration optimized for Apple Silicon
     # Note: We don't override CMAKE_RUNTIME_OUTPUT_DIRECTORY to respect CMakeLists.txt settings
     cmake "$PROJECT_ROOT" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_COMPILER=clang++ \
         -DCMAKE_CXX_STANDARD=20 \
-        -DCMAKE_CXX_FLAGS="-O3 -arch arm64 -mtune=native -flto -ffast-math -DNDEBUG" \
+        -DCMAKE_CXX_FLAGS="-O3 -arch arm64 -mtune=native -flto -ffast-math -DNDEBUG -DBUILD_TIMESTAMP='\"$BUILD_TIMESTAMP\"'" \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
         || error "CMake configuration failed"
@@ -147,10 +157,9 @@ build_engine() {
 finalize_binary() {
     log "Finalizing binary..."
     
-    # CMake places the binary directly in bin-macos/ due to CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    # which is set to ${CMAKE_BINARY_DIR}/../bin, and our build dir is build-macos
-    # So the binary ends up in bin-macos/seajay
-    BUILT_BINARY="$OUTPUT_DIR/seajay"
+    # CMake places the binary in ${CMAKE_BINARY_DIR}/../bin due to CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    # Since our build dir is build-macos, the binary ends up in bin/seajay (not bin-macos)
+    BUILT_BINARY="$PROJECT_ROOT/bin/seajay"
     
     # Check if the binary exists
     if [[ -f "$BUILT_BINARY" ]]; then
@@ -171,6 +180,7 @@ finalize_binary() {
         error "Binary not found at expected location: $BUILT_BINARY"
         log "Checking possible locations..."
         find "$BUILD_DIR" -name "seajay*" -type f 2>/dev/null || true
+        find "$PROJECT_ROOT/bin" -name "seajay*" -type f 2>/dev/null || true
         find "$OUTPUT_DIR" -name "seajay*" -type f 2>/dev/null || true
     fi
 }
