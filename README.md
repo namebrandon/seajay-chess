@@ -13,14 +13,17 @@
 ## Project Status
 
 **Current Phase:** Phase 2 IN PROGRESS - Basic Search and Evaluation  
-**Version:** 2.0.0-dev  
-**Completed:** Phase 1 (5 stages) + Stage 6 (Material Evaluation)  
-**Next:** Stage 7 - Negamax Search (~1500 ELO target)
+**Version:** 2.7.0-negamax  
+**Completed:** Phase 1 (5 stages) + Stage 6-7 (Material Evaluation + Negamax Search)  
+**Next:** Stage 8 - Alpha-Beta Pruning (~800 ELO target)
 
 ### Recent Achievements
-- ✅ **NEW: Material evaluation with piece values (Stage 6)**
-- ✅ **NEW: Intelligent move selection based on material**
-- ✅ **NEW: Draw detection for insufficient material**
+- ✅ **NEW: 4-ply negamax search with iterative deepening (Stage 7)**
+- ✅ **NEW: SPRT validated +293 Elo improvement over material-only**
+- ✅ **NEW: Tactical awareness - finds checkmates consistently**
+- ✅ Material evaluation with piece values (Stage 6)
+- ✅ Intelligent move selection based on search
+- ✅ Draw detection for insufficient material
 - ✅ Complete legal move generation (100% perft accuracy)
 - ✅ UCI protocol implementation with GUI compatibility
 - ✅ All special moves working (castling, en passant, promotions)
@@ -149,9 +152,20 @@ seajay-chess/
 
 ### Phase 2: Basic Search and Evaluation (IN PROGRESS)
 - ✅ **Stage 6**: Material Evaluation - COMPLETE
-- 🔄 **Stage 7**: Negamax Search - Next
+- 🔄 **Stage 7**: Negamax Search - Next (Pre-stage planning complete)
+  - Recursive negamax to 4-ply depth
+  - Iterative deepening framework
+  - Basic time management (5% allocation)
+  - Mate detection and scoring
+  - Note: Move ordering and pruning deferred to Stage 8+
 - ⏳ **Stage 8**: Alpha-Beta Pruning - Planned
+  - Activate alpha-beta cutoffs
+  - Basic move ordering (captures first)
+  - 5x speed improvement expected
 - ⏳ **Stage 9**: Piece-Square Tables - Planned
+  - Positional evaluation
+  - Piece development incentives
+  - Note: Quiescence search deferred to Phase 3
 
 ### Future Phases
 3. **Phase 3**: Essential Optimizations (~2100 Elo)

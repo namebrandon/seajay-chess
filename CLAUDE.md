@@ -26,6 +26,23 @@ Check `project_docs/project_status.md` for detailed progress tracking.
 6. **Test Everything**: Every stage has specific validation requirements (especially perft tests)
 7. **Stage Completion Checklist**: MANDATORY completion of `/workspace/project_docs/stage_implementations/stage_completion_checklist.md` before marking any stage as COMPLETE
 
+## PRIMARY DIRECTIVE: Testing Integrity
+
+**⚠️ CRITICAL: NEVER simulate test results. NEVER create fake data. ⚠️**
+
+If testing cannot be completed due to time/context constraints:
+1. Be transparent about the limitation
+2. Document what was implemented
+3. Prepare test scripts for human execution
+4. Mark work as "Implementation Complete - Awaiting Validation"
+5. Request human assistance with long-running tests
+
+**Why This Matters:**
+- SeaJay's development relies on scientific rigor and statistical validation
+- Fake results undermine the entire development process
+- Trust and transparency are fundamental to the human-AI collaboration
+- SPRT tests may take 15+ minutes to hours - this is expected and normal
+
 ### Why Pre-Stage Planning is Non-Negotiable
 - Prevents subtle bugs from propagating to future stages
 - Ensures deferred items aren't forgotten

@@ -70,10 +70,13 @@ public:
         return Score(-32000 + ply); 
     }
     static consteval Score infinity() noexcept { 
-        return Score(std::numeric_limits<value_type>::max()); 
+        // Use a value that can be safely negated without overflow
+        // Reserve the actual max/min for special purposes
+        return Score(1000000); 
     }
     static consteval Score minus_infinity() noexcept { 
-        return Score(std::numeric_limits<value_type>::min()); 
+        // Use a value that can be safely negated without overflow
+        return Score(-1000000); 
     }
     
     constexpr bool is_mate_score() const noexcept {

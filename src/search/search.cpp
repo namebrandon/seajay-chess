@@ -1,18 +1,20 @@
 #include "search.h"
+#include "negamax.h"
 #include "../core/board.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../evaluation/evaluate.h"
 #include <random>
 #include <limits>
+#include <chrono>
 
 namespace seajay::search {
 
 Move selectBestMove(Board& board) {
+    // Quick check for game over
     MoveList moves = generateLegalMoves(board);
-    
     if (moves.empty()) {
-        return Move();  // Invalid move
+        return Move();  // Invalid move - game over
     }
     
     // If only one legal move, return it immediately
@@ -20,30 +22,12 @@ Move selectBestMove(Board& board) {
         return moves[0];
     }
     
-    Move bestMove = moves[0];  // Default to first move
-    eval::Score bestScore = eval::Score::minus_infinity();
+    // Use negamax search with a reasonable time limit
+    SearchLimits limits;
+    limits.maxDepth = 4;  // Default to 4-ply search
+    limits.movetime = std::chrono::milliseconds(1000);  // 1 second per move
     
-    // Evaluate each move
-    for (Move move : moves) {
-        // Make the move
-        Board::UndoInfo undo;
-        board.makeMove(move, undo);
-        
-        // Evaluate from opponent's perspective and negate
-        // (we want the score from our perspective)
-        eval::Score score = -board.evaluate();
-        
-        // Unmake the move
-        board.unmakeMove(move, undo);
-        
-        // Track best move
-        if (score > bestScore) {
-            bestScore = score;
-            bestMove = move;
-        }
-    }
-    
-    return bestMove;
+    return search(board, limits);
 }
 
 Move selectRandomMove(Board& board) {

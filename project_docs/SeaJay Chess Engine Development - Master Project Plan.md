@@ -153,15 +153,20 @@ Implement fundamental search algorithms and evaluation functions to transition f
 - Fixed depth search (4 ply initially)
 - Basic time management (5% of remaining time per move)
 - Search statistics tracking (nodes, time, branching factor)
+- Alpha-beta parameters added but not activated (preparation for Stage 8)
+- No move ordering (natural generation order)
+- Static evaluation at leaf nodes (no quiescence)
 - **SPRT Validation**: 1-ply vs 4-ply search
 - **Expected Outcome**: +200-300 Elo improvement
 - **Milestone**: Finds mate-in-1 and mate-in-2 positions reliably
 
 **Stage 8 - Alpha-Beta Pruning**
 
-- Alpha-beta cutoff implementation within negamax framework
+- Activate alpha-beta cutoffs (framework from Stage 7)
+- Basic move ordering (captures first using isCapture())
 - Fail-soft vs fail-hard consideration
 - Search tree reduction without affecting move selection
+- Beta cutoff statistics tracking
 - **SPRT Validation**: Plain negamax vs alpha-beta pruning
 - **Expected Outcome**: 5x search speed improvement at same strength
 - **Milestone**: Reaches depth 6 in under 1 second from starting position

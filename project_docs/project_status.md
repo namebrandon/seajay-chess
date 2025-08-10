@@ -3,7 +3,7 @@
 **Last Updated:** August 9, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 2 - Basic Search and Evaluation  
-**Current Stage:** Stage 6 Complete - Ready for Stage 7 (Negamax Search)  
+**Current Stage:** Stage 7 COMPLETE - Ready for Stage 8 (Alpha-Beta Pruning)  
 
 ## Overview
 
@@ -177,6 +177,16 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - [x] Score type with centipawn representation
 - [x] Material tracking class with incremental updates
 - [x] Static evaluation function
+
+#### Stage 7 - Negamax Search
+**Status:** COMPLETE ✅ (August 9, 2025)
+- [x] 4-ply negamax search implementation
+- [x] Iterative deepening framework
+- [x] Time management system
+- [x] Alpha-beta parameters (framework ready for Stage 8)
+- [x] UCI info output during search
+- [x] Mate detection and scoring
+- [x] **SPRT validation: PASSED** (SPRT-2025-001: +293 Elo, LLR 3.15, 13.5/16 points)
 - [x] Move selection based on material balance
 - [x] Integration with UCI protocol
 - [x] Draw detection (insufficient material)

@@ -2,7 +2,7 @@
 
 ## Questions we ask ourselves
 
-If we review the current stage deliverables form the SeaJay Chess Engien Development - Master Project Plan.md document, have we succesfully completed and tested all deliverables?
+If we review the current stage deliverables form the SeaJay Chess Engine Development - Master Project Plan.md document, abd our stage-specific implementation plan, have we successfully completed and tested all deliverables?
 
 If we have not completed any deliverables, or only partially completed them, have we noted this in detail in our project_docs/tracking/deferred_items_tracker.md file? If not, we must do so.
 

@@ -2,20 +2,20 @@
 
 **Purpose:** Historical record of all SPRT tests conducted on SeaJay  
 **Started:** August 9, 2025  
-**Current Version:** 1.5.0-master (Phase 1 Complete)  
-**Estimated Strength:** ~100 ELO (random play baseline)  
+**Current Version:** 2.7.0-negamax (Stage 7 Complete)  
+**Estimated Strength:** ~400 ELO (4-ply tactical engine)  
 
 ## Summary Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 1 |
-| Passed | 0 (0%) |
+| Total Tests | 2 |
+| Passed | 1 (50%) |
 | Failed | 0 (0%) |
-| Inconclusive | 1 (100%) |
-| Total Games | 10 |
-| Total Time | ~0.1 hours |
-| Success Rate | N/A |
+| Inconclusive | 1 (50%) |
+| Total Games | 26 |
+| Total Time | ~0.15 hours |
+| Success Rate | 100% (1/1 conclusive tests)
 
 ## Test Configuration Standards
 
@@ -26,6 +26,41 @@
 - **Concurrency:** 4-8 games
 
 ## Test History
+
+### Test SPRT-2025-001 - Stage 7 Negamax Search
+- **Date:** 2025-08-09
+- **Versions:** 2.7.0-negamax vs 2.6.0-material
+- **Feature:** 4-ply negamax search with iterative deepening
+- **Hypothesis:** Negamax search will provide >200 Elo improvement over material-only evaluation
+- **Parameters:** [0, 200] α=0.05 β=0.05
+- **Time Control:** 10+0.1
+- **Opening Book:** 4moves_test.pgn
+- **Hardware:** Development container
+- **Concurrency:** Sequential
+
+#### Results
+- **Decision:** PASS ✓ (H1 Accepted)
+- **Games Played:** 16
+- **Score:** 13-2-1 (84.38%)
+- **ELO Estimate:** +292.96 ± 349.33
+- **LLR:** 3.15 (106.8% of range)
+- **Duration:** 3m 7s
+- **LOS:** 100.00%
+
+#### Analysis
+Stage 7's 4-ply negamax search demonstrates overwhelming superiority over Stage 6's material-only evaluation. The test concluded after just 16 games with decisive results. Most games ended in checkmate, demonstrating Stage 7's tactical awareness. The engine consistently found mating attacks that Stage 6 missed. Only 1 draw in 16 games shows decisive play.
+
+#### Action Taken
+- Merged to master
+- Updated version to 2.7.0-negamax
+- Stage 7 marked complete
+
+#### Files
+- Results: `/workspace/sprt_results/SPRT-2025-001/`
+- Summary: `test_summary.md`
+- Script: `/workspace/run_stage7_sprt.sh`
+
+---
 
 ### Test SPRT-2025-08-09-001
 - **Date:** 2025-08-09

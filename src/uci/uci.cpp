@@ -1,6 +1,8 @@
 #include "uci.h"
 #include "../benchmark/benchmark.h"
 #include "../search/search.h"
+#include "../search/negamax.h"
+#include "../search/types.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -222,33 +224,40 @@ void UCIEngine::handleGo(const std::vector<std::string>& tokens) {
 UCIEngine::SearchParams UCIEngine::parseGoCommand(const std::vector<std::string>& tokens) {
     SearchParams params;
     
-    for (size_t i = 1; i < tokens.size(); i += 2) {
-        if (i + 1 >= tokens.size()) break; // Need parameter value
-        
+    for (size_t i = 1; i < tokens.size(); i++) {
         const std::string& param = tokens[i];
-        int value = std::stoi(tokens[i + 1]);
         
-        if (param == "movetime") {
-            params.movetime = value;
-        }
-        else if (param == "wtime") {
-            params.wtime = value;
-        }
-        else if (param == "btime") {
-            params.btime = value;
-        }
-        else if (param == "winc") {
-            params.winc = value;
-        }
-        else if (param == "binc") {
-            params.binc = value;
-        }
-        else if (param == "depth") {
-            params.depth = value;
-        }
-        else if (param == "infinite") {
+        if (param == "infinite") {
             params.infinite = true;
-            i--; // infinite has no parameter
+        }
+        else if (i + 1 < tokens.size()) {
+            // Parameters that need a value
+            int value = std::stoi(tokens[i + 1]);
+            
+            if (param == "movetime") {
+                params.movetime = value;
+                i++; // Skip the value
+            }
+            else if (param == "wtime") {
+                params.wtime = value;
+                i++;
+            }
+            else if (param == "btime") {
+                params.btime = value;
+                i++;
+            }
+            else if (param == "winc") {
+                params.winc = value;
+                i++;
+            }
+            else if (param == "binc") {
+                params.binc = value;
+                i++;
+            }
+            else if (param == "depth") {
+                params.depth = value;
+                i++;
+            }
         }
     }
     
@@ -277,27 +286,32 @@ int UCIEngine::SearchParams::calculateSearchTime(Color sideToMove) const {
 }
 
 void UCIEngine::search(const SearchParams& params) {
-    auto startTime = std::chrono::steady_clock::now();
+    // Convert UCI parameters to search limits
+    search::SearchLimits limits;
     
-    // Stage 6: Use material evaluation for move selection
-    Move bestMove = search::selectBestMove(m_board);
+    // Set depth limit
+    if (params.depth > 0) {
+        limits.maxDepth = params.depth;
+    } else {
+        limits.maxDepth = 64;  // Default max depth
+    }
     
-    // Calculate actual search time
-    auto endTime = std::chrono::steady_clock::now();
-    int64_t searchTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-        endTime - startTime).count();
+    // Set time controls
+    if (params.movetime > 0) {
+        limits.movetime = std::chrono::milliseconds(params.movetime);
+    } else if (params.wtime > 0 || params.btime > 0) {
+        limits.time[WHITE] = std::chrono::milliseconds(params.wtime);
+        limits.time[BLACK] = std::chrono::milliseconds(params.btime);
+        limits.inc[WHITE] = std::chrono::milliseconds(params.winc);
+        limits.inc[BLACK] = std::chrono::milliseconds(params.binc);
+    }
     
-    // Generate search info
-    SearchInfo info;
-    updateSearchInfo(info, bestMove, searchTimeMs);
+    limits.infinite = params.infinite;
     
-    // Add evaluation score to info output
-    eval::Score score = m_board.evaluate();
-    std::cout << "info depth " << info.depth 
-              << " score cp " << score.to_cp()
-              << " nodes " << info.nodes
-              << " time " << info.timeMs
-              << " pv " << info.pv << std::endl;
+    // Use the new negamax search
+    Move bestMove = search::search(m_board, limits);
+    
+    // Note: search::search already outputs UCI info during search
     
     // Send best move
     if (bestMove != Move()) {

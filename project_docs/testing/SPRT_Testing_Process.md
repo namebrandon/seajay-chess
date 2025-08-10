@@ -64,91 +64,171 @@ This document defines the standardized process for conducting SPRT (Sequential P
 - `-master`: Current master branch
 - `-exp`: Experimental feature
 
-## SPRT Testing Process
+## SPRT Testing Process - SeaJay Implementation
 
-### Step 1: Pre-Test Checklist
+### Step 1: Prepare Test Binaries
 
-Before running SPRT:
+Create two binaries for comparison:
 
-- [ ] Code compiles without warnings
-- [ ] Perft tests pass (no move generation bugs)
-- [ ] Bench command runs successfully
-- [ ] Version number assigned
-- [ ] Changes documented in git commit
-- [ ] Base version identified and built
+1. **Base Binary**: The current accepted version (e.g., Stage N-1)
+   ```bash
+   # Checkout base version
+   git checkout <base-commit>
+   cd /workspace/build && make clean && make seajay
+   cp seajay ../bin/seajay_base
+   ```
 
-### Step 2: Test Configuration
+2. **Test Binary**: The new version with improvements (e.g., Stage N)
+   ```bash
+   # Checkout or apply test changes
+   git checkout <test-branch>
+   cd /workspace/build && make clean && make seajay
+   cp seajay ../bin/seajay_test
+   ```
 
-#### Select Appropriate Parameters
+3. **Verify Both Work**:
+   ```bash
+   echo -e "position startpos\ngo depth 1" | ../bin/seajay_base
+   echo -e "position startpos\ngo depth 1" | ../bin/seajay_test
+   ```
 
-| Phase | Test Type | elo0 | elo1 | alpha | beta | Time Control |
-|-------|-----------|------|------|-------|------|--------------|
-| 2 | Feature | 0 | 5 | 0.05 | 0.05 | 10+0.1 |
-| 2 | Tuning | 0 | 3 | 0.05 | 0.05 | 10+0.1 |
-| 3 | Optimization | 0 | 3 | 0.05 | 0.05 | 10+0.1 |
-| 3 | Simplification | -2 | 2 | 0.05 | 0.10 | 10+0.1 |
-| 4 | NNUE | 0 | 5 | 0.05 | 0.05 | 20+0.2 |
-| 5+ | Fine-tuning | 0 | 2 | 0.05 | 0.05 | 60+0.6 |
+### Step 2: Pre-Test Validation
 
-#### Document Test Setup
+- [ ] Both binaries compile without warnings
+- [ ] Perft tests pass for test binary (if move generation changed)
+- [ ] Both engines respond to UCI commands
+- [ ] Fast-chess is available at `/workspace/external/testers/fast-chess/fastchess`
+- [ ] Opening book exists at `/workspace/external/books/4moves_test.pgn`
 
-Create entry in SPRT log:
-```markdown
-Test ID: SPRT-2025-001
-Date: 2025-08-09
-Version: 2.1.0-material vs 2.0.0-master
-Feature: Material evaluation
-Parameters: [0, 5] α=0.05 β=0.05
-Time Control: 10+0.1
-Opening Book: 8moves_v3.pgn
-Concurrency: 4
-Hardware: [CPU/RAM specs]
-```
+### Step 3: Configure SPRT Parameters
 
-### Step 3: Run SPRT Test
+#### Select Appropriate Parameters Based on Expected Improvement
 
-#### Standard Command Template
+| Expected Improvement | elo0 | elo1 | alpha | beta | Time Control | Notes |
+|---------------------|------|------|-------|------|--------------|-------|
+| Major feature (>100 Elo) | 0 | 50-200 | 0.05 | 0.05 | 10+0.1 | e.g., adding search to eval-only |
+| Significant feature | 0 | 10-30 | 0.05 | 0.05 | 10+0.1 | e.g., pruning, extensions |
+| Minor improvement | 0 | 5-10 | 0.05 | 0.05 | 10+0.1 | e.g., move ordering |
+| Tuning/refinement | 0 | 3-5 | 0.05 | 0.05 | 10+0.1 | e.g., parameter adjustment |
+| Simplification | -3 | 3 | 0.05 | 0.10 | 10+0.1 | Ensure no regression |
+
+### Step 4: Create Test Script
+
+Create a test script (e.g., `/workspace/run_sprt_test.sh`):
+
 ```bash
-python3 /workspace/tools/scripts/run_sprt.py \
-    /workspace/bin/seajay_[version] \
-    /workspace/bin/seajay_[base] \
-    --elo0 [ELO0] --elo1 [ELO1] \
-    --alpha [ALPHA] --beta [BETA] \
-    --time-control "[TC]" \
-    --opening-book [BOOK] \
-    --output-dir /workspace/sprt_results/[TEST_ID] \
-    --concurrency [N]
+#!/bin/bash
+
+# SPRT Test Script for SeaJay
+# Customize the parameters below for your specific test
+
+TEST_ID="SPRT-YYYY-XXX"  # Update with actual test ID
+TEST_NAME="Test Binary"   # Descriptive name
+BASE_NAME="Base Binary"   # Descriptive name
+
+# SPRT Parameters (adjust based on expected improvement)
+ELO0=0      # Lower bound (usually 0)
+ELO1=50     # Upper bound (adjust based on expectation)
+ALPHA=0.05  # Type I error probability
+BETA=0.05   # Type II error probability
+
+# Test configuration
+TC="10+0.1"  # Time control
+ROUNDS=1000  # Maximum rounds (SPRT may stop earlier)
+
+# Paths
+TEST_BIN="/workspace/bin/seajay_test"
+BASE_BIN="/workspace/bin/seajay_base"
+BOOK="/workspace/external/books/4moves_test.pgn"
+OUTPUT_DIR="/workspace/sprt_results/${TEST_ID}"
+
+# Create output directory
+mkdir -p "${OUTPUT_DIR}"
+
+echo "SPRT Test: ${TEST_ID}"
+echo "Testing: ${TEST_NAME} vs ${BASE_NAME}"
+echo "SPRT bounds: [${ELO0}, ${ELO1}]"
+echo "Starting at $(date)"
+echo ""
+
+# Run fast-chess with SPRT
+/workspace/external/testers/fast-chess/fastchess \
+    -engine name="${TEST_NAME}" cmd="${TEST_BIN}" \
+    -engine name="${BASE_NAME}" cmd="${BASE_BIN}" \
+    -each proto=uci tc="${TC}" \
+    -sprt elo0="${ELO0}" elo1="${ELO1}" alpha="${ALPHA}" beta="${BETA}" \
+    -rounds "${ROUNDS}" \
+    -repeat \
+    -recover \
+    -openings file="${BOOK}" format=pgn \
+    -pgnout "${OUTPUT_DIR}/games.pgn" \
+    -log file="${OUTPUT_DIR}/fastchess.log" level=info \
+    2>&1 | tee "${OUTPUT_DIR}/console_output.txt"
+
+echo ""
+echo "Test completed at $(date)"
+echo "Results saved to: ${OUTPUT_DIR}"
 ```
 
-#### Monitor Progress
-- Check status every 15-30 minutes
-- Note any anomalies
-- Don't interrupt unless necessary
-- Let SPRT decide when to stop
+### Step 5: Run the Test
 
-### Step 4: Record Results
+Execute the test script:
+```bash
+chmod +x /workspace/run_sprt_test.sh
+./run_sprt_test.sh
+```
 
-#### Capture All Output
-Save to `/workspace/sprt_results/[TEST_ID]/`:
-- `sprt_status.json` - Final statistics
-- `sprt_games.pgn` - All games played
-- `console_output.txt` - Full terminal output
-- `test_summary.md` - Human-readable summary
+**Note:** SPRT tests can take significant time (15 minutes to several hours depending on the Elo difference and hardware). The test will automatically stop when statistical significance is reached.
 
-#### Update SPRT Log
-Record in `/workspace/project_docs/testing/SPRT_Results_Log.md`:
+### Step 6: Interpret Results
+
+#### Understanding Fast-chess Output
+
+Fast-chess will display results like:
+```
+Score of Stage7 vs Stage6: 147 - 23 - 30 [0.810]
+Elo: 234.89 +/- 44.52 (95% CI)
+SPRT: LLR = 2.95 [-2.94, 2.94] (elo0=0, elo1=200, alpha=0.05, beta=0.05)
+SPRT: H1 accepted
+```
+
+#### Result Interpretation:
+- **SPRT: H1 accepted** - Test passed, improvement confirmed
+- **SPRT: H0 accepted** - Test failed, no improvement detected
+- **SPRT: Inconclusive** - Max games reached without decision
+
+### Step 7: Document Results
+
+Create a summary in `/workspace/sprt_results/[TEST_ID]/test_summary.md`:
+
 ```markdown
-## Test SPRT-2025-001
-- **Result**: PASS ✓
-- **Games**: 1,234
-- **Score**: 654.5/1234 (53.1%)
-- **ELO**: +21.7 ± 8.3
-- **LLR**: 2.95 (2.89)
-- **Duration**: 2h 34m
-- **Decision**: Merge to master
+# SPRT Test Results - [Feature Name]
+
+**Test ID:** SPRT-YYYY-XXX
+**Date:** YYYY-MM-DD
+**Result:** PASS/FAIL/INCONCLUSIVE
+
+## Engines Tested
+- **Test Engine:** [Version and features]
+- **Base Engine:** [Version and features]
+
+## Test Parameters
+- **Elo bounds:** [elo0, elo1]
+- **Significance:** α = X.XX, β = X.XX
+- **Time control:** X+Y seconds
+
+## Results
+- **Games played:** XXX
+- **Score:** XXX/XXX (XX.X%)
+- **Win/Draw/Loss:** XX/XX/XX
+- **LLR:** X.XX [lower, upper]
+- **Estimated Elo:** +XX ± XX
+
+## Conclusion
+[Brief interpretation of results]
 ```
 
-### Step 5: Post-Test Actions
+### Step 8: Post-Test Actions
 
 #### If PASSED ✓
 1. Update version in master
@@ -335,6 +415,55 @@ At end of each phase:
 - Identify successful techniques
 - Document failed approaches
 - Archive all test data
+
+## Example: Stage 7 SPRT Test
+
+### Current Situation
+- **Implementation Complete:** 4-ply negamax search with iterative deepening
+- **Base Version:** Stage 6 (material-only evaluation, 1-ply)
+- **Test Version:** Stage 7 (negamax search, 4-ply)
+- **Expected Improvement:** Major (200+ Elo)
+
+### Prepared Resources
+
+1. **Binaries Ready:**
+   - `/workspace/bin/seajay_stage6` - Material evaluation only
+   - `/workspace/bin/seajay_stage7` - With negamax search
+
+2. **Test Script Created:** `/workspace/run_stage7_sprt.sh`
+   ```bash
+   #!/bin/bash
+   TEST_ID="SPRT-2025-001"
+   OUTPUT_DIR="/workspace/sprt_results/${TEST_ID}"
+   
+   /workspace/external/testers/fast-chess/fastchess \
+       -engine name=Stage7 cmd=/workspace/bin/seajay_stage7 \
+       -engine name=Stage6 cmd=/workspace/bin/seajay_stage6 \
+       -each proto=uci tc=10+0.1 \
+       -sprt elo0=0 elo1=200 alpha=0.05 beta=0.05 \
+       -rounds 1000 \
+       -openings file=/workspace/external/books/4moves_test.pgn format=pgn \
+       -pgnout "${OUTPUT_DIR}/games.pgn" \
+       -log file="${OUTPUT_DIR}/fastchess.log" level=info
+   ```
+
+3. **To Run the Test:**
+   ```bash
+   ./run_stage7_sprt.sh
+   ```
+
+### Expected Output Format
+```
+Score of Stage7 vs Stage6: 147 - 23 - 30 [0.810]
+Elo: 234.89 +/- 44.52 (95% CI)
+SPRT: LLR = 2.95 [-2.94, 2.94] (elo0=0, elo1=200)
+SPRT: H1 accepted
+```
+
+### After Test Completion
+Please either:
+1. Copy the console output and share it for review
+2. Save output to `/workspace/sprt_results/SPRT-2025-001/console_output.txt` for analysis
 
 ## Best Practices
 

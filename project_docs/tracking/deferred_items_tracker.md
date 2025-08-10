@@ -1,7 +1,7 @@
 # SeaJay Chess Engine - Deferred Items Tracker
 
 **Purpose:** Track items deferred from earlier stages and items being deferred to future stages  
-**Last Updated:** December 2024  
+**Last Updated:** August 9, 2025  
 
 ## Items FROM Stage 1 TO Stage 2
 
@@ -114,6 +114,68 @@ TEST(Board, DISABLED_EnPassantPinValidation) {
    - **Validation Criteria:** Position 3 must achieve exactly 11,030,083 nodes at depth 6
    - **Technical Notes:** 99.974% accuracy demonstrates fundamentally sound move generation
 
+## Items DEFERRED FROM Stage 7 TO Future Stages
+
+### To Stage 8 (Alpha-Beta Pruning):
+1. **Active Alpha-Beta Cutoffs**
+   - Currently parameters passed but not used for pruning
+   - Beta cutoff infrastructure in place but inactive
+   - Will reduce search tree size by ~80%
+
+2. **Move Ordering**
+   - MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
+   - Killer move heuristic
+   - History heuristic
+   - Improves pruning effectiveness
+
+3. **Aspiration Windows**
+   - Search with narrow window around previous score
+   - Re-search on fail high/low
+   - Reduces nodes searched
+
+4. **Search Tree Statistics**
+   - Beta cutoff counting
+   - Move ordering effectiveness metrics
+   - Branching factor analysis
+
+### To Stage 9 (Positional Evaluation):
+1. **Quiescence Search**
+   - Search captures at leaf nodes
+   - Resolve tactical sequences
+   - Eliminate horizon effect
+
+2. **Check Extensions**
+   - Extend search when in check
+   - Don't count check evasions against depth
+   - Find deeper checkmates
+
+3. **Search Enhancements**
+   - Passed pawn extensions
+   - Recapture extensions
+   - One-reply extensions
+
+### To Future Phases (Phase 3+):
+1. **Transposition Tables**
+   - Cache search results
+   - Avoid re-searching positions
+   - Major performance improvement
+
+2. **Advanced Pruning**
+   - Null move pruning
+   - Late move reductions (LMR)
+   - Futility pruning
+   - Delta pruning in quiescence
+
+3. **Parallel Search**
+   - Multi-threading support
+   - Lazy SMP or YBWC
+   - Shared transposition table
+
+4. **Advanced Time Management**
+   - Dynamic time allocation
+   - Move instability detection
+   - Pondering support
+
 ## Stage 2 Specific Enhancements Needed
 
 Based on review, Stage 2 needs to:
@@ -151,3 +213,33 @@ This tracker should be reviewed:
 - Items marked with ✅ are complete
 - TODO comments in code should reference this document
 - Keep this document updated as items are completed or deferred
+
+## Items DEFERRED FROM Stage 7 TO Future Stages
+
+### To Stage 8 (Alpha-Beta Pruning):
+1. **Active Alpha-Beta Cutoffs**
+   - Framework is in place with parameters
+   - Actual pruning logic to be activated
+   - Move ordering for better cutoffs
+
+2. **Search Tree Statistics**
+   - Cutoff rates and efficiency metrics
+   - Branch factor analysis
+
+### To Stage 9 (Positional Evaluation):
+1. **Quiescence Search**
+   - Handle horizon effect
+   - Capture-only search at leaf nodes
+
+2. **Search Extensions**
+   - Check extensions
+   - Passed pawn extensions
+   - One-reply extensions
+
+### To Future Phases:
+1. **Transposition Tables** (Phase 3)
+2. **Null Move Pruning** (Phase 3)
+3. **Late Move Reductions** (Phase 3)
+4. **Multi-threading** (Phase 3+)
+5. **Repetition Detection** (Phase 2/3)
+6. **50-Move Rule** (Phase 2/3)

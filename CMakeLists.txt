@@ -48,6 +48,9 @@ set(EVAL_SOURCES
 set(SEARCH_SOURCES
     src/search/search.cpp
     src/search/search.h
+    src/search/negamax.cpp
+    src/search/negamax.h
+    src/search/types.h
 )
 
 # Include directories
@@ -109,6 +112,10 @@ target_link_libraries(test_en_passant_check_evasion seajay_core)
 # Material evaluation test
 add_executable(test_material_evaluation tests/test_material_evaluation.cpp)
 target_link_libraries(test_material_evaluation seajay_core)
+
+# Negamax search test
+add_executable(test_negamax tests/test_negamax.cpp)
+target_link_libraries(test_negamax seajay_core)
 
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)
