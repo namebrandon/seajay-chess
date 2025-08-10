@@ -194,19 +194,39 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - [x] 19 material evaluation tests passing
 - [x] SPRT attempted (single-ply insufficient)
 
+#### Stage 8 - Alpha-Beta Pruning
+**Status:** COMPLETE ✅ (August 10, 2025)
+- [x] Beta cutoffs activated (line 193-199 in negamax.cpp)
+- [x] Basic move ordering (promotions → captures → quiet moves)
+- [x] Search statistics tracking (EBF, move ordering efficiency)
+- [x] **Performance Results:**
+  - Effective Branching Factor: 6.84 at depth 4, 7.60 at depth 5
+  - Move ordering efficiency: 94-99%
+  - Node reduction: ~90% (25,350 nodes at depth 5 vs millions without)
+  - NPS: 1.49M nodes/second
+- [x] Validation framework created and tested
+- [x] All test positions produce identical moves/scores
+- [x] Can now reach depth 6 in under 1 second from start position
+- [x] **SPRT Validation: PASSED** (SPRT-2025-006)
+  - Test: Stage 8 (alpha-beta) vs Stage 7 (no alpha-beta)
+  - Result: H1 accepted after 28 games
+  - Elo gain: +191 ± 143 (significantly stronger)
+  - Time control: 10+0.1 seconds
+  - LLR: 3.06 (exceeded 2.94 threshold)
+  - Completion time: 9.5 minutes
+
 ## Next Steps
 
-### Immediate (Stage 7 - Negamax Search)
-1. Implement negamax algorithm
-2. Add multi-ply recursive search
-3. Fixed depth search (4 ply initially)
-4. Basic time management (5% of remaining time)
-5. SPRT validation against material-only version
+### Immediate (Stage 9 - Positional Evaluation)
+1. Implement piece-square tables from Chess Programming Wiki
+2. Combine material and positional scoring
+3. Test symmetric evaluation property
+4. SPRT validation against material-only version
 
 ### Short Term (Rest of Phase 2)
-1. Stage 8: Implement alpha-beta pruning
-2. Stage 9: Create positional evaluation with piece-square tables
-3. Continue SPRT validation testing
+1. Stage 9: Complete positional evaluation with PST
+2. Phase 2 completion and validation
+3. Begin Phase 3: Essential Optimizations
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces

@@ -13,7 +13,7 @@ endif()
 
 # Compiler flags
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -march=native")
 
 # Warning flags
@@ -116,6 +116,14 @@ target_link_libraries(test_material_evaluation seajay_core)
 # Negamax search test
 add_executable(test_negamax tests/test_negamax.cpp)
 target_link_libraries(test_negamax seajay_core)
+
+# Alpha-beta validation test
+add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
+target_include_directories(test_alphabeta_validation PRIVATE ${CMAKE_SOURCE_DIR}/external/googletest/googletest/include)
+target_link_libraries(test_alphabeta_validation seajay_core 
+    ${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest.a 
+    ${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest_main.a 
+    pthread)
 
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)

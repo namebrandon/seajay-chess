@@ -4,6 +4,7 @@
 #include "../evaluation/types.h"
 #include <chrono>
 #include <cstdint>
+#include <cmath>
 
 namespace seajay::search {
 
@@ -31,6 +32,9 @@ struct SearchLimits {
 struct SearchInfo {
     // Node statistics
     uint64_t nodes = 0;           // Total nodes searched
+    uint64_t betaCutoffs = 0;     // Total beta cutoffs
+    uint64_t betaCutoffsFirst = 0; // Beta cutoffs on first move (move ordering efficiency)
+    uint64_t totalMoves = 0;       // Total moves examined
     
     // Depth tracking
     int depth = 0;                 // Current iterative deepening depth
@@ -69,9 +73,26 @@ struct SearchInfo {
         return elapsed() >= timeLimit;
     }
     
+    // Calculate effective branching factor
+    double effectiveBranchingFactor() const {
+        if (nodes <= 1 || depth <= 1) return 0.0;
+        // Approximate EBF as the nth root of nodes, where n is depth
+        // This is a simplified calculation - more accurate would use iterative method
+        return std::pow(static_cast<double>(nodes), 1.0 / depth);
+    }
+    
+    // Calculate move ordering efficiency (% of beta cutoffs on first move)
+    double moveOrderingEfficiency() const {
+        if (betaCutoffs == 0) return 0.0;
+        return 100.0 * static_cast<double>(betaCutoffsFirst) / static_cast<double>(betaCutoffs);
+    }
+    
     // Reset for new search
     void reset() {
         nodes = 0;
+        betaCutoffs = 0;
+        betaCutoffsFirst = 0;
+        totalMoves = 0;
         depth = 0;
         seldepth = 0;
         bestMove = Move();

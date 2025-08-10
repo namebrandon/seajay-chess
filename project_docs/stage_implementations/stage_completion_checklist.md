@@ -2,7 +2,7 @@
 
 ## Questions we ask ourselves
 
-If we review the current stage deliverables form the SeaJay Chess Engine Development - Master Project Plan.md document, abd our stage-specific implementation plan, have we successfully completed and tested all deliverables?
+If we review the current stage deliverables form the SeaJay Chess Engine Development - Master Project Plan.md document, and our stage-specific implementation plan, have we successfully completed and tested all deliverables?
 
 If we have not completed any deliverables, or only partially completed them, have we noted this in detail in our project_docs/tracking/deferred_items_tracker.md file? If not, we must do so.
 
@@ -19,5 +19,7 @@ Has the project_docs/project_status.md document been updated recently and with a
 Has anything significant or materially changed that would impact our README.md file? If so, we should note it.
 
 Is our README.md accurate and up-to-date? If not, we need to make sure it is.
+
+Have we incremented the version of our engine in its code? We want to be able to tell different builds from different stages from each other.
 
 Once we are confident that all of these items are appropriately addressed, we should commit our code with a detailed message for historical reference.

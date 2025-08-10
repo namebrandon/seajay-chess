@@ -116,27 +116,41 @@ TEST(Board, DISABLED_EnPassantPinValidation) {
 
 ## Items DEFERRED FROM Stage 7 TO Future Stages
 
-### To Stage 8 (Alpha-Beta Pruning):
-1. **Active Alpha-Beta Cutoffs**
-   - Currently parameters passed but not used for pruning
-   - Beta cutoff infrastructure in place but inactive
-   - Will reduce search tree size by ~80%
+### Stage 8 COMPLETED Items:
+1. **Active Alpha-Beta Cutoffs** ✅
+   - Beta cutoffs successfully activated
+   - Achieving 90% node reduction
+   - Working correctly with fail-soft
 
-2. **Move Ordering**
-   - MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
-   - Killer move heuristic
-   - History heuristic
-   - Improves pruning effectiveness
+2. **Basic Move Ordering** ✅
+   - Promotions → Captures → Quiet moves implemented
+   - 94-99% move ordering efficiency achieved
+   
+3. **Search Tree Statistics** ✅
+   - Beta cutoff counting implemented
+   - Move ordering effectiveness tracking
+   - Effective branching factor calculation
 
-3. **Aspiration Windows**
+### Items Deferred FROM Stage 8:
+1. **Advanced Move Ordering (MVV-LVA)**
+   - Most Valuable Victim - Least Valuable Attacker
+   - More sophisticated capture ordering
+   - Deferred to Stage 9 or Phase 3
+
+2. **Killer Move Heuristic**
+   - Track moves that cause cutoffs
+   - Order killer moves early
+   - Deferred to Phase 3
+
+3. **History Heuristic**
+   - Track move success rates
+   - Statistical move ordering
+   - Deferred to Phase 3
+
+4. **Aspiration Windows**
    - Search with narrow window around previous score
    - Re-search on fail high/low
-   - Reduces nodes searched
-
-4. **Search Tree Statistics**
-   - Beta cutoff counting
-   - Move ordering effectiveness metrics
-   - Branching factor analysis
+   - Deferred to Phase 3
 
 ### To Stage 9 (Positional Evaluation):
 1. **Quiescence Search**

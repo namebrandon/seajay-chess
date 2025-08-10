@@ -181,6 +181,31 @@ Implement fundamental search algorithms and evaluation functions to transition f
 - **Expected Outcome**: +150-200 Elo improvement
 - **Milestone**: Demonstrates piece development and center control
 
+**Stage 9b - Draw Detection and Repetition Handling**
+
+**CRITICAL**: This stage MUST be implemented before extensive SPRT testing to avoid 
+high draw rates from repetitions that obscure true engine strength differences.
+
+- Threefold repetition detection:
+  - Position history tracking in Board class
+  - Zobrist key history during search
+  - Return draw score (0) when repetition detected
+  - Efficient history management (ring buffer or stack)
+- Fifty-move rule implementation:
+  - Track halfmove counter (moves since pawn move or capture)
+  - Return draw score when 50 moves reached
+  - Reset counter on pawn moves and captures
+- Insufficient material detection (already implemented in Material class)
+- Draw claim handling in UCI protocol
+- **Validation Requirements**:
+  - Test positions with forced repetitions
+  - Verify repetition detection in search tree
+  - Ensure no false positives in repetition detection
+  - Performance impact < 5% on search speed
+- **SPRT Validation**: Version without vs with repetition detection
+- **Expected Outcome**: Significant reduction in repetition draws (from ~50% to <10%)
+- **Milestone**: No games end in repetition when avoidable
+
 ### Phase Completion Criteria
 
 - Engine strength approximately 1500 Elo
@@ -651,6 +676,7 @@ Each stage must satisfy the following criteria before proceeding:
 - Stage 6: ~800 Elo (material evaluation)
 - Stage 7: ~1200 Elo (multi-ply search)
 - Stage 9: ~1500 Elo (positional awareness)
+- Stage 9b: ~1500 Elo (draw detection - prevents game losses from repetition)
 - Stage 10: ~1500 Elo (magic bitboards - no Elo gain, but 3-5x speedup)
 - Stage 12: ~1800 Elo (transposition tables)
 - Stage 14: ~2100 Elo (quiescence search)
@@ -671,6 +697,11 @@ Each stage must satisfy the following criteria before proceeding:
 - CMake or Makefile build system
 
 ### Testing Infrastructure
+
+**Important Note on SPRT Testing**: 
+Without repetition detection (Stage 9b), SPRT tests may show excessive draw rates
+(40-50% by repetition). Use varied opening books (4+ moves deep) to mitigate this
+issue until repetition detection is implemented.
 
 - fast-chess tournament manager (preferred) or cutechess-cli
 - Reference engines for strength comparison:
