@@ -60,15 +60,21 @@ void Board::clear() {
     m_enPassantSquare = NO_SQUARE;
     m_halfmoveClock = 0;
     m_fullmoveNumber = 1;
-    m_zobristKey = 0;
     
     // Clear material tracking
     m_material.clear();
     m_evalCacheValid = false;
+    
+    // Bug #002 fix: Properly initialize zobrist key even for empty board
+    // Must be done after setting all state variables
+    rebuildZobristKey();
 }
 
 void Board::setStartingPosition() {
+    // Use fromFEN which properly initializes everything including zobrist
     fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    // Note: fromFEN -> parseFEN -> rebuildZobristKey() ensures proper initialization
+    // This fixes Bug #002: Zobrist Key Initialization Inconsistency
 }
 
 void Board::setPiece(Square s, Piece p) {

@@ -190,6 +190,13 @@ TEST(Board, DISABLED_EnPassantPinValidation) {
    - Move instability detection
    - Pondering support
 
+5. **Zobrist Random Values Enhancement**
+   - Replace sequential debug values (1, 2, 3...) with proper random values
+   - Current implementation uses sequential values for debugging
+   - Should use high-quality random 64-bit values for production
+   - Improves hash distribution and reduces collisions
+   - Reference: src/core/zobrist.cpp lines 13-75
+
 ## Stage 2 Specific Enhancements Needed
 
 Based on review, Stage 2 needs to:
