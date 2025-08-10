@@ -4,6 +4,7 @@
 #include "board_safety.h"  // Safety infrastructure
 #include "../evaluation/material.h"
 #include "../evaluation/types.h"
+#include "../evaluation/pst.h"  // PST for Stage 9
 #include <string>
 #include <string_view>
 #include <array>
@@ -36,7 +37,10 @@ public:
     Bitboard empty() const noexcept { return ~m_occupied; }
     
     Color sideToMove() const noexcept { return m_sideToMove; }
-    void setSideToMove(Color c) noexcept { m_sideToMove = c; }
+    void setSideToMove(Color c) noexcept { 
+        m_sideToMove = c; 
+        m_evalCacheValid = false;  // Side to move affects evaluation
+    }
     
     uint8_t castlingRights() const noexcept { return m_castlingRights; }
     void setCastlingRights(uint8_t rights) noexcept { m_castlingRights = rights; }
@@ -59,6 +63,10 @@ public:
     // Material evaluation
     const eval::Material& material() const noexcept { return m_material; }
     eval::Score evaluate() const noexcept;
+    
+    // PST evaluation (Stage 9)
+    const eval::MgEgScore& pstScore() const noexcept { return m_pstScore; }
+    void recalculatePSTScore();
     
     std::string toFEN() const;
     bool fromFEN(const std::string& fen);  // Legacy interface
@@ -131,6 +139,7 @@ public:
         uint16_t halfmoveClock;
         uint16_t fullmoveNumber;  // ADDED: Was missing!
         Hash zobristKey;
+        eval::MgEgScore pstScore;  // Stage 9: PST score backup
     };
     
     // Public interface with safety checks
@@ -168,6 +177,9 @@ private:
     eval::Material m_material;
     mutable eval::Score m_evalCache{eval::Score::zero()};
     mutable bool m_evalCacheValid{false};
+    
+    // PST tracking (Stage 9)
+    eval::MgEgScore m_pstScore{};  // Incremental PST score
     
     static std::array<std::array<Hash, NUM_PIECES>, NUM_SQUARES> s_zobristPieces;
     static std::array<Hash, NUM_SQUARES> s_zobristEnPassant;

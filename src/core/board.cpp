@@ -65,6 +65,9 @@ void Board::clear() {
     m_material.clear();
     m_evalCacheValid = false;
     
+    // Clear PST score (Stage 9)
+    m_pstScore = eval::MgEgScore();
+    
     // Bug #002 fix: Properly initialize zobrist key even for empty board
     // Must be done after setting all state variables
     rebuildZobristKey();
@@ -90,11 +93,29 @@ void Board::setPiece(Square s, Piece p) {
         updateBitboards(s, oldPiece, false);
         // Update material tracking
         m_material.remove(oldPiece);
+        // Update PST score (Stage 9) - remove old piece value
+        Color oldColor = colorOf(oldPiece);
+        PieceType oldType = typeOf(oldPiece);
+        // PST values are from white's perspective, negate for black
+        if (oldColor == WHITE) {
+            m_pstScore -= eval::PST::value(oldType, s, WHITE);
+        } else {
+            m_pstScore += eval::PST::value(oldType, s, BLACK);
+        }
     }
     if (p != NO_PIECE) {
         updateBitboards(s, p, true);
         // Update material tracking
         m_material.add(p);
+        // Update PST score (Stage 9) - add new piece value
+        Color newColor = colorOf(p);
+        PieceType newType = typeOf(p);
+        // PST values are from white's perspective, negate for black
+        if (newColor == WHITE) {
+            m_pstScore += eval::PST::value(newType, s, WHITE);
+        } else {
+            m_pstScore -= eval::PST::value(newType, s, BLACK);
+        }
     }
     
     // Finally update zobrist (single XOR for difference)
@@ -776,6 +797,7 @@ FenResult Board::parseFEN(const std::string& fen) {
     // CRITICAL: Reset material counts before rebuilding!
     tempBoard.m_material.clear();
     tempBoard.m_evalCacheValid = false;
+    tempBoard.m_pstScore = eval::MgEgScore();  // Reset PST score (Stage 9)
     
     for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
         Piece p = tempBoard.m_mailbox[sq];
@@ -785,6 +807,9 @@ FenResult Board::parseFEN(const std::string& fen) {
             tempBoard.m_material.add(p);
         }
     }
+    
+    // Rebuild PST score from scratch (Stage 9)
+    tempBoard.recalculatePSTScore();
     
     // Rebuild Zobrist key from scratch (never incremental after FEN)
     tempBoard.rebuildZobristKey();
@@ -1089,6 +1114,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     undo.halfmoveClock = m_halfmoveClock;
     undo.fullmoveNumber = m_fullmoveNumber;  // FIXED: Save fullmove number!
     undo.zobristKey = m_zobristKey;
+    undo.pstScore = m_pstScore;  // Stage 9: Save PST score
     
     Square from = moveFrom(move);
     Square to = moveTo(move);
@@ -1135,6 +1161,20 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         // Single zobrist update for castling
         updateZobristForCastling(us, kingside);
         
+        // Update PST for castling (Stage 9)
+        // King and rook moved
+        if (us == WHITE) {
+            m_pstScore -= eval::PST::value(KING, from, WHITE);
+            m_pstScore += eval::PST::value(KING, to, WHITE);
+            m_pstScore -= eval::PST::value(ROOK, rookFrom, WHITE);
+            m_pstScore += eval::PST::value(ROOK, rookTo, WHITE);
+        } else {
+            m_pstScore += eval::PST::value(KING, from, BLACK);
+            m_pstScore -= eval::PST::value(KING, to, BLACK);
+            m_pstScore += eval::PST::value(ROOK, rookFrom, BLACK);
+            m_pstScore -= eval::PST::value(ROOK, rookTo, BLACK);
+        }
+        
         // Material unchanged for castling!
         m_evalCacheValid = false;
         
@@ -1162,6 +1202,22 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         
         // Update material for en passant capture
         m_material.remove(capturedPawn);  // Remove captured pawn
+        
+        // Update PST for en passant (Stage 9)
+        if (us == WHITE) {
+            // Our pawn moved
+            m_pstScore -= eval::PST::value(PAWN, from, WHITE);
+            m_pstScore += eval::PST::value(PAWN, to, WHITE);
+            // Captured enemy pawn
+            m_pstScore += eval::PST::value(PAWN, capturedSquare, BLACK);
+        } else {
+            // Our pawn moved
+            m_pstScore += eval::PST::value(PAWN, from, BLACK);
+            m_pstScore -= eval::PST::value(PAWN, to, BLACK);
+            // Captured enemy pawn
+            m_pstScore -= eval::PST::value(PAWN, capturedSquare, WHITE);
+        }
+        
         m_evalCacheValid = false;
         
     } else if (moveType & PROMOTION) {
@@ -1194,6 +1250,28 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
             m_material.remove(capturedPiece);  // Remove captured
         }
         m_material.add(promotedPiece);  // Add promoted piece
+        
+        // Update PST for promotion (Stage 9)
+        if (us == WHITE) {
+            // Remove pawn PST
+            m_pstScore -= eval::PST::value(PAWN, from, WHITE);
+            // Add promoted piece PST
+            m_pstScore += eval::PST::value(promotedType, to, WHITE);
+            // Remove captured piece PST if any
+            if (capturedPiece != NO_PIECE) {
+                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);
+            }
+        } else {
+            // Remove pawn PST
+            m_pstScore += eval::PST::value(PAWN, from, BLACK);
+            // Add promoted piece PST
+            m_pstScore -= eval::PST::value(promotedType, to, BLACK);
+            // Remove captured piece PST if any
+            if (capturedPiece != NO_PIECE) {
+                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);
+            }
+        }
+        
         m_evalCacheValid = false;
         
     } else {
@@ -1216,6 +1294,28 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         if (capturedPiece != NO_PIECE) {
             m_material.remove(capturedPiece);
             m_evalCacheValid = false;
+        }
+        
+        // Update PST for normal moves (Stage 9)
+        Color us = colorOf(movingPiece);
+        PieceType movingType = typeOf(movingPiece);
+        
+        if (us == WHITE) {
+            // Moving our piece
+            m_pstScore -= eval::PST::value(movingType, from, WHITE);
+            m_pstScore += eval::PST::value(movingType, to, WHITE);
+            // Capturing enemy piece
+            if (capturedPiece != NO_PIECE) {
+                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);
+            }
+        } else {
+            // Moving our piece
+            m_pstScore += eval::PST::value(movingType, from, BLACK);
+            m_pstScore -= eval::PST::value(movingType, to, BLACK);
+            // Capturing enemy piece
+            if (capturedPiece != NO_PIECE) {
+                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);
+            }
         }
     }
     
@@ -1297,6 +1397,7 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
     m_halfmoveClock = undo.halfmoveClock;
     m_fullmoveNumber = undo.fullmoveNumber;  // FIXED: Restore fullmove number!
     m_zobristKey = undo.zobristKey;
+    m_pstScore = undo.pstScore;  // Stage 9: Restore PST score
     
     // Switch side back
     m_sideToMove = ~m_sideToMove;
@@ -1418,6 +1519,7 @@ void Board::makeMoveInternal(Move move, CompleteUndoInfo& undo) {
     undo.halfmoveClock = m_halfmoveClock;
     undo.fullmoveNumber = m_fullmoveNumber;
     undo.zobristKey = m_zobristKey;
+    undo.pstScore = m_pstScore;  // Stage 9: Save PST score
     undo.moveType = moveFlags(move);
     undo.movingPiece = pieceAt(moveFrom(move));
     
@@ -1452,6 +1554,27 @@ eval::Score Board::evaluate() const noexcept {
         m_evalCacheValid = true;
     }
     return m_evalCache;
+}
+
+void Board::recalculatePSTScore() {
+    // Recalculate PST score from scratch (Stage 9)
+    m_pstScore = eval::MgEgScore();
+    
+    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+        Piece p = m_mailbox[sq];
+        if (p != NO_PIECE) {
+            Color c = colorOf(p);
+            PieceType pt = typeOf(p);
+            
+            // PST values are from white's perspective
+            // Add for white pieces, subtract for black pieces
+            if (c == WHITE) {
+                m_pstScore += eval::PST::value(pt, sq, WHITE);
+            } else {
+                m_pstScore -= eval::PST::value(pt, sq, BLACK);
+            }
+        }
+    }
 }
 
 } // namespace seajay

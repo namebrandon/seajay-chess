@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 9, 2025  
+**Last Updated:** August 10, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 2 - Basic Search and Evaluation  
-**Current Stage:** Stage 7 COMPLETE - Ready for Stage 8 (Alpha-Beta Pruning)  
+**Current Stage:** Stage 9 COMPLETE - Positional Evaluation with PST  
 
 ## Overview
 
@@ -217,16 +217,17 @@ This document tracks the current development status of the SeaJay Chess Engine p
 
 ## Next Steps
 
-### Immediate (Stage 9 - Positional Evaluation)
-1. Implement piece-square tables from Chess Programming Wiki
-2. Combine material and positional scoring
-3. Test symmetric evaluation property
-4. SPRT validation against material-only version
+### Immediate (Stage 9b - Advanced Evaluation Features)
+1. Implement mobility evaluation (optional)
+2. Add pawn structure evaluation (optional)
+3. King safety considerations (optional)
+4. SPRT validation for any improvements
 
 ### Short Term (Rest of Phase 2)
-1. Stage 9: Complete positional evaluation with PST
-2. Phase 2 completion and validation
-3. Begin Phase 3: Essential Optimizations
+1. Stage 9b: Advanced evaluation features (optional)
+2. Stage 10: Repetition detection and 50-move rule
+3. Phase 2 completion and validation
+4. Begin Phase 3: Essential Optimizations
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces

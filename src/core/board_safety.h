@@ -5,6 +5,7 @@
 // state corruption in the make/unmake pattern.
 
 #include "types.h"
+#include "../evaluation/pst.h"
 #include <cassert>
 #include <cstring>
 #include <concepts>
@@ -35,6 +36,7 @@ struct CompleteUndoInfo {
     uint16_t halfmoveClock = 0;
     uint16_t fullmoveNumber = 0;  // Critical: was missing!
     Hash zobristKey = 0;
+    eval::MgEgScore pstScore{};  // Stage 9: PST score backup
     
     // Move-specific metadata for validation
     uint8_t moveType = NORMAL;

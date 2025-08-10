@@ -1,5 +1,6 @@
 #include "evaluate.h"
 #include "material.h"
+#include "pst.h"  // Stage 9: Include PST header
 #include "../core/board.h"
 #include "../core/bitboard.h"
 
@@ -46,8 +47,24 @@ Score evaluate(const Board& board) {
         }
     }
     
-    // Return material balance from side-to-move perspective
-    return material.balance(board.sideToMove());
+    // Get PST score (Stage 9)
+    // PST score is stored from white's perspective in the board
+    const MgEgScore& pstScore = board.pstScore();
+    
+    // For Stage 9, we only use middlegame PST values (no tapering yet)
+    Score pstValue = pstScore.mg;
+    
+    // Calculate total evaluation from white's perspective
+    // Material difference + PST score
+    Score materialDiff = material.value(WHITE) - material.value(BLACK);
+    Score totalWhite = materialDiff + pstValue;
+    
+    // Return from side-to-move perspective
+    if (board.sideToMove() == WHITE) {
+        return totalWhite;
+    } else {
+        return -totalWhite;
+    }
 }
 
 #ifdef DEBUG

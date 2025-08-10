@@ -1,0 +1,51 @@
+Started game 1 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 1 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 2 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 2 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 3 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 3 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 4 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 4 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 5 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 5 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 6 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 6 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 7 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 7 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 8 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 8 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 9 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 9 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 10 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 10 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 11 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 11 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 12 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 12 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 13 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 13 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 14 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 14 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 15 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 15 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 16 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 16 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 17 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 17 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 18 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 18 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+Started game 19 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 19 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 20 of 4000 (Stage8-AlphaBeta vs Stage9-PST)
+Finished game 20 (Stage8-AlphaBeta vs Stage9-PST): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage9-PST vs Stage8-AlphaBeta (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -inf +/- nan, nElo: -inf +/- nan
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 20, Wins: 0, Losses: 20, Draws: 0, Points: 0.0 (0.00 %)
+Ptnml(0-2): [10, 0, 0, 0, 0], WL/DD Ratio: nan
+LLR: -2.22 (-75.5%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 21 of 4000 (Stage9-PST vs Stage8-AlphaBeta)
+Finished game 21 (Stage9-PST vs Stage8-AlphaBeta): 0-1 {Black mates}
+Started game 22 of 4000 (Stage8-AlphaBeta vs Stage9-PST)

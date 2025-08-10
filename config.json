@@ -1,15 +1,15 @@
 {
     "resign": {
-        "move_count": 3,
-        "score": 400,
+        "move_count": 1,
+        "score": 0,
         "twosided": false,
-        "enabled": true
+        "enabled": false
     },
     "draw": {
-        "move_number": 40,
-        "move_count": 8,
-        "score": 10,
-        "enabled": true
+        "move_number": 0,
+        "move_count": 1,
+        "score": 0,
+        "enabled": false
     },
     "maxmoves": {
         "move_count": 1,
@@ -22,17 +22,17 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/varied_4moves.pgn",
+        "file": "/workspace/external/books/4moves_test.pgn",
         "format": 1,
-        "order": 0,
-        "plies": 8,
+        "order": 1,
+        "plies": -1,
         "start": 1
     },
     "pgn": {
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-2025-006/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-2025-007-FIXED/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -51,13 +51,13 @@
         "alpha": 0.05,
         "beta": 0.05,
         "elo0": 0.0,
-        "elo1": 100.0,
+        "elo1": 50.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 3678319982307344867,
+    "seed": 18222466902478348234,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -66,7 +66,7 @@
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 1000,
+    "rounds": 2000,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,13 +76,33 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-2025-006/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-2025-007-FIXED/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
         "engine_coms": false
     },
     "engines": [
+        {
+            "name": "Stage9-PST-Fixed",
+            "dir": "",
+            "cmd": "/workspace/bin/seajay_stage9_pst_fixed",
+            "args": "",
+            "restart": false,
+            "options": [],
+            "limit": {
+                "tc": {
+                    "increment": 100,
+                    "fixed_time": 0,
+                    "time": 10000,
+                    "moves": 0,
+                    "timemargin": 0
+                },
+                "nodes": 0,
+                "plies": 0
+            },
+            "variant": 0
+        },
         {
             "name": "Stage8-AlphaBeta",
             "dir": "",
@@ -102,41 +122,21 @@
                 "plies": 0
             },
             "variant": 0
-        },
-        {
-            "name": "Stage7-NoAlphaBeta",
-            "dir": "",
-            "cmd": "/workspace/bin/seajay_stage7_no_alphabeta",
-            "args": "",
-            "restart": false,
-            "options": [],
-            "limit": {
-                "tc": {
-                    "increment": 100,
-                    "fixed_time": 0,
-                    "time": 10000,
-                    "moves": 0,
-                    "timemargin": 0
-                },
-                "nodes": 0,
-                "plies": 0
-            },
-            "variant": 0
         }
     ],
     "stats": {
-        "Stage7-NoAlphaBeta vs Stage8-AlphaBeta": {
-            "wins": 2,
-            "losses": 16,
-            "draws": 10,
+        "Stage8-AlphaBeta vs Stage9-PST-Fixed": {
+            "wins": 0,
+            "losses": 25,
+            "draws": 19,
             "penta_WW": 0,
-            "penta_WD": 2,
+            "penta_WD": 0,
             "penta_WL": 0,
-            "penta_DD": 2,
-            "penta_LD": 4,
-            "penta_LL": 6
+            "penta_DD": 6,
+            "penta_LD": 7,
+            "penta_LL": 9
         },
-        "Stage8-AlphaBeta vs Stage7-NoAlphaBeta": {
+        "Stage9-PST-Fixed vs Stage8-AlphaBeta": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
