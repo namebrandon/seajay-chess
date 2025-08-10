@@ -290,7 +290,7 @@ TEST_F(AlphaBetaValidationTest, PerformanceBenchmark) {
     auto end2 = std::chrono::steady_clock::now();
     auto timeWithoutAB = std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count();
     
-    double speedup = static_cast<double>(timeWithoutAB) / std::max(static_cast<long>(1), timeWithAB);
+    double speedup = static_cast<double>(timeWithoutAB) / std::max(static_cast<decltype(timeWithAB)>(1), timeWithAB);
     
     std::cout << "\nPerformance Comparison (depth 5):\n"
               << "With Alpha-Beta: " << timeWithAB << " ms, " << info1.nodes << " nodes\n"

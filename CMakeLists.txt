@@ -117,13 +117,35 @@ target_link_libraries(test_material_evaluation seajay_core)
 add_executable(test_negamax tests/test_negamax.cpp)
 target_link_libraries(test_negamax seajay_core)
 
-# Alpha-beta validation test
-add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
-target_include_directories(test_alphabeta_validation PRIVATE ${CMAKE_SOURCE_DIR}/external/googletest/googletest/include)
-target_link_libraries(test_alphabeta_validation seajay_core 
-    ${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest.a 
-    ${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest_main.a 
-    pthread)
+# Alpha-beta validation test with GoogleTest
+# Detect platform and use appropriate GoogleTest libraries
+if(APPLE)
+    # Check for macOS-specific GoogleTest first
+    if(EXISTS "${CMAKE_SOURCE_DIR}/external/googletest-macos/lib/libgtest.a")
+        set(GTEST_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/googletest-macos/include")
+        set(GTEST_LIBRARIES 
+            "${CMAKE_SOURCE_DIR}/external/googletest-macos/lib/libgtest.a"
+            "${CMAKE_SOURCE_DIR}/external/googletest-macos/lib/libgtest_main.a")
+        message(STATUS "Using macOS-specific GoogleTest libraries")
+    else()
+        message(WARNING "macOS GoogleTest not found. Run tools/scripts/setup_googletest_macos.sh to build it.")
+        message(WARNING "Skipping test_alphabeta_validation build")
+        set(SKIP_ALPHABETA_TEST ON)
+    endif()
+else()
+    # Use Linux GoogleTest libraries
+    set(GTEST_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/googletest/googletest/include")
+    set(GTEST_LIBRARIES 
+        "${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest.a"
+        "${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest_main.a")
+endif()
+
+# Only build the test if GoogleTest is available
+if(NOT SKIP_ALPHABETA_TEST)
+    add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
+    target_include_directories(test_alphabeta_validation PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_alphabeta_validation seajay_core ${GTEST_LIBRARIES} pthread)
+endif()
 
 # Add test cases
 add_test(NAME board_tests COMMAND test_board)
