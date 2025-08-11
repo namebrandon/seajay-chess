@@ -284,11 +284,20 @@ Move search(Board& board, const SearchLimits& limits) {
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
         info.depth = depth;
         
+        // Set search mode and reset counters at depth 1
+        board.setSearchMode(true);
+        if (depth == 1) {
+            Board::resetCounters();
+        }
+        
         // Search with infinite window initially
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
                                    searchInfo, info);
+        
+        // Clear search mode after search
+        board.setSearchMode(false);
         
         // Only update best move if search completed
         if (!info.stopped) {
@@ -318,8 +327,8 @@ Move search(Board& board, const SearchLimits& limits) {
         }
     }
     
-    // Disable search mode - restore normal game history tracking
-    board.setSearchMode(false);
+    // Print instrumentation counters at end of search
+    Board::printCounters();
     
     // Return the best move found
     // If no iterations completed, bestMove will be invalid

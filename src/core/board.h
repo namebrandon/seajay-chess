@@ -258,8 +258,40 @@ private:
     
 public:
     // Control search mode (disables game history tracking for performance)
-    void setSearchMode(bool inSearch) { m_inSearch = inSearch; }
+    void setSearchMode(bool inSearch) { 
+        m_inSearch = inSearch;
+        if (inSearch) g_searchModeSets++;
+        else g_searchModeClears++;
+    }
     bool isInSearch() const { return m_inSearch; }
+    
+    // Debug instrumentation counters
+    static size_t g_searchMoves;      // Moves made during search
+    static size_t g_gameMoves;        // Moves made outside search
+    static size_t g_historyPushes;    // Times pushGameHistory called
+    static size_t g_historyPops;      // Times pop_back called
+    static size_t g_searchModeSets;   // Times setSearchMode(true) called
+    static size_t g_searchModeClears; // Times setSearchMode(false) called
+    
+    static void resetCounters() {
+        g_searchMoves = 0;
+        g_gameMoves = 0;
+        g_historyPushes = 0;
+        g_historyPops = 0;
+        g_searchModeSets = 0;
+        g_searchModeClears = 0;
+    }
+    
+    static void printCounters() {
+        std::cout << "info string === Board Operation Counters ===" << std::endl;
+        std::cout << "info string Search moves: " << g_searchMoves << std::endl;
+        std::cout << "info string Game moves: " << g_gameMoves << std::endl;
+        std::cout << "info string History pushes: " << g_historyPushes << std::endl;
+        std::cout << "info string History pops: " << g_historyPops << std::endl;
+        std::cout << "info string Search mode sets: " << g_searchModeSets << std::endl;
+        std::cout << "info string Search mode clears: " << g_searchModeClears << std::endl;
+        std::cout << "info string ================================" << std::endl;
+    }
 };
 
 } // namespace seajay

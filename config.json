@@ -22,7 +22,7 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/4moves_test.pgn",
+        "file": "/workspace/external/books/varied_4moves.pgn",
         "format": 1,
         "order": 1,
         "plies": -1,
@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-2025-007-FIXED/games.pgn",
+        "file": "games_quick_test.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -48,16 +48,16 @@
         "file": ""
     },
     "sprt": {
-        "alpha": 0.05,
-        "beta": 0.05,
+        "alpha": 0.0,
+        "beta": 0.0,
         "elo0": 0.0,
-        "elo1": 50.0,
+        "elo1": 0.0,
         "model": "normalized",
-        "enabled": true
+        "enabled": false
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 18222466902478348234,
+    "seed": 2676925137900195168,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -66,7 +66,7 @@
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 2000,
+    "rounds": 5,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,25 +76,25 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-2025-007-FIXED/fastchess.log",
-        "level": 3,
+        "file": "",
+        "level": 2,
         "compress": false,
         "realtime": true,
         "engine_coms": false
     },
     "engines": [
         {
-            "name": "Stage9-PST-Fixed",
+            "name": "Stage9b-SearchFix",
             "dir": "",
-            "cmd": "/workspace/bin/seajay_stage9_pst_fixed",
+            "cmd": "/workspace/build/seajay",
             "args": "",
             "restart": false,
             "options": [],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 10,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 100,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -104,17 +104,17 @@
             "variant": 0
         },
         {
-            "name": "Stage8-AlphaBeta",
+            "name": "Stage9b-SearchFix-Copy",
             "dir": "",
-            "cmd": "/workspace/bin/seajay_stage8_alphabeta",
+            "cmd": "/workspace/build/seajay",
             "args": "",
             "restart": false,
             "options": [],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 10,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 100,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stage8-AlphaBeta vs Stage9-PST-Fixed": {
-            "wins": 0,
-            "losses": 25,
-            "draws": 19,
-            "penta_WW": 0,
+        "Stage9b-SearchFix-Copy vs Stage9b-SearchFix": {
+            "wins": 3,
+            "losses": 3,
+            "draws": 4,
+            "penta_WW": 1,
             "penta_WD": 0,
-            "penta_WL": 0,
-            "penta_DD": 6,
-            "penta_LD": 7,
-            "penta_LL": 9
+            "penta_WL": 1,
+            "penta_DD": 1,
+            "penta_LD": 2,
+            "penta_LL": 0
         },
-        "Stage9-PST-Fixed vs Stage8-AlphaBeta": {
+        "Stage9b-SearchFix vs Stage9b-SearchFix-Copy": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
