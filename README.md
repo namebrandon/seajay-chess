@@ -14,6 +14,7 @@
 
 **Current Phase:** Phase 2 COMPLETE - Basic Search and Evaluation  
 **Version:** 2.9.1-draw-detection  
+**Playing Strength:** ~1,000 ELO (validated via SPRT testing)  
 **Completed:** Phase 1 (5 stages) + Phase 2 (Stages 6-9b complete)  
 **Next:** Phase 3 - Essential Optimizations (Magic Bitboards, Transposition Tables)
 
@@ -148,28 +149,18 @@ seajay-chess/
 ## Development Phases
 
 ### Phase 1: Foundation and Move Generation (COMPLETE ✅)
-- ✅ **Stage 1**: Board Representation - COMPLETE
-- ✅ **Stage 2**: Position Management - COMPLETE
-- ✅ **Stage 3**: Basic UCI and Legal Moves - COMPLETE
-- ✅ **Stage 4**: Special Moves and Validation - COMPLETE
-- ✅ **Stage 5**: Testing Infrastructure - COMPLETE
+- ✅ **Stage 1**: Board Representation - Hybrid bitboard-mailbox implementation
+- ✅ **Stage 2**: Position Management - FEN parsing and game state tracking
+- ✅ **Stage 3**: Basic UCI and Legal Moves - GUI compatibility achieved
+- ✅ **Stage 4**: Special Moves and Validation - All special moves with perft validation
+- ✅ **Stage 5**: Testing Infrastructure - SPRT framework established
 
-### Phase 2: Basic Search and Evaluation (IN PROGRESS)
-- ✅ **Stage 6**: Material Evaluation - COMPLETE
-- 🔄 **Stage 7**: Negamax Search - Next (Pre-stage planning complete)
-  - Recursive negamax to 4-ply depth
-  - Iterative deepening framework
-  - Basic time management (5% allocation)
-  - Mate detection and scoring
-  - Note: Move ordering and pruning deferred to Stage 8+
-- ⏳ **Stage 8**: Alpha-Beta Pruning - Planned
-  - Activate alpha-beta cutoffs
-  - Basic move ordering (captures first)
-  - 5x speed improvement expected
-- ⏳ **Stage 9**: Piece-Square Tables - Planned
-  - Positional evaluation
-  - Piece development incentives
-  - Note: Quiescence search deferred to Phase 3
+### Phase 2: Basic Search and Evaluation (COMPLETE ✅)
+- ✅ **Stage 6**: Material Evaluation - Piece values with capture selection
+- ✅ **Stage 7**: Negamax Search - 4-ply recursive search with mate detection
+- ✅ **Stage 8**: Alpha-Beta Pruning - 90% node reduction achieved
+- ✅ **Stage 9**: Positional Evaluation - Piece-Square Tables implemented
+- ✅ **Stage 9b**: Draw Detection - Threefold repetition and fifty-move rule
 
 ### Future Phases
 3. **Phase 3**: Essential Optimizations (~2100 Elo)

@@ -1,0 +1,6 @@
+Indexing opening suite...
+Started game 1 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Started game 2 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Started game 3 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Started game 4 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Fatal; SeaJay-2.9.1 engine startup failure: Engine didn't respond to uciok after startup

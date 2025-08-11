@@ -1,0 +1,350 @@
+Indexing opening suite...
+Started game 1 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 1 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 2 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 2 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 3 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 3 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 4 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 4 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 5 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 5 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 6 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 6 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 7 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 7 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 8 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 8 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 9 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 9 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 10 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 10 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 11 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 11 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 12 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 12 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 13 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 13 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 14 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 14 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 15 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 15 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 16 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 16 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 17 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 17 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 18 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 18 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 19 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 19 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 20 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 20 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 168.40 +/- 211.83, nElo: 170.08 +/- 152.27
+LOS: 98.57 %, DrawRatio: 30.00 %, PairsRatio: 6.00
+Games: 20, Wins: 14, Losses: 5, Draws: 1, Points: 14.5 (72.50 %)
+Ptnml(0-2): [1, 0, 3, 1, 5], WL/DD Ratio: inf
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 21 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 21 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 22 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 22 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 23 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 23 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 24 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 24 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 25 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 25 (SeaJay-2.9.1 vs Stockfish-800ELO): 1/2-1/2 {Draw by fifty moves rule}
+Started game 26 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 26 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 27 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 27 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 28 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 28 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 29 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 29 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 30 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 30 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 31 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 31 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 32 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 32 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 33 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 33 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 34 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 34 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 35 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 35 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 36 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 36 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 37 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 37 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 38 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 38 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 39 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 39 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 40 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 40 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 227.56 +/- 153.98, nElo: 236.47 +/- 107.67
+LOS: 100.00 %, DrawRatio: 20.00 %, PairsRatio: 7.00
+Games: 40, Wins: 30, Losses: 7, Draws: 3, Points: 31.5 (78.75 %)
+Ptnml(0-2): [1, 1, 4, 2, 12], WL/DD Ratio: inf
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 41 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 41 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 42 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 42 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 43 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 43 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 44 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 44 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 45 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 45 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 46 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 46 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {Draw by fifty moves rule}
+Started game 47 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 47 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 48 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 48 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 49 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 49 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 50 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 50 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 51 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 51 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 52 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 52 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 53 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 53 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 54 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 54 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 55 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 55 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 56 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 56 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 57 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 57 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 58 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 58 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 59 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 59 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 60 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 60 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 223.26 +/- 115.55, nElo: 236.83 +/- 87.91
+LOS: 100.00 %, DrawRatio: 23.33 %, PairsRatio: 6.67
+Games: 60, Wins: 45, Losses: 11, Draws: 4, Points: 47.0 (78.33 %)
+Ptnml(0-2): [1, 2, 7, 2, 18], WL/DD Ratio: inf
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 61 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 61 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 62 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 62 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 63 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 63 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 64 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 64 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 65 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 65 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 66 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 66 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 67 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 67 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 68 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 68 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 69 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 69 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 70 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 70 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 71 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 71 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 72 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 72 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 73 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 73 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 74 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 74 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 75 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 75 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 76 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 76 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 77 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 77 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 78 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 78 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 79 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 79 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 80 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 80 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 227.56 +/- 95.50, nElo: 249.96 +/- 76.13
+LOS: 100.00 %, DrawRatio: 27.50 %, PairsRatio: 8.67
+Games: 80, Wins: 61, Losses: 15, Draws: 4, Points: 63.0 (78.75 %)
+Ptnml(0-2): [1, 2, 11, 2, 24], WL/DD Ratio: inf
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 81 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 81 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 82 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 82 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 83 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 83 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 84 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 84 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 85 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 85 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 86 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 86 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 87 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 87 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 88 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 88 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 89 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 89 (SeaJay-2.9.1 vs Stockfish-800ELO): 1/2-1/2 {}
+Started game 90 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 90 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {}
+Started game 91 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 91 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 92 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 92 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 93 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 93 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 94 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 94 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 95 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 95 (SeaJay-2.9.1 vs Stockfish-800ELO): 1/2-1/2 {}
+Started game 96 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 96 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 97 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 97 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 98 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 98 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 99 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 99 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 100 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 100 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 246.30 +/- 86.68, nElo: 276.90 +/- 68.10
+LOS: 100.00 %, DrawRatio: 26.00 %, PairsRatio: 11.33
+Games: 100, Wins: 77, Losses: 16, Draws: 7, Points: 80.5 (80.50 %)
+Ptnml(0-2): [1, 2, 13, 3, 31], WL/DD Ratio: 12.00
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 101 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 101 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 102 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 102 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 103 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 103 (SeaJay-2.9.1 vs Stockfish-800ELO): 1/2-1/2 {Draw by fifty moves rule}
+Started game 104 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 104 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 105 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 105 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 106 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 106 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 107 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 107 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 108 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 108 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 109 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 109 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 110 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 110 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 111 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 111 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 112 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 112 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 113 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 113 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 114 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 114 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 115 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 115 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 116 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 116 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 117 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 117 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 118 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 118 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 119 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 119 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 120 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 120 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 245.38 +/- 75.75, nElo: 284.60 +/- 62.16
+LOS: 100.00 %, DrawRatio: 26.67 %, PairsRatio: 13.67
+Games: 120, Wins: 92, Losses: 19, Draws: 9, Points: 96.5 (80.42 %)
+Ptnml(0-2): [1, 2, 16, 5, 36], WL/DD Ratio: 15.00
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 121 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 121 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 122 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 122 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 123 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 123 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 124 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 124 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 125 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 125 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 126 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 126 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 127 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 127 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 128 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 128 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 129 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 129 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 130 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 130 (Stockfish-800ELO vs SeaJay-2.9.1): 1/2-1/2 {Draw by fifty moves rule}
+Started game 131 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 131 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 132 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 132 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 133 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 133 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 134 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 134 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 135 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 135 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 136 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 136 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 137 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 137 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 138 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 138 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 139 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 139 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 140 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 140 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+--------------------------------------------------
+Results of SeaJay-2.9.1 vs Stockfish-800ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: 211.31 +/- 66.76, nElo: 235.91 +/- 57.55
+LOS: 100.00 %, DrawRatio: 30.00 %, PairsRatio: 8.80
+Games: 140, Wins: 103, Losses: 27, Draws: 10, Points: 108.0 (77.14 %)
+Ptnml(0-2): [2, 3, 21, 5, 39], WL/DD Ratio: 20.00
+LLR: nan (-nan%) (-2.94, 2.94) [-250.00, -50.00]
+--------------------------------------------------
+Started game 141 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 141 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 142 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 142 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 143 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 143 (SeaJay-2.9.1 vs Stockfish-800ELO): 1-0 {White mates}
+Started game 144 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 144 (Stockfish-800ELO vs SeaJay-2.9.1): 0-1 {Black mates}
+Started game 145 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)
+Finished game 145 (SeaJay-2.9.1 vs Stockfish-800ELO): 0-1 {Black mates}
+Started game 146 of 1000 (Stockfish-800ELO vs SeaJay-2.9.1)
+Finished game 146 (Stockfish-800ELO vs SeaJay-2.9.1): 1-0 {White mates}
+Started game 147 of 1000 (SeaJay-2.9.1 vs Stockfish-800ELO)

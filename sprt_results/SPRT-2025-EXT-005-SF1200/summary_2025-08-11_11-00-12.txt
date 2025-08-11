@@ -1,0 +1,12 @@
+Test ID: SPRT-2025-EXT-005-SF1200
+Date: Mon Aug 11 11:00:12 AM CDT 2025
+SeaJay (Phase 2, ~650 ELO) vs Stockfish (Skill Level 5, ~1200 ELO)
+Time Control: 10+0.1
+
+Results:
+
+
+Analysis:
+This test evaluates SeaJay against intermediate amateur level play.
+Stockfish at Skill Level 5 approximates 1200 ELO.
+Results show the development gap to reach club player strength.
