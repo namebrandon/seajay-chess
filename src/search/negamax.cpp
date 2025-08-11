@@ -120,9 +120,49 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Check other draws AFTER confirming not checkmate
-    if (board.isDrawInSearch(searchInfo, ply)) {
+    // PERFORMANCE OPTIMIZATION: Strategic draw checking instead of every node
+    // Only check draws at strategic points, not every node
+    bool shouldCheckDraw = false;
+    
+    if (ply > 0) {  // Never check at root
+        // Determine if we should check for draws based on position characteristics
+        bool inCheckPosition = inCheck(board);
+        
+        // Get info about last move from search stack (if available)
+        bool lastMoveWasCapture = false;
+        if (ply > 0 && ply - 1 < 128) {
+            Move lastMove = searchInfo.getStackEntry(ply - 1).move;
+            if (lastMove != NO_MOVE) {
+                lastMoveWasCapture = isCapture(lastMove);
+            }
+        }
+        
+        shouldCheckDraw = 
+            inCheckPosition ||                      // Always after checks
+            lastMoveWasCapture ||                   // After captures (50-move reset)
+            (ply >= 4 && (ply & 3) == 0);          // Every 4th ply for repetitions
+    }
+    
+    // Only check when necessary
+    if (shouldCheckDraw && board.isDrawInSearch(searchInfo, ply)) {
         return eval::Score::draw();  // Draw score
+    }
+    
+    // In quiescence search (depth <= 0), handle differently
+    if (depth <= 0) {
+        // Get info about last move
+        bool lastMoveWasCapture = false;
+        if (ply > 0 && ply - 1 < 128) {
+            Move lastMove = searchInfo.getStackEntry(ply - 1).move;
+            if (lastMove != NO_MOVE) {
+                lastMoveWasCapture = isCapture(lastMove);
+            }
+        }
+        
+        // Only check insufficient material after captures in qsearch
+        if (lastMoveWasCapture && board.isInsufficientMaterial()) {
+            return eval::Score::draw();
+        }
     }
     
     // Order moves for better alpha-beta pruning
@@ -244,11 +284,20 @@ Move search(Board& board, const SearchLimits& limits) {
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
         info.depth = depth;
         
+        // Set search mode and reset counters at depth 1
+        board.setSearchMode(true);
+        if (depth == 1) {
+            Board::resetCounters();
+        }
+        
         // Search with infinite window initially
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
                                    searchInfo, info);
+        
+        // Clear search mode after search
+        board.setSearchMode(false);
         
         // Only update best move if search completed
         if (!info.stopped) {
@@ -277,6 +326,9 @@ Move search(Board& board, const SearchLimits& limits) {
             break;
         }
     }
+    
+    // Print instrumentation counters at end of search
+    Board::printCounters();
     
     // Return the best move found
     // If no iterations completed, bestMove will be invalid

@@ -264,3 +264,116 @@ This tracker should be reviewed:
 4. **Multi-threading** (Phase 3+)
 5. **Repetition Detection** (Phase 2/3)
 6. **50-Move Rule** (Phase 2/3)
+
+## Items DEFERRED FROM Stage 9b Performance Analysis
+
+**Analysis Date:** August 11, 2025
+**Source:** stage9b_regression_analysis.md
+
+### Architecture Refactoring (Phase 3+):
+
+1. **Proper Separation of Game vs Search History**
+   - **Current:** Board class mixes game and search history
+   - **Target:** Separate GameController and SearchThread classes
+   - **Benefit:** Clean architecture, no search/game state mixing
+   - **Reference:** Lines 164-194 of regression analysis
+   ```cpp
+   // Future architecture:
+   // GameController - handles game moves and history
+   // SearchThread - handles search with pre-allocated stack
+   // Board - pure position state, no history
+   ```
+
+2. **Pre-allocated Search Stack Pattern**
+   - **Current:** Using SearchInfo with fixed array (good)
+   - **Enhancement:** Full Stockfish-style StateInfo pattern
+   - **Benefit:** Zero heap allocations during search
+   - **Reference:** Lines 27-32 of regression analysis
+
+### Performance Optimizations (Phase 3):
+
+3. **Incremental Material Tracking**
+   - **Current:** Material recalculated on demand
+   - **Target:** Update incrementally during make/unmake
+   - **Benefit:** Avoid redundant calculations
+   - **Reference:** Line 200 of regression analysis
+
+4. **Smart Eval Cache Invalidation**
+   - **Current:** Cache invalidated on every move
+   - **Target:** Selective invalidation based on move type
+   - **Benefit:** Better cache utilization
+   - **Reference:** Line 201 of regression analysis
+
+5. **Remove Bounds Checking in Release Builds**
+   - **Current:** Vector bounds checks always active
+   - **Target:** Use asserts only in debug builds
+   - **Benefit:** Reduced overhead in hot path
+   - **Reference:** Line 202 of regression analysis
+
+6. **Ensure No Virtual Function Calls in Hot Path**
+   - **Current:** makeMove/unmakeMove are not virtual (good)
+   - **Verify:** Keep monitoring this in future refactoring
+   - **Reference:** Line 203 of regression analysis
+
+### Advanced Performance Features (Phase 4+):
+
+7. **Hash Table Prefetching**
+   - **Future:** Prefetch transposition table entries
+   - **Benefit:** Hide memory latency
+   - **Reference:** Line 206 of regression analysis
+
+8. **Branch Prediction Hints**
+   - **Target:** Use [[likely]]/[[unlikely]] C++20 attributes
+   - **Benefit:** Better CPU branch prediction
+   - **Reference:** Line 207 of regression analysis
+
+9. **SIMD Bitboard Operations**
+   - **Target:** Use AVX2/SSE for bitboard operations
+   - **Benefit:** Parallel bit manipulation
+   - **Reference:** Line 208 of regression analysis
+
+10. **Copy-Make Pattern Investigation**
+    - **Research:** Test copy-make vs make/unmake
+    - **Benefit:** May be faster for simple positions
+    - **Reference:** Lines 209, 251 of regression analysis
+
+### Monitoring and Testing Infrastructure:
+
+11. **Regular Performance Profiling**
+    - **Tool:** perf on Linux, Instruments on macOS
+    - **Frequency:** After each major change
+    - **Target:** makeMove < 5% of runtime
+    - **Reference:** Lines 221-224 of regression analysis
+
+12. **Nodes Per Second Benchmarking**
+    - **Target:** 2-5M nps on modern hardware
+    - **Current:** Need to measure after fix
+    - **Reference:** Lines 217-219 of regression analysis
+
+### Already Implemented from Analysis:
+
+✅ **Immediate Fix Applied (August 11, 2025):**
+- Added m_inSearch flag to Board class
+- Conditional history updates (skip during search)
+- Maintained draw detection functionality
+- **Result:** Ready for SPRT testing to verify ~70 Elo recovery
+
+### Priority Ranking for Future Work:
+
+**High Priority (Phase 3):**
+- Items 3, 4, 5 (Performance optimizations)
+- Item 11 (Regular profiling)
+
+**Medium Priority (Phase 3-4):**
+- Items 1, 2 (Architecture refactoring)
+- Items 7, 8 (Advanced performance)
+
+**Low Priority (Research):**
+- Items 9, 10 (SIMD, Copy-make)
+- Item 12 (NPS benchmarking)
+
+### Notes:
+- The immediate fix has been applied and is ready for SPRT testing
+- Further architectural improvements deferred to avoid scope creep
+- Focus remains on recovering the -70 Elo regression first
+- All Stockfish/Ethereal/Leela patterns documented for future reference
