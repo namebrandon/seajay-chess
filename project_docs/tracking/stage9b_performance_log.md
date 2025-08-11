@@ -34,11 +34,20 @@
   - Draw detection confirmed working
   - SPRT test: SPRT-2025-009-STAGE9B-FIXED
 - **Early Results:** Stage 9 winning 9-2 against Stage 9b Fixed (BAD)
-- **Status:** SPRT in progress, but early results concerning
+- **Final Results (40 games):** 
+  - Elo: -127 ± 80 (WORSE than original -70 regression!)
+  - W/L: 6-20 (Stage 9b Fixed only won 6 games)
+  - LLR: -1.82 (test heading to failure)
+- **Status:** TEST STOPPED - Fix made performance WORSE
+- **Conclusion:** FAILED - Lost additional 57 Elo on top of original regression
+- **Analysis:** 
+  - The m_inSearch flag approach either isn't working or broke something
+  - Need to verify if vector ops are actually being skipped
+  - Possible the fix introduced a new bug
 - **Next Steps:** 
-  - If SPRT fails, need to verify fix is actually working
-  - Add counters to confirm vector ops aren't being called
-  - Profile to find other performance issues
+  - Add instrumentation to verify fix is working
+  - Check if search mode is being set correctly
+  - Consider reverting and trying different approach
 
 ### Attempt 2: [TBD based on Attempt 1 results]
 - **Branch:** TBD
