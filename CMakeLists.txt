@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SeaJay VERSION 0.1.0 LANGUAGES CXX)
+project(SeaJay VERSION 2.9.1 LANGUAGES CXX)
 
 # C++20 standard
 set(CMAKE_CXX_STANDARD 20)

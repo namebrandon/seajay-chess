@@ -12,16 +12,16 @@
 
 ## Project Status
 
-**Current Phase:** Phase 2 IN PROGRESS - Basic Search and Evaluation  
-**Version:** 2.9.0-pst  
-**Completed:** Phase 1 (5 stages) + Stage 6-9 (Material Evaluation + Negamax + Alpha-Beta + PST)  
-**Next:** Stage 9b (Optional) or Stage 10 - Repetition Detection
+**Current Phase:** Phase 2 COMPLETE - Basic Search and Evaluation  
+**Version:** 2.9.1-draw-detection  
+**Completed:** Phase 1 (5 stages) + Phase 2 (Stages 6-9b complete)  
+**Next:** Phase 3 - Essential Optimizations (Magic Bitboards, Transposition Tables)
 
 ### Recent Achievements
+- ✅ **NEW: Threefold repetition detection with zero search overhead (Stage 9b)**
+- ✅ **NEW: Dual-mode history system for optimal performance**
 - ✅ **NEW: Piece-Square Tables (PST) for positional evaluation (Stage 9)**
-- ✅ **NEW: SPRT validated +224 Elo improvement with PST over alpha-beta**
 - ✅ **NEW: Alpha-beta pruning with 90% node reduction (Stage 8)**
-- ✅ **NEW: Reaches depth 6 in under 1 second from start position**
 - ✅ 4-ply negamax search with iterative deepening (Stage 7)
 - ✅ Tactical awareness - finds checkmates consistently
 - ✅ Material evaluation with piece values (Stage 6)

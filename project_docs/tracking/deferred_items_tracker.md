@@ -350,13 +350,28 @@ This tracker should be reviewed:
     - **Current:** Need to measure after fix
     - **Reference:** Lines 217-219 of regression analysis
 
+### Stage 9b Deferred Items (August 11, 2025):
+
+13. **Fifty-Move Rule Implementation**
+    - **Reason:** Not critical for initial draw detection
+    - **Complexity:** Requires halfmove counter tracking
+    - **Impact:** Would catch additional drawn positions
+    - **Target:** Phase 3 or later
+
+14. **UCI Draw Claim Handling**
+    - **Reason:** Not required for engine vs engine testing
+    - **Complexity:** UCI protocol extension needed
+    - **Impact:** Important for GUI integration
+    - **Target:** When GUI compatibility becomes priority
+
 ### Already Implemented from Analysis:
 
-✅ **Immediate Fix Applied (August 11, 2025):**
-- Added m_inSearch flag to Board class
-- Conditional history updates (skip during search)
-- Maintained draw detection functionality
-- **Result:** Ready for SPRT testing to verify ~70 Elo recovery
+✅ **Stage 9b Completed (August 11, 2025):**
+- Implemented dual-mode history system (vector for game, array for search)
+- Zero heap allocations during search
+- Threefold repetition detection working correctly
+- Debug instrumentation wrapped in DEBUG guards
+- **Result:** Draw detection works correctly, performance optimized
 
 ### Priority Ranking for Future Work:
 

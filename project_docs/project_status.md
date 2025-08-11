@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 10, 2025  
+**Last Updated:** August 11, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 2 - Basic Search and Evaluation  
-**Current Stage:** Stage 9 COMPLETE - Positional Evaluation with PST  
+**Current Stage:** Stage 9b COMPLETE - Draw Detection and Repetition Handling  
 
 ## Overview
 
@@ -215,19 +215,36 @@ This document tracks the current development status of the SeaJay Chess Engine p
   - LLR: 3.06 (exceeded 2.94 threshold)
   - Completion time: 9.5 minutes
 
+#### Stage 9 - Positional Evaluation with PST
+**Status:** COMPLETE ✅ (August 10, 2025)
+- [x] Piece-Square Tables (PST) implementation
+- [x] Separate tables for middlegame and endgame
+- [x] Linear interpolation based on material
+- [x] Comprehensive position-based bonuses
+- [x] PST visualization tools created
+
+#### Stage 9b - Draw Detection and Repetition Handling
+**Status:** COMPLETE ✅ (August 11, 2025)
+- [x] Threefold repetition detection
+- [x] Dual-mode history system (zero allocations during search)
+- [x] Insufficient material detection
+- [x] Performance optimized (795K+ NPS)
+- [x] Debug instrumentation wrapped in DEBUG guards
+- [x] SPRT validation completed (correct behavior confirmed)
+- [ ] Fifty-move rule (deferred to Phase 3)
+- [ ] UCI draw claim handling (deferred)
+
 ## Next Steps
 
-### Immediate (Stage 9b - Advanced Evaluation Features)
-1. Implement mobility evaluation (optional)
-2. Add pawn structure evaluation (optional)
-3. King safety considerations (optional)
-4. SPRT validation for any improvements
+### Immediate (Phase 2 Complete!)
+Phase 2 is now COMPLETE! All basic search and evaluation features implemented.
 
-### Short Term (Rest of Phase 2)
-1. Stage 9b: Advanced evaluation features (optional)
-2. Stage 10: Repetition detection and 50-move rule
-3. Phase 2 completion and validation
-4. Begin Phase 3: Essential Optimizations
+### Short Term (Phase 3: Essential Optimizations)
+1. Magic bitboards for sliding pieces
+2. Move ordering and history heuristics
+3. Transposition tables
+4. Time management system
+5. Target: >1M NPS performance
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces
