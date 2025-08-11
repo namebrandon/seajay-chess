@@ -284,11 +284,13 @@ Move search(Board& board, const SearchLimits& limits) {
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
         info.depth = depth;
         
-        // Set search mode and reset counters at depth 1
+        // Set search mode at depth 1
         board.setSearchMode(true);
+#ifdef DEBUG
         if (depth == 1) {
             Board::resetCounters();
         }
+#endif
         
         // Search with infinite window initially
         eval::Score score = negamax(board, depth, 0,
@@ -327,8 +329,10 @@ Move search(Board& board, const SearchLimits& limits) {
         }
     }
     
-    // Print instrumentation counters at end of search
+#ifdef DEBUG
+    // Print instrumentation counters at end of search - only in debug builds
     Board::printCounters();
+#endif
     
     // Return the best move found
     // If no iterations completed, bestMove will be invalid

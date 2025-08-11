@@ -260,12 +260,15 @@ public:
     // Control search mode (disables game history tracking for performance)
     void setSearchMode(bool inSearch) { 
         m_inSearch = inSearch;
+#ifdef DEBUG
         if (inSearch) g_searchModeSets++;
         else g_searchModeClears++;
+#endif
     }
     bool isInSearch() const { return m_inSearch; }
     
-    // Debug instrumentation counters
+#ifdef DEBUG
+    // Debug instrumentation counters - only available in debug builds
     static size_t g_searchMoves;      // Moves made during search
     static size_t g_gameMoves;        // Moves made outside search
     static size_t g_historyPushes;    // Times pushGameHistory called
@@ -292,6 +295,7 @@ public:
         std::cout << "info string Search mode clears: " << g_searchModeClears << std::endl;
         std::cout << "info string ================================" << std::endl;
     }
+#endif // DEBUG
 };
 
 } // namespace seajay

@@ -1,0 +1,220 @@
+Indexing opening suite...
+Started game 1 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 1 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 2 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 2 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 3 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 3 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 4 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 4 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 5 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 5 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 6 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 6 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 7 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 7 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 8 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 8 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 9 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 9 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 10 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 10 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 11 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 11 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 12 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 12 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 13 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 13 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 14 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 14 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 15 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 15 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 16 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 16 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 17 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 17 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 18 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 18 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 19 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 19 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 20 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 20 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage9b-Optimized vs Stage9-Baseline (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -34.86 +/- 43.74, nElo: -122.84 +/- 152.27
+LOS: 5.69 %, DrawRatio: 80.00 %, PairsRatio: 0.00
+Games: 20, Wins: 6, Losses: 8, Draws: 6, Points: 9.0 (45.00 %)
+Ptnml(0-2): [0, 2, 8, 0, 0], WL/DD Ratio: 3.00
+LLR: -0.46 (-15.6%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 21 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 21 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 22 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 22 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 23 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 23 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 24 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 24 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {}
+Started game 25 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 25 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 26 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 26 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 27 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 27 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 28 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 28 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 29 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 29 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 30 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 30 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 31 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 31 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 32 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 32 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 33 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 33 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 34 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 34 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 35 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 35 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 36 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 36 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 37 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 37 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 38 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 38 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 39 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 39 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 40 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 40 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Stage9b-Optimized vs Stage9-Baseline (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -8.69 +/- 29.33, nElo: -31.98 +/- 107.67
+LOS: 28.02 %, DrawRatio: 85.00 %, PairsRatio: 0.50
+Games: 40, Wins: 11, Losses: 12, Draws: 17, Points: 19.5 (48.75 %)
+Ptnml(0-2): [0, 2, 17, 1, 0], WL/DD Ratio: 1.43
+LLR: -0.46 (-15.7%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 41 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 41 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 42 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 42 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 43 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 43 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 44 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 44 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 45 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 45 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 46 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 46 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 47 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 47 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {}
+Started game 48 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 48 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 49 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 49 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 50 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 50 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 51 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 51 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 52 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 52 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 53 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 53 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 54 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 54 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 55 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 55 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 56 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 56 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 57 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 57 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 58 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 58 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 59 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 59 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 60 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 60 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage9b-Optimized vs Stage9-Baseline (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -5.79 +/- 19.57, nElo: -26.04 +/- 87.91
+LOS: 28.08 %, DrawRatio: 90.00 %, PairsRatio: 0.50
+Games: 60, Wins: 18, Losses: 19, Draws: 23, Points: 29.5 (49.17 %)
+Ptnml(0-2): [0, 2, 27, 1, 0], WL/DD Ratio: 1.70
+LLR: -0.61 (-20.8%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 61 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 61 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 62 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 62 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 63 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 63 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 64 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 64 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 65 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 65 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 66 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 66 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 67 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 67 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 68 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 68 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 69 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 69 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 70 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 70 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 71 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 71 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 72 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 72 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 73 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 73 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 74 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 74 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 75 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 75 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 76 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 76 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 77 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 77 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 78 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 78 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 79 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 79 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 80 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 80 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Stage9b-Optimized vs Stage9-Baseline (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -4.34 +/- 19.01, nElo: -17.42 +/- 76.13
+LOS: 32.70 %, DrawRatio: 87.50 %, PairsRatio: 0.67
+Games: 80, Wins: 24, Losses: 25, Draws: 31, Points: 39.5 (49.38 %)
+Ptnml(0-2): [0, 3, 35, 2, 0], WL/DD Ratio: 1.69
+LLR: -0.65 (-22.0%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 81 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 81 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 82 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 82 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 83 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 83 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 84 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 84 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 85 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 85 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 86 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 86 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 87 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 87 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 88 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 88 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 89 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 89 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 90 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 90 (Stage9-Baseline vs Stage9b-Optimized): 0-1 {Black mates}
+Started game 91 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 91 (Stage9b-Optimized vs Stage9-Baseline): 1-0 {White mates}
+Started game 92 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 92 (Stage9-Baseline vs Stage9b-Optimized): 1-0 {White mates}
+Started game 93 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 93 (Stage9b-Optimized vs Stage9-Baseline): 0-1 {Black mates}
+Started game 94 of 4000 (Stage9-Baseline vs Stage9b-Optimized)

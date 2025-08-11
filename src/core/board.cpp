@@ -18,13 +18,15 @@
 
 namespace seajay {
 
-// Debug instrumentation counter definitions
+#ifdef DEBUG
+// Debug instrumentation counter definitions - only in debug builds
 size_t Board::g_searchMoves = 0;
 size_t Board::g_gameMoves = 0;
 size_t Board::g_historyPushes = 0;
 size_t Board::g_historyPops = 0;
 size_t Board::g_searchModeSets = 0;
 size_t Board::g_searchModeClears = 0;
+#endif
 
 std::array<std::array<Hash, NUM_PIECES>, NUM_SQUARES> Board::s_zobristPieces;
 std::array<Hash, NUM_SQUARES> Board::s_zobristEnPassant;
@@ -1116,12 +1118,14 @@ void Board::unmakeMove(Move move, const CompleteUndoInfo& undo) {
 
 // Internal implementation for legacy UndoInfo
 void Board::makeMoveInternal(Move move, UndoInfo& undo) {
-    // Instrumentation
+#ifdef DEBUG
+    // Instrumentation - only in debug builds
     if (m_inSearch) {
         g_searchMoves++;
     } else {
         g_gameMoves++;
     }
+#endif
     
     // Stage 9b: Track position before making move
     // Skip history tracking during search for performance
@@ -1544,7 +1548,9 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
     // Stage 9b: Remove position from history on unmake
     // Skip history tracking during search for performance
     if (!m_inSearch && !m_gameHistory.empty()) {
+#ifdef DEBUG
         g_historyPops++;
+#endif
         m_gameHistory.pop_back();
     }
 }
@@ -1952,8 +1958,10 @@ bool Board::computeInsufficientMaterial() const {
 }
 
 void Board::pushGameHistory() {
-    // Instrumentation
+#ifdef DEBUG
+    // Instrumentation - only in debug builds
     g_historyPushes++;
+#endif
     
     // Add current position to game history
     m_gameHistory.push_back(zobristKey());

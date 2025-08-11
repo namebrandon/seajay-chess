@@ -1,0 +1,26 @@
+SPRT Test Configuration
+=======================
+Test ID: SPRT-2025-011-STAGE9B-CLEAN
+Date: 2025-08-11_07-44-34
+Testing: Stage9b-Optimized vs Stage9-Baseline
+
+Binary Paths:
+- Test: /workspace/bin/seajay_stage9b_optimized
+- Base: /workspace/bin/seajay_stage9_baseline
+
+SPRT Parameters:
+- Elo bounds: [0, 35]
+- Alpha: 0.05
+- Beta: 0.05
+- Time control: 10+0.1
+- Max rounds: 2000
+
+Expected Outcome:
+- Stage 9b should show +20-40 Elo from vector optimization
+- Draw rate should normalize to 30-40% (vs 70%+ in previous tests)
+- NPS improvement should translate to stronger play
+
+Optimization Applied:
+- Dual-mode history system eliminating heap allocations during search
+- Zero vector operations in hot path
+- Stack-based repetition detection in search mode

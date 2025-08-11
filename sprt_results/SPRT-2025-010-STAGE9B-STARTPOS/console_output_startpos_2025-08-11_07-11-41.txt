@@ -1,0 +1,61 @@
+Warning: No opening book specified! Consider using one, otherwise all games will be played from the starting position.
+Warning: Unknown opening format, 2. All games will be played from the starting position.
+Started game 1 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 1 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 2 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 2 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 3 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 3 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 4 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 4 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 5 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 5 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 6 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 6 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 7 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 7 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 8 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 8 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 9 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 9 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 10 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 10 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 11 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 11 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 12 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 12 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 13 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 13 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 14 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 14 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 15 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 15 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 16 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 16 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 17 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 17 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 18 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 18 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 19 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 19 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 20 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 20 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Stage9b-Optimized vs Stage9-Baseline (10+0.1, NULL, NULL):
+Elo: -0.00 +/- 0.00, nElo: nan +/- nan
+LOS: nan %, DrawRatio: 100.00 %, PairsRatio: nan
+Games: 20, Wins: 0, Losses: 0, Draws: 20, Points: 10.0 (50.00 %)
+Ptnml(0-2): [0, 0, 10, 0, 0], WL/DD Ratio: 0.00
+LLR: -0.14 (-4.9%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 21 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 21 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 22 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 22 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 23 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 23 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 24 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
+Finished game 24 (Stage9-Baseline vs Stage9b-Optimized): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 25 of 4000 (Stage9b-Optimized vs Stage9-Baseline)
+Finished game 25 (Stage9b-Optimized vs Stage9-Baseline): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 26 of 4000 (Stage9-Baseline vs Stage9b-Optimized)
