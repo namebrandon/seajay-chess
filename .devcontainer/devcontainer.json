@@ -1,31 +1,8 @@
 {
     "name": "SeaJay Chess Engine Development",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "args": {
-            "TZ": "America/Chicago"
-        }
-    },
-    
-    // Use the project root as workspace
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "seajay-dev",
     "workspaceFolder": "/workspace",
-    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-    
-    // Container capabilities
-    "runArgs": [
-        "--cap-add=SYS_PTRACE",           // For GDB/LLDB debugging
-        "--security-opt", "seccomp=unconfined",  // For valgrind
-        "--shm-size=2gb",                 // Shared memory for parallel testing
-        "--platform=linux/amd64"          // Force x86_64 architecture
-    ],
-    
-    // Persistent volumes for user data
-    "mounts": [
-        "source=seajay-bashhistory,target=/home/developer/.bash_history,type=volume",
-        "source=seajay-zshhistory,target=/home/developer/.zsh_history,type=volume",
-        "source=seajay-config,target=/home/developer/.config,type=volume",
-        "source=seajay-ccache,target=/home/developer/.ccache,type=volume"
-    ],
     
     // Environment variables
     "containerEnv": {
@@ -107,12 +84,15 @@
     // Use developer user
     "remoteUser": "developer",
     
+    // Override the default command to keep container running
+    "overrideCommand": true,
+    
     // Post-create setup
     "postCreateCommand": "/workspace/.devcontainer/post-create.sh",
     
     // Host requirements
     "hostRequirements": {
         "cpus": 4,
-        "memory": "8gb"
+        "memory": "12gb"
     }
 }

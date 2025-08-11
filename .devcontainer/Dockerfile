@@ -129,8 +129,10 @@ RUN echo '# Chess engine development aliases' >> ~/.zshrc && \
     echo 'export MAKEFLAGS="-j$(nproc)"' >> ~/.zshrc && \
     echo 'export CLAUDE_CONFIG_DIR="$HOME/.config/claude"' >> ~/.zshrc
 
-# Create necessary directories
-RUN mkdir -p /home/developer/.config/claude /home/developer/.ccache
+# Create necessary directories with proper ownership
+RUN mkdir -p /home/developer/.config/claude /home/developer/.ccache \
+    /home/developer/.vscode-server /home/developer/.vscode-server-insiders && \
+    chown -R developer:developer /home/developer
 
 # Set working directory
 WORKDIR /workspace

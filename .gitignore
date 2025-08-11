@@ -70,4 +70,7 @@ compile_commands.json
 # Temporary files
 *.tmp
 *.temp
-/tmp/
+/tmp/.devcontainer/devcontainer.json.local
+
+# Machine-specific environment
+.env
