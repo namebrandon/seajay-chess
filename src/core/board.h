@@ -220,6 +220,10 @@ private:
     mutable eval::Score m_evalCache{eval::Score::zero()};
     mutable bool m_evalCacheValid{false};
     
+    // Draw detection caching (performance optimization)
+    mutable bool m_insufficientMaterialCached = false;
+    mutable bool m_insufficientMaterialValue = false;
+    
     // PST tracking (Stage 9)
     eval::MgEgScore m_pstScore{};  // Incremental PST score
     
@@ -236,6 +240,9 @@ private:
     void validateStateIntegrity() const;  // Full state validation
 #endif
     
+    // Helper to compute insufficient material (internal implementation)
+    bool computeInsufficientMaterial() const;
+    
     // Friend classes for safety infrastructure
     friend class BoardStateValidator;
     friend class ZobristKeyManager;
@@ -245,6 +252,14 @@ private:
     static constexpr size_t MAX_GAME_HISTORY = 1024;  // Support long games
     std::vector<Hash> m_gameHistory;              // Game position history  
     size_t m_lastIrreversiblePly;                 // Last pawn/capture move
+    
+    // Performance optimization: Skip history tracking during search
+    bool m_inSearch = false;                      // Flag to disable history tracking in search
+    
+public:
+    // Control search mode (disables game history tracking for performance)
+    void setSearchMode(bool inSearch) { m_inSearch = inSearch; }
+    bool isInSearch() const { return m_inSearch; }
 };
 
 } // namespace seajay

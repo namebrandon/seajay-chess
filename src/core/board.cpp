@@ -1109,7 +1109,10 @@ void Board::unmakeMove(Move move, const CompleteUndoInfo& undo) {
 // Internal implementation for legacy UndoInfo
 void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     // Stage 9b: Track position before making move
-    pushGameHistory();
+    // Skip history tracking during search for performance
+    if (!m_inSearch) {
+        pushGameHistory();
+    }
     
     // Save current state for undo
     undo.castlingRights = m_castlingRights;
@@ -1125,7 +1128,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     Piece capturedPiece = pieceAt(to);
     
     // Stage 9b: Check if move is irreversible (pawn move or capture)
-    if (capturedPiece != NO_PIECE || typeOf(movingPiece) == PAWN) {
+    if (!m_inSearch && (capturedPiece != NO_PIECE || typeOf(movingPiece) == PAWN)) {
         // Mark this as last irreversible move
         m_lastIrreversiblePly = m_gameHistory.size();  // Correct index (will be position after push)
     }
@@ -1211,6 +1214,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         
         // Update material for en passant capture
         m_material.remove(capturedPawn);  // Remove captured pawn
+        m_insufficientMaterialCached = false;  // Invalidate cache after capture
         
         // Update PST for en passant (Stage 9)
         if (us == WHITE) {
@@ -1259,6 +1263,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
             m_material.remove(capturedPiece);  // Remove captured
         }
         m_material.add(promotedPiece);  // Add promoted piece
+        m_insufficientMaterialCached = false;  // Invalidate cache after promotion
         
         // Update PST for promotion (Stage 9)
         if (us == WHITE) {
@@ -1303,6 +1308,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         if (capturedPiece != NO_PIECE) {
             m_material.remove(capturedPiece);
             m_evalCacheValid = false;
+            m_insufficientMaterialCached = false;  // Invalidate cache after capture
         }
         
         // Update PST for normal moves (Stage 9)
@@ -1407,6 +1413,9 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
     m_fullmoveNumber = undo.fullmoveNumber;  // FIXED: Restore fullmove number!
     m_zobristKey = undo.zobristKey;
     m_pstScore = undo.pstScore;  // Stage 9: Restore PST score
+    
+    // Invalidate insufficient material cache (safe approach)
+    m_insufficientMaterialCached = false;
     
     // Switch side back
     m_sideToMove = ~m_sideToMove;
@@ -1518,7 +1527,8 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
 #endif
     
     // Stage 9b: Remove position from history on unmake
-    if (!m_gameHistory.empty()) {
+    // Skip history tracking during search for performance
+    if (!m_inSearch && !m_gameHistory.empty()) {
         m_gameHistory.pop_back();
     }
 }
@@ -1853,6 +1863,15 @@ bool Board::isDraw() const {
 }
 
 bool Board::isInsufficientMaterial() const {
+    // Use cached result if available
+    if (!m_insufficientMaterialCached) {
+        m_insufficientMaterialValue = computeInsufficientMaterial();
+        m_insufficientMaterialCached = true;
+    }
+    return m_insufficientMaterialValue;
+}
+
+bool Board::computeInsufficientMaterial() const {
     // Simple insufficient material detection
     // K vs K, KN vs K, KB vs K, KB vs KB (same color)
     
@@ -1950,28 +1969,31 @@ Hash Board::gameHistoryAt(size_t index) const {
 bool Board::isRepetitionDrawInSearch(const SearchInfo& searchInfo, int searchPly) const {
     Hash currentKey = zobristKey();
     
+    // OPTIMIZATION: Early exit - Can't have repetition with very few moves
+    if (m_halfmoveClock < 4) return false;
+    
+    // OPTIMIZATION: Limit search depth based on 50-move rule
+    int maxLookback = std::min(static_cast<int>(m_halfmoveClock), 100);
+    
     // PHASE 1: Check for repetition within search path (1 repetition = draw)
     if (searchInfo.isRepetitionInSearch(currentKey, searchPly)) {
         return true;
     }
     
     // PHASE 2: Check game history before search started
-    // Need 2 repetitions in game history (+ current = threefold)
-    int repetitionsInGameHistory = 0;
+    // OPTIMIZATION: Start from most recent and stop at first repetition for draw check
     size_t gameHistorySize = m_gameHistory.size();
     
-    // Search within halfmove clock boundary
+    // Search within halfmove clock boundary and maxLookback
     size_t searchLimit = std::min(gameHistorySize, 
-                                  static_cast<size_t>(m_halfmoveClock));
+                                  static_cast<size_t>(maxLookback));
     
     // Search backwards through game history (every 2nd position for same side to move)
+    // OPTIMIZATION: Stop at first repetition found (one repetition in history = draw)
     for (size_t i = 0; i < searchLimit; i += 2) {
         size_t idx = gameHistorySize - 1 - i;
         if (idx < m_gameHistory.size() && m_gameHistory[idx] == currentKey) {
-            repetitionsInGameHistory++;
-            if (repetitionsInGameHistory >= 2) {
-                return true;  // Threefold repetition
-            }
+            return true;  // First repetition found = draw
         }
     }
     

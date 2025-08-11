@@ -71,6 +71,22 @@ public:
     // Get root game history size
     size_t getRootGameHistorySize() const { return m_rootGameHistorySize; }
     
+    // Additional helper methods for performance optimization
+    Hash getCurrentZobrist(int ply) const {
+        if (ply < MAX_PLY) return m_searchStack[ply].zobristKey;
+        return 0;
+    }
+    
+    int getCurrentPly(int ply) const {
+        if (ply < MAX_PLY) return m_searchStack[ply].ply;
+        return 0;
+    }
+    
+    Hash getZobristAt(int index) const {
+        if (index >= 0 && index < MAX_PLY) return m_searchStack[index].zobristKey;
+        return 0;
+    }
+    
 private:
     std::array<SearchStack, MAX_PLY> m_searchStack;
     int m_searchPly;

@@ -192,6 +192,9 @@ eval::Score negamax(Board& board,
 
 // Main search function - entry point for UCI
 Move search(Board& board, const SearchLimits& limits) {
+    // Enable search mode to skip game history tracking for performance
+    board.setSearchMode(true);
+    
     SearchInfo info;
     info.limits = limits;
     info.startTime = std::chrono::steady_clock::now();
@@ -278,6 +281,9 @@ Move search(Board& board, const SearchLimits& limits) {
             }
         }
     }
+    
+    // Disable search mode - restore normal game history tracking
+    board.setSearchMode(false);
     
     return bestMove;
 }
