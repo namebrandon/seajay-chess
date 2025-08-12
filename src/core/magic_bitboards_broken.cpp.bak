@@ -1,0 +1,702 @@
+/**
+ * Magic Bitboards Implementation
+ * 
+ * This file implements magic bitboards for fast sliding piece attack generation.
+ * 
+ * GPL-3.0 License
+ */
+
+#include "magic_bitboards.h"
+#include "magic_constants.h"
+#include <iostream>
+#include <iomanip>
+#include <mutex>
+#include <vector>
+#include <cstring>
+
+namespace seajay {
+namespace magic {
+
+// Global magic arrays - explicitly initialize to prevent issues
+MagicEntry rookMagics[64] = {};
+MagicEntry bishopMagics[64] = {};
+
+// Attack tables
+std::unique_ptr<Bitboard[]> rookAttackTable;
+std::unique_ptr<Bitboard[]> bishopAttackTable;
+
+// Initialization flag
+bool magicsInitialized = false;
+// Removed static to avoid potential issues
+std::once_flag initFlag;
+
+/**
+ * Compute the blocker mask for a rook on the given square.
+ * The mask includes all squares the rook can potentially move to,
+ * EXCLUDING the edge squares (as pieces on edges don't affect inner squares).
+ * 
+ * This exclusion is critical for magic bitboards to work properly!
+ */
+Bitboard computeRookMask(Square sq) {
+    Bitboard mask = 0;
+    int f = static_cast<int>(fileOf(sq));
+    int r = static_cast<int>(rankOf(sq));
+    
+    // North ray (exclude rank 8)
+    for (int r2 = r + 1; r2 < 7; ++r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r2)));
+    }
+    
+    // South ray (exclude rank 1)
+    for (int r2 = r - 1; r2 > 0; --r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r2)));
+    }
+    
+    // East ray (exclude file H)
+    for (int f2 = f + 1; f2 < 7; ++f2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r)));
+    }
+    
+    // West ray (exclude file A)
+    for (int f2 = f - 1; f2 > 0; --f2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r)));
+    }
+    
+    return mask;
+}
+
+/**
+ * Compute the blocker mask for a bishop on the given square.
+ * The mask includes all squares the bishop can potentially move to,
+ * EXCLUDING the edge squares (as pieces on edges don't affect inner squares).
+ */
+Bitboard computeBishopMask(Square sq) {
+    Bitboard mask = 0;
+    int f = static_cast<int>(fileOf(sq));
+    int r = static_cast<int>(rankOf(sq));
+    
+    // North-East diagonal (exclude rank 8 and file H)
+    for (int f2 = f + 1, r2 = r + 1; f2 < 7 && r2 < 7; ++f2, ++r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r2)));
+    }
+    
+    // North-West diagonal (exclude rank 8 and file A)
+    for (int f2 = f - 1, r2 = r + 1; f2 > 0 && r2 < 7; --f2, ++r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r2)));
+    }
+    
+    // South-East diagonal (exclude rank 1 and file H)
+    for (int f2 = f + 1, r2 = r - 1; f2 < 7 && r2 > 0; ++f2, --r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r2)));
+    }
+    
+    // South-West diagonal (exclude rank 1 and file A)
+    for (int f2 = f - 1, r2 = r - 1; f2 > 0 && r2 > 0; --f2, --r2) {
+        mask |= squareBB(makeSquare(static_cast<File>(f2), static_cast<Rank>(r2)));
+    }
+    
+    return mask;
+}
+
+/**
+ * Convert an index to an occupancy pattern using the given mask.
+ * Each bit in the index corresponds to a bit in the mask.
+ */
+Bitboard indexToOccupancy(int index, Bitboard mask) {
+    Bitboard occupancy = 0;
+    Bitboard maskCopy = mask;  // Make a copy since popLsb modifies the bitboard
+    int bitCount = popCount(mask);
+    
+    for (int i = 0; i < bitCount; ++i) {
+        Square sq = popLsb(maskCopy);
+        if (index & (1 << i)) {
+            occupancy |= squareBB(sq);
+        }
+    }
+    
+    return occupancy;
+}
+
+/**
+ * Print mask information for all squares (validation function).
+ * Expected bit counts:
+ * - Rook: 12 bits for center squares, less for edges
+ * - Bishop: 9 bits for center squares, less for edges and corners
+ */
+void printMaskInfo() {
+    std::cout << "\n=== ROOK MASK BIT COUNTS ===\n";
+    std::cout << "Square | Bits | Expected | Visual\n";
+    std::cout << "-------|------|----------|-------\n";
+    
+    for (Square sq = 0; sq < 64; ++sq) {
+        Bitboard mask = computeRookMask(sq);
+        int bits = popCount(mask);
+        
+        // Calculate expected bit count for rook
+        File f = fileOf(sq);
+        Rank r = rankOf(sq);
+        int expectedBits = 0;
+        
+        // Vertical squares (excluding edges)
+        if (r > 0 && r < 7) expectedBits += 1;  // Can go south
+        if (r > 1) expectedBits += r - 1;        // Additional south squares
+        if (r < 6) expectedBits += 6 - r;        // North squares
+        
+        // Horizontal squares (excluding edges)
+        if (f > 0 && f < 7) expectedBits += 1;  // Can go west
+        if (f > 1) expectedBits += f - 1;        // Additional west squares
+        if (f < 6) expectedBits += 6 - f;        // East squares
+        
+        char file = 'a' + fileOf(sq);
+        char rank = '1' + rankOf(sq);
+        std::cout << std::setw(3) << file << rank << "    | " 
+                  << std::setw(4) << bits << " | "
+                  << std::setw(8) << expectedBits << " | ";
+        
+        if (bits != expectedBits) {
+            std::cout << "ERROR!";
+        } else {
+            std::cout << "OK";
+        }
+        std::cout << "\n";
+        
+        // Show visual for center squares
+        if (sq == D4 || sq == E5) {
+            std::cout << bitboardToString(mask) << "\n";
+        }
+    }
+    
+    std::cout << "\n=== BISHOP MASK BIT COUNTS ===\n";
+    std::cout << "Square | Bits | Expected | Visual\n";
+    std::cout << "-------|------|----------|-------\n";
+    
+    for (Square sq = 0; sq < 64; ++sq) {
+        Bitboard mask = computeBishopMask(sq);
+        int bits = popCount(mask);
+        
+        // Calculate expected bit count for bishop (complex calculation)
+        File f = fileOf(sq);
+        Rank r = rankOf(sq);
+        int expectedBits = 0;
+        
+        // Count diagonal squares (excluding edges)
+        // NE diagonal
+        int ne = std::min(6 - f, 6 - r);
+        expectedBits += ne;
+        
+        // NW diagonal
+        int nw = std::min(f - 1, 6 - r);
+        if (f > 0) expectedBits += nw;
+        
+        // SE diagonal
+        int se = std::min(6 - f, r - 1);
+        if (r > 0) expectedBits += se;
+        
+        // SW diagonal
+        int sw = std::min(f - 1, r - 1);
+        if (f > 0 && r > 0) expectedBits += sw;
+        
+        char file = 'a' + fileOf(sq);
+        char rank = '1' + rankOf(sq);
+        std::cout << std::setw(3) << file << rank << "    | " 
+                  << std::setw(4) << bits << " | "
+                  << std::setw(8) << expectedBits << " | ";
+        
+        if (bits != expectedBits) {
+            std::cout << "ERROR!";
+        } else {
+            std::cout << "OK";
+        }
+        std::cout << "\n";
+        
+        // Show visual for center squares
+        if (sq == D4 || sq == E5) {
+            std::cout << bitboardToString(mask) << "\n";
+        }
+    }
+    
+    // Print summary statistics
+    std::cout << "\n=== SUMMARY ===\n";
+    
+    // Check specific expected values
+    std::cout << "Rook D4 (center): " << popCount(computeRookMask(D4)) << " bits (expected: 10)\n";
+    std::cout << "Rook A1 (corner): " << popCount(computeRookMask(A1)) << " bits (expected: 12)\n";
+    std::cout << "Rook A4 (edge):   " << popCount(computeRookMask(A4)) << " bits (expected: 11)\n";
+    std::cout << "Rook D1 (edge):   " << popCount(computeRookMask(D1)) << " bits (expected: 11)\n";
+    
+    std::cout << "\n";
+    
+    std::cout << "Bishop D4 (center): " << popCount(computeBishopMask(D4)) << " bits (expected: 9)\n";
+    std::cout << "Bishop E5 (center): " << popCount(computeBishopMask(E5)) << " bits (expected: 9)\n";
+    std::cout << "Bishop A1 (corner): " << popCount(computeBishopMask(A1)) << " bits (expected: 6)\n";
+    std::cout << "Bishop H8 (corner): " << popCount(computeBishopMask(H8)) << " bits (expected: 6)\n";
+    std::cout << "Bishop A4 (edge):   " << popCount(computeBishopMask(A4)) << " bits (expected: 5)\n";
+}
+
+/**
+ * Initialize magic bitboards - Step 1D: Initialize MagicEntry structures
+ */
+void initMagics() {
+    // Check if already initialized
+    if (magicsInitialized) {
+        return;
+    }
+    
+    // Prevent recursive initialization
+    static bool inProgress = false;
+    if (inProgress) {
+        return;
+    }
+    inProgress = true;
+    
+    std::cout << "Initializing magic bitboards...\n" << std::flush;
+    
+    // Step 1D: Initialize MagicEntry structures
+    std::cout << "Step 1D: Initializing MagicEntry structures...\n" << std::flush;
+    
+    // First, test computing masks
+    std::cout << "About to enter loop\n" << std::flush;
+    for (Square sq = 0; sq < 64; ++sq) {
+        std::cout << "Loop iteration " << (int)sq << "\n" << std::flush;
+        // Test rook mask computation
+        rookMagics[sq].mask = computeRookMask(sq);
+        rookMagics[sq].magic = ROOK_MAGICS[sq];
+        rookMagics[sq].shift = ROOK_SHIFTS[sq];
+        rookMagics[sq].attacks = nullptr;
+        break;  // Only do one iteration for testing
+        
+        // Test bishop mask computation
+        bishopMagics[sq].mask = computeBishopMask(sq);
+        bishopMagics[sq].magic = BISHOP_MAGICS[sq];
+        bishopMagics[sq].shift = BISHOP_SHIFTS[sq];
+        bishopMagics[sq].attacks = nullptr;
+    }
+    
+    std::cout << "✓ MagicEntry structures initialized\n";
+    
+    // Mark as initialized for now
+    magicsInitialized = true;
+    return;
+    
+    /* TEMPORARILY COMMENTED OUT FOR DEBUGGING
+        
+        // SIMPLIFIED: Just set everything to zero for debugging
+        for (Square sq = 0; sq < 64; ++sq) {
+            rookMagics[sq].mask = 0;  // TEMPORARY
+            rookMagics[sq].magic = 0;  // TEMPORARY - don't use ROOK_MAGICS
+            rookMagics[sq].shift = 52;  // TEMPORARY - don't use ROOK_SHIFTS
+            rookMagics[sq].attacks = nullptr;
+            
+            bishopMagics[sq].mask = 0;  // TEMPORARY
+            bishopMagics[sq].magic = 0;  // TEMPORARY - don't use BISHOP_MAGICS
+            bishopMagics[sq].shift = 55;  // TEMPORARY - don't use BISHOP_SHIFTS
+            bishopMagics[sq].attacks = nullptr;
+        }
+        
+        // Now compute masks properly
+        for (Square sq = 0; sq < 64; ++sq) {
+            rookMagics[sq].mask = computeRookMask(sq);
+            rookMagics[sq].magic = ROOK_MAGICS[sq];
+            bishopMagics[sq].mask = computeBishopMask(sq);
+        }
+        std::cout << "✓ MagicEntry structures initialized\n";
+        std::cout << "  sizeof(MagicEntry) = " << sizeof(MagicEntry) << " bytes\n";
+        std::cout << "  Alignment = " << alignof(MagicEntry) << " bytes\n";
+        
+        // Step 1C: Validate all magic numbers
+        std::cout << "\nStep 1C: Validating magic numbers...\n";
+        bool allValid = true;
+        
+        // Validate rook magics
+        for (Square sq = 0; sq < 64; ++sq) {
+            if (!validateMagicNumber(sq, true)) {
+                std::cerr << "ERROR: Invalid rook magic for square " << (int)sq << "\n";
+                allValid = false;
+            }
+        }
+        
+        // Validate bishop magics
+        for (Square sq = 0; sq < 64; ++sq) {
+            if (!validateMagicNumber(sq, false)) {
+                std::cerr << "ERROR: Invalid bishop magic for square " << (int)sq << "\n";
+                allValid = false;
+            }
+        }
+        
+        if (!allValid) {
+            std::cerr << "✗ Magic number validation failed!\n";
+            return;
+        }
+        
+        std::cout << "✓ All 128 magic numbers validated successfully!\n";
+        
+        // ============================================
+        // Phase 2A: Table Memory Allocation
+        // ============================================
+        std::cout << "\n=== Phase 2A: Table Memory Allocation ===\n";
+        
+        // Calculate total table sizes
+        size_t rookTableTotal = 0;
+        size_t bishopTableTotal = 0;
+        
+        // Calculate exact memory requirements based on shifts
+        for (Square sq = 0; sq < 64; ++sq) {
+            rookTableTotal += (1ULL << (64 - rookMagics[sq].shift));
+            bishopTableTotal += (1ULL << (64 - bishopMagics[sq].shift));
+        }
+        
+        std::cout << "Rook table entries: " << rookTableTotal << "\n";
+        std::cout << "Bishop table entries: " << bishopTableTotal << "\n";
+        std::cout << "Total entries: " << (rookTableTotal + bishopTableTotal) << "\n";
+        
+        // Allocate memory for attack tables using RAII with unique_ptr
+        try {
+            // Allocate and zero-initialize the arrays
+            rookAttackTable = std::make_unique<Bitboard[]>(rookTableTotal);
+            bishopAttackTable = std::make_unique<Bitboard[]>(bishopTableTotal);
+            
+            // CRITICAL: Zero-initialize to prevent undefined behavior in Release builds
+            std::memset(rookAttackTable.get(), 0, rookTableTotal * sizeof(Bitboard));
+            std::memset(bishopAttackTable.get(), 0, bishopTableTotal * sizeof(Bitboard));
+            
+            std::cout << "✓ Allocated " << (rookTableTotal * sizeof(Bitboard)) 
+                      << " bytes (" << (rookTableTotal * sizeof(Bitboard) / 1024.0) 
+                      << " KB) for rook tables\n";
+            std::cout << "✓ Allocated " << (bishopTableTotal * sizeof(Bitboard)) 
+                      << " bytes (" << (bishopTableTotal * sizeof(Bitboard) / 1024.0) 
+                      << " KB) for bishop tables\n";
+            
+            size_t totalMemory = (rookTableTotal + bishopTableTotal) * sizeof(Bitboard);
+            std::cout << "✓ Total memory allocated: " << totalMemory 
+                      << " bytes (" << (totalMemory / 1024.0) << " KB)\n";
+            
+            // Verify ~853KB allocation (not 2.3MB as in original plan)
+            if (totalMemory < 800000 || totalMemory > 900000) {
+                std::cerr << "WARNING: Memory allocation outside expected range (800-900KB)\n";
+            }
+            
+        } catch (const std::bad_alloc& e) {
+            std::cerr << "ERROR: Failed to allocate memory for attack tables: " << e.what() << "\n";
+            return;
+        }
+        
+        std::cout << "✓ Phase 2A Complete: Memory allocated and initialized\n";
+        
+        // ============================================
+        // Phase 2B and 2C: Generate Rook Attack Tables
+        // ============================================
+        std::cout << "\n=== Phase 2C: Generating All Rook Attack Tables ===\n";
+        
+        // Set up pointers into the attack table for each square
+        Bitboard* rookTablePtr = rookAttackTable.get();
+        size_t totalRookEntries = 0;
+        int failedRookSquares = 0;
+        
+        for (Square sq = 0; sq < 64; ++sq) {
+            // Set the pointer for this square
+            rookMagics[sq].attacks = rookTablePtr;
+            
+            // Calculate table size for this square
+            size_t tableSize = 1ULL << (64 - rookMagics[sq].shift);
+            int numPatterns = 1 << popCount(rookMagics[sq].mask);
+            
+            // Generate all attack patterns for this square
+            bool squareValid = true;
+            for (int pattern = 0; pattern < numPatterns; ++pattern) {
+                Bitboard occupancy = indexToOccupancy(pattern, rookMagics[sq].mask);
+                Bitboard attacks = generateSlowRookAttacks(sq, occupancy);
+                
+                // Calculate magic index
+                uint64_t index = ((uint64_t)(occupancy & rookMagics[sq].mask) * 
+                                 (uint64_t)rookMagics[sq].magic) >> rookMagics[sq].shift;
+                
+                // Check for destructive collision
+                if (rookTablePtr[index] != 0 && rookTablePtr[index] != attacks) {
+                    std::cerr << "ERROR: Destructive collision for rook at square " 
+                              << (int)sq << ", index " << index << "\n";
+                    squareValid = false;
+                    failedRookSquares++;
+                    break;
+                }
+                
+                // Store the attacks
+                rookTablePtr[index] = attacks;
+            }
+            
+            if (squareValid) {
+                // Verify all entries are set (no gaps)
+                int usedEntries = 0;
+                for (size_t i = 0; i < tableSize; ++i) {
+                    if (rookTablePtr[i] != 0) usedEntries++;
+                }
+                
+                char file = 'a' + fileOf(sq);
+                char rank = '1' + rankOf(sq);
+                std::cout << "  Rook " << file << rank 
+                          << ": " << numPatterns << " patterns → "
+                          << usedEntries << "/" << tableSize << " table entries\n";
+            }
+            
+            // Move pointer forward for next square
+            rookTablePtr += tableSize;
+            totalRookEntries += tableSize;
+        }
+        
+        if (failedRookSquares > 0) {
+            std::cerr << "\n✗ Phase 2C FAILED: " << failedRookSquares 
+                      << " rook squares had destructive collisions!\n";
+            return;
+        }
+        
+        std::cout << "\n✓ Phase 2C Complete: All 64 rook tables generated\n";
+        std::cout << "  Total rook entries: " << totalRookEntries << "\n";
+        std::cout << "  All 262,144 rook attack patterns validated\n";
+        
+        // ============================================
+        // Phase 2D: Generate Bishop Attack Tables
+        // ============================================
+        std::cout << "\n=== Phase 2D: Generating All Bishop Attack Tables ===\n";
+        
+        // Set up pointers into the attack table for each square
+        Bitboard* bishopTablePtr = bishopAttackTable.get();
+        size_t totalBishopEntries = 0;
+        int failedBishopSquares = 0;
+        
+        for (Square sq = 0; sq < 64; ++sq) {
+            // Set the pointer for this square
+            bishopMagics[sq].attacks = bishopTablePtr;
+            
+            // Calculate table size for this square
+            size_t tableSize = 1ULL << (64 - bishopMagics[sq].shift);
+            int numPatterns = 1 << popCount(bishopMagics[sq].mask);
+            
+            // Generate all attack patterns for this square
+            bool squareValid = true;
+            for (int pattern = 0; pattern < numPatterns; ++pattern) {
+                Bitboard occupancy = indexToOccupancy(pattern, bishopMagics[sq].mask);
+                Bitboard attacks = generateSlowBishopAttacks(sq, occupancy);
+                
+                // Calculate magic index
+                uint64_t index = ((uint64_t)(occupancy & bishopMagics[sq].mask) * 
+                                 (uint64_t)bishopMagics[sq].magic) >> bishopMagics[sq].shift;
+                
+                // Check for destructive collision
+                if (bishopTablePtr[index] != 0 && bishopTablePtr[index] != attacks) {
+                    std::cerr << "ERROR: Destructive collision for bishop at square " 
+                              << (int)sq << ", index " << index << "\n";
+                    squareValid = false;
+                    failedBishopSquares++;
+                    break;
+                }
+                
+                // Store the attacks
+                bishopTablePtr[index] = attacks;
+            }
+            
+            if (squareValid) {
+                // Verify all entries are set (no gaps)
+                int usedEntries = 0;
+                for (size_t i = 0; i < tableSize; ++i) {
+                    if (bishopTablePtr[i] != 0) usedEntries++;
+                }
+                
+                char file = 'a' + fileOf(sq);
+                char rank = '1' + rankOf(sq);
+                std::cout << "  Bishop " << file << rank 
+                          << ": " << numPatterns << " patterns → "
+                          << usedEntries << "/" << tableSize << " table entries\n";
+            }
+            
+            // Move pointer forward for next square
+            bishopTablePtr += tableSize;
+            totalBishopEntries += tableSize;
+        }
+        
+        if (failedBishopSquares > 0) {
+            std::cerr << "\n✗ Phase 2D FAILED: " << failedBishopSquares 
+                      << " bishop squares had destructive collisions!\n";
+            return;
+        }
+        
+        std::cout << "\n✓ Phase 2D Complete: All 64 bishop tables generated\n";
+        std::cout << "  Total bishop entries: " << totalBishopEntries << "\n";
+        std::cout << "  All 32,768 bishop attack patterns validated\n";
+        
+        // ============================================
+        // Phase 2E: Mark Initialization Complete
+        // ============================================
+        std::cout << "\n=== Phase 2E: Initialization System ===\n";
+        
+        // Verify initialization integrity
+        bool initValid = true;
+        
+        // Check that all MagicEntry structures have valid pointers
+        for (Square sq = 0; sq < 64; ++sq) {
+            if (rookMagics[sq].attacks == nullptr) {
+                std::cerr << "ERROR: Rook square " << (int)sq << " has null attack pointer\n";
+                initValid = false;
+            }
+            if (bishopMagics[sq].attacks == nullptr) {
+                std::cerr << "ERROR: Bishop square " << (int)sq << " has null attack pointer\n";
+                initValid = false;
+            }
+        }
+        
+        if (!initValid) {
+            std::cerr << "✗ Phase 2E FAILED: Initialization integrity check failed\n";
+            return;
+        }
+        
+        // Mark as initialized
+        magicsInitialized = true;
+        
+        std::cout << "✓ Phase 2E Complete: Thread-safe initialization system ready\n";
+        std::cout << "  std::once_flag ensures single initialization\n";
+        std::cout << "  All attack pointers verified\n";
+        std::cout << "  magicsInitialized flag set to true\n";
+        
+        std::cout << "\n=== PHASE 2 COMPLETE ===\n";
+        std::cout << "✓ Memory allocation: " << ((totalRookEntries + totalBishopEntries) * sizeof(Bitboard)) << " bytes\n";
+        std::cout << "✓ Rook tables: 262,144 patterns validated\n";
+        std::cout << "✓ Bishop tables: 32,768 patterns validated\n";
+        std::cout << "✓ Initialization: Thread-safe with std::once_flag\n";
+        std::cout << "✓ Ready for Phase 3: Fast lookup implementation\n";
+    */
+}
+
+/**
+ * Generate slow attack bitboard for validation purposes.
+ * This is the reference implementation that magic bitboards will accelerate.
+ */
+Bitboard generateSlowRookAttacks(Square sq, Bitboard occupied) {
+    Bitboard attacks = 0;
+    int rank = rankOf(sq);
+    int file = fileOf(sq);
+    
+    // North
+    for (int r = rank + 1; r < 8; r++) {
+        attacks |= squareBB(makeSquare(static_cast<File>(file), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(file), static_cast<Rank>(r)))) break;
+    }
+    // South
+    for (int r = rank - 1; r >= 0; r--) {
+        attacks |= squareBB(makeSquare(static_cast<File>(file), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(file), static_cast<Rank>(r)))) break;
+    }
+    // East
+    for (int f = file + 1; f < 8; f++) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(rank)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(rank)))) break;
+    }
+    // West
+    for (int f = file - 1; f >= 0; f--) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(rank)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(rank)))) break;
+    }
+    
+    return attacks;
+}
+
+Bitboard generateSlowBishopAttacks(Square sq, Bitboard occupied) {
+    Bitboard attacks = 0;
+    int rank = rankOf(sq);
+    int file = fileOf(sq);
+    
+    // North-East
+    for (int r = rank + 1, f = file + 1; r < 8 && f < 8; r++, f++) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)))) break;
+    }
+    // North-West
+    for (int r = rank + 1, f = file - 1; r < 8 && f >= 0; r++, f--) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)))) break;
+    }
+    // South-East
+    for (int r = rank - 1, f = file + 1; r >= 0 && f < 8; r--, f++) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)))) break;
+    }
+    // South-West
+    for (int r = rank - 1, f = file - 1; r >= 0 && f >= 0; r--, f--) {
+        attacks |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)));
+        if (occupied & squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)))) break;
+    }
+    
+    return attacks;
+}
+
+/**
+ * Validate that a magic number produces correct attack mappings.
+ * CRITICAL: Multiple occupancy patterns can map to the same index - that's fine!
+ * What matters is that occupancies mapping to the same index produce the SAME ATTACKS.
+ * This is called a "constructive collision" and is actually desirable for memory efficiency.
+ */
+/**
+ * Check if magic bitboards are initialized.
+ * Used to verify initialization before attempting to use magic lookups.
+ */
+bool areMagicsInitialized() {
+    return magicsInitialized;
+}
+
+/**
+ * Ensure magic bitboards are initialized.
+ * Thread-safe - can be called multiple times from different threads.
+ */
+void ensureMagicsInitialized() {
+    if (!magicsInitialized) {
+        initMagics();
+    }
+}
+
+bool validateMagicNumber(Square sq, bool isRook) {
+    // Get the mask and magic number for this square
+    Bitboard mask = isRook ? computeRookMask(sq) : computeBishopMask(sq);
+    Bitboard magic = isRook ? ROOK_MAGICS[sq] : BISHOP_MAGICS[sq];
+    uint8_t shift = isRook ? ROOK_SHIFTS[sq] : BISHOP_SHIFTS[sq];
+    
+    int numBits = popCount(mask);
+    int tableSize = 1 << numBits;
+    
+    // Track attacks for each index (not occupancy!)
+    std::vector<bool> usedIndices(1 << (64 - shift), false);
+    std::vector<Bitboard> attacksForIndex(1 << (64 - shift), 0);
+    
+    // Test all possible occupancy patterns
+    for (int pattern = 0; pattern < tableSize; ++pattern) {
+        Bitboard occupancy = indexToOccupancy(pattern, mask);
+        
+        // Generate the correct attacks for this occupancy
+        Bitboard attacks = isRook ? 
+            generateSlowRookAttacks(sq, occupancy) : 
+            generateSlowBishopAttacks(sq, occupancy);
+        
+        // Calculate the magic index using 64-bit arithmetic (CRITICAL!)
+        uint64_t index = ((uint64_t)(occupancy & mask) * (uint64_t)magic) >> shift;
+        
+        // Check for destructive collision
+        if (usedIndices[index]) {
+            // This index is already used - check if attacks match
+            if (attacksForIndex[index] != attacks) {
+                // DESTRUCTIVE COLLISION - same index but different attacks!
+                std::cerr << "DESTRUCTIVE COLLISION for " 
+                          << (isRook ? "rook" : "bishop")
+                          << " at square " << (int)sq << "\n";
+                std::cerr << "Index: " << index << " maps to different attacks!\n";
+                std::cerr << "Attacks 1: 0x" << std::hex << attacksForIndex[index] << "\n";
+                std::cerr << "Attacks 2: 0x" << std::hex << attacks << std::dec << "\n";
+                return false;
+            }
+            // Else: Constructive collision - same index, same attacks. This is fine!
+        } else {
+            usedIndices[index] = true;
+            attacksForIndex[index] = attacks;
+        }
+    }
+    
+    return true;  // No destructive collisions found
+}
+
+} // namespace magic
+} // namespace seajay
