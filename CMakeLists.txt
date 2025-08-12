@@ -13,13 +13,33 @@ endif()
 
 # Compiler flags
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+
+# Magic bitboards development options (Stage 10)
+option(USE_MAGIC_BITBOARDS "Use magic bitboards instead of ray-based" OFF)
+option(DEBUG_MAGIC "Enable magic bitboard debug output" OFF)
+option(SANITIZE_MAGIC "Enable all sanitizers for magic development" OFF)
+
+if(DEBUG_MAGIC)
+    add_compile_definitions(DEBUG_MAGIC)
+endif()
+
+if(USE_MAGIC_BITBOARDS)
+    add_compile_definitions(USE_MAGIC_BITBOARDS)
+endif()
+
+if(SANITIZE_MAGIC)
+    add_compile_options(-fsanitize=address,undefined,leak)
+    add_link_options(-fsanitize=address,undefined,leak)
+endif()
 
 # Warning flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
     add_compile_options(-Wno-unused-parameter -Wno-unused-function)
+    # Ensure 64-bit arithmetic for magic bitboards
+    add_compile_options(-m64)
 endif()
 
 # Core library sources
@@ -34,6 +54,10 @@ set(CORE_SOURCES
     src/core/move_generation.h
     src/core/move_list.h
     src/core/types.h
+    src/core/attack_wrapper.h
+    src/core/magic_validator.h
+    src/core/magic_bitboards.h
+    src/core/magic_constants.h
 )
 
 # Evaluation sources
@@ -108,6 +132,22 @@ target_link_libraries(test_board_safety seajay_core)
 # En passant check evasion test (Bug #001 regression test)
 add_executable(test_en_passant_check_evasion tests/test_en_passant_check_evasion.cpp)
 target_link_libraries(test_en_passant_check_evasion seajay_core)
+
+# Magic bitboard validator test
+add_executable(test_magic_validator tests/test_magic_validator.cpp)
+target_link_libraries(test_magic_validator seajay_core)
+
+# Magic bitboards comprehensive test suite
+add_executable(test_magic_bitboards tests/magic_bitboards_test.cpp)
+target_link_libraries(test_magic_bitboards seajay_core)
+
+# A/B testing framework test
+add_executable(test_ab_framework tests/test_ab_framework.cpp)
+target_link_libraries(test_ab_framework seajay_core)
+
+# Magic mask validation test (Stage 10, Step 1A)
+add_executable(test_magic_masks tests/test_magic_masks.cpp)
+target_link_libraries(test_magic_masks seajay_core)
 
 # Material evaluation test
 add_executable(test_material_evaluation tests/test_material_evaluation.cpp)

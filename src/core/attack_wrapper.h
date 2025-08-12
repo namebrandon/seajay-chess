@@ -1,0 +1,91 @@
+#pragma once
+
+/**
+ * Attack Generation Wrapper
+ * 
+ * This file provides wrapper functions that can switch between ray-based
+ * and magic bitboard implementations based on compile flags.
+ * This allows for A/B testing and gradual migration to magic bitboards.
+ */
+
+#include "types.h"
+#include "bitboard.h"
+#include "magic_bitboards_v2.h"  // Include the actual implementation
+#include <cassert>
+
+namespace seajay {
+
+// Magic bitboard functions are now available from magic_bitboards_v2.h
+
+// Ray-based attack functions (current implementation)
+inline Bitboard rayRookAttacks(Square sq, Bitboard occupied) {
+    return ::seajay::rookAttacks(sq, occupied);
+}
+
+inline Bitboard rayBishopAttacks(Square sq, Bitboard occupied) {
+    return ::seajay::bishopAttacks(sq, occupied);
+}
+
+inline Bitboard rayQueenAttacks(Square sq, Bitboard occupied) {
+    return ::seajay::queenAttacks(sq, occupied);
+}
+
+// Wrapper functions that switch between implementations
+#ifdef USE_MAGIC_BITBOARDS
+
+    // Use magic bitboard implementation
+    inline Bitboard getRookAttacks(Square sq, Bitboard occupied) {
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicRookAttacks(sq, occupied);
+            Bitboard ray = rayRookAttacks(sq, occupied);
+            assert(magic == ray && "Rook attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicRookAttacks(sq, occupied);
+        #endif
+    }
+    
+    inline Bitboard getBishopAttacks(Square sq, Bitboard occupied) {
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicBishopAttacks(sq, occupied);
+            Bitboard ray = rayBishopAttacks(sq, occupied);
+            assert(magic == ray && "Bishop attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicBishopAttacks(sq, occupied);
+        #endif
+    }
+    
+    inline Bitboard getQueenAttacks(Square sq, Bitboard occupied) {
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicQueenAttacks(sq, occupied);
+            Bitboard ray = rayQueenAttacks(sq, occupied);
+            assert(magic == ray && "Queen attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicQueenAttacks(sq, occupied);
+        #endif
+    }
+
+#else
+
+    // Use ray-based implementation (current)
+    inline Bitboard getRookAttacks(Square sq, Bitboard occupied) {
+        return rayRookAttacks(sq, occupied);
+    }
+    
+    inline Bitboard getBishopAttacks(Square sq, Bitboard occupied) {
+        return rayBishopAttacks(sq, occupied);
+    }
+    
+    inline Bitboard getQueenAttacks(Square sq, Bitboard occupied) {
+        return rayQueenAttacks(sq, occupied);
+    }
+
+#endif // USE_MAGIC_BITBOARDS
+
+
+} // namespace seajay

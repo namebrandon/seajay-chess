@@ -22,17 +22,17 @@
         "enabled": false
     },
     "opening": {
-        "file": "./external/books/4moves_test.pgn",
+        "file": "/workspace/external/books/4moves_test.pgn",
         "format": 1,
-        "order": 0,
+        "order": 1,
         "plies": -1,
         "start": 1
     },
     "pgn": {
         "additional_lines_rgx": [],
-        "event_name": "SeaJay_vs_Stockfish_800",
-        "site": "Strength_Limited_Test",
-        "file": "./sprt_results/SPRT-2025-EXT-004-SF800/games_2025-08-11_10-53-56.pgn",
+        "event_name": "Fastchess Tournament",
+        "site": "?",
+        "file": "/workspace/sprt_results/SPRT-2025-002/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -50,14 +50,14 @@
     "sprt": {
         "alpha": 0.05,
         "beta": 0.05,
-        "elo0": -250.0,
-        "elo1": -50.0,
+        "elo0": 0.0,
+        "elo1": 30.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 18115559310209884777,
+    "seed": 8548333575958243546,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -66,7 +66,7 @@
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 500,
+    "rounds": 2000,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "./sprt_results/SPRT-2025-EXT-004-SF800/fastchess_2025-08-11_10-53-56.log",
+        "file": "/workspace/sprt_results/SPRT-2025-002/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,9 +84,9 @@
     },
     "engines": [
         {
-            "name": "SeaJay-2.9.1",
+            "name": "Stage10-Magic",
             "dir": "",
-            "cmd": "./build/seajay",
+            "cmd": "/workspace/bin/seajay_stage10_magic",
             "args": "",
             "restart": false,
             "options": [],
@@ -104,25 +104,12 @@
             "variant": 0
         },
         {
-            "name": "Stockfish-800ELO",
+            "name": "Stage9b-NoMagic",
             "dir": "",
-            "cmd": "./external/engines/stockfish/stockfish",
+            "cmd": "/workspace/bin/seajay_stage9b_no_magic",
             "args": "",
             "restart": false,
-            "options": [
-                [
-                    "Skill Level",
-                    "0"
-                ],
-                [
-                    "Threads",
-                    "1"
-                ],
-                [
-                    "Hash",
-                    "16"
-                ]
-            ],
+            "options": [],
             "limit": {
                 "tc": {
                     "increment": 100,
@@ -138,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stockfish-800ELO vs SeaJay-2.9.1": {
-            "wins": 27,
-            "losses": 103,
-            "draws": 10,
-            "penta_WW": 2,
-            "penta_WD": 3,
-            "penta_WL": 20,
-            "penta_DD": 1,
-            "penta_LD": 5,
-            "penta_LL": 39
+        "Stage9b-NoMagic vs Stage10-Magic": {
+            "wins": 5,
+            "losses": 11,
+            "draws": 4,
+            "penta_WW": 0,
+            "penta_WD": 1,
+            "penta_WL": 4,
+            "penta_DD": 0,
+            "penta_LD": 3,
+            "penta_LL": 2
         },
-        "SeaJay-2.9.1 vs Stockfish-800ELO": {
+        "Stage10-Magic vs Stage9b-NoMagic": {
             "wins": 0,
             "losses": 0,
             "draws": 0,

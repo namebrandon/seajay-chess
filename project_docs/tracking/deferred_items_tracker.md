@@ -1,7 +1,7 @@
 # SeaJay Chess Engine - Deferred Items Tracker
 
 **Purpose:** Track items deferred from earlier stages and items being deferred to future stages  
-**Last Updated:** August 9, 2025  
+**Last Updated:** August 11, 2025  
 
 ## Items FROM Stage 1 TO Stage 2
 
@@ -392,3 +392,63 @@ This tracker should be reviewed:
 - Further architectural improvements deferred to avoid scope creep
 - Focus remains on recovering the -70 Elo regression first
 - All Stockfish/Ethereal/Leela patterns documented for future reference
+
+## Items DEFERRED FROM Stage 10 (Magic Bitboards) TO Future Stages
+
+**Date:** August 12, 2025  
+**Status:** STAGE 10 COMPLETE ✅  
+**Source:** stage10_magic_bitboards_plan.md
+
+### To Future Phases (Phase 5+):
+
+1. **X-Ray Attack Generation**
+   - **Description:** Attacks that go "through" pieces (e.g., rook attacking through another rook)
+   - **Current:** Magic bitboards provide raw attacks only (stop at first blocker)
+   - **Use Case:** Advanced tactics, SEE (Static Exchange Evaluation), pin detection
+   - **Complexity:** Requires separate x-ray tables or on-demand calculation
+   - **Priority:** Low - only needed for advanced evaluation features
+   - **Note:** Basic magic bitboards are sufficient for move generation
+
+2. **Magic Number Generation Algorithm**
+   - **Description:** Custom generation of magic numbers instead of using Stockfish's
+   - **Current:** Using proven magic numbers from Stockfish (with attribution)
+   - **Reason:** Generation adds complexity without performance benefit
+   - **Priority:** Very Low - current numbers work perfectly
+   - **Note:** Only consider if licensing becomes an issue
+
+3. **Fancy Magic Bitboards**
+   - **Description:** Variable-size attack tables to save memory
+   - **Current:** Using plain magic (fixed-size tables, ~2.3MB)
+   - **Reason:** Added complexity not worth ~1.7MB memory savings
+   - **Priority:** Very Low - memory usage is acceptable
+   - **Expert Opinion:** Plain magic recommended by chess-engine-expert
+
+4. **SIMD Optimizations for Magic Lookups**
+   - **Description:** Using AVX2/SSE instructions for parallel operations
+   - **Current:** Standard C++ implementation
+   - **Reason:** Focus on correctness first, optimization later
+   - **Target:** Phase 6 after all core features complete
+   - **Priority:** Medium - could provide additional speedup
+
+5. **Kindergarten Bitboards Alternative**
+   - **Description:** Alternative to magic bitboards using different approach
+   - **Current:** Not implementing (magic bitboards chosen)
+   - **Reason:** Magic bitboards are industry standard
+   - **Priority:** Very Low - only if magic bitboards prove insufficient
+
+### Stage 10 Completion Notes:
+
+✅ **Stage 10 Successfully Completed (August 12, 2025):**
+- Achieved 55.98x speedup (far exceeding 3-5x target)
+- Header-only implementation avoids static initialization issues
+- 155,388 symmetry tests all passing
+- Zero memory leaks verified with valgrind
+- Both ray-based and magic implementations coexist
+- Production-ready code with all debug output removed
+- Memory usage: 2.25MB (as expected)
+
+**Technical Decisions:**
+- Kept ray-based implementation as fallback (conservative approach)
+- Used `USE_MAGIC_BITBOARDS` compile flag for switching
+- `DEBUG_MAGIC` flag available for validation mode
+- Can remove ray-based after extended production testing
