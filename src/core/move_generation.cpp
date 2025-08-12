@@ -1,5 +1,8 @@
 #include "move_generation.h"
 #include "bitboard.h"
+#ifdef USE_MAGIC_BITBOARDS
+#include "magic_bitboards.h"
+#endif
 #include <algorithm>
 #include <cstdlib>
 
@@ -526,17 +529,33 @@ Bitboard MoveGenerator::getKnightAttacks(Square square) {
 }
 
 Bitboard MoveGenerator::bishopAttacks(Square square, Bitboard occupied) {
-    // Use ray-based generation for now (will be replaced with magic bitboards in Phase 3)
+#ifdef USE_MAGIC_BITBOARDS
+    // Use magic bitboards for fast attack generation
+    return magicBishopAttacks(square, occupied);
+#else
+    // Use ray-based generation
     return ::seajay::bishopAttacks(square, occupied);
+#endif
 }
 
 Bitboard MoveGenerator::rookAttacks(Square square, Bitboard occupied) {
-    // Use ray-based generation for now (will be replaced with magic bitboards in Phase 3)
+#ifdef USE_MAGIC_BITBOARDS
+    // Use magic bitboards for fast attack generation
+    return magicRookAttacks(square, occupied);
+#else
+    // Use ray-based generation
     return ::seajay::rookAttacks(square, occupied);
+#endif
 }
 
 Bitboard MoveGenerator::queenAttacks(Square square, Bitboard occupied) {
+#ifdef USE_MAGIC_BITBOARDS
+    // Use magic bitboards for fast attack generation
+    return magicQueenAttacks(square, occupied);
+#else
+    // Use ray-based generation
     return ::seajay::bishopAttacks(square, occupied) | ::seajay::rookAttacks(square, occupied);
+#endif
 }
 
 Bitboard MoveGenerator::getKingAttacks(Square square) {
