@@ -1,6 +1,6 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 11, 2025  
+**Last Updated:** August 12, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 3 - Essential Optimizations  
 **Current Stage:** Stage 10 COMPLETE - Magic Bitboards for Sliding Pieces  
@@ -276,6 +276,10 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - **Memory Usage:** 2.25MB for all tables (as expected)
 - **Validation:** 155,388 symmetry tests all passing
 - **Quality:** Zero memory leaks, production-ready code
+- **SPRT Validation:** PASSED (2 tests)
+  - vs Stage 9b (4moves book): +87 Elo (H1 accepted, 110 games)
+  - vs Stage 9b (startpos): +191 Elo (H1 accepted, 76 games, zero losses)
+- **Estimated Strength:** ~1,100-1,200 ELO
 
 ## Next Steps
 
