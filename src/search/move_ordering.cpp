@@ -3,6 +3,13 @@
 #include <algorithm>
 #include <iostream>
 
+// Debug output control
+#ifdef DEBUG_MOVE_ORDERING
+    static bool g_debugMoveOrdering = true;
+#else
+    static bool g_debugMoveOrdering = false;
+#endif
+
 namespace seajay::search {
 
 // Score a single move using MVV-LVA heuristic
@@ -83,6 +90,12 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     if (moves.size() <= 1) {
         return;
     }
+    
+#ifdef DEBUG_MOVE_ORDERING
+    if (g_debugMoveOrdering) {
+        std::cout << "[MVV-LVA] Ordering " << moves.size() << " moves" << std::endl;
+    }
+#endif
     
     // Create scored moves array
     std::vector<MoveScore> scoredMoves;

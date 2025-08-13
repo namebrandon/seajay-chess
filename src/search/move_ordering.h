@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <array>
+#include <iostream>
 
 namespace seajay::search {
 
@@ -120,6 +121,15 @@ public:
     
     static void resetStatistics() noexcept {
         getStatistics() = Statistics{};
+    }
+    
+    static void printStatistics() noexcept {
+        const auto& stats = getStatistics();
+        std::cout << "MVV-LVA Statistics:\n";
+        std::cout << "  Captures scored: " << stats.captures_scored << "\n";
+        std::cout << "  Promotions scored: " << stats.promotions_scored << "\n";
+        std::cout << "  En passants scored: " << stats.en_passants_scored << "\n";
+        std::cout << "  Quiet moves: " << stats.quiet_moves << "\n";
     }
 };
 
