@@ -75,6 +75,8 @@ set(SEARCH_SOURCES
     src/search/negamax.cpp
     src/search/negamax.h
     src/search/types.h
+    src/search/move_ordering.cpp
+    src/search/move_ordering.h
 )
 
 # Include directories
@@ -156,6 +158,10 @@ target_link_libraries(test_material_evaluation seajay_core)
 # Negamax search test
 add_executable(test_negamax tests/test_negamax.cpp)
 target_link_libraries(test_negamax seajay_core)
+
+# MVV-LVA move ordering test
+add_executable(test_mvv_lva tests/test_mvv_lva.cpp)
+target_link_libraries(test_mvv_lva seajay_core)
 
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
