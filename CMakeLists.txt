@@ -163,6 +163,14 @@ target_link_libraries(test_negamax seajay_core)
 add_executable(test_mvv_lva tests/test_mvv_lva.cpp)
 target_link_libraries(test_mvv_lva seajay_core)
 
+# MVV-LVA performance validation test
+add_executable(test_mvv_lva_performance tests/test_mvv_lva_performance.cpp)
+target_link_libraries(test_mvv_lva_performance seajay_core)
+
+# MVV-LVA Phase 7 performance test
+add_executable(test_mvv_lva_phase7 tests/test_mvv_lva_phase7.cpp)
+target_link_libraries(test_mvv_lva_phase7 seajay_core)
+
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
 if(APPLE)
