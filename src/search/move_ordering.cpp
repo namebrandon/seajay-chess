@@ -96,7 +96,15 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     
     // Use stable_sort for deterministic ordering
     // When scores are equal, maintains original move order
-    std::stable_sort(scoredMoves.begin(), scoredMoves.end());
+    // For additional determinism, we could use from-square as tiebreaker
+    std::stable_sort(scoredMoves.begin(), scoredMoves.end(), 
+        [](const MoveScore& a, const MoveScore& b) {
+            if (a.score != b.score) {
+                return a.score > b.score;  // Higher scores first
+            }
+            // Tiebreaker: use from-square for deterministic ordering
+            return moveFrom(a.move) < moveFrom(b.move);
+        });
     
     // Copy sorted moves back to original container
     moves.clear();

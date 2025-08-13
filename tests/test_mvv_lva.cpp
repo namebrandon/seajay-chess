@@ -259,6 +259,84 @@ void testPhase4_Promotions() {
     std::cout << "✓ Phase 4 complete: Promotion and underpromotion ordering verified" << std::endl;
 }
 
+// Test Phase 5: Stable tiebreaking for deterministic ordering
+void testPhase5_Tiebreaking() {
+    std::cout << "\nPhase 5: Testing stable tiebreaking..." << std::endl;
+    
+    Board board;
+    board.setStartingPosition();
+    
+    // Create multiple moves with the same score
+    MoveList moves;
+    
+    // Add several quiet moves (all score 0)
+    moves.add(makeMove(B1, C3));  // Nc3
+    moves.add(makeMove(G1, F3));  // Nf3
+    moves.add(makeMove(E2, E4));  // e4
+    moves.add(makeMove(D2, D4));  // d4
+    moves.add(makeMove(B1, A3));  // Na3
+    
+    // Create copy for comparison
+    MoveList movesCopy = moves;
+    
+    // Order the moves
+    MvvLvaOrdering ordering;
+    ordering.orderMoves(board, moves);
+    ordering.orderMoves(board, movesCopy);
+    
+    // Verify that ordering is deterministic
+    assert(moves.size() == movesCopy.size());
+    for (size_t i = 0; i < moves.size(); i++) {
+        assert(moves[i] == movesCopy[i]);
+    }
+    std::cout << "  Deterministic ordering verified ✓" << std::endl;
+    
+    // Test with equal-value captures
+    MoveList captures;
+    // Simulate two PxP captures with same MVV-LVA score
+    captures.add(makeCaptureMove(E4, D5));  // exd5 (PxP)
+    captures.add(makeCaptureMove(C4, D5));  // cxd5 (PxP) 
+    captures.add(makeCaptureMove(G4, H5));  // gxh5 (PxP)
+    
+    // All three have same score (PxP = 99)
+    // Should be ordered by from-square: C4 < E4 < G4
+    ordering.orderMoves(board, captures);
+    
+    // With tiebreaking by from-square:
+    // C4(34) should come before E4(36) which comes before G4(38)
+    if (captures.size() >= 3) {
+        Square from0 = moveFrom(captures[0]);
+        Square from1 = moveFrom(captures[1]);
+        Square from2 = moveFrom(captures[2]);
+        assert(from0 <= from1);
+        assert(from1 <= from2);
+        std::cout << "  From-square tiebreaking works ✓" << std::endl;
+    }
+    
+    // Test stability with mixed scores
+    // Note: Since captures need actual pieces on the board to score properly,
+    // we'll test with moves that we know will have different scores
+    MoveList mixed;
+    
+    // Add moves with known different scores
+    mixed.add(makePromotionMove(A7, A8, QUEEN));     // Promotion (high score)
+    mixed.add(makeMove(B1, C3));                     // Quiet (score 0)
+    mixed.add(makeEnPassantMove(E5, D6));            // En passant (score 99)
+    mixed.add(makeMove(G1, F3));                     // Quiet (score 0)
+    
+    ordering.orderMoves(board, mixed);
+    
+    // Check that moves are ordered by score
+    // Promotion should be first, then en passant, then quiet moves
+    assert(isPromotion(mixed[0]));   // Highest score
+    assert(isEnPassant(mixed[1]));   // Medium score (99)
+    assert(!isCapture(mixed[2]) && !isPromotion(mixed[2]));  // Quiet
+    assert(!isCapture(mixed[3]) && !isPromotion(mixed[3]));  // Quiet
+    std::cout << "  Mixed score ordering correct ✓" << std::endl;
+    
+    std::cout << "✓ Phase 5 complete: Stable tiebreaking verified" << std::endl;
+}
+
 int main() {
     std::cout << "=== Stage 11: MVV-LVA Move Ordering Test ===" << std::endl;
     
@@ -266,7 +344,8 @@ int main() {
     testPhase2_BasicCaptures();
     testPhase3_EnPassant();
     testPhase4_Promotions();
+    testPhase5_Tiebreaking();
     
-    std::cout << "\nAll Phase 1-4 tests passed!" << std::endl;
+    std::cout << "\nAll Phase 1-5 tests passed!" << std::endl;
     return 0;
 }
