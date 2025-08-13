@@ -20,6 +20,6 @@ Has anything significant or materially changed that would impact our README.md f
 
 Is our README.md accurate and up-to-date? If not, we need to make sure it is.
 
-Have we incremented the version of our engine in its code? We want to be able to tell different builds from different stages from each other.
+Have we incremented the version of our engine in its code? We want to be able to tell different builds from different stages from each other. This should be in the UCI class as well as any comments or code header.
 
 Once we are confident that all of these items are appropriately addressed, we should commit our code with a detailed message for historical reference.

@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - SPRT Testing Process & Governance
 
-**Document Version:** 1.0  
-**Date:** August 9, 2025  
-**Author:** Brandon Harris with Claude AI  
-**Purpose:** Establish rigorous process and tracking for SPRT testing  
+**Document Version:** 1.0
+**Date:** August 9, 2025
+**Author:** Brandon Harris with Claude AI
+**Purpose:** Establish rigorous process and tracking for SPRT testing
 
 ## Overview
 
@@ -68,7 +68,7 @@ This document defines the standardized process for conducting SPRT (Sequential P
 
 ### Step 1: Prepare Test Binaries Using Git
 
-**IMPORTANT**: Always use git to retrieve the actual code from the previous stage's completion commit. Never attempt to disable features in current code to simulate an older version.
+**IMPORTANT**: Always use git to retrieve the actual code from the previous stage's completion commit. Never attempt to disable features in current code to simulate an older version. Validate that we are building in release mode, to avoid debug output or issues with performance
 
 Create two binaries for comparison:
 
@@ -84,14 +84,14 @@ Create two binaries for comparison:
    ```bash
    # Find the commit for the previous stage completion
    git log --oneline | grep -i "stage"  # Find the Stage N-1 completion commit
-   
+
    # Checkout the previous stage's code
    git checkout <stage-n-1-commit-hash>
-   
+
    # Build the base binary
    cd /workspace/build
    cmake .. && make clean && make -j
-   
+
    # Save it with a descriptive name
    cp bin/seajay ../bin/seajay_stage<N-1>_<feature>
    # Example: cp bin/seajay ../bin/seajay_stage7_no_alphabeta
@@ -101,11 +101,11 @@ Create two binaries for comparison:
    ```bash
    # Return to your current stage code
    git checkout <your-branch>  # or git stash pop if you stashed
-   
+
    # Build the test binary
    cd /workspace/build
    cmake .. && make clean && make -j
-   
+
    # Save it with a descriptive name
    cp bin/seajay ../bin/seajay_stage<N>_<feature>
    # Example: cp bin/seajay ../bin/seajay_stage8_alphabeta
@@ -115,7 +115,7 @@ Create two binaries for comparison:
    ```bash
    # Test the base binary
    echo -e "position startpos\ngo depth 1\nquit" | ../bin/seajay_stage<N-1>_<feature>
-   
+
    # Test the new binary
    echo -e "position startpos\ngo depth 1\nquit" | ../bin/seajay_stage<N>_<feature>
    ```
@@ -166,13 +166,13 @@ cp bin/seajay ../bin/seajay_stage8_alphabeta
 
 #### Select Appropriate Parameters Based on Expected Improvement
 
-| Expected Improvement | elo0 | elo1 | alpha | beta | Time Control | Notes |
-|---------------------|------|------|-------|------|--------------|-------|
-| Major feature (>100 Elo) | 0 | 50-200 | 0.05 | 0.05 | 10+0.1 | e.g., adding search to eval-only |
-| Significant feature | 0 | 10-30 | 0.05 | 0.05 | 10+0.1 | e.g., pruning, extensions |
-| Minor improvement | 0 | 5-10 | 0.05 | 0.05 | 10+0.1 | e.g., move ordering |
-| Tuning/refinement | 0 | 3-5 | 0.05 | 0.05 | 10+0.1 | e.g., parameter adjustment |
-| Simplification | -3 | 3 | 0.05 | 0.10 | 10+0.1 | Ensure no regression |
+| Expected Improvement     | elo0 | elo1   | alpha | beta | Time Control | Notes                            |
+| ------------------------ | ---- | ------ | ----- | ---- | ------------ | -------------------------------- |
+| Major feature (>100 Elo) | 0    | 50-200 | 0.05  | 0.05 | 10+0.1       | e.g., adding search to eval-only |
+| Significant feature      | 0    | 10-30  | 0.05  | 0.05 | 10+0.1       | e.g., pruning, extensions        |
+| Minor improvement        | 0    | 5-10   | 0.05  | 0.05 | 10+0.1       | e.g., move ordering              |
+| Tuning/refinement        | 0    | 3-5    | 0.05  | 0.05 | 10+0.1       | e.g., parameter adjustment       |
+| Simplification           | -3   | 3      | 0.05  | 0.10 | 10+0.1       | Ensure no regression             |
 
 ### Step 4: Create Test Script
 
@@ -417,24 +417,24 @@ Power: Performance mode
 
 ### Understanding SPRT Results
 
-| LLR Range | Interpretation | Action |
-|-----------|---------------|--------|
-| LLR ≥ 2.89 | Strong evidence for H1 | Merge confidently |
-| 2.0 < LLR < 2.89 | Good evidence for H1 | Usually merge |
-| -2.0 < LLR < 2.0 | Insufficient evidence | Continue testing |
-| -2.89 < LLR < -2.0 | Evidence against | Usually reject |
-| LLR ≤ -2.89 | Strong evidence for H0 | Reject confidently |
+| LLR Range          | Interpretation         | Action             |
+| ------------------ | ---------------------- | ------------------ |
+| LLR ≥ 2.89         | Strong evidence for H1 | Merge confidently  |
+| 2.0 < LLR < 2.89   | Good evidence for H1   | Usually merge      |
+| -2.0 < LLR < 2.0   | Insufficient evidence  | Continue testing   |
+| -2.89 < LLR < -2.0 | Evidence against       | Usually reject     |
+| LLR ≤ -2.89        | Strong evidence for H0 | Reject confidently |
 
 ### Sample Size Guidelines
 
 Typical games needed for detection:
 
-| True ELO Diff | Games Needed | Time @ 10+0.1 |
-|---------------|--------------|---------------|
-| +20 ELO | 500-1,000 | 1-2 hours |
-| +10 ELO | 2,000-4,000 | 4-8 hours |
-| +5 ELO | 8,000-16,000 | 16-32 hours |
-| +3 ELO | 20,000-40,000 | 40-80 hours |
+| True ELO Diff | Games Needed  | Time @ 10+0.1 |
+| ------------- | ------------- | ------------- |
+| +20 ELO       | 500-1,000     | 1-2 hours     |
+| +10 ELO       | 2,000-4,000   | 4-8 hours     |
+| +5 ELO        | 8,000-16,000  | 16-32 hours   |
+| +3 ELO        | 20,000-40,000 | 40-80 hours   |
 
 ## Troubleshooting SPRT Tests
 
@@ -497,7 +497,7 @@ At end of each phase:
    #!/bin/bash
    TEST_ID="SPRT-2025-001"
    OUTPUT_DIR="/workspace/sprt_results/${TEST_ID}"
-   
+
    /workspace/external/testers/fast-chess/fastchess \
        -engine name=Stage7 cmd=/workspace/bin/seajay_stage7 \
        -engine name=Stage6 cmd=/workspace/bin/seajay_stage6 \

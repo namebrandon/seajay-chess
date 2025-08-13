@@ -1,0 +1,7 @@
+
+Test Summary
+============
+Result: INCONCLUSIVE
+Log: /workspace/sprt_results/SPRT-Stage11-MVV-LVA-20250813-074033/console_output.txt
+Games: /workspace/sprt_results/SPRT-Stage11-MVV-LVA-20250813-074033/games.pgn
+Fast-chess log: /workspace/sprt_results/SPRT-Stage11-MVV-LVA-20250813-074033/fastchess.log

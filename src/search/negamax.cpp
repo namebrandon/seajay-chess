@@ -1,6 +1,8 @@
 #include "negamax.h"
 #include "search_info.h"
+#ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // MVV-LVA ordering
+#endif
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -13,20 +15,6 @@
 #include <cassert>
 
 namespace seajay::search {
-
-// Move ordering function for alpha-beta pruning efficiency
-// Orders moves in-place: promotions first, then captures (MVV-LVA), then quiet moves
-template<typename MoveContainer>
-inline void orderMoves(const Board& board, MoveContainer& moves) noexcept {
-#ifdef ENABLE_MVV_LVA
-    // Use MVV-LVA ordering for better move ordering
-    static thread_local MvvLvaOrdering mvvLvaOrdering;
-    mvvLvaOrdering.orderMoves(board, moves);
-#else
-    // Fallback to simple ordering without MVV-LVA
-    orderMovesSimple(moves);
-#endif
-}
 
 // Simple move ordering without MVV-LVA (fallback)
 template<typename MoveContainer>
@@ -69,6 +57,21 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
     }
     
     // Quiet moves remain at the end (no need to explicitly order them)
+}
+
+// Move ordering function for alpha-beta pruning efficiency
+// Orders moves in-place: promotions first, then captures (MVV-LVA), then quiet moves
+template<typename MoveContainer>
+inline void orderMoves(const Board& board, MoveContainer& moves) noexcept {
+#ifdef ENABLE_MVV_LVA
+    // Use MVV-LVA ordering for better move ordering
+    static thread_local MvvLvaOrdering mvvLvaOrdering;
+    mvvLvaOrdering.orderMoves(board, moves);
+#else
+    // Fallback to simple ordering without MVV-LVA
+    (void)board; // Unused in simple ordering
+    orderMovesSimple(moves);
+#endif
 }
 
 // Core negamax search implementation

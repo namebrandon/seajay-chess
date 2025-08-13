@@ -1,0 +1,8 @@
+Indexing opening suite...
+Started game 1 of 4 (Stage11-MVV-LVA vs Stage9b-Baseline)
+Finished game 1 (Stage11-MVV-LVA vs Stage9b-Baseline): 1-0 {White mates}
+Started game 2 of 4 (Stage9b-Baseline vs Stage11-MVV-LVA)
+Finished game 2 (Stage9b-Baseline vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 3 of 4 (Stage11-MVV-LVA vs Stage9b-Baseline)
+Finished game 3 (Stage11-MVV-LVA vs Stage9b-Baseline): 1-0 {White mates}
+Started game 4 of 4 (Stage9b-Baseline vs Stage11-MVV-LVA)
