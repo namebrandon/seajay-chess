@@ -133,12 +133,66 @@ void testPhase2_BasicCaptures() {
     std::cout << "✓ Phase 2 complete: Basic capture scoring verified" << std::endl;
 }
 
+// Test Phase 3: En passant special case handling
+void testPhase3_EnPassant() {
+    std::cout << "\nPhase 3: Testing en passant handling..." << std::endl;
+    
+    // Test en passant move scoring directly
+    // En passant moves should always score as PxP regardless of board state
+    
+    // Create en passant moves
+    Move epMove1 = makeEnPassantMove(D5, C6);  // White pawn captures left
+    Move epMove2 = makeEnPassantMove(E5, D6);  // White pawn captures right
+    Move epMove3 = makeEnPassantMove(C4, D3);  // Black pawn captures
+    
+    // Set up a simple board (doesn't matter much since en passant is special-cased)
+    Board board;
+    board.setStartingPosition();
+    
+    // Test that all en passant moves score as PxP (99 points)
+    int score = MvvLvaOrdering::scoreMove(board, epMove1);
+    assert(score == 99);  // Always PxP: Pawn(100) - Pawn(1) = 99
+    std::cout << "  En passant move 1 score = " << score << " ✓" << std::endl;
+    
+    score = MvvLvaOrdering::scoreMove(board, epMove2);
+    assert(score == 99);  // Always PxP
+    std::cout << "  En passant move 2 score = " << score << " ✓" << std::endl;
+    
+    score = MvvLvaOrdering::scoreMove(board, epMove3);
+    assert(score == 99);  // Always PxP
+    std::cout << "  En passant move 3 score = " << score << " ✓" << std::endl;
+    
+    // Verify statistics
+    MvvLvaOrdering::resetStatistics();
+    auto& stats = MvvLvaOrdering::getStatistics();
+    MvvLvaOrdering::scoreMove(board, epMove1);
+    assert(stats.en_passants_scored == 1);
+    assert(stats.captures_scored == 0);  // En passant is counted separately
+    std::cout << "  En passant statistics tracked correctly ✓" << std::endl;
+    
+    // Test that en passant is recognized correctly
+    assert(isEnPassant(epMove1));
+    assert(isEnPassant(epMove2));
+    assert(isEnPassant(epMove3));
+    assert(isCapture(epMove1));  // En passant is a type of capture
+    assert(isCapture(epMove2));
+    assert(isCapture(epMove3));
+    
+    // Verify en passant vs regular capture distinction
+    Move regularCapture = makeCaptureMove(E2, D3);
+    assert(!isEnPassant(regularCapture));
+    assert(isCapture(regularCapture));
+    
+    std::cout << "✓ Phase 3 complete: En passant handling verified" << std::endl;
+}
+
 int main() {
     std::cout << "=== Stage 11: MVV-LVA Move Ordering Test ===" << std::endl;
     
     testPhase1_Infrastructure();
     testPhase2_BasicCaptures();
+    testPhase3_EnPassant();
     
-    std::cout << "\nAll Phase 1-2 tests passed!" << std::endl;
+    std::cout << "\nAll Phase 1-3 tests passed!" << std::endl;
     return 0;
 }
