@@ -56,7 +56,7 @@ void UCIEngine::run() {
 }
 
 void UCIEngine::handleUCI() {
-    std::cout << "id name SeaJay 2.9.1-draw-detection" << std::endl;
+    std::cout << "id name SeaJay 2.11.0-mvv-lva-SPRT-candidate" << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // No options to report for Stage 3
     std::cout << "uciok" << std::endl;

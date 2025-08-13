@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 12, 2025  
+**Last Updated:** August 13, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 3 - Essential Optimizations  
-**Current Stage:** Stage 10 COMPLETE - Magic Bitboards for Sliding Pieces  
+**Current Stage:** Stage 11 COMPLETE - Move Ordering (MVV-LVA)  
 
 ## Overview
 
@@ -281,16 +281,33 @@ This document tracks the current development status of the SeaJay Chess Engine p
   - vs Stage 9b (startpos): +191 Elo (H1 accepted, 76 games, zero losses)
 - **Estimated Strength:** ~1,100-1,200 ELO
 
+#### Stage 11 - Move Ordering (MVV-LVA)
+**Status:** COMPLETE ✅ (August 13, 2025)
+- [x] Pre-stage planning process completed
+- [x] Expert reviews obtained (cpp-pro and chess-engine-expert)
+- [x] 7-phase incremental implementation completed
+- [x] Type-safe infrastructure with compile-time validation
+- [x] MVV-LVA scoring for all capture types
+- [x] Special cases handled (en passant, promotions)
+- [x] Deterministic ordering with stable sort
+- [x] Search integration with debug statistics
+- **Implementation:** Formula-based scoring (not lookup table)
+- **Critical Bug Avoided:** Promotion-captures correctly use PAWN as attacker
+- **Performance Results:**
+  - Ordering efficiency: 100% for captures in tactical positions
+  - Ordering time: 2-30 microseconds per position
+  - Expected node reduction: 15-30%
+  - Expected Elo gain: +50-100
+- **Git Commits:** 7 clean commits (one per phase)
+- **SPRT Validation:** Pending (marked as candidate)
+
 ## Next Steps
 
 ### Short Term (Phase 3: Essential Optimizations)
-1. **Stage 10: Magic bitboards for sliding pieces** (COMPLETE - August 12, 2025)
-   - Achieved 55.98x speedup (far exceeding target)
-   - Production-ready implementation with zero memory leaks
-   - Both ray-based and magic implementations coexist for safety
-2. Move ordering and history heuristics
-3. Transposition tables
-4. Time management system
+1. **Stage 10: Magic bitboards** (COMPLETE - August 12, 2025)
+2. **Stage 11: Move ordering (MVV-LVA)** (COMPLETE - August 13, 2025)
+3. Transposition tables (Stage 12)
+4. Time management system (Stage 13)
 5. Target: >1M NPS performance
 
 ### Medium Term (Phase 3)
