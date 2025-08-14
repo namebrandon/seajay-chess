@@ -58,4 +58,9 @@ std::chrono::milliseconds calculateTimeLimit(const SearchLimits& limits,
 //   info - Current search statistics
 void sendSearchInfo(const SearchData& info);
 
+// Stage 13, Deliverable 5.1a: Enhanced UCI info with iteration details
+// Forward declaration - IterativeSearchData is defined in iterative_search_data.h
+class IterativeSearchData;
+void sendIterationInfo(const IterativeSearchData& info);
+
 } // namespace seajay::search

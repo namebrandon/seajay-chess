@@ -563,7 +563,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         
         if (!info.stopped) {
             bestMove = info.bestMove;
-            sendSearchInfo(info);
+            
+            // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
+            sendIterationInfo(info);
             
             // Record iteration data for ALL depths (full recording)
             auto iterationEnd = std::chrono::steady_clock::now();
@@ -896,6 +898,96 @@ void sendSearchInfo(const SearchData& info) {
     }
     
     // Output principal variation (just the best move for now)
+    if (info.bestMove != Move()) {
+        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+    }
+    
+    std::cout << std::endl;
+}
+
+// Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
+void sendIterationInfo(const IterativeSearchData& info) {
+    // Basic info
+    std::cout << "info"
+              << " depth " << info.depth
+              << " seldepth " << info.seldepth;
+    
+    // Score output
+    if (info.bestScore.is_mate_score()) {
+        int mateIn = 0;
+        if (info.bestScore > eval::Score::zero()) {
+            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
+        } else {
+            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
+        }
+        std::cout << " score mate " << mateIn;
+    } else {
+        std::cout << " score cp " << info.bestScore.to_cp();
+    }
+    
+    // Iteration-specific information
+    if (info.hasIterations()) {
+        const auto& lastIter = info.getLastIteration();
+        
+        // Stage 13, Deliverable 5.1b: Aspiration window reporting
+        if (lastIter.depth >= AspirationConstants::MIN_DEPTH) {
+            // Report window information
+            if (lastIter.windowAttempts > 0) {
+                // Window was used and there were re-searches
+                if (lastIter.failedHigh) {
+                    std::cout << " string fail-high(" << lastIter.windowAttempts << ")";
+                } else if (lastIter.failedLow) {
+                    std::cout << " string fail-low(" << lastIter.windowAttempts << ")";
+                }
+            }
+            
+            // Show window bounds for debugging (optional)
+            if (lastIter.alpha != eval::Score::minus_infinity() || 
+                lastIter.beta != eval::Score::infinity()) {
+                std::cout << " bound [" 
+                          << (lastIter.alpha == eval::Score::minus_infinity() ? "-inf" : 
+                              std::to_string(lastIter.alpha.to_cp()))
+                          << "," 
+                          << (lastIter.beta == eval::Score::infinity() ? "inf" : 
+                              std::to_string(lastIter.beta.to_cp()))
+                          << "]";
+            }
+        }
+        
+        // Stability indicator
+        if (info.getIterationCount() >= 3) {
+            if (info.isPositionStable()) {
+                std::cout << " string stable";
+            } else if (info.shouldExtendDueToInstability()) {
+                std::cout << " string unstable";
+            }
+        }
+        
+        // Effective branching factor from sophisticated calculation
+        double ebf = info.getSophisticatedEBF();
+        if (ebf > 0) {
+            std::cout << " ebf " << std::fixed << std::setprecision(2) << ebf;
+        }
+    }
+    
+    // Standard statistics
+    std::cout << " nodes " << info.nodes
+              << " nps " << info.nps()
+              << " time " << info.elapsed().count();
+    
+    // Move ordering efficiency
+    if (info.betaCutoffs > 0) {
+        std::cout << " moveeff " << std::fixed << std::setprecision(1)
+                  << info.moveOrderingEfficiency() << "%";
+    }
+    
+    // TT statistics
+    if (info.ttProbes > 0) {
+        double hitRate = (100.0 * info.ttHits) / info.ttProbes;
+        std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
+    }
+    
+    // Principal variation
     if (info.bestMove != Move()) {
         std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
     }

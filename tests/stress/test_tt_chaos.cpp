@@ -414,7 +414,7 @@ public:
     
 private:
     bool isNullMove(const Move& move) const {
-        return move.from() == move.to();
+        return moveFrom(move) == moveTo(move);
     }
 };
 

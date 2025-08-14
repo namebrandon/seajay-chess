@@ -347,8 +347,8 @@ void UCIEngine::search(const SearchParams& params) {
     
     limits.infinite = params.infinite;
     
-    // Use the new negamax search with TT
-    Move bestMove = search::search(m_board, limits, &m_tt);
+    // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
+    Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
     
     // Note: search::search already outputs UCI info during search
     
