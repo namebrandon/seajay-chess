@@ -1,6 +1,7 @@
 #include "negamax.h"
 #include "search_info.h"
 #include "iterative_search_data.h"  // Stage 13 addition
+#include "time_management.h"        // Stage 13, Deliverable 2.2a
 #ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // MVV-LVA ordering
 #endif
@@ -475,12 +476,29 @@ eval::Score negamax(Board& board,
 // Used to verify that IterativeSearchData doesn't break anything
 Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Stage 13, Deliverable 1.2c: Full iteration recording (all depths)
+    // Stage 13, Deliverable 2.2a: Time management integration prep
     SearchInfo searchInfo;
     searchInfo.clear();
     searchInfo.setRootHistorySize(board.gameHistorySize());
     
     IterativeSearchData info;  // Using new class instead of SearchData
+    
+    // OLD time calculation (keep for comparison)
     info.timeLimit = calculateTimeLimit(limits, board);
+    
+    // NEW time calculation (Deliverable 2.2a)
+    // Calculate with default stability factor of 1.0 initially
+    TimeLimits newTimeLimits = calculateTimeLimits(limits, board, 1.0);
+    info.m_softLimit = newTimeLimits.soft.count();
+    info.m_hardLimit = newTimeLimits.hard.count();
+    info.m_optimumTime = newTimeLimits.optimum.count();
+    
+    // Debug output to compare old vs new
+    std::cerr << "Time Management Comparison (Deliverable 2.2a):\n";
+    std::cerr << "  OLD calculation: " << info.timeLimit.count() << "ms\n";
+    std::cerr << "  NEW soft limit:  " << info.m_softLimit << "ms\n";
+    std::cerr << "  NEW hard limit:  " << info.m_hardLimit << "ms\n";
+    std::cerr << "  NEW optimum:     " << info.m_optimumTime << "ms\n";
     
     Move bestMove;
     Move previousBestMove = NO_MOVE;  // Track best move from previous iteration

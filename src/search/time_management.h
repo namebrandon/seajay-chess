@@ -5,6 +5,7 @@
 // Phase 2, Deliverable 2.1b: Basic time calculation
 // Phase 2, Deliverable 2.1c: Soft/hard limits
 
+#include "types.h"  // For SearchLimits
 #include "../core/types.h"
 #include <chrono>
 #include <cstdint>
@@ -182,5 +183,44 @@ inline void calculateTimeLimits(TimeInfo& timeInfo, Color sideToMove) {
     // Maximum time is same as hard limit for now
     timeInfo.maximumTime = timeInfo.hardLimit;
 }
+
+// Stage 13, Deliverable 2.2a: Enhanced time management
+// Structure for time limits
+struct TimeLimits {
+    std::chrono::milliseconds soft;     // Soft limit (can exceed if unstable)
+    std::chrono::milliseconds hard;     // Hard limit (never exceed)
+    std::chrono::milliseconds optimum;  // Optimum/target time
+};
+
+} // namespace seajay::search
+
+// Forward declarations
+namespace seajay {
+class Board;
+}
+
+namespace seajay::search {
+
+// Enhanced time calculation with stability factor
+std::chrono::milliseconds calculateEnhancedTimeLimit(const SearchLimits& limits,
+                                                    const seajay::Board& board,
+                                                    double stabilityFactor = 1.0);
+
+// Calculate soft and hard time limits
+TimeLimits calculateTimeLimits(const SearchLimits& limits,
+                              const seajay::Board& board,
+                              double stabilityFactor = 1.0);
+
+// Check if we should stop searching based on time
+bool shouldStopOnTime(const TimeLimits& limits,
+                     std::chrono::milliseconds elapsed,
+                     int completedDepth,
+                     bool positionStable);
+
+// Predict if we have time for another iteration
+bool hasTimeForNextIteration(const TimeLimits& limits,
+                            std::chrono::milliseconds elapsed,
+                            double lastIterationTime,
+                            double branchingFactor);
 
 } // namespace seajay::search

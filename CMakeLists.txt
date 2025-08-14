@@ -101,6 +101,8 @@ set(SEARCH_SOURCES
     src/search/types.h
     src/search/move_ordering.cpp
     src/search/move_ordering.h
+    src/search/time_management.cpp
+    src/search/time_management.h
 )
 
 # Include directories
