@@ -671,7 +671,37 @@ bool Board::validateZobrist() const {
     }
     
     if (m_enPassantSquare != NO_SQUARE) {
-        calculatedKey ^= s_zobristEnPassant[m_enPassantSquare];
+        // Only include en passant in hash if capture is actually possible
+        bool canCapture = false;
+        Color enemyColor = m_sideToMove;  // The side to move can capture
+        Piece enemyPawn = makePiece(enemyColor, PAWN);
+        
+        File epFile = fileOf(m_enPassantSquare);
+        Rank epRank = rankOf(m_enPassantSquare);
+        
+        // Determine which rank the capturing pawns must be on
+        // En passant on rank 6 (0-idx 5): black moved to rank 5 (0-idx 4), white pawns must be on rank 5
+        // En passant on rank 3 (0-idx 2): white moved to rank 4 (0-idx 3), black pawns must be on rank 4
+        Rank pawnRank = (epRank == 5) ? 4 : 3;  // EP on rank 6 -> pawns on rank 5; EP on rank 3 -> pawns on rank 4
+        
+        if (epFile > 0) {  // FILE_A = 0
+            Square leftSquare = makeSquare(epFile - 1, pawnRank);
+            if (pieceAt(leftSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        // Check right
+        if (!canCapture && epFile < 7) {  // FILE_H = 7
+            Square rightSquare = makeSquare(epFile + 1, pawnRank);
+            if (pieceAt(rightSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        if (canCapture) {
+            calculatedKey ^= s_zobristEnPassant[m_enPassantSquare];
+        }
     }
     
     calculatedKey ^= s_zobristCastling[m_castlingRights];
@@ -915,7 +945,37 @@ void Board::rebuildZobristKey() {
     }
     
     if (m_enPassantSquare != NO_SQUARE) {
-        m_zobristKey ^= s_zobristEnPassant[m_enPassantSquare];
+        // Only include en passant in hash if capture is actually possible
+        bool canCapture = false;
+        Color enemyColor = m_sideToMove;  // The side to move can capture
+        Piece enemyPawn = makePiece(enemyColor, PAWN);
+        
+        File epFile = fileOf(m_enPassantSquare);
+        Rank epRank = rankOf(m_enPassantSquare);
+        
+        // Determine which rank the capturing pawns must be on
+        // En passant on rank 6 (0-idx 5): black moved to rank 5 (0-idx 4), white pawns must be on rank 5
+        // En passant on rank 3 (0-idx 2): white moved to rank 4 (0-idx 3), black pawns must be on rank 4
+        Rank pawnRank = (epRank == 5) ? 4 : 3;  // EP on rank 6 -> pawns on rank 5; EP on rank 3 -> pawns on rank 4
+        
+        if (epFile > 0) {  // FILE_A = 0
+            Square leftSquare = makeSquare(epFile - 1, pawnRank);
+            if (pieceAt(leftSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        // Check right
+        if (!canCapture && epFile < 7) {  // FILE_H = 7
+            Square rightSquare = makeSquare(epFile + 1, pawnRank);
+            if (pieceAt(rightSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        if (canCapture) {
+            m_zobristKey ^= s_zobristEnPassant[m_enPassantSquare];
+        }
     }
     
     m_zobristKey ^= s_zobristCastling[m_castlingRights];
@@ -1437,13 +1497,53 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     // Update en passant square
     Square newEnPassant = NO_SQUARE;
     if (typeOf(movingPiece) == PAWN && std::abs(to - from) == 16) {
-        // Pawn moved two squares - set en passant square
-        newEnPassant = (from + to) / 2;
+        // Pawn moved two squares - potentially set en passant square
+        Square epSquare = (from + to) / 2;
+        
+        // Only set en passant if an enemy pawn can actually capture
+        // Check squares to the left and right of the en passant square
+        Color enemyColor = ~colorOf(movingPiece);
+        Piece enemyPawn = makePiece(enemyColor, PAWN);
+        
+        bool canCapture = false;
+        File epFile = fileOf(epSquare);
+        Rank epRank = rankOf(epSquare);
+        
+        // Determine which rank the capturing pawns must be on
+        // En passant on rank 6 (0-idx 5): black moved to rank 5 (0-idx 4), white pawns must be on rank 5
+        // En passant on rank 3 (0-idx 2): white moved to rank 4 (0-idx 3), black pawns must be on rank 4
+        Rank pawnRank = (epRank == 5) ? 4 : 3;  // EP on rank 6 -> pawns on rank 5; EP on rank 3 -> pawns on rank 4
+        
+        if (epFile > 0) {  // FILE_A = 0
+            Square leftSquare = makeSquare(epFile - 1, pawnRank);
+            if (pieceAt(leftSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        // Check right
+        if (!canCapture && epFile < 7) {  // FILE_H = 7
+            Square rightSquare = makeSquare(epFile + 1, pawnRank);
+            if (pieceAt(rightSquare) == enemyPawn) {
+                canCapture = true;
+            }
+        }
+        
+        // Only set en passant if capture is actually possible
+        if (canCapture) {
+            newEnPassant = epSquare;
+        }
     }
     
     // Update zobrist for en passant change
+    // Only XOR if we're actually changing the en passant state
     if (newEnPassant != oldEnPassant) {
-        updateZobristForEnPassant(oldEnPassant, newEnPassant);
+        if (oldEnPassant != NO_SQUARE) {
+            m_zobristKey ^= s_zobristEnPassant[oldEnPassant];
+        }
+        if (newEnPassant != NO_SQUARE) {
+            m_zobristKey ^= s_zobristEnPassant[newEnPassant];
+        }
     }
     m_enPassantSquare = newEnPassant;
     
