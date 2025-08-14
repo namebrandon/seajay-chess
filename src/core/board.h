@@ -230,6 +230,7 @@ private:
     static std::array<std::array<Hash, NUM_PIECES>, NUM_SQUARES> s_zobristPieces;
     static std::array<Hash, NUM_SQUARES> s_zobristEnPassant;
     static std::array<Hash, 16> s_zobristCastling;
+    static std::array<Hash, 100> s_zobristFiftyMove;  // Fifty-move counter keys
     static Hash s_zobristSideToMove;
     static bool s_zobristInitialized;
     

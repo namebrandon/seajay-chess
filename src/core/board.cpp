@@ -8,6 +8,8 @@
 #include <sstream>
 #include <random>
 #include <algorithm>
+#include <set>
+#include <limits>
 #include <cmath>
 #include <string>
 #include <string_view>
@@ -31,6 +33,7 @@ size_t Board::g_searchModeClears = 0;
 std::array<std::array<Hash, NUM_PIECES>, NUM_SQUARES> Board::s_zobristPieces;
 std::array<Hash, NUM_SQUARES> Board::s_zobristEnPassant;
 std::array<Hash, 16> Board::s_zobristCastling;
+std::array<Hash, 100> Board::s_zobristFiftyMove;
 Hash Board::s_zobristSideToMove;
 bool Board::s_zobristInitialized = false;
 
@@ -227,21 +230,59 @@ void Board::updateBitboards(Square s, Piece p, bool add) {
 void Board::initZobrist() {
     if (s_zobristInitialized) return;  // Prevent double initialization
     
-    // Use simple deterministic values instead of random for debugging
-    Hash counter = 1;
+    // Use a high-quality PRNG with a fixed seed for reproducibility
+    // The seed is chosen to give good distribution
+    std::mt19937_64 rng(0x53656A6179ULL);  // "SeaJay" in hex
+    std::uniform_int_distribution<uint64_t> dist(1, std::numeric_limits<uint64_t>::max());
     
+    // Generate unique keys for all positions
+    std::set<uint64_t> usedKeys;  // Track used keys to ensure uniqueness
+    
+    // Helper to generate a unique non-zero key
+    auto generateUniqueKey = [&]() -> uint64_t {
+        uint64_t key;
+        do {
+            key = dist(rng);
+        } while (usedKeys.count(key) > 0);
+        usedKeys.insert(key);
+        return key;
+    };
+    
+    // Generate piece-square keys
     for (Square s = 0; s < NUM_SQUARES; ++s) {
         for (int p = 0; p < NUM_PIECES; ++p) {
-            s_zobristPieces[s][static_cast<size_t>(p)] = counter++;
+            s_zobristPieces[s][static_cast<size_t>(p)] = generateUniqueKey();
         }
-        s_zobristEnPassant[s] = counter++;
+        // En passant keys (one per square, though only rank 3 and 6 are used)
+        s_zobristEnPassant[s] = generateUniqueKey();
     }
     
+    // Castling rights keys (16 combinations)
     for (int i = 0; i < 16; ++i) {
-        s_zobristCastling[static_cast<size_t>(i)] = counter++;
+        s_zobristCastling[static_cast<size_t>(i)] = generateUniqueKey();
     }
     
-    s_zobristSideToMove = counter++;
+    // Side to move key
+    s_zobristSideToMove = generateUniqueKey();
+    
+    // Fifty-move counter keys (0-99)
+    for (int i = 0; i < 100; ++i) {
+        s_zobristFiftyMove[i] = generateUniqueKey();
+    }
+    
+    // Validate we generated the expected number of unique keys
+    // 12 pieces * 64 squares = 768 (NUM_PIECES=12)
+    // 64 en passant squares
+    // 16 castling combinations
+    // 1 side to move
+    // 100 fifty-move values
+    // Total: 768 + 64 + 16 + 1 + 100 = 949
+    const size_t expectedKeys = 949;
+    if (usedKeys.size() != expectedKeys) {
+        std::cerr << "ERROR: Generated " << usedKeys.size() 
+                  << " keys, expected " << expectedKeys << std::endl;
+    }
+    
     s_zobristInitialized = true;
 }
 
@@ -635,6 +676,11 @@ bool Board::validateZobrist() const {
     
     calculatedKey ^= s_zobristCastling[m_castlingRights];
     
+    // Include fifty-move counter in hash
+    if (m_halfmoveClock < 100) {
+        calculatedKey ^= s_zobristFiftyMove[m_halfmoveClock];
+    }
+    
     return calculatedKey == m_zobristKey;
 }
 
@@ -873,6 +919,11 @@ void Board::rebuildZobristKey() {
     }
     
     m_zobristKey ^= s_zobristCastling[m_castlingRights];
+    
+    // Include fifty-move counter in hash
+    if (m_halfmoveClock < 100) {
+        m_zobristKey ^= s_zobristFiftyMove[m_halfmoveClock];
+    }
 }
 
 std::string Board::toString() const {
@@ -1396,11 +1447,24 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     }
     m_enPassantSquare = newEnPassant;
     
-    // Update halfmove clock
+    // Update halfmove clock and its zobrist key
+    uint16_t oldHalfmoveClock = m_halfmoveClock;
     if (typeOf(movingPiece) == PAWN || capturedPiece != NO_PIECE) {
         m_halfmoveClock = 0;
     } else {
         m_halfmoveClock++;
+    }
+    
+    // Update zobrist for halfmove clock change
+    if (m_halfmoveClock != oldHalfmoveClock) {
+        // Remove old fifty-move key
+        if (oldHalfmoveClock < 100) {
+            m_zobristKey ^= s_zobristFiftyMove[oldHalfmoveClock];
+        }
+        // Add new fifty-move key
+        if (m_halfmoveClock < 100) {
+            m_zobristKey ^= s_zobristFiftyMove[m_halfmoveClock];
+        }
     }
     
     // Update fullmove number (after black's move)
