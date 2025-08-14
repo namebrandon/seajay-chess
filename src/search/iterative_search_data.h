@@ -109,30 +109,121 @@ public:
     
     // Stability tracking methods (Deliverable 2.1d - no logic yet)
     
-    // Update stability based on new iteration (stub for now)
+    // Update stability based on new iteration (Deliverable 2.1e)
     void updateStability(const IterationInfo& newIteration) {
-        // Logic will be implemented in Deliverable 2.1e
-        // For now, just a stub that does nothing
-        (void)newIteration;  // Suppress unused parameter warning
+        // Move stability: Check if best move changed
+        if (newIteration.bestMove == m_stableBestMove) {
+            // Same move - increment stability counter
+            m_stabilityCount++;
+            
+            // Mark as stable if we've reached required iterations
+            if (m_stabilityCount >= m_requiredStability) {
+                m_positionStable = true;
+            }
+        } else {
+            // Different move - reset stability
+            m_stableBestMove = newIteration.bestMove;
+            m_stabilityCount = 1;  // This is the first iteration with new move
+            m_positionStable = false;
+            
+            // Reset score stability too when move changes
+            m_stableScore = newIteration.score;
+            m_scoreStabilityCount = 1;
+        }
+        
+        // Score stability: Check if score is within window
+        // This function is called AFTER recordIteration, so m_iterationCount has been incremented
+        if (m_iterationCount > 1) {
+            // Compare with the previous iteration (index m_iterationCount - 2)
+            const IterationInfo& prevIter = m_iterations[m_iterationCount - 2];
+            eval::Score scoreDiff = eval::Score(std::abs(newIteration.score.value() - prevIter.score.value()));
+            
+            if (scoreDiff <= m_scoreWindow) {
+                // Score is stable (within window)
+                m_scoreStabilityCount++;
+                
+                // Update stable score to average of stable scores
+                if (m_scoreStabilityCount > 1) {
+                    // Simple averaging for stable score
+                    int avgValue = (m_stableScore.value() + newIteration.score.value()) / 2;
+                    m_stableScore = eval::Score(avgValue);
+                }
+            } else {
+                // Score changed significantly - reset score stability
+                m_stableScore = newIteration.score;
+                m_scoreStabilityCount = 1;
+                
+                // If score is unstable, position is not stable
+                if (m_positionStable && m_scoreStabilityCount < m_requiredStability) {
+                    m_positionStable = false;
+                }
+            }
+        } else {
+            // First iteration - initialize
+            m_stableScore = newIteration.score;
+            m_scoreStabilityCount = 1;
+        }
     }
     
-    // Check if position is stable (stub for now)
+    // Check if position is stable (Deliverable 2.1e)
     bool isPositionStable() const {
-        // Logic will be implemented in Deliverable 2.1e
-        return m_positionStable;
+        // Position is stable if both move and score are stable
+        return m_positionStable && (m_scoreStabilityCount >= m_requiredStability);
     }
     
-    // Get stability factor for time management (stub for now)
+    // Get stability factor for time management (Deliverable 2.1e)
     double getStabilityFactor() const {
-        // Logic will be implemented in Deliverable 2.1e
-        // Returns 1.0 (neutral) for now
-        return 1.0;
+        // Return a factor between 0.5 (very stable) and 1.5 (very unstable)
+        // Stable positions can use less time, unstable need more
+        
+        if (isPositionStable()) {
+            // Very stable - can save time
+            if (m_stabilityCount >= 4 && m_scoreStabilityCount >= 4) {
+                return 0.5;  // Use half the time
+            }
+            // Moderately stable
+            if (m_stabilityCount >= 3 && m_scoreStabilityCount >= 3) {
+                return 0.7;  // Use 70% of time
+            }
+            // Just became stable
+            return 0.9;  // Use 90% of time
+        } else {
+            // Unstable - may need more time
+            if (m_stabilityCount == 1 && m_iterationCount > 2) {
+                // Move just changed after being stable
+                return 1.5;  // Use 50% more time
+            }
+            if (m_scoreStabilityCount == 1 && m_iterationCount > 2) {
+                // Score just changed significantly
+                return 1.3;  // Use 30% more time
+            }
+            // Default unstable
+            return 1.1;  // Use 10% more time
+        }
     }
     
-    // Check if we should extend search due to instability (stub for now)
+    // Check if we should extend search due to instability (Deliverable 2.1e)
     bool shouldExtendDueToInstability() const {
-        // Logic will be implemented in Deliverable 2.1e
-        return false;
+        // Extend search if position is unstable and we have time
+        if (m_iterationCount < 4) {
+            // Too early to judge stability
+            return false;
+        }
+        
+        // Check various instability indicators
+        bool moveUnstable = (m_stabilityCount == 1 && m_iterationCount > 3);
+        bool scoreUnstable = (m_scoreStabilityCount == 1 && m_iterationCount > 3);
+        bool recentChange = false;
+        
+        // Check if best move changed in last 2 iterations
+        if (m_iterationCount >= 2) {
+            const IterationInfo& curr = getLastIteration();
+            const IterationInfo& prev = getIteration(m_iterationCount - 2);
+            recentChange = (curr.bestMove != prev.bestMove);
+        }
+        
+        // Extend if any strong instability indicator is present
+        return moveUnstable || scoreUnstable || recentChange;
     }
 };
 

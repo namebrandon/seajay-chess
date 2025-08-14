@@ -554,6 +554,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             }
             
             info.recordIteration(iter);
+            info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
             previousBestMove = info.bestMove;  // Update for next iteration
             
             if (score.is_mate_score()) {
