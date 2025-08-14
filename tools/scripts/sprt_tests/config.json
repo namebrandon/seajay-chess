@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-Stage11-vs-Stage9b-20250813_080807/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-Stage13-vs-Stage11-4moves-20250814_135128/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -50,23 +50,23 @@
     "sprt": {
         "alpha": 0.05,
         "beta": 0.05,
-        "elo0": 0.0,
-        "elo1": 50.0,
+        "elo0": 150.0,
+        "elo1": 200.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 3613991000554989625,
+    "seed": 2304218362889913892,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
     "ratinginterval": 10,
-    "scoreinterval": 1,
+    "scoreinterval": 10,
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 2,
+    "rounds": 5000,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-Stage11-vs-Stage9b-20250813_080807/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-Stage13-vs-Stage11-4moves-20250814_135128/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,9 +84,9 @@
     },
     "engines": [
         {
-            "name": "Stage11-MVV-LVA",
+            "name": "Stage13-ID+TT",
             "dir": "",
-            "cmd": "/workspace/bin/seajay_stage11_mvv_lva",
+            "cmd": "/workspace/binaries/seajay-stage13-sprt",
             "args": "",
             "restart": false,
             "options": [],
@@ -104,9 +104,9 @@
             "variant": 0
         },
         {
-            "name": "Stage9b-Baseline",
+            "name": "Stage11-MVV-LVA",
             "dir": "",
-            "cmd": "/workspace/bin/seajay_stage9b_no_magic",
+            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
             "args": "",
             "restart": false,
             "options": [],
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stage9b-Baseline vs Stage11-MVV-LVA": {
-            "wins": 0,
-            "losses": 3,
-            "draws": 1,
-            "penta_WW": 0,
+        "Stage11-MVV-LVA vs Stage13-ID+TT": {
+            "wins": 24,
+            "losses": 0,
+            "draws": 0,
+            "penta_WW": 12,
             "penta_WD": 0,
             "penta_WL": 0,
             "penta_DD": 0,
-            "penta_LD": 1,
-            "penta_LL": 1
+            "penta_LD": 0,
+            "penta_LL": 0
         },
-        "Stage11-MVV-LVA vs Stage9b-Baseline": {
+        "Stage13-ID+TT vs Stage11-MVV-LVA": {
             "wins": 0,
             "losses": 0,
             "draws": 0,

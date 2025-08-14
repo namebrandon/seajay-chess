@@ -1,0 +1,119 @@
+Indexing opening suite...
+Started game 1 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 1 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 2 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 2 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 3 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 3 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 4 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 4 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 5 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 5 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 6 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 6 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 7 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 7 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 8 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 8 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 9 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 9 (Stage13-ID vs Stage12-TT): 1/2-1/2 {}
+Started game 10 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 10 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 11 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 11 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 12 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 12 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 13 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 13 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 14 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 14 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 15 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 15 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 16 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 16 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 17 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 17 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 18 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 18 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 19 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 19 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 20 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 20 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage13-ID vs Stage12-TT (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -636.43 +/- nan, nElo: -1555.94 +/- 152.27
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 20, Wins: 0, Losses: 19, Draws: 1, Points: 0.5 (2.50 %)
+Ptnml(0-2): [9, 1, 0, 0, 0], WL/DD Ratio: nan
+LLR: -1.45 (-49.3%) (-2.94, 2.94) [50.00, 80.00]
+--------------------------------------------------
+Started game 21 of 10000 (Stage13-ID vs Stage12-TT)
+Warning; No bestmove found in the last line from Stage13-ID
+Finished game 21 (Stage13-ID vs Stage12-TT): 0-1 {White loses on time}
+Started game 22 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 22 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 23 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 23 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 24 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 24 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 25 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 25 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 26 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 26 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 27 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 27 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 28 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 28 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 29 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 29 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 30 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 30 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 31 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 31 (Stage13-ID vs Stage12-TT): 1/2-1/2 {}
+Started game 32 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 32 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 33 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 33 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 34 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 34 (Stage12-TT vs Stage13-ID): 1/2-1/2 {}
+Started game 35 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 35 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 36 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 36 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 37 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 37 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 38 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 38 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 39 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 39 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 40 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 40 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage13-ID vs Stage12-TT (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -563.75 +/- nan, nElo: -1272.85 +/- 107.67
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 40, Wins: 0, Losses: 37, Draws: 3, Points: 1.5 (3.75 %)
+Ptnml(0-2): [17, 3, 0, 0, 0], WL/DD Ratio: nan
+LLR: -2.87 (-97.6%) (-2.94, 2.94) [50.00, 80.00]
+--------------------------------------------------
+Started game 41 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 41 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 42 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 42 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage13-ID vs Stage12-TT (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -572.55 +/- nan, nElo: -1303.85 +/- 105.07
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 42, Wins: 0, Losses: 39, Draws: 3, Points: 1.5 (3.57 %)
+Ptnml(0-2): [18, 3, 0, 0, 0], WL/DD Ratio: nan
+LLR: -3.02 (-102.6%) (-2.94, 2.94) [50.00, 80.00]
+--------------------------------------------------
+SPRT ([50.00, 80.00]) completed - H0 was accepted
+
+Player: Stage13-ID
+  Timeouts: 1
+  Crashed: 0
+
+Finished match
+Total Time: 00:03:32 (hours:minutes:seconds)
+

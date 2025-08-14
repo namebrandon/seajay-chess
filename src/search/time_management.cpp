@@ -178,9 +178,16 @@ std::chrono::milliseconds predictNextIterationTime(
     int currentDepth) {
     
     // Validate inputs
-    if (lastIterationTime.count() <= 0 || effectiveBranchingFactor <= 0) {
-        // Can't predict, return large value
-        return std::chrono::milliseconds(1000000);
+    if (effectiveBranchingFactor <= 0) {
+        // No valid EBF, use conservative default
+        effectiveBranchingFactor = 5.0;
+    }
+    
+    // Handle very fast iterations (showing as 0ms)
+    if (lastIterationTime.count() <= 0) {
+        // Use a minimum iteration time of 1ms for prediction
+        // This prevents unrealistic predictions when search is very fast
+        lastIterationTime = std::chrono::milliseconds(1);
     }
     
     // Use sophisticated EBF if available (should be from getSophisticatedEBF())
@@ -202,8 +209,8 @@ std::chrono::milliseconds predictNextIterationTime(
     // Basic formula: next_time = last_time * EBF * depth_adjustment
     double predictedTime = lastIterationTime.count() * clampedEBF * depthFactor;
     
-    // Add safety margin (20% extra)
-    predictedTime *= 1.2;
+    // Add safety margin (10% extra, was 20% which was too conservative)
+    predictedTime *= 1.1;
     
     // Convert to milliseconds, ensuring we don't overflow
     if (predictedTime > 3600000) {  // Cap at 1 hour

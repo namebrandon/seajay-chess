@@ -574,6 +574,11 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                 iterationEnd - iterationStart).count();
             
+            // Ensure minimum iteration time of 1ms for very fast searches
+            if (iterationTime == 0) {
+                iterationTime = 1;
+            }
+            
             IterationInfo iter;
             iter.depth = depth;
             iter.score = score;
@@ -646,7 +651,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 13, Deliverable 4.2b: Enhanced early termination logic
             if (info.m_hardLimit > 0) {
-                auto elapsed = info.elapsed();
+                // Use actual elapsed time, not cached (for accurate time management)
+                auto now = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    now - info.startTime);
                 bool stable = info.isPositionStable();
                 
                 // Check if we should stop based on new time management
@@ -692,13 +700,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                               << " (would exceed hard limit)\n";
                     break;
                 } else if (exceedsSoftLimit) {
-                    // Exceed soft limit only if unstable and depth is low
-                    if (veryStable || reasonableDepth) {
+                    // Decide whether to exceed soft limit based on position characteristics
+                    if (veryStable || (stable && reasonableDepth)) {
+                        // Stop if position is very stable or stable at reasonable depth
                         std::cerr << "[Time Management] No time for depth " << (depth + 1)
                                   << " (would exceed soft limit, position stable/deep)\n";
                         break;
-                    } else if (!stable && depth < 4) {
-                        // Continue if very shallow and unstable
+                    } else if (!stable && depth < 6) {
+                        // Continue if unstable and not too deep
+                        // This allows searching deeper in tactical positions
                         std::cerr << "[Time Management] Continuing despite soft limit "
                                   << "(depth=" << depth << ", unstable)\n";
                     } else {

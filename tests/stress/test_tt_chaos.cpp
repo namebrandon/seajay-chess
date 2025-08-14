@@ -225,7 +225,9 @@ public:
             }
         }
         
-        double collisionRate = 100.0 * m_collisions.size() / getTotalPositions();
+        size_t totalPositions = getTotalPositions();
+        double collisionRate = totalPositions > 0 ? 
+            (100.0 * static_cast<double>(m_collisions.size()) / static_cast<double>(totalPositions)) : 0.0;
         std::cout << "\nCollision rate: " << std::fixed << std::setprecision(4) 
                   << collisionRate << "%\n";
     }

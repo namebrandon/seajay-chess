@@ -1,0 +1,75 @@
+Indexing opening suite...
+Started game 1 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 1 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 2 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 2 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 3 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 3 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 4 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 4 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 5 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 5 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 6 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 6 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 7 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 7 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 8 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 8 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 9 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 9 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 10 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 10 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 11 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 11 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 12 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 12 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 13 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 13 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 14 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 14 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 15 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 15 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 16 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 16 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 17 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 17 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 18 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 18 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 19 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 19 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 20 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 20 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage13-ID+TT vs Stage11-MVV-LVA (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -inf +/- nan, nElo: -inf +/- nan
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 20, Wins: 0, Losses: 20, Draws: 0, Points: 0.0 (0.00 %)
+Ptnml(0-2): [10, 0, 0, 0, 0], WL/DD Ratio: nan
+LLR: -2.62 (-88.9%) (-2.94, 2.94) [150.00, 200.00]
+--------------------------------------------------
+Started game 21 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 21 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 22 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Finished game 22 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {White mates}
+Started game 23 of 10000 (Stage13-ID+TT vs Stage11-MVV-LVA)
+Finished game 23 (Stage13-ID+TT vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 24 of 10000 (Stage11-MVV-LVA vs Stage13-ID+TT)
+Warning; No bestmove found in the last line from Stage13-ID+TT
+Finished game 24 (Stage11-MVV-LVA vs Stage13-ID+TT): 1-0 {Black loses on time}
+--------------------------------------------------
+Results of Stage13-ID+TT vs Stage11-MVV-LVA (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -inf +/- nan, nElo: -inf +/- nan
+LOS: 0.00 %, DrawRatio: 0.00 %, PairsRatio: 0.00
+Games: 24, Wins: 0, Losses: 24, Draws: 0, Points: 0.0 (0.00 %)
+Ptnml(0-2): [12, 0, 0, 0, 0], WL/DD Ratio: nan
+LLR: -3.14 (-106.6%) (-2.94, 2.94) [150.00, 200.00]
+--------------------------------------------------
+SPRT ([150.00, 200.00]) completed - H0 was accepted
+
+Player: Stage13-ID+TT
+  Timeouts: 1
+  Crashed: 0
+
+Finished match
+Total Time: 00:02:30 (hours:minutes:seconds)
+
