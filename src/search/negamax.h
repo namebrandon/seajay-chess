@@ -41,6 +41,10 @@ eval::Score negamax(Board& board,
 //   tt     - Transposition table (can be nullptr)
 Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt = nullptr);
 
+// Stage 13: Test wrapper using IterativeSearchData (Deliverable 1.2a)
+// Identical behavior to search() but uses new data structure
+Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt = nullptr);
+
 // Calculate time allocation for a move
 // Returns the time to allocate for this search
 // Parameters:

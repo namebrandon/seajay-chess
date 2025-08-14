@@ -1,5 +1,6 @@
 #include "negamax.h"
 #include "search_info.h"
+#include "iterative_search_data.h"  // Stage 13 addition
 #ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // MVV-LVA ordering
 #endif
@@ -469,7 +470,56 @@ eval::Score negamax(Board& board,
     return bestScore;
 }
 
-// Iterative deepening search controller
+// Stage 13: Test wrapper for iterative deepening (Deliverable 1.2a)
+// This function calls the existing search without modifications
+// Used to verify that IterativeSearchData doesn't break anything
+Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
+    // Use IterativeSearchData instead of regular SearchData
+    // But don't modify any logic yet - just use it as a drop-in replacement
+    SearchInfo searchInfo;
+    searchInfo.clear();
+    searchInfo.setRootHistorySize(board.gameHistorySize());
+    
+    IterativeSearchData info;  // Using new class instead of SearchData
+    info.timeLimit = calculateTimeLimit(limits, board);
+    
+    Move bestMove;
+    
+    // Same iterative deepening loop as original search
+    for (int depth = 1; depth <= limits.maxDepth; depth++) {
+        info.depth = depth;
+        board.setSearchMode(true);
+        
+        eval::Score score = negamax(board, depth, 0,
+                                   eval::Score::minus_infinity(),
+                                   eval::Score::infinity(),
+                                   searchInfo, info, tt);
+        
+        board.setSearchMode(false);
+        
+        if (!info.stopped) {
+            bestMove = info.bestMove;
+            sendSearchInfo(info);
+            
+            if (score.is_mate_score()) {
+                break;
+            }
+            
+            if (info.timeLimit != std::chrono::milliseconds::max()) {
+                auto elapsed = info.elapsed();
+                if (elapsed * 5 > info.timeLimit * 2) {
+                    break;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+    
+    return bestMove;
+}
+
+// Iterative deepening search controller (original)
 Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Debug output
     std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
