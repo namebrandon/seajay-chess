@@ -8,7 +8,7 @@
 
 ### Pre-Phase Setup
 - [x] 0.1: Safety Infrastructure - Created branch, setting up benchmark script
-- [ ] 0.2: Debug Infrastructure
+- [x] 0.2: Debug Infrastructure - Created debug macros and regression tests
 
 ### Phase 1: Foundation (8 deliverables)
 - [ ] 1.1a: Basic type definitions
