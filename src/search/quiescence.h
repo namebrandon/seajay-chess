@@ -25,8 +25,6 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
               "Capture limit must be reasonable");
 
 // Forward declarations
-class TranspositionTable;
-struct SearchInfo;
 
 /**
  * @brief Quiescence search to resolve tactical sequences
@@ -48,9 +46,9 @@ eval::Score quiescence(
     int ply,
     eval::Score alpha,
     eval::Score beta,
-    SearchInfo& searchInfo,
+    seajay::SearchInfo& searchInfo,
     SearchData& data,
-    TranspositionTable& tt
+    seajay::TranspositionTable& tt
 );
 
 } // namespace seajay::search

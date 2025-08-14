@@ -105,6 +105,8 @@ set(SEARCH_SOURCES
     src/search/time_management.h
     src/search/aspiration_window.cpp
     src/search/aspiration_window.h
+    src/search/quiescence.cpp
+    src/search/quiescence.h
 )
 
 # Include directories
@@ -192,6 +194,9 @@ target_link_libraries(test_material_evaluation seajay_core)
 # Negamax search test
 add_executable(test_negamax tests/test_negamax.cpp)
 target_link_libraries(test_negamax seajay_core)
+
+add_executable(test_quiescence tests/search/test_quiescence.cpp)
+target_link_libraries(test_quiescence seajay_core)
 
 # MVV-LVA move ordering test
 add_executable(test_mvv_lva tests/test_mvv_lva.cpp)
