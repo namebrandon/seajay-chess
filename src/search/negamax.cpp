@@ -474,8 +474,7 @@ eval::Score negamax(Board& board,
 // This function calls the existing search without modifications
 // Used to verify that IterativeSearchData doesn't break anything
 Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Use IterativeSearchData instead of regular SearchData
-    // But don't modify any logic yet - just use it as a drop-in replacement
+    // Stage 13, Deliverable 1.2b: Minimal iteration recording (depth 1 only)
     SearchInfo searchInfo;
     searchInfo.clear();
     searchInfo.setRootHistorySize(board.gameHistorySize());
@@ -490,6 +489,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         info.depth = depth;
         board.setSearchMode(true);
         
+        // Track start time for this iteration
+        auto iterationStart = std::chrono::steady_clock::now();
+        uint64_t nodesBeforeIteration = info.nodes;  // Save node count before iteration
+        
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
@@ -500,6 +503,33 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         if (!info.stopped) {
             bestMove = info.bestMove;
             sendSearchInfo(info);
+            
+            // Record iteration data for depth 1 only (minimal recording)
+            if (depth == 1) {
+                auto iterationEnd = std::chrono::steady_clock::now();
+                auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    iterationEnd - iterationStart).count();
+                
+                IterationInfo iter;
+                iter.depth = depth;
+                iter.score = score;
+                iter.bestMove = info.bestMove;
+                iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
+                iter.elapsed = iterationTime;
+                iter.alpha = eval::Score::minus_infinity();
+                iter.beta = eval::Score::infinity();
+                iter.windowAttempts = 0;
+                iter.failedHigh = false;
+                iter.failedLow = false;
+                iter.moveChanged = false;  // No previous iteration to compare
+                iter.moveStability = 1;    // First iteration, so stability = 1
+                iter.firstMoveFailHigh = false;
+                iter.failHighMoveIndex = -1;
+                iter.secondBestScore = eval::Score::minus_infinity();
+                iter.branchingFactor = 0.0;
+                
+                info.recordIteration(iter);
+            }
             
             if (score.is_mate_score()) {
                 break;
