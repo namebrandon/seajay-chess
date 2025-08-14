@@ -2,9 +2,11 @@
 
 // Stage 13: Iterative Deepening - Enhanced search data structure
 // Phase 1, Deliverable 1.1b: IterativeSearchData class skeleton
+// Phase 2, Deliverable 2.1d: Stability tracking structure
 
 #include "types.h"
 #include "iteration_info.h"
+#include "time_management.h"
 #include <array>
 #include <chrono>
 
@@ -35,9 +37,16 @@ public:
     TimeMs m_hardLimit{0};      // Hard time limit (never exceed)
     TimeMs m_optimumTime{0};    // Optimal time to use for this move
     
-    // Move stability tracking (for Phase 2)
-    Move m_stableBestMove{NO_MOVE};  // Best move that has been stable
-    int m_stabilityCount{0};          // How many iterations with same best move
+    // Move stability tracking (Phase 2, Deliverable 2.1d)
+    Move m_stableBestMove{NO_MOVE};     // Best move that has been stable
+    int m_stabilityCount{0};             // How many iterations with same best move
+    int m_requiredStability{2};          // Iterations needed to consider stable
+    bool m_positionStable{false};        // Is position considered stable?
+    
+    // Score stability tracking
+    eval::Score m_stableScore{eval::Score::zero()};  // Score when stable
+    int m_scoreStabilityCount{0};                    // Iterations with similar score
+    eval::Score m_scoreWindow{eval::Score(10)};      // Window for score stability (10 cp)
     
     // Reset for new search
     void reset() {
@@ -48,6 +57,11 @@ public:
         m_optimumTime = 0;
         m_stableBestMove = NO_MOVE;
         m_stabilityCount = 0;
+        m_requiredStability = 2;
+        m_positionStable = false;
+        m_stableScore = eval::Score::zero();
+        m_scoreStabilityCount = 0;
+        m_scoreWindow = eval::Score(10);
         
         // Clear iteration data
         for (auto& iter : m_iterations) {
@@ -91,6 +105,34 @@ public:
     // Get count of completed iterations
     size_t getIterationCount() const {
         return m_iterationCount;
+    }
+    
+    // Stability tracking methods (Deliverable 2.1d - no logic yet)
+    
+    // Update stability based on new iteration (stub for now)
+    void updateStability(const IterationInfo& newIteration) {
+        // Logic will be implemented in Deliverable 2.1e
+        // For now, just a stub that does nothing
+        (void)newIteration;  // Suppress unused parameter warning
+    }
+    
+    // Check if position is stable (stub for now)
+    bool isPositionStable() const {
+        // Logic will be implemented in Deliverable 2.1e
+        return m_positionStable;
+    }
+    
+    // Get stability factor for time management (stub for now)
+    double getStabilityFactor() const {
+        // Logic will be implemented in Deliverable 2.1e
+        // Returns 1.0 (neutral) for now
+        return 1.0;
+    }
+    
+    // Check if we should extend search due to instability (stub for now)
+    bool shouldExtendDueToInstability() const {
+        // Logic will be implemented in Deliverable 2.1e
+        return false;
     }
 };
 
