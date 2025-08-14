@@ -99,6 +99,34 @@ void testSelectiveDepthTracking() {
     std::cout << "PASSED\n";
 }
 
+void testTimeChecking() {
+    std::cout << "Testing time checking... ";
+    
+    Board board;
+    board.setStartingPosition();
+    SearchInfo searchInfo;
+    search::SearchData data;
+    TranspositionTable tt(16);
+    
+    // Set a very short time limit that's already expired
+    data.timeLimit = std::chrono::milliseconds(0);
+    data.startTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(100);
+    
+    // Force the check by making qsearchNodes align with check interval
+    data.qsearchNodes = 1023;  // Next increment will trigger check
+    
+    int ply = 0;
+    eval::Score alpha = eval::Score(-1000);
+    eval::Score beta = eval::Score(1000);
+    
+    eval::Score result = search::quiescence(board, ply, alpha, beta, searchInfo, data, tt);
+    
+    // Should have stopped due to time
+    assert(data.stopped == true);
+    
+    std::cout << "PASSED\n";
+}
+
 void testRepetitionDetection() {
     std::cout << "Testing repetition detection... ";
     
@@ -137,6 +165,7 @@ int main() {
     testMaxPlyReturnsEval();
     testSelectiveDepthTracking();
     testRepetitionDetection();
+    testTimeChecking();
     
     std::cout << "\nAll tests PASSED!\n";
     return 0;

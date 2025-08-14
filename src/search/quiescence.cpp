@@ -18,6 +18,14 @@ eval::Score quiescence(
     // Track nodes
     data.qsearchNodes++;
     
+    // Check time limit periodically (every 1024 nodes)
+    if ((data.qsearchNodes & 1023) == 0) {
+        if (data.stopped || data.checkTime()) {
+            data.stopped = true;
+            return eval::Score::zero();  // Return neutral score when stopped
+        }
+    }
+    
     // Update selective depth
     if (ply > data.seldepth) {
         data.seldepth = ply;
