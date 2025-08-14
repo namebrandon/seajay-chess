@@ -51,6 +51,12 @@ struct SearchData {
     uint64_t ttMoveHits = 0;       // TT move found for ordering
     uint64_t ttStores = 0;         // Total TT stores
     
+    // Quiescence search statistics
+    uint64_t qsearchNodes = 0;     // Nodes searched in quiescence
+    uint64_t qsearchCutoffs = 0;   // Beta cutoffs in quiescence
+    uint64_t standPatCutoffs = 0;  // Stand-pat cutoffs
+    uint64_t deltasPruned = 0;     // Positions pruned by delta pruning
+    
     // Depth tracking
     int depth = 0;                 // Current iterative deepening depth
     int seldepth = 0;              // Maximum depth reached (selective depth)
@@ -125,6 +131,10 @@ struct SearchData {
         ttCutoffs = 0;
         ttMoveHits = 0;
         ttStores = 0;
+        qsearchNodes = 0;
+        qsearchCutoffs = 0;
+        standPatCutoffs = 0;
+        deltasPruned = 0;
         depth = 0;
         seldepth = 0;
         bestMove = Move();
