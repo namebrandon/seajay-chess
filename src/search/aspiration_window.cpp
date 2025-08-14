@@ -33,8 +33,49 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth) {
 AspirationWindow widenWindow(const AspirationWindow& window, 
                              Score score, 
                              bool failedHigh) {
-    // Implementation for next deliverable
-    return window;
+    AspirationWindow newWindow = window;
+    
+    // Increment attempt counter
+    newWindow.attempts++;
+    
+    // Check if we've exceeded max attempts - use infinite window
+    if (newWindow.exceedsMaxAttempts()) {
+        newWindow.makeInfinite();
+        return newWindow;
+    }
+    
+    // Apply delta growth: delta += delta/3 (approximately 1.33x per fail)
+    // This is the chess-engine-expert recommended growth rate
+    newWindow.delta += newWindow.delta / AspirationConstants::GROWTH_DIVISOR;
+    
+    if (failedHigh) {
+        // Score exceeded beta - raise beta, keep alpha close
+        newWindow.failedHigh = true;
+        newWindow.beta = Score(std::min(
+            score.value() + newWindow.delta,
+            Score::infinity().value()
+        ));
+        // Keep alpha relatively close to avoid missing good moves
+        // This asymmetric adjustment is based on Stockfish's approach
+        newWindow.alpha = Score(std::max(
+            score.value() - newWindow.delta / 2,
+            Score::minus_infinity().value()
+        ));
+    } else {
+        // Score fell below alpha - lower alpha, keep beta close
+        newWindow.failedLow = true;
+        newWindow.alpha = Score(std::max(
+            score.value() - newWindow.delta,
+            Score::minus_infinity().value()
+        ));
+        // Keep beta relatively close to catch improvements
+        newWindow.beta = Score(std::min(
+            score.value() + newWindow.delta / 2,
+            Score::infinity().value()
+        ));
+    }
+    
+    return newWindow;
 }
 
 } // namespace seajay::search
