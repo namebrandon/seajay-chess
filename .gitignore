@@ -67,6 +67,8 @@ compile_commands.json
 # Dependencies
 /deps/
 /lib/
+node_modules/
+package-lock.json
 
 # Temporary files
 *.tmp
