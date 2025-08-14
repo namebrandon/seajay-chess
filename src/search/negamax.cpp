@@ -474,7 +474,7 @@ eval::Score negamax(Board& board,
 // This function calls the existing search without modifications
 // Used to verify that IterativeSearchData doesn't break anything
 Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Stage 13, Deliverable 1.2b: Minimal iteration recording (depth 1 only)
+    // Stage 13, Deliverable 1.2c: Full iteration recording (all depths)
     SearchInfo searchInfo;
     searchInfo.clear();
     searchInfo.setRootHistorySize(board.gameHistorySize());
@@ -483,6 +483,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.timeLimit = calculateTimeLimit(limits, board);
     
     Move bestMove;
+    Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
     
     // Same iterative deepening loop as original search
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
@@ -504,32 +505,56 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             bestMove = info.bestMove;
             sendSearchInfo(info);
             
-            // Record iteration data for depth 1 only (minimal recording)
+            // Record iteration data for ALL depths (full recording)
+            auto iterationEnd = std::chrono::steady_clock::now();
+            auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                iterationEnd - iterationStart).count();
+            
+            IterationInfo iter;
+            iter.depth = depth;
+            iter.score = score;
+            iter.bestMove = info.bestMove;
+            iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
+            iter.elapsed = iterationTime;
+            iter.alpha = eval::Score::minus_infinity();
+            iter.beta = eval::Score::infinity();
+            iter.windowAttempts = 0;
+            iter.failedHigh = false;
+            iter.failedLow = false;
+            
+            // Track move changes and stability
             if (depth == 1) {
-                auto iterationEnd = std::chrono::steady_clock::now();
-                auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    iterationEnd - iterationStart).count();
-                
-                IterationInfo iter;
-                iter.depth = depth;
-                iter.score = score;
-                iter.bestMove = info.bestMove;
-                iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
-                iter.elapsed = iterationTime;
-                iter.alpha = eval::Score::minus_infinity();
-                iter.beta = eval::Score::infinity();
-                iter.windowAttempts = 0;
-                iter.failedHigh = false;
-                iter.failedLow = false;
-                iter.moveChanged = false;  // No previous iteration to compare
-                iter.moveStability = 1;    // First iteration, so stability = 1
-                iter.firstMoveFailHigh = false;
-                iter.failHighMoveIndex = -1;
-                iter.secondBestScore = eval::Score::minus_infinity();
-                iter.branchingFactor = 0.0;
-                
-                info.recordIteration(iter);
+                iter.moveChanged = false;  // No previous iteration
+                iter.moveStability = 1;    // First occurrence
+            } else {
+                iter.moveChanged = (info.bestMove != previousBestMove);
+                if (iter.moveChanged) {
+                    iter.moveStability = 1;  // Reset stability counter
+                } else {
+                    // Same move as previous iteration - increment stability
+                    const IterationInfo& prevIter = info.getLastIteration();
+                    iter.moveStability = prevIter.moveStability + 1;
+                }
             }
+            
+            iter.firstMoveFailHigh = false;
+            iter.failHighMoveIndex = -1;
+            iter.secondBestScore = eval::Score::minus_infinity();
+            
+            // Calculate branching factor if not first iteration
+            if (depth > 1 && info.hasIterations()) {
+                const IterationInfo& prevIter = info.getLastIteration();
+                if (prevIter.nodes > 0) {
+                    iter.branchingFactor = static_cast<double>(iter.nodes) / prevIter.nodes;
+                } else {
+                    iter.branchingFactor = 0.0;
+                }
+            } else {
+                iter.branchingFactor = 0.0;
+            }
+            
+            info.recordIteration(iter);
+            previousBestMove = info.bestMove;  // Update for next iteration
             
             if (score.is_mate_score()) {
                 break;
