@@ -483,22 +483,23 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     IterativeSearchData info;  // Using new class instead of SearchData
     
-    // OLD time calculation (keep for comparison)
-    info.timeLimit = calculateTimeLimit(limits, board);
+    // Stage 13, Deliverable 2.2b: Switch to new time management
+    // Calculate initial time limits with neutral stability (1.0)
+    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
+    info.m_softLimit = timeLimits.soft.count();
+    info.m_hardLimit = timeLimits.hard.count();
+    info.m_optimumTime = timeLimits.optimum.count();
     
-    // NEW time calculation (Deliverable 2.2a)
-    // Calculate with default stability factor of 1.0 initially
-    TimeLimits newTimeLimits = calculateTimeLimits(limits, board, 1.0);
-    info.m_softLimit = newTimeLimits.soft.count();
-    info.m_hardLimit = newTimeLimits.hard.count();
-    info.m_optimumTime = newTimeLimits.optimum.count();
+    // Use NEW calculation for timeLimit (replacing old)
+    info.timeLimit = timeLimits.optimum;
     
-    // Debug output to compare old vs new
-    std::cerr << "Time Management Comparison (Deliverable 2.2a):\n";
-    std::cerr << "  OLD calculation: " << info.timeLimit.count() << "ms\n";
-    std::cerr << "  NEW soft limit:  " << info.m_softLimit << "ms\n";
-    std::cerr << "  NEW hard limit:  " << info.m_hardLimit << "ms\n";
-    std::cerr << "  NEW optimum:     " << info.m_optimumTime << "ms\n";
+    // Debug logging for time management (Deliverable 2.2b)
+    if (limits.movetime == std::chrono::milliseconds(0)) {  // Only log for non-fixed time
+        std::cerr << "[Time Management] Initial limits: ";
+        std::cerr << "soft=" << info.m_softLimit << "ms, ";
+        std::cerr << "hard=" << info.m_hardLimit << "ms, ";
+        std::cerr << "optimum=" << info.m_optimumTime << "ms\n";
+    }
     
     Move bestMove;
     Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
@@ -575,13 +576,51 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
             previousBestMove = info.bestMove;  // Update for next iteration
             
+            // Stage 13, Deliverable 2.2b: Dynamic time management
+            // Recalculate time limits based on current stability
+            double stabilityFactor = info.getStabilityFactor();
+            if (depth > 2 && stabilityFactor != 1.0) {  // Only adjust after depth 2
+                TimeLimits adjustedLimits = calculateTimeLimits(limits, board, stabilityFactor);
+                info.m_softLimit = adjustedLimits.soft.count();
+                // Don't change hard limit - it's a safety bound
+                
+                // Log stability-based adjustments
+                if (depth == 3 || depth == 5) {  // Log at specific depths to avoid spam
+                    std::cerr << "[Time Management] Depth " << depth 
+                              << ": stability=" << std::fixed << std::setprecision(1) 
+                              << stabilityFactor << ", adjusted soft=" 
+                              << info.m_softLimit << "ms\n";
+                }
+            }
+            
             if (score.is_mate_score()) {
                 break;
             }
             
-            if (info.timeLimit != std::chrono::milliseconds::max()) {
+            // Use NEW time management decision (Deliverable 2.2b)
+            if (info.m_hardLimit > 0) {
                 auto elapsed = info.elapsed();
-                if (elapsed * 5 > info.timeLimit * 2) {
+                bool stable = info.isPositionStable();
+                
+                // Check if we should stop based on new time management
+                if (shouldStopOnTime(TimeLimits{std::chrono::milliseconds(info.m_softLimit),
+                                               std::chrono::milliseconds(info.m_hardLimit),
+                                               std::chrono::milliseconds(info.m_optimumTime)},
+                                   elapsed, depth, stable)) {
+                    std::cerr << "[Time Management] Stopping at depth " << depth 
+                              << " (elapsed=" << elapsed.count() << "ms, "
+                              << (stable ? "stable" : "unstable") << ")\n";
+                    break;
+                }
+                
+                // Check if we have time for next iteration
+                double branchingFactor = iter.branchingFactor > 0 ? iter.branchingFactor : 5.0;
+                if (!hasTimeForNextIteration(TimeLimits{std::chrono::milliseconds(info.m_softLimit),
+                                                        std::chrono::milliseconds(info.m_hardLimit),
+                                                        std::chrono::milliseconds(info.m_optimumTime)},
+                                            elapsed, iterationTime, branchingFactor)) {
+                    std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                              << " (projected time exceeds limits)\n";
                     break;
                 }
             }
@@ -605,8 +644,10 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
     
     SearchData info;  // For search statistics
-    info.timeLimit = calculateTimeLimit(limits, board);
-    std::cerr << "Search: calculated timeLimit=" << info.timeLimit.count() << "ms" << std::endl;
+    // Stage 13, Deliverable 2.2b: Use new time management in regular search too
+    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
+    info.timeLimit = timeLimits.optimum;
+    std::cerr << "Search: using NEW time management - optimum=" << info.timeLimit.count() << "ms" << std::endl;
     
     Move bestMove;
     
