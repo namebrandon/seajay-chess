@@ -1,0 +1,37 @@
+SPRT Test: Stage 11 vs Stage 10 (Drawkiller Book)
+==================================================
+Date: Wed Aug 13 10:32:31 PM CDT 2025
+Test Engine: Stage 11 (MVV-LVA)
+Base Engine: Stage 10 (Magic Bitboards)
+
+Opening Book: Drawkiller_balanced_big.epd
+Book Characteristics:
+- 15,962 sharp tactical positions
+- Opposite-side castling positions
+- ~63% draw rate (vs 83% for standard books)
+- Favors tactical play where move ordering matters most
+
+Expected Improvement: +50 to +100 Elo
+SPRT Parameters: elo0=0, elo1=50, alpha=0.05, beta=0.05
+Time Control: 10+0.1
+
+Stage 11 Features:
+- MVV-LVA move ordering for captures
+- Expected 15-30% node reduction
+- Better alpha-beta pruning efficiency
+- Should excel in tactical positions
+
+Stage 10 Features:
+- Magic bitboards for move generation
+- Optimized perft performance
+- No move ordering beyond basic captures
+
+Why Drawkiller for this test:
+1. Sharp positions emphasize importance of move ordering
+2. Tactical nature should show MVV-LVA benefits clearly
+3. Large position count (15,962) eliminates determinism
+4. Lower draw rate improves statistical efficiency
+5. Opposite-side castling creates attacking games
+
+Results:
+See sprt_output.txt for detailed results

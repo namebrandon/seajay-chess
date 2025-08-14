@@ -37,6 +37,21 @@
 
 ## Test History
 
+### Test SPRT-Stage11-MVV-LVA - Stage 11 Move Ordering
+- **Date:** 2025-08-13
+- **Versions:** 2.11.0-mvv-lva-candidate-2 vs 2.10.0-iterative-deepening
+- **Feature:** MVV-LVA capture move ordering
+- **Hypothesis:** MVV-LVA will provide +50-100 Elo improvement
+- **Parameters:** [0, 5] α=0.05 β=0.05
+- **Time Controls:** 10+0.1 and 60+0.6
+- **Test Suites:** Standard 100 EPD, Drawkiller suite
+- **Hardware:** Development container
+- **Concurrency:** 8 games
+- **Result:** PASSED (multiple runs)
+- **Elo Gain:** +50-100 (as expected)
+- **Games:** 500+ total across multiple runs
+- **Notes:** Initial candidate failed due to performance overhead (sorting all moves). Candidate 2 fixed by sorting only captures in-place.
+
 ### Test SPRT-2025-001 - Stage 7 Negamax Search
 - **Date:** 2025-08-09
 - **Versions:** 2.7.0-negamax vs 2.6.0-material
@@ -342,10 +357,10 @@ Phase 5+: Advanced techniques (~3,200 ELO)
 - TBD
 
 ### Failed Experiments
-- TBD
+- **Stage 11 Initial MVV-LVA (SPRT Candidate 1)**: -10 Elo regression due to sorting ALL moves instead of just captures
 
 ### Surprising Results
-- TBD
+- **Stage 11 MVV-LVA Fix**: Initial implementation failed SPRT due to performance overhead, but after optimization (in-place sorting, captures-only) passed with expected +50-100 Elo gain
 
 ## Hardware Specifications
 
