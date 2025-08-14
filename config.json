@@ -22,8 +22,8 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/Drawkiller_balanced_big.epd",
-        "format": 0,
+        "file": "/workspace/external/books/4moves_test.pgn",
+        "format": 1,
         "order": 0,
         "plies": -1,
         "start": 1
@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-Drawkiller-60s-20250813_213424/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -51,13 +51,13 @@
         "alpha": 0.05,
         "beta": 0.05,
         "elo0": 0.0,
-        "elo1": 40.0,
+        "elo1": 30.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 2905069639240366206,
+    "seed": 3837143811134085151,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-Drawkiller-60s-20250813_213424/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,7 +84,7 @@
     },
     "engines": [
         {
-            "name": "Stage11-MVV-LVA-v2-DK60s",
+            "name": "Stage11-MVV-LVA-v2-60s",
             "dir": "",
             "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
             "args": "",
@@ -104,7 +104,7 @@
             "variant": 0
         },
         {
-            "name": "Stage10-Magic-DK60s",
+            "name": "Stage10-Magic-60s",
             "dir": "",
             "cmd": "/workspace/binaries/seajay-stage10-x86-64",
             "args": "",
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stage10-Magic-DK60s vs Stage11-MVV-LVA-v2-DK60s": {
-            "wins": 39,
-            "losses": 33,
-            "draws": 68,
-            "penta_WW": 3,
-            "penta_WD": 8,
-            "penta_WL": 25,
-            "penta_DD": 27,
-            "penta_LD": 6,
+        "Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s": {
+            "wins": 9,
+            "losses": 15,
+            "draws": 136,
+            "penta_WW": 0,
+            "penta_WD": 4,
+            "penta_WL": 5,
+            "penta_DD": 62,
+            "penta_LD": 8,
             "penta_LL": 1
         },
-        "Stage11-MVV-LVA-v2-DK60s vs Stage10-Magic-DK60s": {
+        "Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
