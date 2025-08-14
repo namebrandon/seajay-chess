@@ -3,6 +3,7 @@
 // Stage 13: Iterative Deepening - Time Management
 // Phase 2, Deliverable 2.1a: Time management types
 // Phase 2, Deliverable 2.1b: Basic time calculation
+// Phase 2, Deliverable 2.1c: Soft/hard limits
 
 #include "../core/types.h"
 #include <chrono>
@@ -123,6 +124,63 @@ inline TimeMs calculateOptimumTime(const TimeInfo& timeInfo, Color sideToMove) {
     optimum = std::max(optimum, TimeMs(1));
     
     return optimum;
+}
+
+// Calculate soft time limit (can be exceeded if position is unstable)
+// Deliverable 2.1c
+inline TimeMs calculateSoftLimit(TimeMs optimumTime) {
+    // For now, soft limit equals optimum time
+    // Can be adjusted based on position stability later
+    return static_cast<TimeMs>(optimumTime * TimeConstants::SOFT_LIMIT_RATIO);
+}
+
+// Calculate hard time limit (never exceed this)
+// Deliverable 2.1c
+inline TimeMs calculateHardLimit(TimeMs optimumTime, const TimeInfo& timeInfo, Color sideToMove) {
+    // Start with a multiple of optimum time
+    TimeMs hardLimit = static_cast<TimeMs>(optimumTime * TimeConstants::HARD_LIMIT_RATIO);
+    
+    // But never use more than available time minus reserve
+    TimeMs remainingTime = timeInfo.getTimeForSide(sideToMove);
+    if (remainingTime > 0) {
+        TimeMs maxUsable = remainingTime - TimeConstants::MIN_TIME_RESERVE;
+        if (maxUsable > 0) {
+            hardLimit = std::min(hardLimit, maxUsable);
+        } else {
+            // Critical time pressure - use what we can
+            hardLimit = std::max(TimeMs(1), remainingTime / 2);
+        }
+    }
+    
+    // For fixed move time, hard limit should not exceed it
+    if (timeInfo.moveTime > 0) {
+        hardLimit = std::min(hardLimit, timeInfo.moveTime - TimeMs(10));  // Leave 10ms buffer
+    }
+    
+    // Ensure hard limit is at least as much as soft limit
+    TimeMs softLimit = calculateSoftLimit(optimumTime);
+    hardLimit = std::max(hardLimit, softLimit);
+    
+    // Minimum hard limit
+    hardLimit = std::max(hardLimit, TimeMs(1));
+    
+    return hardLimit;
+}
+
+// Helper function to calculate all time limits at once
+// Deliverable 2.1c
+inline void calculateTimeLimits(TimeInfo& timeInfo, Color sideToMove) {
+    // Calculate optimum time
+    timeInfo.optimumTime = calculateOptimumTime(timeInfo, sideToMove);
+    
+    // Calculate soft limit (can be exceeded if unstable)
+    timeInfo.softLimit = calculateSoftLimit(timeInfo.optimumTime);
+    
+    // Calculate hard limit (never exceed)
+    timeInfo.hardLimit = calculateHardLimit(timeInfo.optimumTime, timeInfo, sideToMove);
+    
+    // Maximum time is same as hard limit for now
+    timeInfo.maximumTime = timeInfo.hardLimit;
 }
 
 } // namespace seajay::search
