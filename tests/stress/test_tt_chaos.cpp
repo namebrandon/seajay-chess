@@ -17,8 +17,31 @@
 #include <chrono>
 #include <iomanip>
 #include <algorithm>
+#include <map>
+#include <set>
 
 using namespace seajay;
+using UndoInfo = Board::UndoInfo;
+
+// Stub implementation for Move extension (needed for testing)
+namespace seajay {
+    inline std::string moveToString(Move m) {
+        if (m == 0) return "none";
+        std::string str;
+        Square fromSq = moveFrom(m);
+        Square toSq = moveTo(m);
+        str += static_cast<char>('a' + fileOf(fromSq));
+        str += static_cast<char>('1' + rankOf(fromSq));
+        str += static_cast<char>('a' + fileOf(toSq));
+        str += static_cast<char>('1' + rankOf(toSq));
+        if (isPromotion(m)) {
+            PieceType pt = promotionType(m);
+            const char* pieces = "nbrq";
+            str += pieces[pt - KNIGHT];
+        }
+        return str;
+    }
+}
 
 /**
  * Chaos Test Generator
@@ -84,11 +107,11 @@ public:
     // Generate sequence of random moves
     std::vector<Move> generateRandomMoves(Board& board, int count) {
         std::vector<Move> moves;
+        std::vector<UndoInfo> undos;
         
         for (int i = 0; i < count; i++) {
             MoveList legal;
-            MoveGenerator gen(board);
-            gen.generateAllMoves(legal);
+            MoveGenerator::generateLegalMoves(board, legal);
             
             if (legal.empty()) break;
             
@@ -96,16 +119,15 @@ public:
             int idx = m_rng() % legal.size();
             Move move = legal[idx];
             
-            if (board.makeMove(move)) {
-                moves.push_back(move);
-            } else {
-                board.unmakeMove(move);
-            }
+            UndoInfo undo;
+            board.makeMove(move, undo);
+            moves.push_back(move);
+            undos.push_back(undo);
         }
         
         // Unmake all moves to restore position
-        for (auto it = moves.rbegin(); it != moves.rend(); ++it) {
-            board.unmakeMove(*it);
+        for (size_t i = moves.size(); i > 0; i--) {
+            board.unmakeMove(moves[i-1], undos[i-1]);
         }
         
         return moves;
@@ -278,8 +300,11 @@ private:
                 // Make random moves
                 auto moves = gen.generateRandomMoves(board, 10);
                 
+                std::vector<UndoInfo> undos;
                 for (const Move& move : moves) {
-                    board.makeMove(move);
+                    UndoInfo undo;
+                    board.makeMove(move, undo);
+                    undos.push_back(undo);
                     
                     // Would probe/store in TT here
                     uint64_t hash = board.zobristKey();
@@ -289,8 +314,8 @@ private:
                 }
                 
                 // Unmake all moves
-                for (auto it = moves.rbegin(); it != moves.rend(); ++it) {
-                    board.unmakeMove(*it);
+                for (size_t i = moves.size(); i > 0; i--) {
+                    board.unmakeMove(moves[i-1], undos[i-1]);
                 }
                 
             } catch (...) {
@@ -316,9 +341,8 @@ public:
         for (const Move& move : moves) {
             uint64_t hashBefore = board.zobristKey();
             
-            if (!board.makeMove(move)) {
-                continue;
-            }
+            UndoInfo undo;
+            board.makeMove(move, undo);
             
             uint64_t hashAfter = board.zobristKey();
             
@@ -339,7 +363,7 @@ public:
             //     allValid = false;
             // }
             
-            board.unmakeMove(move);
+            board.unmakeMove(move, undo);
             
             uint64_t hashRestored = board.zobristKey();
             if (hashBefore != hashRestored) {
@@ -431,7 +455,7 @@ public:
 // Chaos Test Suite
 // ============================================================================
 
-TEST_CASE("Chaos: Random Position Generation") {
+TEST_CASE(Chaos_RandomPositionGeneration) {
     ChaosTestGenerator gen;
     
     SECTION("Generate valid positions") {
@@ -465,7 +489,7 @@ TEST_CASE("Chaos: Random Position Generation") {
     }
 }
 
-TEST_CASE("Chaos: Hash Collision Detection") {
+TEST_CASE(Chaos_HashCollisionDetection) {
     HashCollisionDetector detector;
     ChaosTestGenerator gen;
     
@@ -482,7 +506,7 @@ TEST_CASE("Chaos: Hash Collision Detection") {
     }
 }
 
-TEST_CASE("Chaos: Incremental Update Validation") {
+TEST_CASE(Chaos_IncrementalUpdateValidation) {
     IncrementalUpdateValidator validator;
     ChaosTestGenerator gen;
     
@@ -495,7 +519,7 @@ TEST_CASE("Chaos: Incremental Update Validation") {
     }
 }
 
-TEST_CASE("Chaos: Special Position Stress") {
+TEST_CASE(Chaos_SpecialPositionStress) {
     ChaosTestGenerator gen;
     
     SECTION("Positions with many pieces") {

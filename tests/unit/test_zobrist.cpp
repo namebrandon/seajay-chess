@@ -19,6 +19,26 @@
 
 using namespace seajay;
 
+// Stub implementation for Move extension (needed for testing)
+namespace seajay {
+    inline std::string moveToString(Move m) {
+        if (m == 0) return "none";
+        std::string str;
+        Square fromSq = moveFrom(m);
+        Square toSq = moveTo(m);
+        str += static_cast<char>('a' + fileOf(fromSq));
+        str += static_cast<char>('1' + rankOf(fromSq));
+        str += static_cast<char>('a' + fileOf(toSq));
+        str += static_cast<char>('1' + rankOf(toSq));
+        if (isPromotion(m)) {
+            PieceType pt = promotionType(m);
+            const char* pieces = "nbrq";
+            str += pieces[pt - KNIGHT];
+        }
+        return str;
+    }
+}
+
 // Forward declarations for future Zobrist implementation
 namespace seajay {
 namespace zobrist {
@@ -261,7 +281,7 @@ public:
 // Test Suite
 // ============================================================================
 
-TEST_CASE("Zobrist: Basic XOR Properties") {
+TEST_CASE(Zobrist_BasicXORProperties) {
     PropertyBasedTester tester;
     
     SECTION("XOR is its own inverse") {
@@ -273,7 +293,7 @@ TEST_CASE("Zobrist: Basic XOR Properties") {
     }
 }
 
-TEST_CASE("Zobrist: Key Generation Validation") {
+TEST_CASE(Zobrist_KeyGenerationValidation) {
     SECTION("All keys are unique") {
         // Will be implemented in Phase 1
         // REQUIRE(zobrist::validateKeysUnique());
@@ -289,7 +309,7 @@ TEST_CASE("Zobrist: Key Generation Validation") {
     }
 }
 
-TEST_CASE("Zobrist: Incremental Update Correctness") {
+TEST_CASE(Zobrist_IncrementalUpdateCorrectness) {
     DifferentialTester tester;
     Board board;
     
@@ -309,7 +329,7 @@ TEST_CASE("Zobrist: Incremental Update Correctness") {
     }
 }
 
-TEST_CASE("Zobrist: Special Cases") {
+TEST_CASE(Zobrist_SpecialCases) {
     Board board;
     
     SECTION("Fifty-move counter affects hash") {
@@ -348,14 +368,14 @@ TEST_CASE("Zobrist: Special Cases") {
     }
 }
 
-TEST_CASE("Zobrist: Killer Positions") {
+TEST_CASE(Zobrist_KillerPositions) {
     Board board;
     DifferentialTester tester;
     
     for (const auto& killer : killerPositions) {
         SECTION(killer.description) {
             auto result = board.parseFEN(killer.fen);
-            if (result == FenResult::OK) {
+            if (result.hasValue()) {
                 // Test that hash is calculated correctly
                 // REQUIRE(tester.validateIncremental(board));
                 
@@ -368,7 +388,7 @@ TEST_CASE("Zobrist: Killer Positions") {
     }
 }
 
-TEST_CASE("Zobrist: Hash Collision Analysis") {
+TEST_CASE(Zobrist_HashCollisionAnalysis) {
     std::map<uint32_t, int> collisionCounts;
     Board board;
     
@@ -392,7 +412,7 @@ TEST_CASE("Zobrist: Hash Collision Analysis") {
     }
 }
 
-TEST_CASE("Zobrist: Perft Integration Preparation") {
+TEST_CASE(Zobrist_PerftIntegrationPreparation) {
     Board board;
     
     SECTION("Hash consistency through move sequence") {
@@ -418,7 +438,7 @@ TEST_CASE("Zobrist: Perft Integration Preparation") {
     }
 }
 
-TEST_CASE("Zobrist: Shadow Hashing Framework") {
+TEST_CASE(Zobrist_ShadowHashingFramework) {
     ZobristValidator validator;
     Board board;
     

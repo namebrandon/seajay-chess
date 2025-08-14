@@ -15,8 +15,30 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>
+#include <set>
 
 using namespace seajay;
+using UndoInfo = Board::UndoInfo;
+
+// Stub implementation for Move extension (needed for testing)
+namespace seajay {
+    inline std::string moveToString(Move m) {
+        if (m == 0) return "none";
+        std::string str;
+        Square fromSq = moveFrom(m);
+        Square toSq = moveTo(m);
+        str += static_cast<char>('a' + fileOf(fromSq));
+        str += static_cast<char>('1' + rankOf(fromSq));
+        str += static_cast<char>('a' + fileOf(toSq));
+        str += static_cast<char>('1' + rankOf(toSq));
+        if (isPromotion(m)) {
+            PieceType pt = promotionType(m);
+            const char* pieces = "nbrq";
+            str += pieces[pt - KNIGHT];
+        }
+        return str;
+    }
+}
 
 // Forward declarations for TT integration
 namespace seajay {
@@ -219,7 +241,7 @@ public:
     static void printPV(const std::vector<Move>& pv) {
         std::cout << "PV: ";
         for (const Move& move : pv) {
-            std::cout << move.toString() << " ";
+            std::cout << moveToString(move) << " ";
         }
         std::cout << "\n";
     }
@@ -274,7 +296,7 @@ public:
 // Integration Test Suite
 // ============================================================================
 
-TEST_CASE("TT Search: Mate Score Adjustment") {
+TEST_CASE(TTSearch_MateScoreAdjustment) {
     SECTION("Store and retrieve mate scores") {
         // Mate in 3 from ply 5
         int mateIn3 = MATE_SCORE - 3;
@@ -298,7 +320,7 @@ TEST_CASE("TT Search: Mate Score Adjustment") {
     }
 }
 
-TEST_CASE("TT Search: Draw Detection Order") {
+TEST_CASE(TTSearch_DrawDetectionOrder) {
     DrawDetectionValidator validator;
     
     SECTION("Repetition before TT probe") {
@@ -314,7 +336,7 @@ TEST_CASE("TT Search: Draw Detection Order") {
     }
 }
 
-TEST_CASE("TT Search: Node Reduction") {
+TEST_CASE(TTSearch_NodeReduction) {
     TTSearchTester tester;
     
     SECTION("Complex middlegame position") {
@@ -334,7 +356,7 @@ TEST_CASE("TT Search: Node Reduction") {
     }
 }
 
-TEST_CASE("TT Search: Best Move Consistency") {
+TEST_CASE(TTSearch_BestMoveConsistency) {
     TTSearchTester tester;
     
     SECTION("Same best move with and without TT") {
@@ -354,7 +376,7 @@ TEST_CASE("TT Search: Best Move Consistency") {
     }
 }
 
-TEST_CASE("TT Search: PV Extraction") {
+TEST_CASE(TTSearch_PVExtraction) {
     Board board;
     
     SECTION("Extract PV without loops") {
@@ -376,7 +398,7 @@ TEST_CASE("TT Search: PV Extraction") {
     }
 }
 
-TEST_CASE("TT Search: Killer Position Tests") {
+TEST_CASE(TTSearch_KillerPositionTests) {
     TTSearchTester tester;
     
     // Test positions from implementation plan
@@ -461,18 +483,24 @@ uint64_t perftWithTT(Board& board, int depth, bool useTT) {
     }
     
     MoveList moves;
-    MoveGenerator gen(board);
-    gen.generateAllMoves(moves);
+    MoveGenerator::generateLegalMoves(board, moves);
     
     for (size_t i = 0; i < moves.size(); i++) {
         const Move& move = moves[i];
         
-        if (!board.makeMove(move)) {
+        UndoInfo undo;
+        board.makeMove(move, undo);
+        
+        // Skip illegal moves (check if king is attacked after move)
+        Color us = !board.sideToMove();  // We just moved, so check previous side
+        Square kingSquare = board.kingSquare(us);
+        if (isSquareAttacked(board, kingSquare, board.sideToMove())) {
+            board.unmakeMove(move, undo);
             continue;
         }
         
         nodes += perftWithTT(board, depth - 1, useTT);
-        board.unmakeMove(move);
+        board.unmakeMove(move, undo);
     }
     
     if (useTT) {
@@ -483,7 +511,7 @@ uint64_t perftWithTT(Board& board, int depth, bool useTT) {
     return nodes;
 }
 
-TEST_CASE("TT Search: Perft Integration") {
+TEST_CASE(TTSearch_PerftIntegration) {
     Board board;
     
     SECTION("Perft with TT matches without TT") {

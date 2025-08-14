@@ -17,6 +17,26 @@
 
 using namespace seajay;
 
+// Stub implementation for Move extension (needed for testing)
+namespace seajay {
+    inline std::string moveToString(Move m) {
+        if (m == 0) return "none";
+        std::string str;
+        Square fromSq = moveFrom(m);
+        Square toSq = moveTo(m);
+        str += static_cast<char>('a' + fileOf(fromSq));
+        str += static_cast<char>('1' + rankOf(fromSq));
+        str += static_cast<char>('a' + fileOf(toSq));
+        str += static_cast<char>('1' + rankOf(toSq));
+        if (isPromotion(m)) {
+            PieceType pt = promotionType(m);
+            const char* pieces = "nbrq";
+            str += pieces[pt - KNIGHT];
+        }
+        return str;
+    }
+}
+
 // Forward declarations for future TT implementation
 namespace seajay {
 
@@ -473,7 +493,7 @@ private:
 // Test Suite
 // ============================================================================
 
-TEST_CASE("TT: Memory Alignment") {
+TEST_CASE(TT_MemoryAlignment) {
     SECTION("TTEntry is 16 bytes") {
         REQUIRE(sizeof(TTEntry) == 16);
     }
@@ -489,7 +509,7 @@ TEST_CASE("TT: Memory Alignment") {
     }
 }
 
-TEST_CASE("TT: Basic Operations") {
+TEST_CASE(TT_BasicOperations) {
     TranspositionTable tt;
     tt.resize(1);  // 1 MB for testing
     
@@ -548,7 +568,7 @@ TEST_CASE("TT: Basic Operations") {
     }
 }
 
-TEST_CASE("TT: Statistics") {
+TEST_CASE(TT_Statistics) {
     TranspositionTable tt;
     tt.resize(1);
     
@@ -581,7 +601,7 @@ TEST_CASE("TT: Statistics") {
     }
 }
 
-TEST_CASE("TT: Enable/Disable") {
+TEST_CASE(TT_EnableDisable) {
     TranspositionTable tt;
     tt.resize(1);
     
@@ -599,7 +619,7 @@ TEST_CASE("TT: Enable/Disable") {
     }
 }
 
-TEST_CASE("TT: Generation Management") {
+TEST_CASE(TT_GenerationManagement) {
     TranspositionTable tt;
     tt.resize(1);
     
@@ -621,7 +641,7 @@ TEST_CASE("TT: Generation Management") {
     }
 }
 
-TEST_CASE("TT: Clustered Implementation") {
+TEST_CASE(TT_ClusteredImplementation) {
     ClusteredTranspositionTable tt;
     tt.resize(1);
     
@@ -672,7 +692,7 @@ TEST_CASE("TT: Clustered Implementation") {
     }
 }
 
-TEST_CASE("TT: Collision Handling") {
+TEST_CASE(TT_CollisionHandling) {
     TranspositionTable tt;
     tt.resize(1);  // Small table to force collisions
     
@@ -699,7 +719,7 @@ TEST_CASE("TT: Collision Handling") {
     }
 }
 
-TEST_CASE("TT: Clear Operation") {
+TEST_CASE(TT_ClearOperation) {
     TranspositionTable tt;
     tt.resize(1);
     
