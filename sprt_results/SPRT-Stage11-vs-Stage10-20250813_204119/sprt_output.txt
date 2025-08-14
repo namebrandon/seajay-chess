@@ -1,0 +1,154 @@
+Indexing opening suite...
+Started game 1 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 1 (Stage11-MVV-LVA vs Stage10-Magic): 1/2-1/2 {}
+Started game 2 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 2 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 3 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 3 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 4 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 4 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 5 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 5 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 6 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 6 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 7 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 7 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 8 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 8 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 9 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 9 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 10 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 10 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -34.86 +/- 62.20, nElo: -122.84 +/- 215.34
+LOS: 13.18 %, DrawRatio: 80.00 %, PairsRatio: 0.00
+Games: 10, Wins: 4, Losses: 5, Draws: 1, Points: 4.5 (45.00 %)
+Ptnml(0-2): [0, 1, 4, 0, 0], WL/DD Ratio: inf
+LLR: -0.43 (-14.5%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 11 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 11 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 12 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 12 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 13 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 13 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 14 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 14 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 15 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 15 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 16 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 16 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 17 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 17 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 18 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 18 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 19 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 19 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 20 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 20 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -17.39 +/- 32.48, nElo: -81.89 +/- 152.27
+LOS: 14.59 %, DrawRatio: 90.00 %, PairsRatio: 0.00
+Games: 20, Wins: 9, Losses: 10, Draws: 1, Points: 9.5 (47.50 %)
+Ptnml(0-2): [0, 1, 9, 0, 0], WL/DD Ratio: inf
+LLR: -0.68 (-23.0%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 21 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 21 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 22 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 22 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 23 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 23 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 24 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 24 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 25 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 25 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 26 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 26 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 27 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 27 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 28 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 28 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 29 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 29 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 30 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 30 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -11.59 +/- 21.98, nElo: -65.66 +/- 124.33
+LOS: 15.03 %, DrawRatio: 93.33 %, PairsRatio: 0.00
+Games: 30, Wins: 14, Losses: 15, Draws: 1, Points: 14.5 (48.33 %)
+Ptnml(0-2): [0, 1, 14, 0, 0], WL/DD Ratio: inf
+LLR: -0.91 (-30.8%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 31 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 31 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 32 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 32 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 33 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 33 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 34 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 34 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 35 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 35 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 36 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 36 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 37 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 37 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 38 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 38 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 39 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 39 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 40 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 40 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -8.69 +/- 16.62, nElo: -56.36 +/- 107.67
+LOS: 15.25 %, DrawRatio: 95.00 %, PairsRatio: 0.00
+Games: 40, Wins: 19, Losses: 20, Draws: 1, Points: 19.5 (48.75 %)
+Ptnml(0-2): [0, 1, 19, 0, 0], WL/DD Ratio: inf
+LLR: -1.13 (-38.3%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 41 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 41 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 42 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 42 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 43 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 43 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 44 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 44 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 45 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 45 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 46 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 46 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 47 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 47 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 48 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 48 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 49 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 49 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 50 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 50 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: -6.95 +/- 13.36, nElo: -50.15 +/- 96.30
+LOS: 15.37 %, DrawRatio: 96.00 %, PairsRatio: 0.00
+Games: 50, Wins: 24, Losses: 25, Draws: 1, Points: 24.5 (49.00 %)
+Ptnml(0-2): [0, 1, 24, 0, 0], WL/DD Ratio: inf
+LLR: -1.34 (-45.6%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 51 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 51 (Stage11-MVV-LVA vs Stage10-Magic): 1-0 {White mates}
+Started game 52 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 52 (Stage10-Magic vs Stage11-MVV-LVA): 1-0 {White mates}
+Started game 53 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 53 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 54 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 54 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 55 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)
+Finished game 55 (Stage11-MVV-LVA vs Stage10-Magic): 0-1 {Black mates}
+Started game 56 of 20000 (Stage10-Magic vs Stage11-MVV-LVA)
+Finished game 56 (Stage10-Magic vs Stage11-MVV-LVA): 0-1 {Black mates}
+Started game 57 of 20000 (Stage11-MVV-LVA vs Stage10-Magic)

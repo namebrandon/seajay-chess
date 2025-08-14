@@ -1,0 +1,86 @@
+Indexing opening suite...
+Started game 1 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 1 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 0-1 {Black mates}
+Started game 2 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 2 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 0-1 {Black mates}
+Started game 3 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 3 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 4 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 4 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: -0.00 +/- 0.00, nElo: nan +/- nan
+LOS: nan %, DrawRatio: 100.00 %, PairsRatio: nan
+Games: 4, Wins: 1, Losses: 1, Draws: 2, Points: 2.0 (50.00 %)
+Ptnml(0-2): [0, 0, 2, 0, 0], WL/DD Ratio: 1.00
+LLR: -0.03 (-0.9%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 5 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 5 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1-0 {White mates}
+Started game 6 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 6 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 7 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 7 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1-0 {White mates}
+Started game 8 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 8 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: 136.97 +/- 187.60, nElo: 222.22 +/- 240.76
+LOS: 96.48 %, DrawRatio: 50.00 %, PairsRatio: inf
+Games: 8, Wins: 4, Losses: 1, Draws: 3, Points: 5.5 (68.75 %)
+Ptnml(0-2): [0, 0, 2, 1, 1], WL/DD Ratio: 1.00
+LLR: 0.27 (9.3%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 9 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 9 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1-0 {White mates}
+Started game 10 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 10 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 11 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 11 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 0-1 {Black mates}
+Started game 12 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 12 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: 120.41 +/- 123.13, nElo: 219.74 +/- 196.58
+LOS: 98.58 %, DrawRatio: 50.00 %, PairsRatio: inf
+Games: 12, Wins: 6, Losses: 2, Draws: 4, Points: 8.0 (66.67 %)
+Ptnml(0-2): [0, 0, 3, 2, 1], WL/DD Ratio: 2.00
+LLR: 0.38 (13.0%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 13 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 13 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1-0 {White mates}
+Started game 14 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 14 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1-0 {White mates}
+Started game 15 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 15 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 16 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 16 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: 88.74 +/- 93.40, nElo: 173.72 +/- 170.24
+LOS: 97.72 %, DrawRatio: 62.50 %, PairsRatio: inf
+Games: 16, Wins: 7, Losses: 3, Draws: 6, Points: 10.0 (62.50 %)
+Ptnml(0-2): [0, 0, 5, 2, 1], WL/DD Ratio: 1.50
+LLR: 0.44 (14.9%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 17 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 17 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 0-1 {Black mates}
+Started game 18 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 18 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 19 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 19 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 20 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 20 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: 70.44 +/- 92.08, nElo: 122.84 +/- 152.27
+LOS: 94.31 %, DrawRatio: 50.00 %, PairsRatio: 4.00
+Games: 20, Wins: 8, Losses: 4, Draws: 8, Points: 12.0 (60.00 %)
+Ptnml(0-2): [0, 1, 5, 3, 1], WL/DD Ratio: 1.50
+LLR: 0.49 (16.6%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 21 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)
+Finished game 21 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s): 1-0 {White mates}
+Started game 22 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s)
+Finished game 22 (Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s): 1-0 {White mates}
+Started game 23 of 4000 (Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s)

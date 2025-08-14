@@ -1,0 +1,20 @@
+Indexing opening suite...
+Started game 1 of 4000 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s)
+Finished game 1 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 2 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-60s)
+Finished game 2 (Stage10-Magic-60s vs Stage11-MVV-LVA-60s): 1-0 {White mates}
+Started game 3 of 4000 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s)
+Finished game 3 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 4 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-60s)
+Finished game 4 (Stage10-Magic-60s vs Stage11-MVV-LVA-60s): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-60s vs Stage10-Magic-60s (60+0.6, NULL, NULL, 4moves_test.pgn):
+Elo: -0.00 +/- 296.58, nElo: 0.00 +/- 340.48
+LOS: 50.00 %, DrawRatio: 0.00 %, PairsRatio: 1.00
+Games: 4, Wins: 1, Losses: 1, Draws: 2, Points: 2.0 (50.00 %)
+Ptnml(0-2): [0, 1, 0, 1, 0], WL/DD Ratio: nan
+LLR: -0.01 (-0.5%) (-2.94, 2.94) [0.00, 30.00]
+--------------------------------------------------
+Started game 5 of 4000 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s)
+Finished game 5 (Stage11-MVV-LVA-60s vs Stage10-Magic-60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 6 of 4000 (Stage10-Magic-60s vs Stage11-MVV-LVA-60s)

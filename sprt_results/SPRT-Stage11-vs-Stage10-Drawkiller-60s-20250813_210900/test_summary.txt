@@ -1,0 +1,42 @@
+SPRT Test: Stage 11 vs Stage 10 (Drawkiller + 60s)
+===================================================
+Date: Wed Aug 13 09:21:41 PM CDT 2025
+Test Engine: Stage 11 (MVV-LVA)
+Base Engine: Stage 10 (Magic Bitboards)
+
+Test Configuration:
+- Time Control: 60+0.6 (10x longer than initial tests)
+- Opening Book: Drawkiller_balanced_big.epd
+- Book Size: 15,962 sharp tactical positions
+- Expected Search Depth: 10-14+ ply
+- Draw Rate: ~63% (vs 85% in quiet positions)
+
+Hypothesis:
+Combining tactical positions with deep search should maximize MVV-LVA benefits.
+Previous tests showed negative results at shallow depths (6-8 ply).
+At depth 10+, in tactical positions, MVV-LVA should excel.
+
+SPRT Parameters: elo0=0, elo1=40, alpha=0.05, beta=0.05
+
+Why This Should Work:
+1. Tactical positions have many captures to order
+2. Deep search amortizes sorting overhead
+3. Sharp positions make move ordering critical
+4. Opposite-side castling creates attacking races
+
+Previous Results Summary:
+- 10+0.1 with 4moves: -2.9 Elo
+- 10+0.1 with Drawkiller: -8.7 Elo
+- Both at depth 6-8 where overhead > benefit
+
+Stage 11 Features:
+- MVV-LVA move ordering for captures
+- Expected 15-30% node reduction at depth 10+
+- Should excel in tactical positions
+
+Stage 10 Features:
+- Magic bitboards for move generation
+- Natural move ordering from generator
+
+Results:
+See sprt_output.txt for detailed results
