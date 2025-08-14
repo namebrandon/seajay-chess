@@ -56,9 +56,9 @@ void UCIEngine::run() {
 }
 
 void UCIEngine::handleUCI() {
-    std::cout << "id name SeaJay Stage-12-FINAL" << std::endl;
+    std::cout << "id name SeaJay Stage-13-SPRT" << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
-    // No options to report for Stage 3
+    // Stage 13: Iterative Deepening with Aspiration Windows
     std::cout << "uciok" << std::endl;
 }
 
