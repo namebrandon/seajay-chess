@@ -68,6 +68,7 @@ set(CORE_SOURCES
     src/core/board_safety.cpp
     src/core/move_generation.cpp
     src/core/move_list.cpp
+    src/core/transposition_table.cpp
     src/core/bitboard.h
     src/core/board.h
     src/core/board_safety.h
@@ -78,6 +79,7 @@ set(CORE_SOURCES
     src/core/magic_validator.h
     src/core/magic_bitboards.h
     src/core/magic_constants.h
+    src/core/transposition_table.h
 )
 
 # Evaluation sources
