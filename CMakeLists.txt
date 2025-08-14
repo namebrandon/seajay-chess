@@ -103,6 +103,8 @@ set(SEARCH_SOURCES
     src/search/move_ordering.h
     src/search/time_management.cpp
     src/search/time_management.h
+    src/search/aspiration_window.cpp
+    src/search/aspiration_window.h
 )
 
 # Include directories

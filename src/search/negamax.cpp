@@ -2,6 +2,7 @@
 #include "search_info.h"
 #include "iterative_search_data.h"  // Stage 13 addition
 #include "time_management.h"        // Stage 13, Deliverable 2.2a
+#include "aspiration_window.h"       // Stage 13, Deliverable 3.2b
 #ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // MVV-LVA ordering
 #endif
@@ -503,6 +504,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     Move bestMove;
     Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
+    eval::Score previousScore = eval::Score::zero();  // Track score for aspiration windows
     
     // Same iterative deepening loop as original search
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
@@ -513,10 +515,35 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         auto iterationStart = std::chrono::steady_clock::now();
         uint64_t nodesBeforeIteration = info.nodes;  // Save node count before iteration
         
-        eval::Score score = negamax(board, depth, 0,
-                                   eval::Score::minus_infinity(),
-                                   eval::Score::infinity(),
-                                   searchInfo, info, tt);
+        // Stage 13, Deliverable 3.2b: Use aspiration window for depth >= 4
+        eval::Score alpha, beta;
+        AspirationWindow window;
+        
+        if (depth >= AspirationConstants::MIN_DEPTH && previousScore != eval::Score::zero()) {
+            // Calculate aspiration window based on previous score
+            window = calculateInitialWindow(previousScore, depth);
+            alpha = window.alpha;
+            beta = window.beta;
+        } else {
+            // Use infinite window for shallow depths
+            alpha = eval::Score::minus_infinity();
+            beta = eval::Score::infinity();
+        }
+        
+        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+        
+        // For now, if we fail high or low, fall back to full window search
+        // (No re-search implementation yet - that's deliverable 3.2c)
+        if (score <= alpha || score >= beta) {
+            // Fall back to full window search
+            score = negamax(board, depth, 0,
+                           eval::Score::minus_infinity(),
+                           eval::Score::infinity(),
+                           searchInfo, info, tt);
+            window.failedLow = (score <= alpha);
+            window.failedHigh = (score >= beta);
+            window.attempts = 1;  // Count the fallback as an attempt
+        }
         
         board.setSearchMode(false);
         
@@ -535,11 +562,12 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             iter.bestMove = info.bestMove;
             iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
             iter.elapsed = iterationTime;
-            iter.alpha = eval::Score::minus_infinity();
-            iter.beta = eval::Score::infinity();
-            iter.windowAttempts = 0;
-            iter.failedHigh = false;
-            iter.failedLow = false;
+            // Record actual window used
+            iter.alpha = alpha;
+            iter.beta = beta;
+            iter.windowAttempts = window.attempts;
+            iter.failedHigh = window.failedHigh;
+            iter.failedLow = window.failedLow;
             
             // Track move changes and stability
             if (depth == 1) {
@@ -575,6 +603,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             info.recordIteration(iter);
             info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
             previousBestMove = info.bestMove;  // Update for next iteration
+            previousScore = score;  // Save score for next iteration's aspiration window
             
             // Stage 13, Deliverable 2.2b: Dynamic time management
             // Recalculate time limits based on current stability
