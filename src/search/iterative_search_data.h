@@ -9,6 +9,7 @@
 #include "time_management.h"
 #include <array>
 #include <chrono>
+#include <algorithm>  // For std::min
 
 namespace seajay::search {
 
@@ -224,6 +225,56 @@ public:
         
         // Extend if any strong instability indicator is present
         return moveUnstable || scoreUnstable || recentChange;
+    }
+    
+    // Stage 13, Deliverable 4.1c: Sophisticated EBF with weighted average
+    // Uses last 3-4 iterations with more weight on recent data
+    double getSophisticatedEBF() const {
+        if (m_iterationCount < 2) {
+            return 0.0;  // Not enough data
+        }
+        
+        // Determine how many iterations to use (3-4, based on availability)
+        size_t windowSize = std::min(size_t(4), m_iterationCount);
+        if (windowSize < 2) windowSize = 2;  // Need at least 2
+        
+        // Calculate weighted average EBF
+        // Weights: most recent gets highest weight
+        // For 4 iterations: weights are 4, 3, 2, 1 (most recent to oldest)
+        // For 3 iterations: weights are 3, 2, 1
+        double totalEBF = 0.0;
+        double totalWeight = 0.0;
+        
+        for (size_t i = 1; i < windowSize && i < m_iterationCount; ++i) {
+            size_t currIdx = m_iterationCount - i;
+            size_t prevIdx = currIdx - 1;
+            
+            const auto& curr = m_iterations[currIdx];
+            const auto& prev = m_iterations[prevIdx];
+            
+            if (prev.nodes > 0) {
+                double ebf = static_cast<double>(curr.nodes) / prev.nodes;
+                double weight = windowSize - i + 1;  // Higher weight for more recent
+                
+                totalEBF += ebf * weight;
+                totalWeight += weight;
+            }
+        }
+        
+        if (totalWeight > 0) {
+            return totalEBF / totalWeight;
+        }
+        
+        // Fall back to simple EBF if no valid data
+        if (m_iterationCount >= 2) {
+            const auto& curr = m_iterations[m_iterationCount - 1];
+            const auto& prev = m_iterations[m_iterationCount - 2];
+            if (prev.nodes > 0) {
+                return static_cast<double>(curr.nodes) / prev.nodes;
+            }
+        }
+        
+        return 0.0;
     }
 };
 
