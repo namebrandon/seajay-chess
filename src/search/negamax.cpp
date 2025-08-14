@@ -532,17 +532,22 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         
         eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
         
-        // For now, if we fail high or low, fall back to full window search
-        // (No re-search implementation yet - that's deliverable 3.2c)
-        if (score <= alpha || score >= beta) {
-            // Fall back to full window search
+        // Stage 13, Deliverable 3.2c: Basic re-search on fail high/low
+        if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
+            // Single re-search with full window
+            window.failedLow = (score <= alpha);
+            window.failedHigh = (score >= beta);
+            window.attempts = 1;
+            
+            // Re-search with full window
             score = negamax(board, depth, 0,
                            eval::Score::minus_infinity(),
                            eval::Score::infinity(),
                            searchInfo, info, tt);
-            window.failedLow = (score <= alpha);
-            window.failedHigh = (score >= beta);
-            window.attempts = 1;  // Count the fallback as an attempt
+            
+            // Update window info for recording
+            alpha = eval::Score::minus_infinity();
+            beta = eval::Score::infinity();
         }
         
         board.setSearchMode(false);
