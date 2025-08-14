@@ -55,8 +55,43 @@ public:
         }
     }
     
-    // Methods will be added in deliverable 1.1c
-    // For now, just the class skeleton with data members
+    // Basic methods for iteration tracking (Deliverable 1.1c)
+    
+    // Record data from a completed iteration
+    void recordIteration(const IterationInfo& info) {
+        if (m_iterationCount < MAX_ITERATIONS) {
+            m_iterations[m_iterationCount] = info;
+            m_iterationCount++;
+        }
+    }
+    
+    // Get the last completed iteration (or empty if none)
+    const IterationInfo& getLastIteration() const {
+        static const IterationInfo empty{};
+        if (m_iterationCount > 0) {
+            return m_iterations[m_iterationCount - 1];
+        }
+        return empty;
+    }
+    
+    // Get iteration at specific index
+    const IterationInfo& getIteration(size_t index) const {
+        static const IterationInfo empty{};
+        if (index < m_iterationCount) {
+            return m_iterations[index];
+        }
+        return empty;
+    }
+    
+    // Check if we have any completed iterations
+    bool hasIterations() const {
+        return m_iterationCount > 0;
+    }
+    
+    // Get count of completed iterations
+    size_t getIterationCount() const {
+        return m_iterationCount;
+    }
 };
 
 } // namespace seajay::search
