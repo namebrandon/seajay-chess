@@ -99,6 +99,36 @@ void testSelectiveDepthTracking() {
     std::cout << "PASSED\n";
 }
 
+void testRepetitionDetection() {
+    std::cout << "Testing repetition detection... ";
+    
+    Board board;
+    board.setStartingPosition();
+    SearchInfo searchInfo;
+    search::SearchData data;
+    TranspositionTable tt(16);
+    
+    // Simulate a position already in search history
+    Hash currentZobrist = board.zobristKey();
+    searchInfo.pushSearchPosition(currentZobrist, Move(), 0);
+    searchInfo.pushSearchPosition(Hash(123456), Move(), 1);  // Different position
+    searchInfo.pushSearchPosition(Hash(789012), Move(), 2);  // Different position
+    searchInfo.pushSearchPosition(Hash(345678), Move(), 3);  // Different position
+    searchInfo.pushSearchPosition(currentZobrist, Move(), 4); // Same position again
+    
+    int ply = 6;  // Current ply
+    eval::Score alpha = eval::Score(-1000);
+    eval::Score beta = eval::Score(1000);
+    
+    // Now search should detect repetition and return draw score
+    eval::Score result = search::quiescence(board, ply, alpha, beta, searchInfo, data, tt);
+    
+    // Should return draw score (0)
+    assert(result == eval::Score::zero());
+    
+    std::cout << "PASSED\n";
+}
+
 int main() {
     std::cout << "\n=== Quiescence Search Unit Tests ===\n\n";
     
@@ -106,6 +136,7 @@ int main() {
     testStandPatBetaCutoff();
     testMaxPlyReturnsEval();
     testSelectiveDepthTracking();
+    testRepetitionDetection();
     
     std::cout << "\nAll tests PASSED!\n";
     return 0;

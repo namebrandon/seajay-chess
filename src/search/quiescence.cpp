@@ -28,6 +28,12 @@ eval::Score quiescence(
         return eval::evaluate(board);
     }
     
+    // Critical: Check for repetition to prevent infinite loops
+    // This MUST come before any evaluation or move generation
+    if (searchInfo.isRepetitionInSearch(board.zobristKey(), ply)) {
+        return eval::Score::zero();  // Draw score
+    }
+    
     // Stand-pat evaluation: static evaluation of the position
     eval::Score staticEval = eval::evaluate(board);
     
