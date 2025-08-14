@@ -126,14 +126,14 @@
     ],
     "stats": {
         "Stage10-Magic-DK60s vs Stage11-MVV-LVA-v2-DK60s": {
-            "wins": 29,
-            "losses": 24,
-            "draws": 47,
+            "wins": 34,
+            "losses": 30,
+            "draws": 56,
             "penta_WW": 2,
             "penta_WD": 7,
-            "penta_WL": 18,
-            "penta_DD": 18,
-            "penta_LD": 4,
+            "penta_WL": 23,
+            "penta_DD": 22,
+            "penta_LD": 5,
             "penta_LL": 1
         },
         "Stage11-MVV-LVA-v2-DK60s vs Stage10-Magic-DK60s": {

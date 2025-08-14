@@ -68,12 +68,14 @@ set(CORE_SOURCES
     src/core/board_safety.cpp
     src/core/move_generation.cpp
     src/core/move_list.cpp
+    src/core/perft.cpp
     src/core/transposition_table.cpp
     src/core/bitboard.h
     src/core/board.h
     src/core/board_safety.h
     src/core/move_generation.h
     src/core/move_list.h
+    src/core/perft.h
     src/core/types.h
     src/core/attack_wrapper.h
     src/core/magic_validator.h
@@ -119,6 +121,12 @@ add_executable(seajay
     ${UCI_SOURCES}
 )
 target_link_libraries(seajay seajay_core)
+
+# Perft tool executable
+add_executable(perft_tool
+    src/tools/perft_tool.cpp
+)
+target_link_libraries(perft_tool seajay_core)
 
 # Output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
@@ -205,6 +213,9 @@ target_link_libraries(test_tt_search seajay_core)
 
 add_executable(test_tt_chaos tests/stress/test_tt_chaos.cpp)
 target_link_libraries(test_tt_chaos seajay_core)
+
+add_executable(test_perft_tt tests/unit/test_perft_tt.cpp)
+target_link_libraries(test_perft_tt seajay_core)
 
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
