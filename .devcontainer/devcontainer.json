@@ -10,7 +10,9 @@
         "EXTERNAL_DIR": "/workspace/external",
         "MAKEFLAGS": "-j$(nproc)",
         "CLAUDE_CONFIG_DIR": "/home/developer/.config/claude",
-        "CXXFLAGS": "-march=x86-64-v3",
+        // Use basic x86-64 for compatibility with emulated environments (Docker on Apple Silicon)
+        // Previous setting "-march=x86-64-v3" caused SIGILL due to POPCNT/BMI2 instructions
+        "CXXFLAGS": "-march=x86-64",
         "ASAN_OPTIONS": "symbolize=1:print_stats=1:check_initialization_order=1",
         "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1",
         "SEAJAY_TEST_SUITE": "/workspace/tests/positions"

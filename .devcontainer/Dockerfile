@@ -99,7 +99,11 @@ RUN DELTA_VERSION="0.17.0" && \
     rm git-delta_${DELTA_VERSION}_amd64.deb
 
 # Install Node.js (Claude CLI can be installed later if needed)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+# Clear apt cache to avoid GPG signature issues
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    apt-get update && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs
 
 # Create non-root user

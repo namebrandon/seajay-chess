@@ -10,6 +10,13 @@ echo "SeaJay Chess Engine - Environment Setup"
 echo "=========================================="
 echo ""
 
+# Clear VS Code server cache to avoid extension conflicts between machines
+echo "Clearing VS Code server cache to avoid cross-platform issues..."
+rm -rf /home/developer/.vscode-server/extensions/* 2>/dev/null || true
+rm -rf /home/developer/.vscode-server-insiders/extensions/* 2>/dev/null || true
+echo "✓ VS Code cache cleared"
+echo ""
+
 # Configure git to match host settings (if available)
 if [ -n "$GIT_USER_NAME" ]; then
     git config --global user.name "$GIT_USER_NAME"
