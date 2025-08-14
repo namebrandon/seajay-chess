@@ -22,7 +22,7 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/4moves_test.pgn",
+        "file": "/workspace/external/books/8moves_v3.pgn",
         "format": 1,
         "order": 0,
         "plies": -1,
@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-Stage12-vs-Stage11-60s-20250814_071254/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -51,17 +51,17 @@
         "alpha": 0.05,
         "beta": 0.05,
         "elo0": 0.0,
-        "elo1": 30.0,
+        "elo1": 50.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 3837143811134085151,
+    "seed": 11694918344100003014,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
-    "ratinginterval": 2,
+    "ratinginterval": 5,
     "scoreinterval": 1,
     "wait": 0,
     "autosaveinterval": 20,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-Stage12-vs-Stage11-60s-20250814_071254/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,9 +84,9 @@
     },
     "engines": [
         {
-            "name": "Stage11-MVV-LVA-v2-60s",
+            "name": "Stage12-TT-60s",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
+            "cmd": "/workspace/binaries/seajay-stage12-tt-candidate1-x86-64",
             "args": "",
             "restart": false,
             "options": [],
@@ -104,9 +104,9 @@
             "variant": 0
         },
         {
-            "name": "Stage10-Magic-60s",
+            "name": "Stage11-MVV-LVA-60s",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage10-x86-64",
+            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
             "args": "",
             "restart": false,
             "options": [],
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s": {
-            "wins": 14,
-            "losses": 22,
-            "draws": 244,
+        "Stage11-MVV-LVA-60s vs Stage12-TT-60s": {
+            "wins": 4,
+            "losses": 15,
+            "draws": 11,
             "penta_WW": 0,
-            "penta_WD": 6,
-            "penta_WL": 8,
-            "penta_DD": 113,
-            "penta_LD": 12,
-            "penta_LL": 1
+            "penta_WD": 2,
+            "penta_WL": 2,
+            "penta_DD": 3,
+            "penta_LD": 3,
+            "penta_LL": 5
         },
-        "Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s": {
+        "Stage12-TT-60s vs Stage11-MVV-LVA-60s": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
