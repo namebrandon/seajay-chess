@@ -640,7 +640,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 break;
             }
             
-            // Use NEW time management decision (Deliverable 2.2b)
+            // Stage 13, Deliverable 4.2b: Enhanced early termination logic
             if (info.m_hardLimit > 0) {
                 auto elapsed = info.elapsed();
                 bool stable = info.isPositionStable();
@@ -656,14 +656,59 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                     break;
                 }
                 
-                // Check if we have time for next iteration
-                double branchingFactor = iter.branchingFactor > 0 ? iter.branchingFactor : 5.0;
-                if (!hasTimeForNextIteration(TimeLimits{std::chrono::milliseconds(info.m_softLimit),
-                                                        std::chrono::milliseconds(info.m_hardLimit),
-                                                        std::chrono::milliseconds(info.m_optimumTime)},
-                                            elapsed, iterationTime, branchingFactor)) {
+                // Enhanced time prediction using sophisticated EBF
+                double sophisticatedEBF = info.getSophisticatedEBF();
+                if (sophisticatedEBF <= 0) {
+                    // Fall back to simple EBF or default
+                    sophisticatedEBF = iter.branchingFactor > 0 ? iter.branchingFactor : 5.0;
+                }
+                
+                // Predict time for next iteration
+                auto predictedTime = predictNextIterationTime(
+                    std::chrono::milliseconds(iterationTime),
+                    sophisticatedEBF,
+                    depth + 1
+                );
+                
+                // Early termination decision factors:
+                // 1. Would we exceed soft limit?
+                // 2. Is position stable (less need for deeper search)?
+                // 3. Have we reached reasonable depth?
+                // 4. Is predicted time reasonable?
+                
+                bool exceedsSoftLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_softLimit);
+                bool exceedsHardLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_hardLimit);
+                bool reasonableDepth = depth >= 6;  // Minimum reasonable depth
+                bool veryStable = stable && info.m_stabilityCount >= 3;
+                
+                // Decision logic:
+                if (exceedsHardLimit) {
+                    // Never exceed hard limit
                     std::cerr << "[Time Management] No time for depth " << (depth + 1)
-                              << " (projected time exceeds limits)\n";
+                              << " (would exceed hard limit)\n";
+                    break;
+                } else if (exceedsSoftLimit) {
+                    // Exceed soft limit only if unstable and depth is low
+                    if (veryStable || reasonableDepth) {
+                        std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                                  << " (would exceed soft limit, position stable/deep)\n";
+                        break;
+                    } else if (!stable && depth < 4) {
+                        // Continue if very shallow and unstable
+                        std::cerr << "[Time Management] Continuing despite soft limit "
+                                  << "(depth=" << depth << ", unstable)\n";
+                    } else {
+                        // Default: stop at soft limit
+                        std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                                  << " (would exceed soft limit)\n";
+                        break;
+                    }
+                }
+                
+                // Additional early termination for very stable positions
+                if (veryStable && depth >= 8 && predictedTime > std::chrono::milliseconds(2000)) {
+                    std::cerr << "[Time Management] Early termination at depth " << depth
+                              << " (very stable, deep enough, next iteration expensive)\n";
                     break;
                 }
             }
