@@ -401,11 +401,13 @@ eval::Score negamax(Board& board,
                 info.bestMove = move;
                 info.bestScore = score;
                 
-                // Debug output for root moves
+                // Debug output for root moves (removed in release builds)
+                #ifndef NDEBUG
                 if (depth >= 3) {
                     std::cerr << "Root: Move " << SafeMoveExecutor::moveToString(move) 
                               << " score=" << score.to_cp() << " cp" << std::endl;
                 }
+                #endif
             }
             
             // Update alpha (best score we can guarantee)
@@ -724,9 +726,11 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
 
 // Iterative deepening search controller (original)
 Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Debug output
+    // Debug output (removed in release builds)
+    #ifndef NDEBUG
     std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
     std::cerr << "Search: movetime=" << limits.movetime.count() << "ms" << std::endl;
+    #endif
     
     // Initialize search tracking
     SearchInfo searchInfo;  // For repetition detection
@@ -741,8 +745,8 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     Move bestMove;
     
-    // Debug: Show search parameters
-    #ifdef DEBUG
+    // Debug: Show search parameters (removed in release)
+    #ifndef NDEBUG
     std::cerr << "Search: maxDepth=" << limits.maxDepth 
               << " movetime=" << limits.movetime.count() 
               << "ms" << std::endl;
