@@ -3,6 +3,7 @@
 // Debug infrastructure for Stage 13: Iterative Deepening
 // These macros are compiled out in release builds
 
+#include "iteration_info.h"  // Now includes the actual definition
 #include "../evaluation/types.h"
 #include "../core/types.h"
 #include <iostream>
@@ -10,9 +11,6 @@
 #include <sstream>
 
 namespace seajay::search {
-
-// Forward declarations
-struct IterationInfo;
 
 // Debug output functions (only compiled in debug builds)
 #ifdef TRACE_ITERATIVE_DEEPENING
