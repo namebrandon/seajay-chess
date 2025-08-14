@@ -1,0 +1,17 @@
+# Canary Test Positions for Stage 13
+# These positions must always pass to ensure we haven't broken basic functionality
+
+# Basic starting position - should find e2e4 or d2d4
+startpos:rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1:depth=4:bestmove=e2e4,d2d4
+
+# Simple tactical position - White should be winning
+simple_tactic:6k1/5ppp/8/8/8/7P/5PPK/8 w - - 0 1:depth=6:minscore=0
+
+# Aspiration Window Test - Stable evaluation
+lasker:r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4:depth=8:scorerange=20,40
+
+# Critical move test - only one good move
+critical:8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 0 47:depth=8:bestmove=f5e4
+
+# Move stability test - best move changes at different depths
+horizon:r3k2r/pb1nbppp/1p2pn2/q3N3/2BP4/2N1P3/PP2QPPP/R3K2R w KQkq - 0 12:depth=6:minscore=50

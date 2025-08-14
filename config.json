@@ -22,7 +22,7 @@
         "enabled": false
     },
     "opening": {
-        "file": "./external/books/4moves_test.pgn",
+        "file": "/workspace/external/books/4moves_test.pgn",
         "format": 1,
         "order": 0,
         "plies": -1,
@@ -30,9 +30,9 @@
     },
     "pgn": {
         "additional_lines_rgx": [],
-        "event_name": "SeaJay_vs_Stockfish_1200",
-        "site": "Strength_Limited_Test",
-        "file": "./sprt_results/SPRT-2025-EXT-006-SF1200/games_2025-08-14_08-46-00.pgn",
+        "event_name": "Fastchess Tournament",
+        "site": "?",
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -50,23 +50,23 @@
     "sprt": {
         "alpha": 0.05,
         "beta": 0.05,
-        "elo0": 50.0,
-        "elo1": 150.0,
+        "elo0": 0.0,
+        "elo1": 30.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 14157724923867636659,
+    "seed": 3837143811134085151,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
-    "ratinginterval": 10,
+    "ratinginterval": 2,
     "scoreinterval": 1,
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 300,
+    "rounds": 2000,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "./sprt_results/SPRT-2025-EXT-006-SF1200/fastchess_2025-08-14_08-46-00.log",
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,17 +84,17 @@
     },
     "engines": [
         {
-            "name": "SeaJay-2.12.tt",
+            "name": "Stage11-MVV-LVA-v2-60s",
             "dir": "",
-            "cmd": "./binaries/seajay-stage12-tt-candidate1-x86-64",
+            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
             "args": "",
             "restart": false,
             "options": [],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 600,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 60000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -104,30 +104,17 @@
             "variant": 0
         },
         {
-            "name": "Stockfish-1200ELO",
+            "name": "Stage10-Magic-60s",
             "dir": "",
-            "cmd": "./external/engines/stockfish/stockfish",
+            "cmd": "/workspace/binaries/seajay-stage10-x86-64",
             "args": "",
             "restart": false,
-            "options": [
-                [
-                    "Skill Level",
-                    "5"
-                ],
-                [
-                    "Threads",
-                    "1"
-                ],
-                [
-                    "Hash",
-                    "16"
-                ]
-            ],
+            "options": [],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 600,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 60000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -138,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stockfish-1200ELO vs SeaJay-2.12.tt": {
-            "wins": 12,
-            "losses": 2,
-            "draws": 0,
-            "penta_WW": 5,
-            "penta_WD": 0,
-            "penta_WL": 2,
-            "penta_DD": 0,
-            "penta_LD": 0,
-            "penta_LL": 0
+        "Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s": {
+            "wins": 15,
+            "losses": 22,
+            "draws": 263,
+            "penta_WW": 0,
+            "penta_WD": 7,
+            "penta_WL": 8,
+            "penta_DD": 122,
+            "penta_LD": 12,
+            "penta_LL": 1
         },
-        "SeaJay-2.12.tt vs Stockfish-1200ELO": {
+        "Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
