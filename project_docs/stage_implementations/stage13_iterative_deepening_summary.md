@@ -151,12 +151,12 @@ Based on testing and known improvements:
 2. Run full SPRT validation against Stage 12
 3. Update project_status.md
 
-### Stage 14: Null Move Pruning
+### Stage 14: Quiescence Search
 Ready to begin Stage 14 which will add:
-- Null move pruning (R=2/3)
-- Verification search
-- Zugzwang detection
-- Expected: +50-70 Elo
+- Capture-only search at leaf nodes
+- Resolution of tactical sequences
+- Elimination of horizon effect
+- Expected: +150-200 Elo
 
 ## Lessons Learned
 
@@ -172,4 +172,4 @@ Stage 13 is complete with all objectives achieved. The iterative deepening imple
 
 ---
 
-*Stage 13 Complete - Ready for Stage 14: Null Move Pruning*
+*Stage 13 Complete - Ready for Stage 14: Quiescence Search*

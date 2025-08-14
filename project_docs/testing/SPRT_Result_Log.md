@@ -144,6 +144,54 @@ Each test entry includes:
 
 ---
 
+### SPRT-2025-014: Stage 13 Iterative Deepening vs Stage 12 TT (Fixed)
+**Date:** 2025-08-14  
+**Versions:** Stage12-TT vs Stage13-ID-Fixed  
+**Time Control:** 10+0.1  
+**Opening Book:** 4moves_test.pgn  
+**Hypothesis:** H0: Elo=50, H1: Elo=100 [50.00, 100.00]  
+**Result:** ✅ PASSED - H1 accepted  
+
+**Statistics:**
+- **Games:** 182
+- **Score:** 88-55-39 (59.07%)
+- **Elo:** 143.27 ± 33.87
+- **LOS:** 100.00%
+- **Draw Rate:** 21.43%
+- **LLR:** 2.95 (100.2%)
+
+**Notes:**
+- Stage 13 shows excellent improvement after critical bug fixes
+- Aspiration windows and time management working effectively
+- +143 Elo gain demonstrates iterative deepening benefits
+- Fixed time management bugs that initially caused 0% win rate
+
+---
+
+### SPRT-2025-015: Stage 13 Iterative Deepening vs Stage 11 MVV-LVA
+**Date:** 2025-08-14  
+**Versions:** Stage11-MVV-LVA vs Stage13-ID-Fixed  
+**Time Control:** 10+0.1  
+**Opening Book:** 4moves_test.pgn  
+**Hypothesis:** H0: Elo=250, H1: Elo=350 [250.00, 350.00]  
+**Result:** ✅ PASSED - H1 accepted  
+
+**Statistics:**
+- **Games:** 130
+- **Score:** 89-17-24 (77.69%)
+- **Elo:** 372.45 ± 52.48
+- **LOS:** 100.00%
+- **Draw Rate:** 18.46%
+- **LLR:** 2.95 (100.2%)
+
+**Notes:**
+- Massive +372 Elo gain vs Stage 11 (cumulative improvements)
+- Shows combined benefit of TT + Iterative Deepening
+- Low draw rate indicates tactical dominance
+- Validates entire Phase 3 progress trajectory
+
+---
+
 ### Previous SPRT Tests
 
 *(Earlier SPRT tests from Phase 2 will be documented here as they are discovered in the sprt_results directory)*
@@ -152,11 +200,12 @@ Each test entry includes:
 
 ## Summary Statistics
 
-**Total SPRT Tests Completed:** 4  
-**Internal Tests Passed:** 3  
+**Total SPRT Tests Completed:** 6  
+**Internal Tests Passed:** 5  
 **Internal Tests Failed:** 0  
 **External Tests:** 1 (aspirational benchmark)  
 **Average Elo Gain (Internal):** ~200+  
+**Stage 13 Specific:** +143 Elo vs Stage 12, +372 Elo vs Stage 11  
 
 ## Testing Infrastructure
 

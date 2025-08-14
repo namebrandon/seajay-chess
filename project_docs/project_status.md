@@ -354,12 +354,15 @@ This document tracks the current development status of the SeaJay Chess Engine p
   - Move ordering efficiency: 88-99%
   - TT hit rate: 25-30% at depth 6
   - Aspiration window re-searches: Typically 1-2, max 5
-- **Key Features:**
-  - Stability detection (tracks best move changes)
-  - Time allocation adjustment based on stability
-  - Fail-high/fail-low reporting in UCI
-  - Window bounds display for debugging
-  - Cached time checks (every 1024 nodes)
+- **Critical Bug Fix:**
+  - Fixed time management bugs causing depth 1 only searches
+  - Fixed fallback EBF from 30 to reasonable 2.0-5.0
+  - Fixed cached time usage in shouldStopSearching()
+- **SPRT Validation:** PASSED (2 tests)
+  - vs Stage 12 (10+0.1): +143 Elo ✅ H1 accepted
+  - vs Stage 11 (10+0.1): +372 Elo ✅ H1 accepted
+  - 60+0.6 long time control test in progress
+- **Estimated Elo Gain:** +143 Elo over Stage 12
 - **Total Deliverables:** 43 (all completed)
 - **Key Achievement:** Methodical implementation with commit-per-deliverable
 
@@ -370,9 +373,10 @@ This document tracks the current development status of the SeaJay Chess Engine p
 2. **Stage 11: Move ordering (MVV-LVA)** (COMPLETE - August 13, 2025)
 3. **Stage 12: Transposition tables** (COMPLETE - August 14, 2025)
 4. **Stage 13: Iterative Deepening** (COMPLETE - August 14, 2025)
-5. Stage 14: Null move pruning (next)
-6. Stage 15: Late move reductions
-6. Target: >1M NPS performance (likely achieved with TT)
+5. **Stage 14: Quiescence Search** (next - planning complete)
+6. Stage 15: Null move pruning
+7. Stage 16: Late move reductions
+8. Target: >1M NPS performance (achieved with TT)
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces
