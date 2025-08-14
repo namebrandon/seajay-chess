@@ -1,0 +1,38 @@
+Warning: No opening book specified! Consider using one, otherwise all games will be played from the starting position.
+Warning: Unknown opening format, 2. All games will be played from the starting position.
+Started game 1 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 1 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 2 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 2 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 3 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 3 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 4 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 4 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 5 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 5 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 6 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 6 (Stage12-TT vs Stage13-ID): 1/2-1/2 {}
+Started game 7 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 7 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 8 of 10000 (Stage12-TT vs Stage13-ID)
+Warning; No bestmove found in the last line from Stage13-ID
+Finished game 8 (Stage12-TT vs Stage13-ID): 1-0 {Black loses on time}
+Started game 9 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 9 (Stage13-ID vs Stage12-TT): 1/2-1/2 {}
+Started game 10 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 10 (Stage12-TT vs Stage13-ID): 1/2-1/2 {}
+Started game 11 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 11 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 12 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 12 (Stage12-TT vs Stage13-ID): 1/2-1/2 {}
+Started game 13 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 13 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 14 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 14 (Stage12-TT vs Stage13-ID): 1-0 {White mates}
+Started game 15 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 15 (Stage13-ID vs Stage12-TT): 0-1 {Black mates}
+Started game 16 of 10000 (Stage12-TT vs Stage13-ID)
+Finished game 16 (Stage12-TT vs Stage13-ID): 1/2-1/2 {}
+Started game 17 of 10000 (Stage13-ID vs Stage12-TT)
+Finished game 17 (Stage13-ID vs Stage12-TT): 1/2-1/2 {}
+Started game 18 of 10000 (Stage12-TT vs Stage13-ID)

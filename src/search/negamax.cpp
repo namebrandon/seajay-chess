@@ -1,5 +1,8 @@
 #include "negamax.h"
 #include "search_info.h"
+#include "iterative_search_data.h"  // Stage 13 addition
+#include "time_management.h"        // Stage 13, Deliverable 2.2a
+#include "aspiration_window.h"       // Stage 13, Deliverable 3.2b
 #ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // MVV-LVA ordering
 #endif
@@ -398,11 +401,13 @@ eval::Score negamax(Board& board,
                 info.bestMove = move;
                 info.bestScore = score;
                 
-                // Debug output for root moves
+                // Debug output for root moves (removed in release builds)
+                #ifndef NDEBUG
                 if (depth >= 3) {
                     std::cerr << "Root: Move " << SafeMoveExecutor::moveToString(move) 
                               << " score=" << score.to_cp() << " cp" << std::endl;
                 }
+                #endif
             }
             
             // Update alpha (best score we can guarantee)
@@ -469,11 +474,273 @@ eval::Score negamax(Board& board,
     return bestScore;
 }
 
-// Iterative deepening search controller
+// Stage 13: Test wrapper for iterative deepening (Deliverable 1.2a)
+// This function calls the existing search without modifications
+// Used to verify that IterativeSearchData doesn't break anything
+Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
+    // Stage 13, Deliverable 1.2c: Full iteration recording (all depths)
+    // Stage 13, Deliverable 2.2a: Time management integration prep
+    SearchInfo searchInfo;
+    searchInfo.clear();
+    searchInfo.setRootHistorySize(board.gameHistorySize());
+    
+    IterativeSearchData info;  // Using new class instead of SearchData
+    
+    // Stage 13, Deliverable 2.2b: Switch to new time management
+    // Calculate initial time limits with neutral stability (1.0)
+    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
+    info.m_softLimit = timeLimits.soft.count();
+    info.m_hardLimit = timeLimits.hard.count();
+    info.m_optimumTime = timeLimits.optimum.count();
+    
+    // Use NEW calculation for timeLimit (replacing old)
+    info.timeLimit = timeLimits.optimum;
+    
+    // Debug logging for time management (Deliverable 2.2b)
+    if (limits.movetime == std::chrono::milliseconds(0)) {  // Only log for non-fixed time
+        std::cerr << "[Time Management] Initial limits: ";
+        std::cerr << "soft=" << info.m_softLimit << "ms, ";
+        std::cerr << "hard=" << info.m_hardLimit << "ms, ";
+        std::cerr << "optimum=" << info.m_optimumTime << "ms\n";
+    }
+    
+    Move bestMove;
+    Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
+    eval::Score previousScore = eval::Score::zero();  // Track score for aspiration windows
+    
+    // Same iterative deepening loop as original search
+    for (int depth = 1; depth <= limits.maxDepth; depth++) {
+        info.depth = depth;
+        board.setSearchMode(true);
+        
+        // Track start time for this iteration
+        auto iterationStart = std::chrono::steady_clock::now();
+        uint64_t nodesBeforeIteration = info.nodes;  // Save node count before iteration
+        
+        // Stage 13, Deliverable 3.2b: Use aspiration window for depth >= 4
+        eval::Score alpha, beta;
+        AspirationWindow window;
+        
+        if (depth >= AspirationConstants::MIN_DEPTH && previousScore != eval::Score::zero()) {
+            // Calculate aspiration window based on previous score
+            window = calculateInitialWindow(previousScore, depth);
+            alpha = window.alpha;
+            beta = window.beta;
+        } else {
+            // Use infinite window for shallow depths
+            alpha = eval::Score::minus_infinity();
+            beta = eval::Score::infinity();
+        }
+        
+        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+        
+        // Stage 13, Deliverable 3.2d: Progressive widening re-search
+        if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
+            // Progressive widening instead of full window
+            bool failedHigh = (score >= beta);
+            window.failedLow = !failedHigh;
+            window.failedHigh = failedHigh;
+            
+            // Progressive widening loop
+            while (score <= alpha || score >= beta) {
+                // Widen the window progressively
+                window = widenWindow(window, score, failedHigh);
+                alpha = window.alpha;
+                beta = window.beta;
+                
+                // Re-search with widened window
+                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+                
+                // Check if we're now using an infinite window
+                if (window.isInfinite()) {
+                    break;  // No point in further widening
+                }
+                
+                // Update fail direction if needed
+                failedHigh = (score >= beta);
+            }
+        }
+        
+        board.setSearchMode(false);
+        
+        if (!info.stopped) {
+            bestMove = info.bestMove;
+            
+            // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
+            sendIterationInfo(info);
+            
+            // Record iteration data for ALL depths (full recording)
+            auto iterationEnd = std::chrono::steady_clock::now();
+            auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                iterationEnd - iterationStart).count();
+            
+            // Ensure minimum iteration time of 1ms for very fast searches
+            if (iterationTime == 0) {
+                iterationTime = 1;
+            }
+            
+            IterationInfo iter;
+            iter.depth = depth;
+            iter.score = score;
+            iter.bestMove = info.bestMove;
+            iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
+            iter.elapsed = iterationTime;
+            // Record actual window used
+            iter.alpha = alpha;
+            iter.beta = beta;
+            iter.windowAttempts = window.attempts;
+            iter.failedHigh = window.failedHigh;
+            iter.failedLow = window.failedLow;
+            
+            // Track move changes and stability
+            if (depth == 1) {
+                iter.moveChanged = false;  // No previous iteration
+                iter.moveStability = 1;    // First occurrence
+            } else {
+                iter.moveChanged = (info.bestMove != previousBestMove);
+                if (iter.moveChanged) {
+                    iter.moveStability = 1;  // Reset stability counter
+                } else {
+                    // Same move as previous iteration - increment stability
+                    const IterationInfo& prevIter = info.getLastIteration();
+                    iter.moveStability = prevIter.moveStability + 1;
+                }
+            }
+            
+            iter.firstMoveFailHigh = false;
+            iter.failHighMoveIndex = -1;
+            iter.secondBestScore = eval::Score::minus_infinity();
+            
+            // Calculate branching factor if not first iteration
+            if (depth > 1 && info.hasIterations()) {
+                const IterationInfo& prevIter = info.getLastIteration();
+                if (prevIter.nodes > 0) {
+                    iter.branchingFactor = static_cast<double>(iter.nodes) / prevIter.nodes;
+                } else {
+                    iter.branchingFactor = 0.0;
+                }
+            } else {
+                iter.branchingFactor = 0.0;
+            }
+            
+            info.recordIteration(iter);
+            info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
+            previousBestMove = info.bestMove;  // Update for next iteration
+            previousScore = score;  // Save score for next iteration's aspiration window
+            
+            // Stage 13, Deliverable 2.2b: Dynamic time management
+            // Recalculate time limits based on current stability
+            double stabilityFactor = info.getStabilityFactor();
+            if (depth > 2 && stabilityFactor != 1.0) {  // Only adjust after depth 2
+                TimeLimits adjustedLimits = calculateTimeLimits(limits, board, stabilityFactor);
+                info.m_softLimit = adjustedLimits.soft.count();
+                // Don't change hard limit - it's a safety bound
+                
+                // Log stability-based adjustments
+                if (depth == 3 || depth == 5) {  // Log at specific depths to avoid spam
+                    std::cerr << "[Time Management] Depth " << depth 
+                              << ": stability=" << std::fixed << std::setprecision(1) 
+                              << stabilityFactor << ", adjusted soft=" 
+                              << info.m_softLimit << "ms\n";
+                }
+            }
+            
+            if (score.is_mate_score()) {
+                break;
+            }
+            
+            // Stage 13, Deliverable 4.2b: Enhanced early termination logic
+            if (info.m_hardLimit > 0) {
+                // Use actual elapsed time, not cached (for accurate time management)
+                auto now = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    now - info.startTime);
+                bool stable = info.isPositionStable();
+                
+                // Check if we should stop based on new time management
+                if (shouldStopOnTime(TimeLimits{std::chrono::milliseconds(info.m_softLimit),
+                                               std::chrono::milliseconds(info.m_hardLimit),
+                                               std::chrono::milliseconds(info.m_optimumTime)},
+                                   elapsed, depth, stable)) {
+                    std::cerr << "[Time Management] Stopping at depth " << depth 
+                              << " (elapsed=" << elapsed.count() << "ms, "
+                              << (stable ? "stable" : "unstable") << ")\n";
+                    break;
+                }
+                
+                // Enhanced time prediction using sophisticated EBF
+                double sophisticatedEBF = info.getSophisticatedEBF();
+                if (sophisticatedEBF <= 0) {
+                    // Fall back to simple EBF or default
+                    sophisticatedEBF = iter.branchingFactor > 0 ? iter.branchingFactor : 5.0;
+                }
+                
+                // Predict time for next iteration
+                auto predictedTime = predictNextIterationTime(
+                    std::chrono::milliseconds(iterationTime),
+                    sophisticatedEBF,
+                    depth + 1
+                );
+                
+                // Early termination decision factors:
+                // 1. Would we exceed soft limit?
+                // 2. Is position stable (less need for deeper search)?
+                // 3. Have we reached reasonable depth?
+                // 4. Is predicted time reasonable?
+                
+                bool exceedsSoftLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_softLimit);
+                bool exceedsHardLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_hardLimit);
+                bool reasonableDepth = depth >= 6;  // Minimum reasonable depth
+                bool veryStable = stable && info.m_stabilityCount >= 3;
+                
+                // Decision logic:
+                if (exceedsHardLimit) {
+                    // Never exceed hard limit
+                    std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                              << " (would exceed hard limit)\n";
+                    break;
+                } else if (exceedsSoftLimit) {
+                    // Decide whether to exceed soft limit based on position characteristics
+                    if (veryStable || (stable && reasonableDepth)) {
+                        // Stop if position is very stable or stable at reasonable depth
+                        std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                                  << " (would exceed soft limit, position stable/deep)\n";
+                        break;
+                    } else if (!stable && depth < 6) {
+                        // Continue if unstable and not too deep
+                        // This allows searching deeper in tactical positions
+                        std::cerr << "[Time Management] Continuing despite soft limit "
+                                  << "(depth=" << depth << ", unstable)\n";
+                    } else {
+                        // Default: stop at soft limit
+                        std::cerr << "[Time Management] No time for depth " << (depth + 1)
+                                  << " (would exceed soft limit)\n";
+                        break;
+                    }
+                }
+                
+                // Additional early termination for very stable positions
+                if (veryStable && depth >= 8 && predictedTime > std::chrono::milliseconds(2000)) {
+                    std::cerr << "[Time Management] Early termination at depth " << depth
+                              << " (very stable, deep enough, next iteration expensive)\n";
+                    break;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+    
+    return bestMove;
+}
+
+// Iterative deepening search controller (original)
 Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Debug output
+    // Debug output (removed in release builds)
+    #ifndef NDEBUG
     std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
     std::cerr << "Search: movetime=" << limits.movetime.count() << "ms" << std::endl;
+    #endif
     
     // Initialize search tracking
     SearchInfo searchInfo;  // For repetition detection
@@ -481,13 +748,15 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
     
     SearchData info;  // For search statistics
-    info.timeLimit = calculateTimeLimit(limits, board);
-    std::cerr << "Search: calculated timeLimit=" << info.timeLimit.count() << "ms" << std::endl;
+    // Stage 13, Deliverable 2.2b: Use new time management in regular search too
+    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
+    info.timeLimit = timeLimits.optimum;
+    std::cerr << "Search: using NEW time management - optimum=" << info.timeLimit.count() << "ms" << std::endl;
     
     Move bestMove;
     
-    // Debug: Show search parameters
-    #ifdef DEBUG
+    // Debug: Show search parameters (removed in release)
+    #ifndef NDEBUG
     std::cerr << "Search: maxDepth=" << limits.maxDepth 
               << " movetime=" << limits.movetime.count() 
               << "ms" << std::endl;
@@ -643,6 +912,96 @@ void sendSearchInfo(const SearchData& info) {
     }
     
     // Output principal variation (just the best move for now)
+    if (info.bestMove != Move()) {
+        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+    }
+    
+    std::cout << std::endl;
+}
+
+// Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
+void sendIterationInfo(const IterativeSearchData& info) {
+    // Basic info
+    std::cout << "info"
+              << " depth " << info.depth
+              << " seldepth " << info.seldepth;
+    
+    // Score output
+    if (info.bestScore.is_mate_score()) {
+        int mateIn = 0;
+        if (info.bestScore > eval::Score::zero()) {
+            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
+        } else {
+            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
+        }
+        std::cout << " score mate " << mateIn;
+    } else {
+        std::cout << " score cp " << info.bestScore.to_cp();
+    }
+    
+    // Iteration-specific information
+    if (info.hasIterations()) {
+        const auto& lastIter = info.getLastIteration();
+        
+        // Stage 13, Deliverable 5.1b: Aspiration window reporting
+        if (lastIter.depth >= AspirationConstants::MIN_DEPTH) {
+            // Report window information
+            if (lastIter.windowAttempts > 0) {
+                // Window was used and there were re-searches
+                if (lastIter.failedHigh) {
+                    std::cout << " string fail-high(" << lastIter.windowAttempts << ")";
+                } else if (lastIter.failedLow) {
+                    std::cout << " string fail-low(" << lastIter.windowAttempts << ")";
+                }
+            }
+            
+            // Show window bounds for debugging (optional)
+            if (lastIter.alpha != eval::Score::minus_infinity() || 
+                lastIter.beta != eval::Score::infinity()) {
+                std::cout << " bound [" 
+                          << (lastIter.alpha == eval::Score::minus_infinity() ? "-inf" : 
+                              std::to_string(lastIter.alpha.to_cp()))
+                          << "," 
+                          << (lastIter.beta == eval::Score::infinity() ? "inf" : 
+                              std::to_string(lastIter.beta.to_cp()))
+                          << "]";
+            }
+        }
+        
+        // Stability indicator
+        if (info.getIterationCount() >= 3) {
+            if (info.isPositionStable()) {
+                std::cout << " string stable";
+            } else if (info.shouldExtendDueToInstability()) {
+                std::cout << " string unstable";
+            }
+        }
+        
+        // Effective branching factor from sophisticated calculation
+        double ebf = info.getSophisticatedEBF();
+        if (ebf > 0) {
+            std::cout << " ebf " << std::fixed << std::setprecision(2) << ebf;
+        }
+    }
+    
+    // Standard statistics
+    std::cout << " nodes " << info.nodes
+              << " nps " << info.nps()
+              << " time " << info.elapsed().count();
+    
+    // Move ordering efficiency
+    if (info.betaCutoffs > 0) {
+        std::cout << " moveeff " << std::fixed << std::setprecision(1)
+                  << info.moveOrderingEfficiency() << "%";
+    }
+    
+    // TT statistics
+    if (info.ttProbes > 0) {
+        double hitRate = (100.0 * info.ttHits) / info.ttProbes;
+        std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
+    }
+    
+    // Principal variation
     if (info.bestMove != Move()) {
         std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
     }

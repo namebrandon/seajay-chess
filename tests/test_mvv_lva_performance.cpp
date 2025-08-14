@@ -48,16 +48,19 @@ void benchmarkPosition(Board& board, const TestPosition& pos, bool useMvvLva) {
     MvvLvaOrdering::resetStatistics();
     
     SearchInfo searchInfo;
+    searchInfo.clear();
+    searchInfo.setRootHistorySize(board.gameHistorySize());
+    
     SearchData searchData;
-    searchData.maxDepth = pos.depth;
+    searchData.timeLimit = std::chrono::milliseconds::max();
     searchData.nodes = 0;
     
     auto startTime = std::chrono::high_resolution_clock::now();
     
     // Run simple negamax search
     eval::Score score = negamax(board, pos.depth, 0, 
-                                eval::Score::minValue(), 
-                                eval::Score::maxValue(),
+                                eval::Score::minus_infinity(), 
+                                eval::Score::infinity(),
                                 searchInfo, searchData);
     
     auto endTime = std::chrono::high_resolution_clock::now();

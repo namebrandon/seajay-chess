@@ -5,6 +5,13 @@
 #include "../evaluation/types.h"
 #include <chrono>
 #include <cstdint>
+
+// Stage 13, Deliverable 5.2b: Performance optimizations
+#ifdef NDEBUG
+    #define ALWAYS_INLINE __attribute__((always_inline)) inline
+#else
+    #define ALWAYS_INLINE inline
+#endif
 #include <cmath>
 
 namespace seajay::search {
@@ -57,24 +64,36 @@ struct SearchData {
     std::chrono::milliseconds timeLimit{0};
     bool stopped = false;          // Search has been stopped
     
+    // Stage 13, Deliverable 5.2b: Cache for time checks
+    mutable uint64_t m_timeCheckCounter = 0;
+    mutable std::chrono::milliseconds m_cachedElapsed{0};
+    static constexpr uint64_t TIME_CHECK_INTERVAL = 1024;  // Check every 1024 nodes
+    
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}
     
-    // Calculate nodes per second
+    // Calculate nodes per second (force accurate time for NPS)
     uint64_t nps() const {
-        auto elapsed_ms = elapsed().count();
+        // Force accurate time update for NPS calculation
+        auto now = std::chrono::steady_clock::now();
+        auto actual_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
+        auto elapsed_ms = actual_elapsed.count();
         if (elapsed_ms <= 0) return 0;
         return (nodes * 1000ULL) / static_cast<uint64_t>(elapsed_ms);
     }
     
-    // Get elapsed time since search started
-    std::chrono::milliseconds elapsed() const {
-        auto now = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
+    // Get elapsed time since search started (optimized with caching)
+    ALWAYS_INLINE std::chrono::milliseconds elapsed() const {
+        // Stage 13, Deliverable 5.2b: Cache time to avoid frequent system calls
+        if ((++m_timeCheckCounter & (TIME_CHECK_INTERVAL - 1)) == 0) {
+            auto now = std::chrono::steady_clock::now();
+            m_cachedElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
+        }
+        return m_cachedElapsed;
     }
     
-    // Check if time limit has been exceeded
-    bool checkTime() {
+    // Check if time limit has been exceeded (optimized for hot path)
+    ALWAYS_INLINE bool checkTime() {
         if (timeLimit == std::chrono::milliseconds::max()) {
             return false;  // Infinite search
         }
@@ -112,6 +131,8 @@ struct SearchData {
         bestScore = eval::Score::zero();
         startTime = std::chrono::steady_clock::now();
         stopped = false;
+        m_timeCheckCounter = 0;
+        m_cachedElapsed = std::chrono::milliseconds(0);
     }
 };
 

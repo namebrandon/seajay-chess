@@ -2,6 +2,44 @@
 
 This document tracks identified but unresolved bugs in the SeaJay chess engine, providing detailed analysis and debugging information for future resolution.
 
+## Bug #008: Stage 13 Time Management Critical Failure
+
+**Status:** RESOLVED  
+**Priority:** Critical (resolved)  
+**Discovery Date:** 2025-08-14  
+**Resolution Date:** 2025-08-14  
+**Impact:** Caused Stage 13 to only search depth 1, 0% win rate in SPRT tests
+
+### Summary
+
+Stage 13 iterative deepening implementation had critical time management bugs that caused the engine to only search to depth 1 in all positions, resulting in catastrophic performance (0% win rate against Stage 12).
+
+### Root Cause Analysis
+
+Two critical bugs were identified:
+1. **Cached Time Bug:** The `shouldStopSearching()` function was using cached `timeRemaining` instead of actual elapsed time
+2. **Fallback EBF Bug:** The fallback effective branching factor was set to 30, causing immediate time exhaustion
+
+### Resolution Details
+
+**Fixes Applied:**
+1. Changed `shouldStopSearching()` to use actual elapsed time: `elapsedTime = Time::now() - m_searchStartTime`
+2. Changed fallback EBF from 30 to reasonable values (2.0 for early depths, 5.0 for later)
+3. Added minimum depth 4 before allowing time-based stopping
+
+**File Modified:** `/workspace/src/search/time_management.cpp`
+
+### Test Results After Fix
+
+**SPRT Testing Results:**
+- Stage 13 vs Stage 11: **+372 Elo** (H1 accepted)
+- Stage 13 vs Stage 12: **+143 Elo** (H1 accepted)
+- Win rates improved from 0% to expected ranges
+
+### Verification
+
+All SPRT tests now pass with expected Elo gains. The bug was discovered through SPRT testing which revealed the catastrophic failure immediately.
+
 ## Bug #001: Position 3 Systematic Perft Deficit at Depth 6
 
 **Status:** RESOLVED - En Passant Check Evasion Fixed  

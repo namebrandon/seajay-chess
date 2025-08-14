@@ -101,6 +101,10 @@ set(SEARCH_SOURCES
     src/search/types.h
     src/search/move_ordering.cpp
     src/search/move_ordering.h
+    src/search/time_management.cpp
+    src/search/time_management.h
+    src/search/aspiration_window.cpp
+    src/search/aspiration_window.h
 )
 
 # Include directories
@@ -245,6 +249,11 @@ if(NOT SKIP_ALPHABETA_TEST)
     add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
     target_include_directories(test_alphabeta_validation PRIVATE ${GTEST_INCLUDE_DIR})
     target_link_libraries(test_alphabeta_validation seajay_core ${GTEST_LIBRARIES} pthread)
+    
+    # Stage 13: Iterative Deepening regression tests
+    add_executable(test_iterative_regression tests/test_iterative_regression.cpp)
+    target_include_directories(test_iterative_regression PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_iterative_regression seajay_core ${GTEST_LIBRARIES} pthread)
 endif()
 
 # Add test cases

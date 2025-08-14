@@ -3,7 +3,7 @@
 **Last Updated:** August 14, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 3 - Essential Optimizations  
-**Current Stage:** Stage 12 COMPLETE - Transposition Tables  
+**Current Stage:** Stage 13 COMPLETE - Iterative Deepening  
 
 ## Overview
 
@@ -332,15 +332,51 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - **Memory Usage:** 128MB (configurable via UCI)
 - **Key Achievement:** Methodical validation approach prevented bugs
 
+#### Stage 13 - Iterative Deepening
+**Status:** COMPLETE ✅ (August 14, 2025)
+- [x] Pre-stage planning with comprehensive 5-phase approach
+- [x] Phase 0: Safety and debug infrastructure
+- [x] Phase 1: Foundation - iteration tracking and data structures
+- [x] Phase 2: Time management with stability detection
+- [x] Phase 3: Aspiration windows with progressive widening
+- [x] Phase 4: Branching factor tracking and time prediction
+- [x] Phase 5: Polish and optimization
+- **Implementation:**
+  - Full iterative deepening from depth 1 to target
+  - Aspiration windows (16cp initial, progressive widening)
+  - Dynamic time management based on position stability
+  - Sophisticated EBF tracking (weighted average over 3-4 iterations)
+  - Enhanced UCI output with iteration details
+  - Performance optimizations (inlining, time caching)
+- **Performance Results:**
+  - NPS maintained at ~1M (no regression)
+  - EBF tracking: Variable 3-20, average 8-10
+  - Move ordering efficiency: 88-99%
+  - TT hit rate: 25-30% at depth 6
+  - Aspiration window re-searches: Typically 1-2, max 5
+- **Critical Bug Fix:**
+  - Fixed time management bugs causing depth 1 only searches
+  - Fixed fallback EBF from 30 to reasonable 2.0-5.0
+  - Fixed cached time usage in shouldStopSearching()
+- **SPRT Validation:** PASSED (2 tests)
+  - vs Stage 12 (10+0.1): +143 Elo ✅ H1 accepted
+  - vs Stage 11 (10+0.1): +372 Elo ✅ H1 accepted
+  - 60+0.6 long time control test in progress
+- **Estimated Elo Gain:** +143 Elo over Stage 12
+- **Total Deliverables:** 43 (all completed)
+- **Key Achievement:** Methodical implementation with commit-per-deliverable
+
 ## Next Steps
 
 ### Short Term (Phase 3: Essential Optimizations)
 1. **Stage 10: Magic bitboards** (COMPLETE - August 12, 2025)
 2. **Stage 11: Move ordering (MVV-LVA)** (COMPLETE - August 13, 2025)
 3. **Stage 12: Transposition tables** (COMPLETE - August 14, 2025)
-4. Stage 13: Null move pruning (next)
-5. Stage 14: Late move reductions
-6. Target: >1M NPS performance (likely achieved with TT)
+4. **Stage 13: Iterative Deepening** (COMPLETE - August 14, 2025)
+5. **Stage 14: Quiescence Search** (next - planning complete)
+6. Stage 15: Null move pruning
+7. Stage 16: Late move reductions
+8. Target: >1M NPS performance (achieved with TT)
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces
