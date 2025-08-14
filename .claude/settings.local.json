@@ -14,8 +14,19 @@
       "Bash(docker build:*)",
       "Bash(ls:*)",
       "Bash(docker:*)",
-      "Bash(git stash push:*)"
+      "Bash(git stash push:*)",
+      "Bash(md5sum:*)",
+      "Bash(grep:*)",
+      "Bash(/workspace/bin/seajay perft:*)",
+      "Bash(cmake:*)",
+      "Bash(make:*)",
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(for:*)",
+      "Bash(bash:*)",
+      "Bash(done)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

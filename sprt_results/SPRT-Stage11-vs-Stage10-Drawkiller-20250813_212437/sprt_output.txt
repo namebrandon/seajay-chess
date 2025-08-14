@@ -464,3 +464,38 @@ Finished game 167 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1/2-1/2 {Draw by 3-fold
 Started game 168 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
 Finished game 168 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1/2-1/2 {Draw by 3-fold repetition}
 Started game 169 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 169 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 0-1 {Black mates}
+Started game 170 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 170 (Stage10-Magic vs Stage11-MVV-LVA-v2): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2 vs Stage10-Magic (10+0.1, NULL, NULL, Drawkiller_balanced_big.epd):
+Elo: -6.13 +/- 30.83, nElo: -10.42 +/- 52.23
+LOS: 34.79 %, DrawRatio: 58.82 %, PairsRatio: 1.06
+Games: 170, Wins: 52, Losses: 55, Draws: 63, Points: 83.5 (49.12 %)
+Ptnml(0-2): [6, 11, 50, 16, 2], WL/DD Ratio: 1.78
+LLR: -2.46 (-83.7%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 171 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 171 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 0-1 {Black mates}
+Started game 172 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 172 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 173 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 173 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1-0 {White mates}
+Started game 174 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 174 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1-0 {White mates}
+Started game 175 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 175 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 176 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 176 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1-0 {White mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2 vs Stage10-Magic (10+0.1, NULL, NULL, Drawkiller_balanced_big.epd):
+Elo: -9.87 +/- 30.25, nElo: -16.80 +/- 51.33
+LOS: 26.05 %, DrawRatio: 57.95 %, PairsRatio: 0.95
+Games: 176, Wins: 53, Losses: 58, Draws: 65, Points: 85.5 (48.58 %)
+Ptnml(0-2): [6, 13, 51, 16, 2], WL/DD Ratio: 1.83
+LLR: -3.03 (-102.8%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+SPRT ([0.00, 50.00]) completed - H0 was accepted
+Finished match
+Total Time: 01:07:53 (hours:minutes:seconds)
+
