@@ -2,10 +2,12 @@
 
 // Stage 13: Iterative Deepening - Time Management
 // Phase 2, Deliverable 2.1a: Time management types
+// Phase 2, Deliverable 2.1b: Basic time calculation
 
 #include "../core/types.h"
 #include <chrono>
 #include <cstdint>
+#include <algorithm>
 
 namespace seajay::search {
 
@@ -68,6 +70,59 @@ namespace TimeConstants {
     
     // Maximum time factors
     constexpr double MAX_TIME_FACTOR = 0.25;   // Never use more than 25% of remaining time
+}
+
+// Time calculation functions (Deliverable 2.1b)
+
+// Calculate optimum time for a move based on time control
+// Simple formula for now - no stability tracking yet
+inline TimeMs calculateOptimumTime(const TimeInfo& timeInfo, Color sideToMove) {
+    // If fixed move time is set, use it
+    if (timeInfo.moveTime > 0) {
+        return timeInfo.moveTime - TimeConstants::MIN_TIME_RESERVE;
+    }
+    
+    TimeMs remainingTime = timeInfo.getTimeForSide(sideToMove);
+    TimeMs increment = timeInfo.getIncrementForSide(sideToMove);
+    
+    // If no time control, return 0 (infinite time)
+    if (remainingTime <= 0) {
+        return 0;
+    }
+    
+    // Reserve minimum time
+    remainingTime = std::max(remainingTime - TimeConstants::MIN_TIME_RESERVE, TimeMs(0));
+    
+    TimeMs optimum = 0;
+    
+    if (timeInfo.movesToGo > 0) {
+        // We have a specific number of moves to make
+        // Divide time equally among remaining moves, with a safety factor
+        optimum = static_cast<TimeMs>(
+            (remainingTime * TimeConstants::MOVES_TO_GO_FACTOR) / timeInfo.movesToGo
+        );
+    } else {
+        // Sudden death time control
+        // Assume we need to play ~25 more moves (typical endgame length)
+        // Use a small percentage of remaining time per move
+        optimum = static_cast<TimeMs>(
+            remainingTime * TimeConstants::SUDDEN_DEATH_FACTOR
+        );
+    }
+    
+    // Add some of the increment if available
+    if (increment > 0) {
+        optimum += static_cast<TimeMs>(increment * TimeConstants::INCREMENT_FACTOR);
+    }
+    
+    // Ensure we don't use too much of remaining time
+    TimeMs maxAllowed = static_cast<TimeMs>(remainingTime * TimeConstants::MAX_TIME_FACTOR);
+    optimum = std::min(optimum, maxAllowed);
+    
+    // Ensure minimum time
+    optimum = std::max(optimum, TimeMs(1));
+    
+    return optimum;
 }
 
 } // namespace seajay::search
