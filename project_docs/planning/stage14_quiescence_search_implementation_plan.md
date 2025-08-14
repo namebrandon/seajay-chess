@@ -104,8 +104,19 @@ if (depth <= 0) {
 
 ## Implementation Plan
 
-### Phase 1: Minimal Viable Quiescence (Days 1-3)
+**CRITICAL:** Follow the detailed implementation checklist at:
+`/workspace/project_docs/stage_implementations/stage14_implementation_checklist.md`
+
+### METHODICAL VALIDATION APPROACH
+- **Each deliverable:** < 50 lines of code
+- **Git commits:** After EVERY successful validation
+- **Documentation:** Update after EACH step
+- **Testing:** After EVERY code change
+- **Theme:** Small, testable, validated chunks
+
+### Phase 1: Minimal Viable Quiescence (Days 1-2)
 **Goal:** Basic working quiescence search with essential safety features
+**Deliverables:** 9 small, validated code chunks (see checklist)
 
 #### Phase 1.1: Core Infrastructure (Day 1)
 1. **Create quiescence module files:**
@@ -117,10 +128,21 @@ if (depth <= 0) {
    ```cpp
    // Prevent stack overflow
    constexpr int QSEARCH_MAX_PLY = 32;
+   constexpr int TOTAL_MAX_PLY = 128;  // Combined main + quiescence limit
    constexpr int QSEARCH_MAX_DEPTH = -16;  // Negative depth in quiescence
    
    // Performance safety
-   constexpr uint64_t QSEARCH_NODE_LIMIT = 100000;  // Per-position limit
+   constexpr uint64_t QSEARCH_NODE_LIMIT = 10000;  // Per-position limit (start conservative)
+   constexpr int MAX_CAPTURES_PER_NODE = 32;  // Prevent capture explosion
+   
+   // Progressive limiter removal
+   #ifdef QSEARCH_TESTING
+       constexpr uint64_t NODE_LIMIT = 10000;  // Phase 1
+   #elif QSEARCH_TUNING
+       constexpr uint64_t NODE_LIMIT = 100000; // Phase 2
+   #else
+       constexpr uint64_t NODE_LIMIT = UINT64_MAX; // Production
+   #endif
    ```
 
 3. **Extend SearchData with quiescence metrics:**
@@ -155,21 +177,27 @@ if (depth <= 0) {
    - Modify `negamax.cpp` line 188 to call quiescence
    - Add compile-time flag `ENABLE_QUIESCENCE` for A/B testing
 
-#### Phase 1.3: Check Handling (Day 2-3)
+#### Phase 1.3: Check Handling and Critical Safety (Day 2-3)
 1. **Implement quiescenceInCheck() function:**
-   - Generate ALL legal moves when in check
+   - Generate ALL legal moves when in check (MANDATORY from day 1)
    - No stand-pat when in check (must move)
    - Return checkmate score if no legal moves
+   - Proper mate score adjustment by ply
 
-2. **Safety and bounds checking:**
+2. **Critical Safety Features (MUST HAVE):**
+   - Repetition detection in quiescence (prevents infinite loops)
+   - Insufficient material detection after captures
+   - Time checking every 1024 nodes
    - Maximum ply depth enforcement
-   - Node count limits
-   - Time checking integration
+   - Node count limits per position
+   - UCI kill switch for emergency disable
 
 3. **Basic testing:**
    - Simple capture sequence positions
    - Check evasion positions
+   - Perpetual check scenarios (critical test)
    - Depth limit verification
+   - Time limit compliance
 
 ### Phase 2: Performance and Integration (Days 4-6)
 **Goal:** Optimize performance and integrate with existing systems
@@ -212,13 +240,15 @@ if (depth <= 0) {
 
 #### Phase 3.1: Delta Pruning (Day 7)
 1. **Implement delta pruning:**
-   - Large material deficit pruning
-   - Position-specific margins
-   - Endgame considerations
+   - Start with conservative margin (900 centipawns - queen value)
+   - Position-specific margins for different game phases
+   - Endgame considerations (be careful in zugzwang-prone positions)
+   - Never prune promotions or when in check
 
 2. **Futility pruning in quiescence:**
    - Skip moves that can't improve alpha
    - Dynamic margins based on material
+   - Increase margins when many hanging pieces detected
 
 #### Phase 3.2: Advanced Check Handling (Day 8)
 1. **Check extension limits:**
@@ -275,19 +305,22 @@ Please review the following aspects of the quiescence search implementation:
 
 ### Current Implementation Safety Plan:
 1. **Stack Safety:**
-   - Maximum recursion depth enforcement
-   - Stack usage monitoring
+   - Maximum recursion depth enforcement (TOTAL_MAX_PLY = 128 for main + quiescence)
+   - Stack usage monitoring with hard limits
+   - Per-position node limits to prevent explosion
    - Tail call optimization where possible
 
 2. **Performance Optimization:**
    - `[[likely]]` and `[[unlikely]]` attributes on common paths
    - Template specialization for hot functions
    - Minimize memory allocations in search
+   - Time checking every 1024 nodes in quiescence
 
 3. **Error Handling:**
    - Graceful degradation on depth limits
-   - Time limit integration
-   - Debug vs release behavior
+   - Time limit integration with periodic checks
+   - Debug vs release behavior with progressive limiter removal
+   - UCI kill switch for emergency rollback
 
 4. **Modern C++20 Features:**
    - `constexpr` for compile-time constants
@@ -450,9 +483,9 @@ Please provide expert guidance on the following chess engine aspects:
 3. **Stability:** No crashes or infinite loops in 10,000+ positions
 4. **Integration:** All existing tests continue to pass
 
-### Specific Test Positions (from analysis documents):
+### Specific Test Positions (from analysis documents and expert review):
 
-#### Tactical Validation Positions:
+#### Critical Validation Positions:
 1. **Basic Capture Sequences:**
    ```
    FEN: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4"
@@ -460,14 +493,35 @@ Please provide expert guidance on the following chess engine aspects:
    Expected: Immediate tactical resolution without horizon effect
    ```
 
-2. **Deep Capture Chains:**
+2. **Perpetual Check Test (CRITICAL):**
    ```
-   FEN: "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3"
-   Description: "Multiple capture sequences requiring deep quiescence"
-   Expected: Complete tactical evaluation to quiet position
+   FEN: "3Q4/8/3K4/8/8/3k4/8/3q4 b - - 0 1"
+   Description: "Black queen can give perpetual check"
+   Expected: Must not loop infinitely, should detect repetition
    ```
 
-3. **Check Evasion in Quiescence:**
+3. **Stalemate Trap:**
+   ```
+   FEN: "7k/8/6KQ/8/8/8/8/8 w - - 0 1"
+   Description: "Qg7 is stalemate, Qg6 maintains winning position"
+   Expected: Quiescence must detect stalemate correctly
+   ```
+
+4. **Deep Forcing Sequence (Kasparov-Topalov 1999):**
+   ```
+   FEN: "r4rk1/1b2qppp/p1n1p3/1p6/3P4/P1N1P3/1PQ2PPP/R1B2RK1 b - - 0 1"
+   Description: "Requires 15+ ply quiescence to resolve tactics"
+   Expected: Should find Rxd4 sequence without explosion
+   ```
+
+5. **Promotion Race with Checks:**
+   ```
+   FEN: "8/1P6/8/8/8/8/1p6/R6K b - - 0 1"
+   Description: "Complex promotion race with check possibilities"
+   Expected: Correct evaluation of promotion timing
+   ```
+
+6. **Check Evasion in Quiescence:**
    ```
    FEN: "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"
    Description: "King in check during quiescence search"
@@ -545,24 +599,47 @@ Please provide expert guidance on the following chess engine aspects:
 - [ ] Move ordering efficiency preserved
 - [ ] UCI interface maintains compatibility
 
-## Timeline Estimate
+## Timeline Estimate (Revised Based on Expert Review)
 
-### Development Phase (10 days):
-- **Days 1-3:** Phase 1 - Minimal viable quiescence
-- **Days 4-6:** Phase 2 - Performance and integration
-- **Days 7-8:** Phase 3 - Advanced features
-- **Days 9-10:** Phase 3 - Comprehensive testing
+### Development Phase (8 days):
+- **Days 1-2:** Phase 1 - Minimal SAFE implementation with check handling
+- **Days 3-4:** Phase 2 - Critical safety features (repetition, time checks)
+- **Days 5-6:** Phase 3 - Optimization (delta pruning, TT integration)
+- **Days 7-8:** Phase 4 - Validation and tactical testing
 
-### Testing and Validation (3-5 days):
-- **Days 11-12:** SPRT testing vs Stage 13
-- **Days 13-14:** Tactical test suite validation
-- **Day 15:** Final integration testing and documentation
+### Testing and Validation (4-5 days):
+- **Days 9-10:** SPRT testing vs Stage 13
+- **Days 11-12:** Tactical test suite validation (WAC, Bratko-Kopec)
+- **Day 13:** Performance profiling and tuning
 
 ### Buffer for Issues (2-3 days):
-- **Days 16-17:** Bug fixes and performance tuning
-- **Day 18:** Final validation and completion
+- **Days 14-15:** Bug fixes, especially perpetual check scenarios
+- **Day 16:** Final validation and completion
 
-**Total Estimated Duration:** 15-18 days
+**Total Estimated Duration:** 14-16 days
+
+### Revised Phase Progression:
+1. **Phase 1 (Days 1-2):** Minimal SAFE Implementation
+   - Basic capture-only search
+   - Check evasion handling (MANDATORY)
+   - Hard safety limits
+   - No optimizations
+
+2. **Phase 2 (Days 3-4):** Critical Safety Features
+   - Repetition detection
+   - Insufficient material checks
+   - Time limit checking
+   - Basic statistics
+
+3. **Phase 3 (Days 5-6):** Optimization
+   - Delta pruning (start with 900cp)
+   - TT integration
+   - Move ordering improvements
+
+4. **Phase 4 (Days 7-8):** Validation
+   - Tactical test suites
+   - Performance profiling
+   - Edge case testing
 
 ## Detailed Implementation Specifications
 
@@ -587,21 +664,27 @@ eval::Score quiescenceInCheck(Board& board,
                              TranspositionTable* tt = nullptr);
 ```
 
-### Safety Constants (from safety analysis):
+### Safety Constants (enhanced from expert review):
 ```cpp
 namespace seajay::search::qsearch {
     // Stack safety limits
-    constexpr int MAX_PLY = 32;              // Absolute maximum depth
+    constexpr int MAX_PLY = 32;              // Absolute maximum depth in quiescence
+    constexpr int TOTAL_MAX_PLY = 128;       // Combined main + quiescence limit
     constexpr int MAX_CHECK_PLY = 8;         // Maximum check extensions
     constexpr int STACK_GUARD = 128;         // Stack safety margin
     
     // Performance limits
-    constexpr uint64_t NODE_LIMIT = 100000;  // Per-position node limit
-    constexpr int DELTA_MARGIN = 900;        // Delta pruning margin (queen value)
+    constexpr uint64_t NODE_LIMIT_PER_POSITION = 10000;  // Per-position node limit
+    constexpr int MAX_CAPTURES_PER_NODE = 32;  // Prevent capture explosion
+    constexpr int DELTA_MARGIN = 900;        // Delta pruning margin (start with queen value)
+    
+    // Time management
+    constexpr int TIME_CHECK_INTERVAL = 1024;  // Check time every N nodes
     
     // Compile-time safety
     static_assert(MAX_PLY < 64, "Ply limit must fit in search stack");
     static_assert(MAX_CHECK_PLY <= MAX_PLY, "Check extensions within total limit");
+    static_assert(TOTAL_MAX_PLY < 256, "Total ply must be reasonable");
 }
 ```
 
@@ -638,6 +721,41 @@ src/search/
 3. **In CMakeLists.txt:** Add new source files
 4. **In UCI:** Add debug commands for quiescence testing
 
+## Critical Implementation Guidelines (Expert Review)
+
+### Must-Have Safety Features (Day 1):
+1. **Repetition Detection:** CRITICAL - prevents infinite loops in perpetual check
+2. **Check Evasion Handling:** MANDATORY - must search all legal moves when in check
+3. **Time Limit Checking:** Check every 1024 nodes to prevent timeouts
+4. **Absolute Ply Limits:** Combined main + quiescence must not exceed 128
+5. **Per-Position Node Limits:** Abort if single position exceeds 10K nodes
+
+### Common Implementation Mistakes to Avoid:
+1. **Wrong Stand-Pat Return:** Return `staticEval`, NOT `beta`
+2. **Missing Repetition Check:** Will cause infinite loops
+3. **Searching Illegal Moves in Check:** Must use legal move generation
+4. **Not Adjusting Mate Scores:** Mate scores must be adjusted by ply
+5. **TT Pollution:** Never store stand-pat as EXACT bound
+
+### UCI Debug Commands to Implement:
+```cpp
+"qsearch [depth]"     // Run quiescence from current position
+"qperft [depth]"      // Perft with quiescence counting
+"qstats"              // Show quiescence statistics
+"qdebug [on|off]"     // Toggle detailed quiescence logging
+"qnodes [limit]"      // Set per-position node limit
+"qdelta [margin]"     // Dynamically adjust delta pruning
+"qvalidate [fen]"     // Validate quiescence doesn't change eval sign
+```
+
+### Kill Switch Implementation:
+```cpp
+// In UCI options
+options["UseQuiescence"] = UCIOption(true, [](const UCIOption& o) {
+    Search::useQuiescence = o.getValue<bool>();
+});
+```
+
 ## Implementation Notes
 
 ### Key Design Decisions:
@@ -659,6 +777,131 @@ src/search/
 3. **Performance profiling** for hot path optimization
 4. **Documentation** updated with implementation details
 
+## Critical Implementation Skeleton (Expert Recommended)
+
+### Essential Quiescence Structure:
+```cpp
+eval::Score quiescence(Board& board, int ply, Score alpha, Score beta,
+                      SearchInfo& searchInfo, SearchData& data) {
+    
+    // 1. CRITICAL: Absolute safety checks first
+    if (ply >= TOTAL_MAX_PLY) return board.evaluate();
+    if (data.qsearchNodes - entryNodes > NODE_LIMIT_PER_POSITION) 
+        return board.evaluate();
+    
+    // 2. Time and stop checks
+    if ((data.qsearchNodes & 1023) == 0) {
+        if (searchInfo.shouldStop()) return 0;
+    }
+    
+    // 3. Repetition detection (CRITICAL - often missed)
+    if (searchInfo.isRepetition(board.zobristKey())) {
+        return 0;  // Draw
+    }
+    
+    // 4. Special handling for check
+    if (board.inCheck()) {
+        return quiescenceInCheck(...);  // No stand-pat allowed
+    }
+    
+    // 5. Stand-pat with correct value
+    Score staticEval = board.evaluate();
+    if (staticEval >= beta) {
+        return staticEval;  // NOT beta!
+    }
+    
+    // 6. Delta pruning with safe margin
+    Score futilityBase = staticEval + 900;  // Start with queen value
+    if (futilityBase < alpha) {
+        return staticEval;  // Hopeless position
+    }
+    
+    // 7. Generate and order captures
+    MoveList captures;
+    generateCaptures(board, captures);
+    orderMovesMVVLVA(captures, board);
+    
+    // 8. Search captures with explosion prevention
+    int capturesSearched = 0;
+    for (const Move& move : captures) {
+        if (++capturesSearched > MAX_CAPTURES_PER_NODE) break;
+        
+        // Delta pruning per move
+        if (!isPromotion(move)) {
+            Score gain = captureValue(move);
+            if (staticEval + gain + DELTA_MARGIN < alpha) continue;
+        }
+        
+        // Make move and recurse
+        makeMove(board, move);
+        Score score = -quiescence(board, ply + 1, -beta, -alpha, ...);
+        unmakeMove(board, move);
+        
+        // Update scores
+        if (score > bestScore) {
+            bestScore = score;
+            if (score > alpha) {
+                alpha = score;
+                if (score >= beta) return score;
+            }
+        }
+    }
+    
+    return bestScore;
+}
+```
+
+### Quiescence Performance Monitoring:
+```cpp
+struct QuiescenceMonitor {
+    uint64_t entryNodes;
+    uint64_t maxNodesPerPosition = 10000;
+    
+    bool checkExplosion(const SearchData& data) {
+        uint64_t qnodes = data.qsearchNodes - entryNodes;
+        if (qnodes > maxNodesPerPosition) {
+            // Log warning and abort this branch
+            std::cerr << "Quiescence explosion detected: " << qnodes << " nodes\n";
+            return true;
+        }
+        return false;
+    }
+    
+    double getQSearchRatio(const SearchData& data) const {
+        uint64_t total = data.nodes + data.qsearchNodes;
+        return total > 0 ? static_cast<double>(data.qsearchNodes) / total : 0.0;
+    }
+};
+```
+
+### Special Position Handling:
+```cpp
+// Zugzwang-prone positions
+if (board.isEndgame() && !board.hasPawns(board.sideToMove())) {
+    // King and piece endgames - be careful with stand-pat
+    // Consider searching at least one quiet move
+}
+
+// Fortress positions
+if (board.isFortress()) {
+    // Use reduced quiescence depth
+    maxDepth = -8;  // Instead of -16
+}
+
+// Many hanging pieces
+int hangingPieces = countHangingPieces(board);
+if (hangingPieces > 3) {
+    // Increase delta margin to prevent explosion
+    deltaMargin = 1200;  // More aggressive pruning
+}
+
+// Multiple passed pawns
+if (board.hasPassedPawns()) {
+    // Always search promotions, even with negative SEE
+    skipDeltaPruningForPromotions = true;
+}
+```
+
 ---
 
-This comprehensive plan provides a roadmap for implementing quiescence search that will significantly enhance SeaJay's tactical capabilities while maintaining performance and stability. The incremental approach ensures each component is thoroughly tested before moving to the next phase.
+This comprehensive plan, enhanced with expert review feedback, provides a robust roadmap for implementing quiescence search that will significantly enhance SeaJay's tactical capabilities while maintaining safety and performance. The critical safety features and common pitfall avoidance strategies ensure a stable implementation that can reliably achieve the targeted 150-250 Elo improvement.

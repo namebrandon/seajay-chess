@@ -11,6 +11,7 @@
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../evaluation/evaluate.h"
+#include "quiescence.h"  // Stage 14: Quiescence search
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -184,9 +185,15 @@ eval::Score negamax(Board& board,
         info.seldepth = ply;
     }
     
-    // Terminal node - return static evaluation
+    // Terminal node - enter quiescence search or return static evaluation
     if (depth <= 0) {
+#ifdef ENABLE_QUIESCENCE
+        // Stage 14: Use quiescence search to resolve tactical sequences
+        return quiescence(board, ply, alpha, beta, searchInfo, info, *tt);
+#else
+        // Original behavior: return static evaluation
         return board.evaluate();
+#endif
     }
     
     // Sub-phase 4B: Draw Detection Order
