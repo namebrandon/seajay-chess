@@ -20,7 +20,7 @@ OUTPUT_DIR="$PROJECT_ROOT/sprt_results/SPRT-Stage13-vs-Stage12-60s-$TIMESTAMP"
 mkdir -p "$OUTPUT_DIR"
 
 # Test configuration - LONGER TIME CONTROL
-TIME_CONTROL="60000+600"  # 60 seconds + 0.6 second increment
+TIME_CONTROL="60+0.6"  # 60 seconds + 0.6 second increment
 THREADS="1"
 CONCURRENCY="1"  # Number of games to run in parallel
 

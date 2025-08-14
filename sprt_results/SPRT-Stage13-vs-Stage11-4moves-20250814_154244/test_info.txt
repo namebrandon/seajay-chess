@@ -1,0 +1,20 @@
+SPRT Test: Stage 13 vs Stage 11 (4moves book)
+==============================================
+Date: Thu Aug 14 03:42:44 PM CDT 2025
+Stage 13 Binary: /workspace/binaries/seajay-stage13-sprt
+Stage 11 Binary: /workspace/binaries/seajay-stage11-candidate2-x86-64
+Time Control: 10+0.1
+SPRT Parameters:
+  - H0 (null): ELO difference <= 150
+  - H1 (alternative): ELO difference >= 200
+  - Alpha (Type I error): 0.05
+  - Beta (Type II error): 0.05
+Opening Book: 4moves_test.pgn
+Expected Result: H1 accepted (+190-270 Elo improvement)
+Stage 13 Features (vs Stage 11):
+  - Transposition Tables (128MB default)
+  - Iterative Deepening with aspiration windows
+  - Dynamic time management with stability detection
+  - Enhanced UCI output with iteration details
+  - Branching factor tracking and prediction
+  - Performance optimizations
