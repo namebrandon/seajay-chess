@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.h"
+#include "../core/transposition_table.h"
 #include "../evaluation/types.h"
 #include <chrono>
 #include <cstdint>
@@ -35,6 +36,13 @@ struct SearchData {
     uint64_t betaCutoffs = 0;     // Total beta cutoffs
     uint64_t betaCutoffsFirst = 0; // Beta cutoffs on first move (move ordering efficiency)
     uint64_t totalMoves = 0;       // Total moves examined
+    
+    // Transposition table statistics
+    uint64_t ttProbes = 0;         // Total TT probes
+    uint64_t ttHits = 0;           // Total TT hits
+    uint64_t ttCutoffs = 0;        // TT cutoffs (immediate returns)
+    uint64_t ttMoveHits = 0;       // TT move found for ordering
+    uint64_t ttStores = 0;         // Total TT stores
     
     // Depth tracking
     int depth = 0;                 // Current iterative deepening depth
@@ -93,6 +101,11 @@ struct SearchData {
         betaCutoffs = 0;
         betaCutoffsFirst = 0;
         totalMoves = 0;
+        ttProbes = 0;
+        ttHits = 0;
+        ttCutoffs = 0;
+        ttMoveHits = 0;
+        ttStores = 0;
         depth = 0;
         seldepth = 0;
         bestMove = Move();

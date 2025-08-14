@@ -1,0 +1,27 @@
+SPRT Test: Stage 12 vs Stage 10
+================================
+Date: Thu Aug 14 07:09:59 AM CDT 2025
+Test Engine: Stage 12 (TT + MVV-LVA)
+Base Engine: Stage 10 (Magic Bitboards)
+
+Expected Cumulative Improvement: +180-225 Elo
+SPRT Parameters: elo0=0, elo1=75, alpha=0.05, beta=0.05
+Time Control: 10+0.1
+
+Stage 12 Features (cumulative):
+- Transposition table with 128MB default size
+- Proper Zobrist hashing with fifty-move counter
+- Always-replace strategy
+- Search integration (probe and store)
+- Mate score adjustment for ply
+- MVV-LVA move ordering for captures
+- 25-30% node reduction from TT
+- 87% TT hit rate
+
+Stage 10 Features:
+- Magic bitboards for move generation
+- Optimized perft performance
+- Basic alpha-beta search
+
+Results:
+See sprt_output.txt for detailed results

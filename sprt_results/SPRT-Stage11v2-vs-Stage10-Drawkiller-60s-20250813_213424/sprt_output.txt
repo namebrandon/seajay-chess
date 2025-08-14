@@ -84,3 +84,5 @@ Finished game 21 (Stage11-MVV-LVA-v2-DK60s vs Stage10-Magic-DK60s): 1/2-1/2 {Dra
 Started game 22 of 4000 (Stage10-Magic-DK60s vs Stage11-MVV-LVA-v2-DK60s)
 Finished game 22 (Stage10-Magic-DK60s vs Stage11-MVV-LVA-v2-DK60s): 1/2-1/2 {Draw by 3-fold repetition}
 Started game 23 of 4000 (Stage11-MVV-LVA-v2-DK60s vs Stage10-Magic-DK60s)
+Finished game 23 (Stage11-MVV-LVA-v2-DK60s vs Stage10-Magic-DK60s): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 24 of 4000 (Stage10-Magic-DK60s vs Stage11-MVV-LVA-v2-DK60s)

@@ -60,20 +60,83 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 }
 
 // Move ordering function for alpha-beta pruning efficiency
-// Orders moves in-place: promotions first, then captures (MVV-LVA), then quiet moves
+// Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then quiet moves
 template<typename MoveContainer>
-inline void orderMoves(const Board& board, MoveContainer& moves) noexcept {
+inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE) noexcept {
+    // Sub-phase 4E: TT Move Ordering
+    // If we have a TT move, put it first
+    if (ttMove != NO_MOVE) {
+        auto it = std::find(moves.begin(), moves.end(), ttMove);
+        if (it != moves.end() && it != moves.begin()) {
+            // Move TT move to front
+            Move temp = *it;
+            std::move_backward(moves.begin(), it, it + 1);
+            *moves.begin() = temp;
+        }
+    }
+    
 #ifdef ENABLE_MVV_LVA
-    // Use MVV-LVA ordering for better move ordering
-    // Local variable to avoid thread_local overhead
+    // Use MVV-LVA ordering for remaining moves
+    // MVV-LVA will handle the entire list, including TT move positioning
     MvvLvaOrdering mvvLvaOrdering;
     mvvLvaOrdering.orderMoves(board, moves);
+    
+    // After MVV-LVA, ensure TT move is still first if it was valid
+    if (ttMove != NO_MOVE) {
+        auto it = std::find(moves.begin(), moves.end(), ttMove);
+        if (it != moves.end() && it != moves.begin()) {
+            // Move TT move back to front (MVV-LVA may have moved it)
+            Move temp = *it;
+            std::move_backward(moves.begin(), it, it + 1);
+            *moves.begin() = temp;
+        }
+    }
 #else
     // Fallback to simple ordering without MVV-LVA
     (void)board; // Unused in simple ordering
-    orderMovesSimple(moves);
+    if (ttMove != NO_MOVE && !moves.empty() && moves[0] == ttMove) {
+        // Order everything except the TT move
+        auto first = moves.begin() + 1;
+        auto last = moves.end();
+        auto partition_point = first;
+        
+        // Phase 1: Move all promotions to the front (after TT move)
+        for (auto it = first; it != last; ++it) {
+            if (isPromotion(*it)) {
+                if (promotionType(*it) == QUEEN) {
+                    if (it != first) {
+                        Move temp = *it;
+                        std::move_backward(first, it, it + 1);
+                        *first = temp;
+                        partition_point = std::next(first);
+                    }
+                } else if (it != partition_point) {
+                    std::iter_swap(it, partition_point);
+                    ++partition_point;
+                } else {
+                    ++partition_point;
+                }
+            }
+        }
+        
+        // Phase 2: Move captures after promotions
+        for (auto it = partition_point; it != last; ++it) {
+            if (isCapture(*it) && !isPromotion(*it)) {
+                if (it != partition_point) {
+                    std::iter_swap(it, partition_point);
+                }
+                ++partition_point;
+            }
+        }
+    } else {
+        orderMovesSimple(moves);
+    }
 #endif
 }
+
+// Mate score constants for TT integration
+constexpr int MATE_SCORE = 30000;
+constexpr int MATE_BOUND = 29000;
 
 // Core negamax search implementation
 eval::Score negamax(Board& board, 
@@ -82,7 +145,8 @@ eval::Score negamax(Board& board,
                    eval::Score alpha,
                    eval::Score beta,
                    SearchInfo& searchInfo,
-                   SearchData& info) {
+                   SearchData& info,
+                   TranspositionTable* tt) {
     
     // Debug output at root
     if (ply == 0 && depth >= 4) {
@@ -122,9 +186,17 @@ eval::Score negamax(Board& board,
         return board.evaluate();
     }
     
-    // Stage 9b: Check for draws BEFORE evaluation
-    // CRITICAL: Check checkmate BEFORE repetition (expert requirement)
-    // Generate all legal moves
+    // Sub-phase 4B: Draw Detection Order
+    // CRITICAL ORDER:
+    // 1. Check for checkmate/stalemate FIRST (terminal conditions)
+    // 2. Check for repetition SECOND
+    // 3. Check for fifty-move rule THIRD
+    // 4. Only THEN probe TT
+    
+    // Initialize TT move (used for move ordering later)
+    Move ttMove = NO_MOVE;
+    
+    // Generate all legal moves (needed for checkmate/stalemate check)
     MoveList moves = generateLegalMoves(board);
     
     // Check for checkmate or stalemate first (has priority over draws)
@@ -138,11 +210,16 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // PERFORMANCE OPTIMIZATION: Strategic draw checking instead of every node
-    // Only check draws at strategic points, not every node
-    bool shouldCheckDraw = false;
+    // Sub-phase 4B: Establish correct probe order
+    // 1. Check repetition FIRST (fastest, most common draw in search)
+    // 2. Check fifty-move rule SECOND (less common)
+    // 3. Only THEN probe TT (after all draw conditions)
     
-    if (ply > 0) {  // Never check at root
+    // Never check draws or probe TT at root
+    if (ply > 0) {
+        // PERFORMANCE OPTIMIZATION: Strategic draw checking
+        bool shouldCheckDraw = false;
+        
         // Determine if we should check for draws based on position characteristics
         bool inCheckPosition = inCheck(board);
         
@@ -159,11 +236,82 @@ eval::Score negamax(Board& board,
             inCheckPosition ||                      // Always after checks
             lastMoveWasCapture ||                   // After captures (50-move reset)
             (ply >= 4 && (ply & 3) == 0);          // Every 4th ply for repetitions
-    }
-    
-    // Only check when necessary
-    if (shouldCheckDraw && board.isDrawInSearch(searchInfo, ply)) {
-        return eval::Score::draw();  // Draw score
+        
+        // Check for draws when necessary
+        if (shouldCheckDraw && board.isDrawInSearch(searchInfo, ply)) {
+            return eval::Score::draw();  // Draw score
+        }
+        
+        // NOW probe TT (after draw detection)
+        TTEntry* ttEntry = nullptr;
+        if (tt && tt->isEnabled()) {
+            Hash zobristKey = board.zobristKey();
+            ttEntry = tt->probe(zobristKey);
+            info.ttProbes++;
+            
+            if (ttEntry && ttEntry->key32 == (zobristKey >> 32)) {
+                info.ttHits++;
+                
+                // Sub-phase 4C: Use TT for Cutoffs
+                // Check if the stored depth is sufficient
+                if (ttEntry->depth >= depth) {
+                    eval::Score ttScore(ttEntry->score);
+                    Bound ttBound = ttEntry->bound();
+                    
+                    // Sub-phase 4D: Mate Score Adjustment
+                    // Adjust mate scores relative to current ply
+                    if (ttScore.value() >= MATE_BOUND) {
+                        // Positive mate score - we're winning
+                        // Adjust distance to mate from current position
+                        ttScore = eval::Score(ttScore.value() - ply);
+                    } else if (ttScore.value() <= -MATE_BOUND) {
+                        // Negative mate score - we're losing
+                        // Adjust distance to mate from current position
+                        ttScore = eval::Score(ttScore.value() + ply);
+                    }
+                    
+                    // Handle different bound types
+                    if (ttBound == Bound::EXACT) {
+                        // Exact score - we can return immediately
+                        info.ttCutoffs++;
+                        return ttScore;
+                    } else if (ttBound == Bound::LOWER) {
+                        // Lower bound (fail-high) - score >= ttScore
+                        if (ttScore >= beta) {
+                            info.ttCutoffs++;
+                            return ttScore;  // Beta cutoff
+                        }
+                        // Update alpha if we have a better lower bound
+                        if (ttScore > alpha) {
+                            alpha = ttScore;
+                        }
+                    } else if (ttBound == Bound::UPPER) {
+                        // Upper bound (fail-low) - score <= ttScore  
+                        if (ttScore <= alpha) {
+                            info.ttCutoffs++;
+                            return ttScore;  // Alpha cutoff
+                        }
+                        // Update beta if we have a better upper bound
+                        if (ttScore < beta) {
+                            beta = ttScore;
+                        }
+                    }
+                    
+                    // Check if window is now invalid after adjustments
+                    if (alpha >= beta) {
+                        info.ttCutoffs++;
+                        return alpha;  // Window closed
+                    }
+                }
+                
+                // Sub-phase 4E: Extract TT move for ordering
+                // Even if depth is insufficient, we can still use the move
+                ttMove = static_cast<Move>(ttEntry->move);
+                if (ttMove != NO_MOVE) {
+                    info.ttMoveHits++;
+                }
+            }
+        }
     }
     
     // In quiescence search (depth <= 0), handle differently
@@ -184,8 +332,8 @@ eval::Score negamax(Board& board,
     }
     
     // Order moves for better alpha-beta pruning
-    // Promotions first (especially queen), then captures (MVV-LVA), then quiet moves
-    orderMoves(board, moves);
+    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then quiet moves
+    orderMoves(board, moves, ttMove);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
@@ -199,9 +347,13 @@ eval::Score negamax(Board& board,
     int pieceCountBefore = __builtin_popcountll(board.occupied());
 #endif
     
+    // Sub-phase 5A-5E: Store preparation
+    // Store original alpha for bound determination
+    eval::Score alphaOrig = alpha;
+    
     // Initialize best score
     eval::Score bestScore = eval::Score::minus_infinity();
-    Move bestMove;  // Only used at root (ply == 0) for tracking best move
+    Move bestMove = NO_MOVE;  // Track best move for all plies (needed for TT storage later)
     
     // Search all moves
     int moveCount = 0;
@@ -220,7 +372,7 @@ eval::Score negamax(Board& board,
         // Recursive search with negation and swapped window
         // Note: When negating, we swap alpha and beta
         eval::Score score = -negamax(board, depth - 1, ply + 1, 
-                                    -beta, -alpha, searchInfo, info);
+                                    -beta, -alpha, searchInfo, info, tt);
         
         // Unmake the move
         board.unmakeMove(move, undo);
@@ -271,11 +423,54 @@ eval::Score negamax(Board& board,
         }
     }
     
+    // Sub-phase 5A: Basic Store Implementation
+    // Store position in TT after search completes
+    // Only store if we have a valid TT and didn't terminate early
+    if (tt && tt->isEnabled() && !info.stopped && bestMove != NO_MOVE) {
+        // Sub-phase 5D: Skip storing at root position
+        if (ply > 0) {
+            Hash zobristKey = board.zobristKey();
+            
+            // Sub-phase 5B: Determine bound type based on score relative to original window
+            Bound bound;
+            if (bestScore <= alphaOrig) {
+                // Fail-low: All moves were worse than alpha
+                bound = Bound::UPPER;
+            } else if (bestScore >= beta) {
+                // Fail-high: We found a move better than beta (beta cutoff)
+                bound = Bound::LOWER;
+            } else {
+                // Exact: Score is within the original window
+                bound = Bound::EXACT;
+            }
+            
+            // Sub-phase 5C: Mate Score Adjustment for storing
+            // Adjust mate scores to be relative to root (inverse of adjustMateScoreFromTT)
+            eval::Score scoreToStore = bestScore;
+            if (bestScore.value() >= MATE_BOUND) {
+                // Positive mate score - we're winning
+                // Store distance from root, not from current position
+                scoreToStore = eval::Score(bestScore.value() + ply);
+            } else if (bestScore.value() <= -MATE_BOUND) {
+                // Negative mate score - we're losing
+                // Store distance from root, not from current position
+                scoreToStore = eval::Score(bestScore.value() - ply);
+            }
+            
+            // Store the entry
+            // For now, use the same score for both score and evalScore
+            // In the future, we might want to store static eval separately
+            tt->store(zobristKey, bestMove, scoreToStore.value(), scoreToStore.value(), 
+                     static_cast<uint8_t>(depth), bound);
+            info.ttStores++;
+        }
+    }
+    
     return bestScore;
 }
 
 // Iterative deepening search controller
-Move search(Board& board, const SearchLimits& limits) {
+Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Debug output
     std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
     std::cerr << "Search: movetime=" << limits.movetime.count() << "ms" << std::endl;
@@ -314,7 +509,7 @@ Move search(Board& board, const SearchLimits& limits) {
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, info);
+                                   searchInfo, info, tt);
         
         // Clear search mode after search
         board.setSearchMode(false);
@@ -433,6 +628,18 @@ void sendSearchInfo(const SearchData& info) {
                   << info.effectiveBranchingFactor()
                   << " moveeff " << std::fixed << std::setprecision(1)
                   << info.moveOrderingEfficiency() << "%";
+    }
+    
+    // Add TT statistics if we have probes
+    if (info.ttProbes > 0) {
+        double hitRate = (100.0 * info.ttHits) / info.ttProbes;
+        std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
+        if (info.ttCutoffs > 0) {
+            std::cout << " ttcuts " << info.ttCutoffs;
+        }
+        if (info.ttStores > 0) {
+            std::cout << " ttstores " << info.ttStores;
+        }
     }
     
     // Output principal variation (just the best move for now)

@@ -1,0 +1,151 @@
+{
+    "resign": {
+        "move_count": 1,
+        "score": 0,
+        "twosided": false,
+        "enabled": false
+    },
+    "draw": {
+        "move_number": 0,
+        "move_count": 1,
+        "score": 0,
+        "enabled": false
+    },
+    "maxmoves": {
+        "move_count": 1,
+        "enabled": false
+    },
+    "tb_adjudication": {
+        "syzygy_dirs": "",
+        "max_pieces": 0,
+        "ignore_50_move_rule": false,
+        "enabled": false
+    },
+    "opening": {
+        "file": "/workspace/external/books/4moves_test.pgn",
+        "format": 1,
+        "order": 0,
+        "plies": -1,
+        "start": 1
+    },
+    "pgn": {
+        "additional_lines_rgx": [],
+        "event_name": "Fastchess Tournament",
+        "site": "?",
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/games.pgn",
+        "notation": 0,
+        "track_nodes": false,
+        "track_seldepth": false,
+        "track_nps": false,
+        "track_hashfull": false,
+        "track_tbhits": false,
+        "track_timeleft": false,
+        "track_latency": false,
+        "min": false,
+        "crc": false
+    },
+    "epd": {
+        "file": ""
+    },
+    "sprt": {
+        "alpha": 0.05,
+        "beta": 0.05,
+        "elo0": 0.0,
+        "elo1": 30.0,
+        "model": "normalized",
+        "enabled": true
+    },
+    "config_name": "config.json",
+    "output": 0,
+    "seed": 3837143811134085151,
+    "variant": 0,
+    "type": 0,
+    "gauntlet_seeds": 1,
+    "ratinginterval": 2,
+    "scoreinterval": 1,
+    "wait": 0,
+    "autosaveinterval": 20,
+    "games": 2,
+    "rounds": 2000,
+    "concurrency": 1,
+    "force_concurrency": false,
+    "recover": true,
+    "noswap": false,
+    "reverse": false,
+    "report_penta": true,
+    "affinity": false,
+    "show_latency": false,
+    "log": {
+        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/fastchess.log",
+        "level": 3,
+        "compress": false,
+        "realtime": true,
+        "engine_coms": false
+    },
+    "engines": [
+        {
+            "name": "Stage11-MVV-LVA-v2-60s",
+            "dir": "",
+            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
+            "args": "",
+            "restart": false,
+            "options": [],
+            "limit": {
+                "tc": {
+                    "increment": 600,
+                    "fixed_time": 0,
+                    "time": 60000,
+                    "moves": 0,
+                    "timemargin": 0
+                },
+                "nodes": 0,
+                "plies": 0
+            },
+            "variant": 0
+        },
+        {
+            "name": "Stage10-Magic-60s",
+            "dir": "",
+            "cmd": "/workspace/binaries/seajay-stage10-x86-64",
+            "args": "",
+            "restart": false,
+            "options": [],
+            "limit": {
+                "tc": {
+                    "increment": 600,
+                    "fixed_time": 0,
+                    "time": 60000,
+                    "moves": 0,
+                    "timemargin": 0
+                },
+                "nodes": 0,
+                "plies": 0
+            },
+            "variant": 0
+        }
+    ],
+    "stats": {
+        "Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s": {
+            "wins": 14,
+            "losses": 22,
+            "draws": 244,
+            "penta_WW": 0,
+            "penta_WD": 6,
+            "penta_WL": 8,
+            "penta_DD": 113,
+            "penta_LD": 12,
+            "penta_LL": 1
+        },
+        "Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s": {
+            "wins": 0,
+            "losses": 0,
+            "draws": 0,
+            "penta_WW": 0,
+            "penta_WD": 0,
+            "penta_WL": 0,
+            "penta_DD": 0,
+            "penta_LD": 0,
+            "penta_LL": 0
+        }
+    }
+}

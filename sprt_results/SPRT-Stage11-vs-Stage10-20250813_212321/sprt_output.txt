@@ -434,3 +434,27 @@ Finished game 156 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1-0 {White mates}
 Started game 157 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
 Finished game 157 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1-0 {White mates}
 Started game 158 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 158 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1-0 {White mates}
+Started game 159 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 159 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 160 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 160 (Stage10-Magic vs Stage11-MVV-LVA-v2): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage11-MVV-LVA-v2 vs Stage10-Magic (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 6.52 +/- 34.41, nElo: 10.23 +/- 53.83
+LOS: 64.52 %, DrawRatio: 56.25 %, PairsRatio: 1.19
+Games: 160, Wins: 64, Losses: 61, Draws: 35, Points: 81.5 (50.94 %)
+Ptnml(0-2): [5, 11, 45, 14, 5], WL/DD Ratio: 8.00
+LLR: -0.98 (-33.1%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 161 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 161 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1/2-1/2 {}
+Started game 162 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 162 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 163 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 163 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 164 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)
+Finished game 164 (Stage10-Magic vs Stage11-MVV-LVA-v2): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 165 of 20000 (Stage11-MVV-LVA-v2 vs Stage10-Magic)
+Finished game 165 (Stage11-MVV-LVA-v2 vs Stage10-Magic): 1-0 {White mates}
+Started game 166 of 20000 (Stage10-Magic vs Stage11-MVV-LVA-v2)

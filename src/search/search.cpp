@@ -27,7 +27,8 @@ Move selectBestMove(Board& board) {
     limits.maxDepth = 4;  // Default to 4-ply search
     limits.movetime = std::chrono::milliseconds(1000);  // 1 second per move
     
-    return search(board, limits);
+    // Note: passing nullptr for TT - the main search will need to provide TT
+    return search(board, limits, nullptr);
 }
 
 Move selectRandomMove(Board& board) {

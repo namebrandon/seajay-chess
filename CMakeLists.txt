@@ -21,6 +21,11 @@ option(USE_MAGIC_BITBOARDS "Use magic bitboards instead of ray-based" OFF)
 option(DEBUG_MAGIC "Enable magic bitboard debug output" OFF)
 option(SANITIZE_MAGIC "Enable all sanitizers for magic development" OFF)
 
+# Transposition Table development options (Stage 12)
+option(TT_DEBUG "Enable transposition table debug checks" OFF)
+option(TT_PARANOID "Enable paranoid TT validation (slow)" OFF)
+option(TT_SHADOW "Enable shadow hashing for TT validation" OFF)
+
 if(DEBUG_MAGIC)
     add_compile_definitions(DEBUG_MAGIC)
 endif()
@@ -32,6 +37,21 @@ endif()
 if(SANITIZE_MAGIC)
     add_compile_options(-fsanitize=address,undefined,leak)
     add_link_options(-fsanitize=address,undefined,leak)
+endif()
+
+# Transposition Table compilation modes
+if(TT_PARANOID)
+    add_compile_definitions(TT_PARANOID)
+    add_compile_definitions(TT_DEBUG)  # Paranoid implies debug
+    message(STATUS "TT Paranoid mode enabled (includes debug checks)")
+elseif(TT_DEBUG)
+    add_compile_definitions(TT_DEBUG)
+    message(STATUS "TT Debug mode enabled")
+endif()
+
+if(TT_SHADOW)
+    add_compile_definitions(TT_SHADOW)
+    message(STATUS "TT Shadow hashing enabled")
 endif()
 
 # Warning flags
@@ -48,16 +68,20 @@ set(CORE_SOURCES
     src/core/board_safety.cpp
     src/core/move_generation.cpp
     src/core/move_list.cpp
+    src/core/perft.cpp
+    src/core/transposition_table.cpp
     src/core/bitboard.h
     src/core/board.h
     src/core/board_safety.h
     src/core/move_generation.h
     src/core/move_list.h
+    src/core/perft.h
     src/core/types.h
     src/core/attack_wrapper.h
     src/core/magic_validator.h
     src/core/magic_bitboards.h
     src/core/magic_constants.h
+    src/core/transposition_table.h
 )
 
 # Evaluation sources
@@ -97,6 +121,12 @@ add_executable(seajay
     ${UCI_SOURCES}
 )
 target_link_libraries(seajay seajay_core)
+
+# Perft tool executable
+add_executable(perft_tool
+    src/tools/perft_tool.cpp
+)
+target_link_libraries(perft_tool seajay_core)
 
 # Output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
@@ -170,6 +200,22 @@ target_link_libraries(test_mvv_lva_performance seajay_core)
 # MVV-LVA Phase 7 performance test
 add_executable(test_mvv_lva_phase7 tests/test_mvv_lva_phase7.cpp)
 target_link_libraries(test_mvv_lva_phase7 seajay_core)
+
+# Stage 12: Transposition Table tests
+add_executable(test_zobrist tests/unit/test_zobrist.cpp)
+target_link_libraries(test_zobrist seajay_core)
+
+add_executable(test_transposition_table tests/unit/test_transposition_table.cpp)
+target_link_libraries(test_transposition_table seajay_core)
+
+add_executable(test_tt_search tests/integration/test_tt_search.cpp)
+target_link_libraries(test_tt_search seajay_core)
+
+add_executable(test_tt_chaos tests/stress/test_tt_chaos.cpp)
+target_link_libraries(test_tt_chaos seajay_core)
+
+add_executable(test_perft_tt tests/unit/test_perft_tt.cpp)
+target_link_libraries(test_perft_tt seajay_core)
 
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
