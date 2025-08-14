@@ -1,0 +1,41 @@
+Indexing opening suite...
+Started game 1 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 1 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 2 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 2 (Stockfish-1200ELO vs SeaJay-2.12.tt): 1-0 {White mates}
+Started game 3 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 3 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 4 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 4 (Stockfish-1200ELO vs SeaJay-2.12.tt): 1-0 {White mates}
+Started game 5 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 5 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 6 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 6 (Stockfish-1200ELO vs SeaJay-2.12.tt): 1-0 {White mates}
+Started game 7 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 7 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 8 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 8 (Stockfish-1200ELO vs SeaJay-2.12.tt): 0-1 {Black mates}
+Started game 9 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 9 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 10 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 10 (Stockfish-1200ELO vs SeaJay-2.12.tt): 1-0 {White mates}
+Started game 11 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 11 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 12 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 12 (Stockfish-1200ELO vs SeaJay-2.12.tt): 1-0 {White mates}
+Started game 13 of 600 (SeaJay-2.12.tt vs Stockfish-1200ELO)
+Finished game 13 (SeaJay-2.12.tt vs Stockfish-1200ELO): 0-1 {Black mates}
+Started game 14 of 600 (Stockfish-1200ELO vs SeaJay-2.12.tt)
+Finished game 14 (Stockfish-1200ELO vs SeaJay-2.12.tt): 0-1 {Black mates}
+--------------------------------------------------
+Results of SeaJay-2.12.tt vs Stockfish-1200ELO (10+0.1, NULL - 1t, NULL - 16MB, 4moves_test.pgn):
+Elo: -311.26 +/- nan, nElo: -388.44 +/- 181.99
+LOS: 0.00 %, DrawRatio: 28.57 %, PairsRatio: 0.00
+Games: 14, Wins: 2, Losses: 12, Draws: 0, Points: 2.0 (14.29 %)
+Ptnml(0-2): [5, 0, 2, 0, 0], WL/DD Ratio: inf
+LLR: -3.18 (-108.1%) (-2.94, 2.94) [50.00, 150.00]
+--------------------------------------------------
+SPRT ([50.00, 150.00]) completed - H0 was accepted
+Finished match
+Total Time: 00:05:54 (hours:minutes:seconds)
+

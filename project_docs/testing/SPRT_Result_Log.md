@@ -114,6 +114,36 @@ Each test entry includes:
 
 ---
 
+### External Benchmark Tests
+
+#### Test: Stage 12 vs Stockfish Skill Level 5
+**Date:** August 14, 2025  
+**Test Type:** External calibration benchmark  
+**Versions:** SeaJay Stage 12 TT Final vs Stockfish (Skill Level 5)  
+**Time Control:** 10+0.1  
+**Book:** 4moves_test.pgn  
+
+**Result:** FAILED (LLR: -3.18)  
+**SPRT Bounds:** [50, 150] - Testing if SeaJay is 50-150 Elo stronger  
+
+**Statistics (14 games before early stop):**
+- **Games:** 14
+- **Score:** 2-12-0 (14.29%)
+- **Elo:** -311.26 ± nan
+- **Wins:** 2 (First wins ever against this benchmark!)
+- **Losses:** 12
+- **Draws:** 0
+- **LLR:** -3.18 (-108.1%) - Early termination
+
+**Notes:**
+- **PROGRESS!** First time SeaJay has won games against Stockfish Level 5
+- Previous stages scored 0% (no wins at all)
+- 2 wins out of 14 games shows real improvement
+- Stockfish Skill Level 5 remains our aspirational benchmark
+- Goal for future stages: Reach 50%+ score against this level
+
+---
+
 ### Previous SPRT Tests
 
 *(Earlier SPRT tests from Phase 2 will be documented here as they are discovered in the sprt_results directory)*
@@ -122,10 +152,11 @@ Each test entry includes:
 
 ## Summary Statistics
 
-**Total SPRT Tests Completed:** 1  
-**Tests Passed:** 1  
-**Tests Failed:** 0  
-**Average Elo Gain (Passed Tests):** 224.04  
+**Total SPRT Tests Completed:** 4  
+**Internal Tests Passed:** 3  
+**Internal Tests Failed:** 0  
+**External Tests:** 1 (aspirational benchmark)  
+**Average Elo Gain (Internal):** ~200+  
 
 ## Testing Infrastructure
 

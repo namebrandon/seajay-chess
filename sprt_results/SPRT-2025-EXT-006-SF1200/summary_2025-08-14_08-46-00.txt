@@ -1,0 +1,15 @@
+Test ID: SPRT-2025-EXT-006-SF1200
+Date: Thu Aug 14 08:51:55 AM CDT 2025
+SeaJay Stage 12 (~1300 ELO) vs Stockfish (Skill Level 5, ~1200 ELO)
+Time Control: 10+0.1
+
+Results:
+Elo: -311.26 +/- nan, nElo: -388.44 +/- 181.99
+Games: 14, Wins: 2, Losses: 12, Draws: 0, Points: 2.0 (14.29 %)
+SPRT ([50.00, 150.00]) completed - H0 was accepted
+
+Analysis:
+This test evaluates SeaJay Stage 12 against intermediate amateur level play.
+Stockfish at Skill Level 5 approximates 1200 ELO strength.
+A positive result (SeaJay winning) confirms Stage 12 reaches beginner club player level.
+Expected score: 60-65% for SeaJay with ~100 ELO advantage.
