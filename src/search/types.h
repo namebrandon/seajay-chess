@@ -42,6 +42,7 @@ struct SearchData {
     uint64_t ttHits = 0;           // Total TT hits
     uint64_t ttCutoffs = 0;        // TT cutoffs (immediate returns)
     uint64_t ttMoveHits = 0;       // TT move found for ordering
+    uint64_t ttStores = 0;         // Total TT stores
     
     // Depth tracking
     int depth = 0;                 // Current iterative deepening depth
@@ -104,6 +105,7 @@ struct SearchData {
         ttHits = 0;
         ttCutoffs = 0;
         ttMoveHits = 0;
+        ttStores = 0;
         depth = 0;
         seldepth = 0;
         bestMove = Move();

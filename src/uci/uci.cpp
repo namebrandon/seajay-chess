@@ -11,7 +11,7 @@
 
 using namespace seajay;
 
-UCIEngine::UCIEngine() : m_quit(false) {
+UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     // Initialize board to starting position
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     m_board.clearGameHistory();
@@ -347,8 +347,8 @@ void UCIEngine::search(const SearchParams& params) {
     
     limits.infinite = params.infinite;
     
-    // Use the new negamax search
-    Move bestMove = search::search(m_board, limits);
+    // Use the new negamax search with TT
+    Move bestMove = search::search(m_board, limits, &m_tt);
     
     // Note: search::search already outputs UCI info during search
     
@@ -474,5 +474,6 @@ void UCIEngine::handleUCINewGame() {
     m_board.clear();
     m_board.setStartingPosition();
     m_board.clearGameHistory();
+    m_tt.clear();  // Clear TT for new game
     // No need to push - board tracks its own history
 }

@@ -8,6 +8,7 @@
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../core/types.h"  // For Hash type
+#include "../core/transposition_table.h"  // For TT integration
 
 namespace seajay {
 
@@ -34,6 +35,7 @@ private:
     // Core engine state
     Board m_board;
     bool m_quit;
+    TranspositionTable m_tt;  // Transposition table for search
     
     // Helper methods for draw detection
     void updateGameHistory();

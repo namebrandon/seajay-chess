@@ -347,6 +347,10 @@ eval::Score negamax(Board& board,
     int pieceCountBefore = __builtin_popcountll(board.occupied());
 #endif
     
+    // Sub-phase 5A-5E: Store preparation
+    // Store original alpha for bound determination
+    eval::Score alphaOrig = alpha;
+    
     // Initialize best score
     eval::Score bestScore = eval::Score::minus_infinity();
     Move bestMove = NO_MOVE;  // Track best move for all plies (needed for TT storage later)
@@ -416,6 +420,49 @@ eval::Score negamax(Board& board,
                     break;  // Beta cutoff - no need to search more moves
                 }
             }
+        }
+    }
+    
+    // Sub-phase 5A: Basic Store Implementation
+    // Store position in TT after search completes
+    // Only store if we have a valid TT and didn't terminate early
+    if (tt && tt->isEnabled() && !info.stopped && bestMove != NO_MOVE) {
+        // Sub-phase 5D: Skip storing at root position
+        if (ply > 0) {
+            Hash zobristKey = board.zobristKey();
+            
+            // Sub-phase 5B: Determine bound type based on score relative to original window
+            Bound bound;
+            if (bestScore <= alphaOrig) {
+                // Fail-low: All moves were worse than alpha
+                bound = Bound::UPPER;
+            } else if (bestScore >= beta) {
+                // Fail-high: We found a move better than beta (beta cutoff)
+                bound = Bound::LOWER;
+            } else {
+                // Exact: Score is within the original window
+                bound = Bound::EXACT;
+            }
+            
+            // Sub-phase 5C: Mate Score Adjustment for storing
+            // Adjust mate scores to be relative to root (inverse of adjustMateScoreFromTT)
+            eval::Score scoreToStore = bestScore;
+            if (bestScore.value() >= MATE_BOUND) {
+                // Positive mate score - we're winning
+                // Store distance from root, not from current position
+                scoreToStore = eval::Score(bestScore.value() + ply);
+            } else if (bestScore.value() <= -MATE_BOUND) {
+                // Negative mate score - we're losing
+                // Store distance from root, not from current position
+                scoreToStore = eval::Score(bestScore.value() - ply);
+            }
+            
+            // Store the entry
+            // For now, use the same score for both score and evalScore
+            // In the future, we might want to store static eval separately
+            tt->store(zobristKey, bestMove, scoreToStore.value(), scoreToStore.value(), 
+                     static_cast<uint8_t>(depth), bound);
+            info.ttStores++;
         }
     }
     
@@ -589,6 +636,9 @@ void sendSearchInfo(const SearchData& info) {
         std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
         if (info.ttCutoffs > 0) {
             std::cout << " ttcuts " << info.ttCutoffs;
+        }
+        if (info.ttStores > 0) {
+            std::cout << " ttstores " << info.ttStores;
         }
     }
     
