@@ -65,7 +65,8 @@ template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves) noexcept {
 #ifdef ENABLE_MVV_LVA
     // Use MVV-LVA ordering for better move ordering
-    static thread_local MvvLvaOrdering mvvLvaOrdering;
+    // Local variable to avoid thread_local overhead
+    MvvLvaOrdering mvvLvaOrdering;
     mvvLvaOrdering.orderMoves(board, moves);
 #else
     // Fallback to simple ordering without MVV-LVA

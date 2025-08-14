@@ -1,5 +1,4 @@
 #include "move_ordering.h"
-#include <vector>
 #include <algorithm>
 #include <iostream>
 
@@ -11,6 +10,18 @@
 #endif
 
 namespace seajay::search {
+
+// MVV-LVA table: [victim_type][attacker_type] = score
+// Higher scores = better moves (capture high value with low value)
+static constexpr int MVV_LVA_TABLE[7][7] = {
+    {0, 0, 0, 0, 0, 0, 0},              // NO_PIECE_TYPE victim (not used)
+    {0, 105, 104, 103, 102, 101, 100},  // PAWN victim
+    {0, 205, 204, 203, 202, 201, 200},  // KNIGHT victim
+    {0, 305, 304, 303, 302, 301, 300},  // BISHOP victim
+    {0, 405, 404, 403, 402, 401, 400},  // ROOK victim
+    {0, 505, 504, 503, 502, 501, 500},  // QUEEN victim
+    {0, 605, 604, 603, 602, 601, 600},  // KING victim (shouldn't happen)
+};
 
 // Score a single move using MVV-LVA heuristic
 int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
@@ -37,8 +48,8 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
             
             if (capturedPiece != NO_PIECE) {
                 PieceType victim = typeOf(capturedPiece);
-                // Attacker is PAWN, not the promoted piece!
-                baseScore += mvvLvaScore(victim, PAWN);
+                // Use table lookup for consistency
+                baseScore += MVV_LVA_TABLE[victim][PAWN];
             }
         }
         
@@ -49,7 +60,7 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
     if (isEnPassant(move)) {
         stats.en_passants_scored++;
         // En passant is always PxP (pawn captures pawn)
-        return mvvLvaScore(PAWN, PAWN);
+        return MVV_LVA_TABLE[PAWN][PAWN];
     }
     
     // Handle regular captures
@@ -76,7 +87,7 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
         // King captures should never happen in legal chess
         MVV_LVA_ASSERT(victim != KING, "Attempting to capture king!");
         
-        return mvvLvaScore(victim, attacker);
+        return MVV_LVA_TABLE[victim][attacker];
     }
     
     // Quiet moves get zero score (will be ordered last)
@@ -84,7 +95,8 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
     return 0;
 }
 
-// Order moves using MVV-LVA scoring
+// Order moves using MVV-LVA scoring - OPTIMIZED VERSION
+// CRITICAL: Only sorts captures, preserves quiet move order from generator
 void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     // Nothing to order if empty or single move
     if (moves.size() <= 1) {
@@ -93,40 +105,89 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     
 #ifdef DEBUG_MOVE_ORDERING
     if (g_debugMoveOrdering) {
-        std::cout << "[MVV-LVA] Ordering " << moves.size() << " moves" << std::endl;
+        std::cout << "[MVV-LVA] Ordering " << moves.size() << " moves (optimized)" << std::endl;
     }
 #endif
     
-    // Create scored moves array
-    std::vector<MoveScore> scoredMoves;
-    scoredMoves.reserve(moves.size());
-    
-    // Score each move
-    for (Move move : moves) {
-        int score = scoreMove(board, move);
-        scoredMoves.push_back({move, score});
-    }
-    
-    // Use stable_sort for deterministic ordering
-    // When scores are equal, maintains original move order
-    // For additional determinism, we could use from-square as tiebreaker
-    std::stable_sort(scoredMoves.begin(), scoredMoves.end(), 
-        [](const MoveScore& a, const MoveScore& b) {
-            if (a.score != b.score) {
-                return a.score > b.score;  // Higher scores first
-            }
-            // Tiebreaker: use from-square for deterministic ordering
-            return moveFrom(a.move) < moveFrom(b.move);
+    // CRITICAL OPTIMIZATION: In-place partition to separate captures from quiet moves
+    // This preserves the natural order of quiet moves from the generator
+    auto captureEnd = std::stable_partition(moves.begin(), moves.end(),
+        [&board](const Move& move) {
+            // Promotions and captures go to the front
+            return isPromotion(move) || isCapture(move) || isEnPassant(move);
         });
     
-    // Copy sorted moves back to original container
-    moves.clear();
-    for (const auto& ms : scoredMoves) {
-        moves.add(ms.move);
+    // Only sort the captures/promotions portion if there are any
+    if (captureEnd != moves.begin()) {
+        // Sort captures by MVV-LVA score (higher scores first)
+        std::sort(moves.begin(), captureEnd,
+            [&board](const Move& a, const Move& b) {
+                // Inline scoring for performance (avoid function call overhead)
+                int scoreA, scoreB;
+                
+                // Score move A
+                if (isPromotion(a)) {
+                    scoreA = PROMOTION_BASE_SCORE;
+                    PieceType promoType = promotionType(a);
+                    if (promoType >= KNIGHT && promoType <= QUEEN) {
+                        scoreA += PROMOTION_TYPE_BONUS[promoType - KNIGHT];
+                    }
+                    if (isCapture(a)) {
+                        Piece victim = board.pieceAt(moveTo(a));
+                        if (victim != NO_PIECE) {
+                            scoreA += MVV_LVA_TABLE[typeOf(victim)][PAWN];
+                        }
+                    }
+                } else if (isEnPassant(a)) {
+                    scoreA = MVV_LVA_TABLE[PAWN][PAWN];
+                } else if (isCapture(a)) {
+                    Piece victim = board.pieceAt(moveTo(a));
+                    Piece attacker = board.pieceAt(moveFrom(a));
+                    if (victim != NO_PIECE && attacker != NO_PIECE) {
+                        scoreA = MVV_LVA_TABLE[typeOf(victim)][typeOf(attacker)];
+                    } else {
+                        scoreA = 0;
+                    }
+                } else {
+                    scoreA = 0;
+                }
+                
+                // Score move B
+                if (isPromotion(b)) {
+                    scoreB = PROMOTION_BASE_SCORE;
+                    PieceType promoType = promotionType(b);
+                    if (promoType >= KNIGHT && promoType <= QUEEN) {
+                        scoreB += PROMOTION_TYPE_BONUS[promoType - KNIGHT];
+                    }
+                    if (isCapture(b)) {
+                        Piece victim = board.pieceAt(moveTo(b));
+                        if (victim != NO_PIECE) {
+                            scoreB += MVV_LVA_TABLE[typeOf(victim)][PAWN];
+                        }
+                    }
+                } else if (isEnPassant(b)) {
+                    scoreB = MVV_LVA_TABLE[PAWN][PAWN];
+                } else if (isCapture(b)) {
+                    Piece victim = board.pieceAt(moveTo(b));
+                    Piece attacker = board.pieceAt(moveFrom(b));
+                    if (victim != NO_PIECE && attacker != NO_PIECE) {
+                        scoreB = MVV_LVA_TABLE[typeOf(victim)][typeOf(attacker)];
+                    } else {
+                        scoreB = 0;
+                    }
+                } else {
+                    scoreB = 0;
+                }
+                
+                return scoreA > scoreB;  // Higher scores first
+            });
     }
+    
+    // Quiet moves remain at the end in their original order (castling first, etc.)
 }
 
 // Template implementation for integrating with existing code
+// OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>
 void orderMovesWithMvvLva(const Board& board, MoveContainer& moves) noexcept {
     // Nothing to order if empty or single move
@@ -134,25 +195,9 @@ void orderMovesWithMvvLva(const Board& board, MoveContainer& moves) noexcept {
         return;
     }
     
-    // Create temporary array for scoring
-    std::vector<MoveScore> scoredMoves;
-    scoredMoves.reserve(moves.size());
-    
-    // Score each move
-    for (auto it = moves.begin(); it != moves.end(); ++it) {
-        Move move = *it;
-        int score = MvvLvaOrdering::scoreMove(board, move);
-        scoredMoves.push_back({move, score});
-    }
-    
-    // Use stable_sort for deterministic ordering
-    std::stable_sort(scoredMoves.begin(), scoredMoves.end());
-    
-    // Copy sorted moves back
-    auto writeIt = moves.begin();
-    for (const auto& ms : scoredMoves) {
-        *writeIt++ = ms.move;
-    }
+    // Use the optimized in-place implementation
+    static MvvLvaOrdering ordering;
+    ordering.orderMoves(board, moves);
 }
 
 // Explicit instantiation for common container types
