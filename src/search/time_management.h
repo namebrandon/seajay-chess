@@ -223,4 +223,11 @@ bool hasTimeForNextIteration(const TimeLimits& limits,
                             double lastIterationTime,
                             double branchingFactor);
 
+// Stage 13, Deliverable 4.2a: Predict time for next iteration
+// Uses EBF to estimate if we have time for another iteration
+std::chrono::milliseconds predictNextIterationTime(
+    std::chrono::milliseconds lastIterationTime,
+    double effectiveBranchingFactor,
+    int currentDepth);
+
 } // namespace seajay::search

@@ -4,7 +4,7 @@
 **Start Date:** August 14, 2025  
 **Theme:** METHODICAL VALIDATION  
 **Total Deliverables:** 43  
-**Completed:** 19/43 (44%)  
+**Completed:** 26/43 (60%)  
 
 ## Implementation Summary
 
@@ -111,7 +111,7 @@ Implementing production-quality iterative deepening with aspiration windows, sop
 - **NPS Check:** No regression
 - **Commit:** `a3c52f0`
 
-## Phase 3: Aspiration Windows - IN PROGRESS
+## Phase 3: Aspiration Windows - COMPLETE ✅
 
 ### Deliverable 3.1a: Window calculation types ✅
 - Created `aspiration_window.h` with types
@@ -145,26 +145,43 @@ Implementing production-quality iterative deepening with aspiration windows, sop
 - **NPS Check:** 1,008,545 at depth 6 (no regression)
 - **Commit:** `124b2c5`
 
-### Deliverable 3.2c: Basic re-search ⏳
+### Deliverable 3.2c: Basic re-search ✅
 - Add single re-search on fail high/low
 - Use full window on re-search
-- **Status:** Ready to implement
+- **Test Result:** Re-search working correctly
+- **Commit:** `2fb3e87`
 
-### Deliverable 3.2d: Window widening re-search ⏳
-- Implement progressive widening
+### Deliverable 3.2d: Window widening re-search ✅
+- Implement progressive widening (delta growth 1.33x)
 - Add attempt counter
-- **Status:** Pending
+- **Test Result:** Widening sequence verified
+- **Commit:** `5993d4a`
 
-### Deliverable 3.2e: Re-search limits ⏳
+### Deliverable 3.2e: Re-search limits ✅
 - Add 5-attempt maximum
-- Fall back to infinite window
-- **Status:** Pending
+- Fall back to infinite window after 5 attempts
+- **Test Result:** Pathological position doesn't hang, full regression passes
+- **Commit:** `ceb15ca`
 
-## Phase 4: Branching Factor - PENDING
+## Phase 4: Branching Factor - IN PROGRESS
 
-### Deliverable 4.1a-c: EBF tracking
-- EBF calculation and tracking
-- **Status:** Not started
+### Deliverable 4.1a: EBF tracking structure ✅
+- Add node count array to iterations
+- Add EBF field
+- **Test Result:** Structure exists and compiles
+- **Commit:** `daa38a8`
+
+### Deliverable 4.1b: Simple EBF calculation ✅
+- Calculate EBF between consecutive iterations
+- Use last 2 iterations only
+- **Test Result:** Manual calculation verified
+- **Commit:** `bf3fd11`
+
+### Deliverable 4.1c: Sophisticated EBF ✅
+- Use last 3-4 iterations
+- Weighted average (recent iterations weighted higher)
+- **Test Result:** Calculations match expected values
+- **Commit:** `447ee38`
 
 ### Deliverable 4.2a-b: Time prediction
 - Next iteration time prediction
@@ -214,6 +231,8 @@ Implementing production-quality iterative deepening with aspiration windows, sop
 | After 2.2b | 1,173,828 | +8% | New time management |
 | After 3.1c | 1,173,828 | +8% | Window logic (not used) |
 | After 3.2b | 1,008,545 | -7% | Aspiration windows active |
+| After 3.2e | 1,008,545 | -7% | Re-search limits working |
+| After 4.1c | 1,008,545 | -7% | EBF tracking complete |
 
 ## Test Results
 

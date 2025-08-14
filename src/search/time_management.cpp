@@ -171,4 +171,46 @@ bool hasTimeForNextIteration(const TimeLimits& limits,
     return projected < limits.soft;
 }
 
+// Stage 13, Deliverable 4.2a: Predict time for next iteration
+std::chrono::milliseconds predictNextIterationTime(
+    std::chrono::milliseconds lastIterationTime,
+    double effectiveBranchingFactor,
+    int currentDepth) {
+    
+    // Validate inputs
+    if (lastIterationTime.count() <= 0 || effectiveBranchingFactor <= 0) {
+        // Can't predict, return large value
+        return std::chrono::milliseconds(1000000);
+    }
+    
+    // Use sophisticated EBF if available (should be from getSophisticatedEBF())
+    // If EBF is too low or too high, clamp to reasonable bounds
+    double clampedEBF = effectiveBranchingFactor;
+    if (clampedEBF < 1.5) clampedEBF = 1.5;  // Minimum expected growth
+    if (clampedEBF > 10.0) clampedEBF = 10.0;  // Maximum reasonable growth
+    
+    // Apply depth-based adjustment
+    // At deeper depths, EBF tends to stabilize or decrease slightly
+    double depthFactor = 1.0;
+    if (currentDepth >= 10) {
+        depthFactor = 0.9;  // Expect 10% reduction in growth at high depths
+    } else if (currentDepth >= 7) {
+        depthFactor = 0.95;  // Expect 5% reduction at medium-high depths
+    }
+    
+    // Calculate predicted time
+    // Basic formula: next_time = last_time * EBF * depth_adjustment
+    double predictedTime = lastIterationTime.count() * clampedEBF * depthFactor;
+    
+    // Add safety margin (20% extra)
+    predictedTime *= 1.2;
+    
+    // Convert to milliseconds, ensuring we don't overflow
+    if (predictedTime > 3600000) {  // Cap at 1 hour
+        return std::chrono::milliseconds(3600000);
+    }
+    
+    return std::chrono::milliseconds(static_cast<int64_t>(predictedTime));
+}
+
 } // namespace seajay::search
