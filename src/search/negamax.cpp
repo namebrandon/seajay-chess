@@ -532,22 +532,31 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         
         eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
         
-        // Stage 13, Deliverable 3.2c: Basic re-search on fail high/low
+        // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
-            // Single re-search with full window
-            window.failedLow = (score <= alpha);
-            window.failedHigh = (score >= beta);
-            window.attempts = 1;
+            // Progressive widening instead of full window
+            bool failedHigh = (score >= beta);
+            window.failedLow = !failedHigh;
+            window.failedHigh = failedHigh;
             
-            // Re-search with full window
-            score = negamax(board, depth, 0,
-                           eval::Score::minus_infinity(),
-                           eval::Score::infinity(),
-                           searchInfo, info, tt);
-            
-            // Update window info for recording
-            alpha = eval::Score::minus_infinity();
-            beta = eval::Score::infinity();
+            // Progressive widening loop
+            while (score <= alpha || score >= beta) {
+                // Widen the window progressively
+                window = widenWindow(window, score, failedHigh);
+                alpha = window.alpha;
+                beta = window.beta;
+                
+                // Re-search with widened window
+                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+                
+                // Check if we're now using an infinite window
+                if (window.isInfinite()) {
+                    break;  // No point in further widening
+                }
+                
+                // Update fail direction if needed
+                failedHigh = (score >= beta);
+            }
         }
         
         board.setSearchMode(false);
