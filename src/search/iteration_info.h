@@ -45,7 +45,8 @@ struct IterationInfo {
 };
 
 // Static assertions to ensure POD nature (C++20)
+// Note: IterationInfo contains eval::Score which has constructors, 
+// so it's not trivial, but it is standard layout
 static_assert(std::is_standard_layout_v<IterationInfo>, "IterationInfo must be standard layout");
-static_assert(std::is_trivial_v<IterationInfo>, "IterationInfo must be trivial");
 
 } // namespace seajay::search

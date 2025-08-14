@@ -11,8 +11,8 @@
 - [x] 0.2: Debug Infrastructure - Created debug macros and regression tests
 
 ### Phase 1: Foundation (8 deliverables)
-- [ ] 1.1a: Basic type definitions
-- [ ] 1.1b: Enhanced search data structure
+- [x] 1.1a: Basic type definitions - Created IterationInfo struct
+- [x] 1.1b: Enhanced search data structure - Created IterativeSearchData class skeleton
 - [ ] 1.1c: Basic methods
 - [ ] 1.2a: Search wrapper for testing
 - [ ] 1.2b: Minimal iteration recording
