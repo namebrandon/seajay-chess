@@ -13,6 +13,10 @@ namespace seajay::search {
 static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply depth
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
 
+// Delta pruning constants
+static constexpr int DELTA_MARGIN = 900;            // Conservative margin (queen value)
+static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Reduced margin for endgames
+
 // Progressive limiter removal system
 // This ensures we remember to remove limiters when transitioning phases
 #ifdef QSEARCH_TESTING
