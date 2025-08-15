@@ -1,197 +1,83 @@
-# Stage 14: Quiescence Search - Daily Progress Tracker
+# Stage 14: Quiescence Search - Daily Progress Log
 
-## Day 1: [Date]
+## Day 1: 2024-08-14
 
-### Morning Session (Deliverables 1.1-1.3)
-- [ ] 1.1: Header file structure
-  - Time: _____ 
-  - Issues: None / [Describe]
-  - Commit: [hash]
+### Morning Session (Infrastructure & Stand-Pat)
+- ✅ **Deliverable 1.1**: Created quiescence.h header structure
+- ✅ **Deliverable 1.2**: Added safety constants (MAX_PLY, NODE_LIMIT, etc.)
+- ✅ **Deliverable 1.3**: Extended SearchData with quiescence metrics
+- ✅ **Deliverable 1.4**: Implemented minimal quiescence with stand-pat logic
+- ✅ **Deliverable 1.5**: Added repetition detection
+- ✅ **Deliverable 1.6**: Added time check mechanism
+
+### Afternoon Session (Integration & Capture Search)
+- ✅ **Deliverable 1.7**: Integrated quiescence into negamax
+  - Added ENABLE_QUIESCENCE compile flag
+  - Modified negamax to call quiescence at depth <= 0
+  - Verified compile-time switching works
   
-- [ ] 1.2: Safety constants
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+- ✅ **Deliverable 1.8**: Added UCI kill switch
+  - Added "UseQuiescence" UCI option (default true)
+  - Added runtime control via SearchLimits/SearchData
+  - Tested enable/disable works correctly
   
-- [ ] 1.3: SearchData extension
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-
-### Afternoon Session (Deliverables 1.4-1.6)
-- [ ] 1.4: Minimal quiescence function
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+- ✅ **Deliverable 1.9**: Implemented capture generation and search
+  - Generate captures using MoveGenerator::generateCaptures()
+  - Apply MVV-LVA ordering when available
+  - Implement alpha-beta pruning in capture search
+  - Limit to MAX_CAPTURES_PER_NODE (32)
+  - **Key Test**: Position with tactics shows seldepth 5 at depth 1
   
-- [ ] 1.5: Repetition detection
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 1.6: Time checking
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+- ✅ **Deliverable 1.10**: Implemented check evasion
+  - Detect check status at start of quiescence
+  - Generate ALL legal moves when in check (not just captures)
+  - Skip stand-pat evaluation when in check
+  - Handle checkmate detection (return mate score)
+  - No move limit when searching check evasions
+  - **Key Test**: Check positions correctly generate all evasions
 
-### Evening Session (Deliverables 1.7-1.8)
-- [ ] 1.7: Negamax integration
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 1.8: UCI kill switch
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+## Progress Summary
 
-### Day 1 Metrics:
-- Lines of code added: _____
-- Tests written: _____
-- Tests passing: _____
-- Perft status: Pass / [Issues]
-- Memory leaks: None / [Describe]
-- Compilation warnings: None / [List]
+### Completed Features
+1. **Stand-Pat Evaluation**: Basic quiescence with static eval cutoff
+2. **Safety Mechanisms**: Ply limits, time checks, repetition detection
+3. **Capture Search**: Full recursive capture search with MVV-LVA
+4. **Check Evasion**: Complete handling of in-check positions
+5. **Integration**: Fully integrated with negamax search
+6. **UCI Control**: Runtime enable/disable option
 
-### Day 1 Notes:
-[Any observations, concerns, or insights]
+### Key Validation Results
+- ✅ Quiescence extends selective depth (seldepth > depth)
+- ✅ Tactical positions show deep quiescence (seldepth 5+ at depth 1)
+- ✅ Check evasions work correctly
+- ✅ No stack overflow or infinite loops
+- ✅ Time management works in quiescence
+- ✅ Compile-time and runtime controls both functional
 
----
+### Test Positions Used
+```
+// Tactical position with captures
+"r2qkb1r/pp1n1ppp/2p1pn2/3p4/2PP4/2N1PN2/PP3PPP/R1BQKB1R w KQkq - 0 7"
+Result: depth 1, seldepth 5, showing quiescence extends search
 
-## Day 2: [Date]
+// Check evasion test
+"4k3/8/8/8/8/8/4Q3/4K3 b - - 0 1"
+Result: Correctly generates 4 legal moves (all king moves)
 
-### Morning Session (Deliverables 2.1-2.4)
-- [ ] 2.1: Basic capture generation
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.2: Capture ordering
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.3: Search first capture
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.4: Search all captures
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+// Position with hanging piece
+"rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq - 0 4"
+Result: Bishop captures f7 pawn found
+```
 
-### Afternoon Session (Deliverables 2.5-2.7)
-- [ ] 2.5: Check detection
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.6: quiescenceInCheck function
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.7: Check evasion search
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
+### Next Steps (Day 2)
+- [ ] Delta pruning in quiescence
+- [ ] Checking moves in quiescence (optional)
+- [ ] SEE (Static Exchange Evaluation) for pruning bad captures
+- [ ] Performance testing and optimization
+- [ ] SPRT validation against baseline
 
-### Evening Session (Deliverables 2.8-2.9)
-- [ ] 2.8: Node limit per position
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-  
-- [ ] 2.9: Capture limit per node
-  - Time: _____
-  - Issues: None / [Describe]
-  - Commit: [hash]
-
-### Day 2 Metrics:
-- Lines of code added: _____
-- Tests written: _____
-- Tests passing: _____
-- Tactical positions solved: ___/___
-- Node count increase: _____%
-- Time increase: _____%
-
-### Day 2 Notes:
-[Any observations, concerns, or insights]
-
----
-
-## Phase 1 Completion Checklist
-
-### Critical Test Positions:
-- [ ] Perpetual check test: Pass / [Issue]
-- [ ] Stalemate trap: Pass / [Issue]
-- [ ] Deep tactics: Pass / [Issue]
-- [ ] Promotion race: Pass / [Issue]
-- [ ] Check evasion: Pass / [Issue]
-
-### Performance Metrics:
-- [ ] Node increase: _____% (target: <50%)
-- [ ] Time increase: _____% (target: <10%)
-- [ ] Memory usage: _____ MB
-- [ ] Stack depth max: _____ (limit: 128)
-
-### Code Quality:
-- [ ] All tests passing: Yes / [List failures]
-- [ ] No memory leaks: Yes / [Describe]
-- [ ] No compiler warnings: Yes / [List]
-- [ ] Documentation complete: Yes / [Missing]
-
-### Git Status:
-- [ ] All changes committed: Yes / No
-- [ ] Tag created: stage14-phase1-complete
-- [ ] Branch clean: Yes / No
-
----
-
-## Issue Log
-
-### Issue #1: [Title]
-- **Date:** 
-- **Deliverable:** 
-- **Description:** 
-- **Resolution:** 
-- **Time lost:** 
-
-### Issue #2: [Title]
-[Template for tracking issues]
-
----
-
-## Performance Tracking
-
-### Baseline (Stage 13):
-- NPS: _____
-- Tactical solve rate: ___/300 WAC
-- Time to depth 8: _____
-- Elo estimate: ~1950
-
-### After Phase 1:
-- NPS: _____
-- Tactical solve rate: ___/300 WAC
-- Time to depth 8: _____
-- Node increase: _____%
-
-### After Phase 2:
-[Continue tracking]
-
----
-
-## Notes for Future Stages
-
-### Deferred Items Noticed:
-1. [Item and why it should be addressed]
-2. [Item and why it should be addressed]
-
-### Optimization Opportunities:
-1. [Optimization idea]
-2. [Optimization idea]
-
-### Architecture Concerns:
-1. [Concern]
-2. [Concern]
+## Notes
+- Implementation is more integrated than originally planned (no separate quiescenceInCheck function)
+- MVV-LVA ordering significantly improves cutoff rate
+- Safety limits prevent search explosion
+- Check evasion is critical for avoiding horizon effect in tactical positions

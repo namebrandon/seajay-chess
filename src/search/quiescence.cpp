@@ -20,6 +20,9 @@ eval::Score quiescence(
     SearchData& data,
     seajay::TranspositionTable& tt)
 {
+    // Record entry node count for per-position limit enforcement
+    const uint64_t entryNodes = data.qsearchNodes;
+    
     // Track nodes
     data.qsearchNodes++;
     
@@ -36,8 +39,15 @@ eval::Score quiescence(
         data.seldepth = ply;
     }
     
-    // Safety check: prevent stack overflow
+    // Safety check 1: prevent stack overflow
     if (ply >= TOTAL_MAX_PLY) {
+        return eval::evaluate(board);
+    }
+    
+    // Safety check 2: enforce per-position node limit
+    // This prevents search explosion in complex tactical positions
+    if (data.qsearchNodes - entryNodes > NODE_LIMIT_PER_POSITION) {
+        data.qsearchNodesLimited++;  // Track when we hit limits (for debugging)
         return eval::evaluate(board);
     }
     

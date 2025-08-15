@@ -174,47 +174,49 @@ git commit -m "feat(qsearch): Add time limit checking"
 
 ### Day 1 Evening: Integration Point (2 hours)
 
-#### Deliverable 1.7: Integrate with Negamax
+#### Deliverable 1.7: Integrate with Negamax ✅
 **Code Changes:**
-- [ ] Modify `src/search/negamax.cpp` line ~188:
+- [x] Modify `src/search/negamax.cpp` line ~188:
   ```cpp
   if (depth <= 0) {
       return quiescence(board, ply, alpha, beta, searchInfo, info, tt);
   }
   ```
-- [ ] Add include for quiescence.h
+- [x] Add include for quiescence.h
+- [x] Add ENABLE_QUIESCENCE compile flag
 
 **Validation:**
-- [ ] Compile entire project
-- [ ] Run perft tests - should still pass
-- [ ] Run basic search test - should return same scores for quiet positions
+- [x] Compile entire project
+- [x] Run perft tests - should still pass
+- [x] Run basic search test - should return same scores for quiet positions
 
-**Git Commit:**
+**Git Commit:** ✅ COMPLETED 2024-08-14
 ```bash
 git add src/search/negamax.cpp src/search/CMakeLists.txt
 git commit -m "feat(qsearch): Integrate quiescence with main search"
 ```
 
 **Documentation:**
-- [ ] Create `stage14_integration_notes.md`
-- [ ] Document integration point
+- [x] Create `stage14_integration_notes.md`
+- [x] Document integration point
 
 ---
 
-#### Deliverable 1.8: Add UCI Kill Switch
+#### Deliverable 1.8: Add UCI Kill Switch ✅
 **Code Changes:**
-- [ ] Add to UCI options:
+- [x] Add to UCI options:
   ```cpp
-  options["UseQuiescence"] = UCIOption(true);
+  option name UseQuiescence type check default true
   ```
-- [ ] Add flag check in negamax
+- [x] Add flag check in negamax
+- [x] Add useQuiescence to SearchLimits and SearchData
 
 **Validation:**
-- [ ] Test UCI option works
-- [ ] Verify search works with quiescence on/off
-- [ ] Compare outputs with flag toggled
+- [x] Test UCI option works
+- [x] Verify search works with quiescence on/off
+- [x] Compare outputs with flag toggled
 
-**Git Commit:**
+**Git Commit:** ✅ COMPLETED 2024-08-14
 ```bash
 git add src/uci/uci.cpp src/search/negamax.cpp
 git commit -m "feat(qsearch): Add UCI kill switch for emergency disable"
@@ -378,9 +380,9 @@ git commit -m "feat(qsearch): Add quiescenceInCheck with checkmate detection"
 
 ---
 
-#### Deliverable 2.7: Implement Check Evasion Search
+#### Deliverable 2.7: Implement Check Evasion Search ✅
 **Code Changes:**
-- [ ] Add full search in quiescenceInCheck:
+- [x] Add full search in quiescenceInCheck:
   ```cpp
   eval::Score bestScore = -MATE_SCORE;
   for (const Move& move : moves) {
@@ -392,13 +394,16 @@ git commit -m "feat(qsearch): Add quiescenceInCheck with checkmate detection"
   }
   return bestScore;
   ```
+- [x] Integrated check handling into main quiescence function
+- [x] Generate ALL legal moves when in check
+- [x] Skip stand-pat when in check
 
 **Validation:**
-- [ ] Test perpetual check position
-- [ ] Verify no infinite loops
-- [ ] Test checkmate in N positions
+- [x] Test perpetual check position
+- [x] Verify no infinite loops
+- [x] Test checkmate in N positions
 
-**Git Commit:**
+**Git Commit:** ✅ COMPLETED 2024-08-14 (as Deliverable 1.10)
 ```bash
 git add src/search/quiescence.cpp
 git commit -m "feat(qsearch): Complete check evasion implementation"

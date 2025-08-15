@@ -259,6 +259,11 @@ if(NOT SKIP_ALPHABETA_TEST)
     add_executable(test_iterative_regression tests/test_iterative_regression.cpp)
     target_include_directories(test_iterative_regression PRIVATE ${GTEST_INCLUDE_DIR})
     target_link_libraries(test_iterative_regression seajay_core ${GTEST_LIBRARIES} pthread)
+    
+    # Stage 14: Quiescence search limit tests
+    add_executable(test_quiescence_limits tests/search/test_quiescence_limits.cpp)
+    target_include_directories(test_quiescence_limits PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_quiescence_limits seajay_core ${GTEST_LIBRARIES} pthread)
 endif()
 
 # Add test cases

@@ -5,13 +5,30 @@
 #include "../evaluation/types.h"
 #include "types.h"
 #include "search_info.h"
+#include <cstdint>  // For UINT64_MAX
 
 namespace seajay::search {
 
 // Safety constants for quiescence search
 static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply depth
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
-static constexpr uint64_t NODE_LIMIT_PER_POSITION = 10000;  // Per-position node limit
+
+// Progressive limiter removal system
+// This ensures we remember to remove limiters when transitioning phases
+#ifdef QSEARCH_TESTING
+    // Phase 1: Conservative testing with strict limits
+    static constexpr uint64_t NODE_LIMIT_PER_POSITION = 10000;
+    #pragma message("QSEARCH_TESTING mode: Node limit = 10,000 per position")
+#elif defined(QSEARCH_TUNING)
+    // Phase 2: Tuning with higher limits
+    static constexpr uint64_t NODE_LIMIT_PER_POSITION = 100000;
+    #pragma message("QSEARCH_TUNING mode: Node limit = 100,000 per position")
+#else
+    // Production: No artificial limits
+    static constexpr uint64_t NODE_LIMIT_PER_POSITION = UINT64_MAX;
+    // No pragma message in production - silent operation
+#endif
+
 static constexpr int MAX_CAPTURES_PER_NODE = 32;    // Maximum captures to search per node
 
 // Static assertions for safety verification
