@@ -7,9 +7,30 @@
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
+#include "../core/see.h"  // Stage 15 Day 6: For SEE-based pruning
 #include <algorithm>
+#include <iostream>
 
 namespace seajay::search {
+
+// Stage 15 Day 6: Global SEE pruning mode and statistics
+SEEPruningMode g_seePruningMode = SEEPruningMode::OFF;
+SEEPruningStats g_seePruningStats;
+
+// Helper functions for SEE pruning mode
+SEEPruningMode parseSEEPruningMode(const std::string& mode) {
+    if (mode == "conservative") return SEEPruningMode::CONSERVATIVE;
+    if (mode == "aggressive") return SEEPruningMode::AGGRESSIVE;
+    return SEEPruningMode::OFF;
+}
+
+std::string seePruningModeToString(SEEPruningMode mode) {
+    switch (mode) {
+        case SEEPruningMode::CONSERVATIVE: return "conservative";
+        case SEEPruningMode::AGGRESSIVE: return "aggressive";
+        default: return "off";
+    }
+}
 
 // Mate score bound for adjustment
 constexpr int MATE_BOUND = 29000;
@@ -264,6 +285,83 @@ eval::Score quiescence(
             if (staticEval + eval::Score(captureValue) + eval::Score(deltaMargin) < alpha) {
                 data.deltasPruned++;
                 continue;  // Skip this capture
+            }
+        }
+        
+        // Stage 15 Day 6: SEE-based pruning
+        // Only prune captures (not promotions or check evasions)
+        if (g_seePruningMode != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
+            g_seePruningStats.totalCaptures++;
+            
+            // Calculate SEE value for this capture
+            SEEValue seeValue = see(board, move);
+            g_seePruningStats.seeEvaluations++;
+            
+            // Determine pruning threshold based on mode, game phase, and depth
+            int pruneThreshold;
+            if (g_seePruningMode == SEEPruningMode::CONSERVATIVE) {
+                // Conservative: fixed threshold -100
+                pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
+            } else {  // AGGRESSIVE
+                // Aggressive: depth-dependent and game-phase aware
+                // Start with base threshold
+                pruneThreshold = isEndgame ? SEE_PRUNE_THRESHOLD_ENDGAME : SEE_PRUNE_THRESHOLD_AGGRESSIVE;
+                
+                // Make pruning more aggressive deeper in quiescence
+                // Each 2 plies deeper, increase pruning aggressiveness by 25cp
+                int depthBonus = (ply / 2) * 25;
+                pruneThreshold = std::min(pruneThreshold + depthBonus, 0);  // Don't prune winning captures
+            }
+            
+            // Prune if SEE value is below threshold
+            if (seeValue < pruneThreshold) {
+                g_seePruningStats.seePruned++;
+                
+                // Track which threshold was used
+                if (pruneThreshold == SEE_PRUNE_THRESHOLD_CONSERVATIVE) {
+                    g_seePruningStats.conservativePrunes++;
+                } else if (pruneThreshold == SEE_PRUNE_THRESHOLD_AGGRESSIVE) {
+                    g_seePruningStats.aggressivePrunes++;
+                } else {
+                    g_seePruningStats.endgamePrunes++;
+                }
+                
+                // Debug logging in testing mode
+                if (g_seePruningMode == SEEPruningMode::CONSERVATIVE || g_seePruningMode == SEEPruningMode::AGGRESSIVE) {
+                    if ((g_seePruningStats.seePruned % 1000) == 0 && g_seePruningStats.seePruned > 0) {  // Log every 1000 prunes
+                        std::cerr << "info string SEE pruned " << g_seePruningStats.seePruned 
+                                  << " captures (" << std::fixed << std::setprecision(1) 
+                                  << g_seePruningStats.pruneRate() 
+                                  << "% prune rate)" << std::endl;
+                    }
+                }
+                
+                continue;  // Skip this capture
+            }
+            
+            // Also consider pruning equal exchanges late in quiescence
+            // The deeper we are, the more likely we prune equal exchanges
+            if (g_seePruningMode == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
+                // Prune equal exchanges based on depth
+                // At ply 3-4: prune if position is quiet
+                // At ply 5-6: prune more aggressively  
+                // At ply 7+: always prune equal exchanges
+                bool pruneEqual = false;
+                if (ply >= 7) {
+                    pruneEqual = true;  // Always prune deep in search
+                } else if (ply >= 5) {
+                    // Prune if we're not finding tactics
+                    pruneEqual = (staticEval >= alpha - eval::Score(50));
+                } else if (ply >= 3) {
+                    // Only prune if position looks very quiet
+                    pruneEqual = (staticEval >= alpha);
+                }
+                
+                if (pruneEqual) {
+                    g_seePruningStats.seePruned++;
+                    g_seePruningStats.equalExchangePrunes++;
+                    continue;
+                }
             }
         }
         

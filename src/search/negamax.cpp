@@ -1028,6 +1028,24 @@ void sendIterationInfo(const IterativeSearchData& info) {
     }
     
     std::cout << std::endl;
+    
+    // Stage 15 Day 6: Report SEE pruning statistics if enabled
+    if (g_seePruningMode != SEEPruningMode::OFF && g_seePruningStats.totalCaptures > 0) {
+        std::cout << "info string SEE pruning: "
+                  << g_seePruningStats.seePruned << "/" << g_seePruningStats.totalCaptures
+                  << " captures pruned (" << std::fixed << std::setprecision(1) 
+                  << g_seePruningStats.pruneRate() << "%)";
+        
+        if (g_seePruningMode == SEEPruningMode::CONSERVATIVE) {
+            std::cout << " [Conservative mode]";
+        } else if (g_seePruningMode == SEEPruningMode::AGGRESSIVE) {
+            std::cout << " [Aggressive mode]";
+            if (g_seePruningStats.equalExchangePrunes > 0) {
+                std::cout << " Equal exchanges pruned: " << g_seePruningStats.equalExchangePrunes;
+            }
+        }
+        std::cout << std::endl;
+    }
 }
 
 } // namespace seajay::search

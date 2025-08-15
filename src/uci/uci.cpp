@@ -4,6 +4,7 @@
 #include "../search/negamax.h"
 #include "../search/types.h"
 #include "../search/move_ordering.h"  // Stage 15: For SEE integration
+#include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -70,7 +71,7 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-15-SEE-Dev-Day-3-XRay" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage-15-SPRT-Candidate-1" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     
@@ -79,6 +80,9 @@ void UCIEngine::handleUCI() {
     
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
+    
+    // Stage 15 Day 6: SEE-based pruning in quiescence
+    std::cout << "option name SEEPruning type combo default off var off var conservative var aggressive" << std::endl;
     
     std::cout << "uciok" << std::endl;
 }
@@ -570,6 +574,30 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid SEEMode value: " << value << std::endl;
             std::cerr << "info string Valid values: off, testing, shadow, production" << std::endl;
+        }
+    }
+    // Stage 15 Day 6: Handle SEEPruning option
+    else if (optionName == "SEEPruning") {
+        if (value == "off" || value == "conservative" || value == "aggressive") {
+            m_seePruning = value;
+            
+            // Update the global quiescence search SEE pruning mode
+            search::g_seePruningMode = search::parseSEEPruningMode(value);
+            search::g_seePruningStats.reset();  // Reset statistics when changing mode
+            
+            std::cerr << "info string SEE pruning mode set to: " << value << std::endl;
+            
+            // Additional info for each mode
+            if (value == "conservative") {
+                std::cerr << "info string Conservative SEE Pruning: Prune captures with SEE < -100" << std::endl;
+            } else if (value == "aggressive") {
+                std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50" << std::endl;
+            } else {
+                std::cerr << "info string SEE Pruning disabled" << std::endl;
+            }
+        } else {
+            std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
+            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

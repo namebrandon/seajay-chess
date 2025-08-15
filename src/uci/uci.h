@@ -43,6 +43,9 @@ private:
     // Stage 15 Day 5: SEE integration mode
     std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
     
+    // Stage 15 Day 6: SEE-based pruning in quiescence
+    std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive
+    
     // Helper methods for draw detection
     void updateGameHistory();
     void clearGameHistory();

@@ -6,6 +6,8 @@
 #include "types.h"
 #include "search_info.h"
 #include <cstdint>  // For UINT64_MAX
+#include <atomic>   // For SEE pruning statistics
+#include <string>
 
 namespace seajay::search {
 
@@ -39,6 +41,56 @@ static constexpr int DELTA_MARGIN_PANIC = 400;      // At minimum, cover minor p
 
 static constexpr int MAX_CAPTURES_PER_NODE = 32;    // Maximum captures to search per node
 static constexpr int MAX_CAPTURES_PANIC = 8;        // Reduced captures in panic mode
+
+// Stage 15 Day 6: SEE-based pruning thresholds
+static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -100;  // Conservative: only clearly bad captures
+static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = -50;     // Aggressive: prune more captures
+static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = -25;        // Even more aggressive in endgame
+
+// SEE pruning modes
+enum class SEEPruningMode {
+    OFF,          // No SEE pruning
+    CONSERVATIVE, // Prune captures with SEE < -100
+    AGGRESSIVE    // Prune captures with SEE < -50
+};
+
+// Parse string to SEE pruning mode
+SEEPruningMode parseSEEPruningMode(const std::string& mode);
+
+// Convert SEE pruning mode to string
+std::string seePruningModeToString(SEEPruningMode mode);
+
+// Global SEE pruning mode (set via UCI)
+extern SEEPruningMode g_seePruningMode;
+
+// SEE pruning statistics
+struct SEEPruningStats {
+    std::atomic<uint64_t> totalCaptures{0};       // Total captures considered
+    std::atomic<uint64_t> seePruned{0};           // Captures pruned by SEE
+    std::atomic<uint64_t> seeEvaluations{0};      // Number of SEE evaluations
+    std::atomic<uint64_t> conservativePrunes{0};  // Prunes with threshold -100
+    std::atomic<uint64_t> aggressivePrunes{0};    // Prunes with threshold -50
+    std::atomic<uint64_t> endgamePrunes{0};       // Prunes in endgame positions
+    std::atomic<uint64_t> equalExchangePrunes{0}; // Prunes of equal exchanges (SEE=0)
+    
+    void reset() {
+        totalCaptures = 0;
+        seePruned = 0;
+        seeEvaluations = 0;
+        conservativePrunes = 0;
+        aggressivePrunes = 0;
+        endgamePrunes = 0;
+        equalExchangePrunes = 0;
+    }
+    
+    double pruneRate() const {
+        uint64_t total = totalCaptures.load();
+        return total > 0 ? (100.0 * seePruned.load() / total) : 0.0;
+    }
+};
+
+// Global SEE pruning statistics
+extern SEEPruningStats g_seePruningStats;
 
 // Static assertions for safety verification
 static_assert(QSEARCH_MAX_PLY > 0 && QSEARCH_MAX_PLY <= 64, 
