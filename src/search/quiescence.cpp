@@ -33,6 +33,7 @@ eval::Score quiescence(
     // Probe transposition table at the start of quiescence
     TTEntry* ttEntry = nullptr;
     eval::Score ttScore = eval::Score::zero();
+    Move ttMove = NO_MOVE;  // Deliverable 2.3: Track TT move for ordering
     
     if (tt.isEnabled() && (ttEntry = tt.probe(board.zobristKey())) != nullptr) {
         // We have a TT hit
@@ -66,6 +67,9 @@ eval::Score quiescence(
                     data.qsearchTTHits++;  // Track TT hits in quiescence
                     return ttScore;
                 }
+                
+                // Deliverable 2.3: Save TT move for ordering even if we don't return
+                ttMove = static_cast<Move>(ttEntry->move);
             }
         }
     }
@@ -144,6 +148,17 @@ eval::Score quiescence(
 #ifdef ENABLE_MVV_LVA
     MvvLvaOrdering mvvLva;
     mvvLva.orderMoves(board, moves);
+    
+    // Deliverable 2.3: TT Move Ordering
+    // If we have a TT move, try it first (only if it's in the move list)
+    if (ttMove != NO_MOVE) {
+        // Find the TT move in the list and move it to the front
+        auto ttMoveIt = std::find(moves.begin(), moves.end(), ttMove);
+        if (ttMoveIt != moves.end()) {
+            // Move TT move to the front while preserving other moves' order
+            std::rotate(moves.begin(), ttMoveIt, ttMoveIt + 1);
+        }
+    }
 #else
     // Simple ordering: promotions first, then captures
     if (!isInCheck) {
@@ -158,6 +173,14 @@ eval::Score quiescence(
         });
     }
     // When in check, keep move generation order (usually good enough)
+    
+    // Deliverable 2.3: TT Move Ordering (non-MVV_LVA case)
+    if (ttMove != NO_MOVE) {
+        auto ttMoveIt = std::find(moves.begin(), moves.end(), ttMove);
+        if (ttMoveIt != moves.end()) {
+            std::rotate(moves.begin(), ttMoveIt, ttMoveIt + 1);
+        }
+    }
 #endif
     
     // Search moves
