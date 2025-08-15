@@ -819,3 +819,82 @@ The cpp-pro agent added:
 4. Only debug actual discrepancies after confirming test values are correct
 
 This will prevent wasting time debugging "failures" that are actually incorrect test data, as we discovered with multiple positions (Position 6, Position 7, etc.).
+
+---
+
+## Bug #011: Stage 14 - Board Initialization Hang in Test Scripts
+
+**Status:** IDENTIFIED - Not Yet Resolved  
+**Priority:** Medium (affects test suite execution only)  
+**Discovery Date:** 2025-08-14  
+**Impact:** WAC and Bratko-Kopec test scripts hang during board initialization
+
+### Summary
+
+During Stage 14 implementation, discovered that board initialization hangs when running certain test scripts, specifically the WAC (Win At Chess) and Bratko-Kopec (BK) test suites. The issue appears to be related to FEN parsing or board state initialization but does NOT affect normal UCI operation or SPRT testing.
+
+### Symptoms
+
+- Test scripts like `run_test_suite.sh` and `run_full_bk_test.sh` hang indefinitely
+- Hang occurs during board initialization when processing test positions
+- Normal UCI operation works fine (engine plays games without issues)
+- SPRT tests run successfully
+- Issue only manifests with specific test suite execution patterns
+
+### Affected Components
+
+**Test Scripts:**
+- `/workspace/run_test_suite.sh` - WAC test suite runner
+- `/workspace/run_full_bk_test.sh` - Bratko-Kopec test suite runner
+
+**Test Files:**
+- `/workspace/tests/positions/wac.epd` - 300 WAC positions
+- `/workspace/tests/positions/bratko_kopec.epd` - 24 BK positions
+
+### Characteristics
+
+- Does NOT affect normal engine operation
+- Does NOT affect SPRT testing or match play
+- Only affects batch test suite processing
+- May be related to rapid successive FEN parsing
+- Could be thread-local storage or static initialization issue
+
+### Workaround
+
+Currently, individual positions can be tested manually via UCI:
+```bash
+echo -e "position fen [FEN_STRING]\ngo depth 6\nquit" | ./bin/seajay
+```
+
+This works without issues, suggesting the problem is specific to the test harness implementation rather than core engine functionality.
+
+### Investigation Notes
+
+- Similar to Bug #010 (Stage 9b setStartingPosition hang) but with different trigger
+- May involve interaction between quiescence search initialization and test harness
+- Could be related to static/thread-local variables in Stage 14 additions
+- Needs investigation of test script execution flow vs normal UCI flow
+
+### Impact Assessment
+
+**Low-Medium Impact:**
+- Does not affect competitive play or SPRT validation
+- Does not affect normal UCI operation
+- Only impacts tactical test suite validation
+- Can work around with manual testing if needed
+
+### Priority Rationale
+
+Marked as Medium priority because:
+- It blocks automated tactical testing
+- Does not affect core engine functionality
+- Has a viable workaround (manual testing)
+- Should be fixed but not critical for Stage 14 completion
+
+### Next Steps
+
+1. Compare initialization flow between UCI and test scripts
+2. Check for static initialization order issues
+3. Investigate thread-local storage in quiescence search
+4. Review differences in how test scripts vs UCI initialize the board
+5. Consider if rapid FEN parsing triggers resource exhaustion

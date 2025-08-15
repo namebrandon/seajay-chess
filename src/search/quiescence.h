@@ -29,8 +29,9 @@ static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Reduced margin for endgam
     static constexpr uint64_t NODE_LIMIT_PER_POSITION = 100000;
     #pragma message("QSEARCH_TUNING mode: Node limit = 100,000 per position")
 #else
-    // Production: No artificial limits
-    static constexpr uint64_t NODE_LIMIT_PER_POSITION = UINT64_MAX;
+    // Production: High limit but not infinite for safety
+    // 1M nodes per position prevents runaway quiescence while maintaining strength
+    static constexpr uint64_t NODE_LIMIT_PER_POSITION = 1000000;
     // No pragma message in production - silent operation
 #endif
 
