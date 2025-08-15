@@ -1,5 +1,8 @@
 # SeaJay Chess Engine Development - Master Project Plan
 
+**Last Updated:** August 15, 2025 - Revised after Stage 14 completion  
+**Revision Note:** Added Stage 15 (SEE) and Stage 16 (Enhanced Quiescence) based on expert guidance and Stage 14 experience. Renumbered subsequent stages accordingly.
+
 ## Project Overview
 
 This comprehensive project plan outlines a methodical, modular approach to building a competitive chess engine incorporating modern NNUE evaluation. The plan emphasizes incremental development with continuous statistical validation, ensuring each component contributes measurably to engine strength before proceeding to the next phase.
@@ -297,9 +300,34 @@ Implement critical performance optimizations that form the foundation of all com
 - **Expected Outcome**: +100-150 Elo improvement
 - **Milestone**: No tactical oversights in quiet positions
 
+**Stage 15 - Static Exchange Evaluation (SEE)**
+
+- Implement Static Exchange Evaluation for accurate capture assessment
+- Calculate exchange sequences for any capture or attacked square
+- Integration with move ordering for better capture evaluation
+- SEE-based pruning in quiescence search
+- Replace simple MVV-LVA with SEE-informed capture scoring
+- Handle complex exchanges involving multiple pieces
+- X-ray attack consideration in exchange calculations
+- **SPRT Validation**: MVV-LVA only vs SEE-enhanced move ordering
+- **Expected Outcome**: +30-50 Elo improvement
+- **Milestone**: Accurate assessment of all tactical exchanges
+
+**Stage 16 - Enhanced Quiescence Search**
+
+- Add quiet checking moves in quiescence search (enabled by SEE)
+- SEE-based filtering of poor checks (hanging piece detection)
+- Graduated delta margin tuning with SEE safety net
+- Check extension improvements in quiescence
+- Singular reply extensions for forced sequences
+- Advanced capture pruning based on SEE evaluation
+- **SPRT Validation**: Basic quiescence vs enhanced quiescence with quiet checks
+- **Expected Outcome**: +50-75 Elo improvement
+- **Milestone**: Improved tactical resolution and reduced horizon effect
+
 ### Phase Completion Criteria
 
-- Engine strength approximately 2000-2100 Elo
+- Engine strength approximately 2200-2250 Elo
 - Magic bitboard implementation fully validated:
   - All perft tests maintain 100% accuracy
   - Attack generation validated for all squares and occupancy patterns
@@ -318,7 +346,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 
 ### Core Components
 
-**Stage 15 - Network Infrastructure**
+**Stage 17 - Network Infrastructure**
 
 - NNUE file format parser (.nnue binary format)
 - Weight matrix loading and storage:
@@ -329,7 +357,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 - Support for multiple network architectures
 - **Milestone**: Correctly parse and load Stockfish NNUE file (~20-40MB)
 
-**Stage 16 - Accumulator Implementation**
+**Stage 18 - Accumulator Implementation**
 
 - HalfKAv2_hm feature extraction:
   - 41024 input features (641 * 64)
@@ -341,7 +369,7 @@ Integrate Efficiently Updatable Neural Network evaluation using pre-trained netw
 - Make/unmake move integration with minimal overhead
 - **Milestone**: Accumulator values match reference implementation
 
-**Stage 17 - Forward Pass**
+**Stage 19 - Forward Pass**
 
 - Matrix multiplication routines (initially without SIMD)
 - ClippedReLU activation function (max(0, min(127, x)))
@@ -680,11 +708,13 @@ Each stage must satisfy the following criteria before proceeding:
 - Stage 10: ~1500 Elo (magic bitboards - no Elo gain, but 3-5x speedup)
 - Stage 12: ~1800 Elo (transposition tables)
 - Stage 14: ~2100 Elo (quiescence search)
-- Stage 17: ~2800 Elo (NNUE integration)
-- Stage 21: ~2950 Elo (late move reductions)
-- Stage 23: ~3000 Elo (refined search)
-- Stage 27: ~3100 Elo (multi-threading and advanced features)
-- Stage 31: ~3200+ Elo (custom NNUE networks)
+- Stage 15: ~2150 Elo (Static Exchange Evaluation)
+- Stage 16: ~2225 Elo (enhanced quiescence with quiet checks)
+- Stage 19: ~2800 Elo (NNUE integration - renumbered from Stage 17)
+- Stage 23: ~2950 Elo (late move reductions - renumbered from Stage 21)
+- Stage 25: ~3000 Elo (refined search - renumbered from Stage 23)
+- Stage 29: ~3100 Elo (multi-threading and advanced features - renumbered from Stage 27)
+- Stage 33: ~3200+ Elo (custom NNUE networks - renumbered from Stage 31)
 
 ## Resource Requirements
 
