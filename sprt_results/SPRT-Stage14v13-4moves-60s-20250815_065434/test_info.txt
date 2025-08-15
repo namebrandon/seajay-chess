@@ -1,0 +1,19 @@
+SPRT Test: Stage 14 vs Stage 13 (4moves book - 60s TC)
+=======================================================
+Date: Fri Aug 15 06:54:34 AM CDT 2025
+Stage 14 Binary: /workspace/binaries/seajay-stage14-sprt-candidate5 (Candidate 5 - Clean build, properly reverted)
+Stage 13 Binary: /workspace/binaries/seajay-stage13-sprt-fixed
+Time Control: 60+0.6
+SPRT Parameters:
+  - H0 (null): ELO difference <= 30
+  - H1 (alternative): ELO difference >= 60
+  - Alpha (Type I error): 0.05
+  - Beta (Type II error): 0.05
+Opening Book: 4moves_test.pgn
+Expected Result: H1 accepted (+60-150 Elo improvement)
+Note: Longer time control for more accurate measurement
+Features Tested:
+  - Quiescence search at tournament time control
+  - Time management effectiveness
+  - Search depth improvements
+  - Properly reverted to Candidate 1 settings (no emergency cutoff)

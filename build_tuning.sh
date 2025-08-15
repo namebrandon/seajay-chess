@@ -17,7 +17,9 @@ cd build
 
 # Clean previous build to ensure fresh compilation with new mode
 echo "Cleaning previous build..."
+make clean 2>/dev/null || true  # Clean object files if Makefile exists
 rm -rf CMakeCache.txt CMakeFiles/ Makefile
+rm -f *.o src/*.o src/*/*.o  # Force remove any lingering object files
 
 # Configure with TUNING mode
 echo "Configuring with QSEARCH_TUNING mode..."

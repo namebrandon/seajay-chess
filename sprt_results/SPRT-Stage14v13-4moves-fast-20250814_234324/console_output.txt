@@ -1,0 +1,20 @@
+Indexing opening suite...
+Started game 1 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 1 (Stage14-QS vs Stage13-ID): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 2 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 2 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 3 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 3 (Stage14-QS vs Stage13-ID): 0-1 {Black mates}
+Started game 4 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 4 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 5 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 5 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 6 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 6 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 7 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 7 (Stage14-QS vs Stage13-ID): 0-1 {Black mates}
+Started game 8 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 8 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+Started game 9 of 20000 (Stage14-QS vs Stage13-ID)
+
+Test completed at: Thu Aug 14 11:46:53 PM CDT 2025

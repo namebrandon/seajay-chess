@@ -76,10 +76,10 @@ std::chrono::milliseconds calculateEnhancedTimeLimit(const SearchLimits& limits,
     auto maxTime = remaining * 3 / 10;
     adjustedTime = std::min(adjustedTime, maxTime);
     
-    // Keep at least 200ms buffer for lag and quiescence search overhead
-    // Increased from 100ms to account for deep quiescence recursion unwinding
-    if (remaining > std::chrono::milliseconds(400)) {
-        adjustedTime = std::min(adjustedTime, remaining - std::chrono::milliseconds(200));
+    // Keep at least 100ms buffer for lag - reverting to Candidate 1
+    // The 200ms buffer was too conservative and reduced search quality
+    if (remaining > std::chrono::milliseconds(200)) {
+        adjustedTime = std::min(adjustedTime, remaining - std::chrono::milliseconds(100));
     }
     
     // 6. Soft and hard limits

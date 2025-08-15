@@ -3,11 +3,13 @@
 ## Overview
 These scripts test SeaJay Stage 14 (Quiescence Search) against previous versions to measure the ELO improvement from implementing quiescence search.
 
+**Current Version:** Candidate 5 - Clean rebuild with properly reverted code after discovering Candidate 4 had build system issues. Candidates 2-4 all suffered from incorrect builds despite source changes.
+
 ## Available Tests
 
 ### 1. Stage 14 vs Stage 13 - Fast TC with Opening Book
 **Script:** `./run_stage14_vs_stage13_4moves_fast.sh`
-- **Engines:** Stage 14 Candidate 1 vs Stage 13 SPRT-Fixed
+- **Engines:** Stage 14 Candidate 5 vs Stage 13 SPRT-Fixed
 - **Opening Book:** 4moves_test.pgn
 - **Time Control:** 10+0.1 seconds
 - **SPRT Bounds:** [0, 50] ELO
@@ -17,7 +19,7 @@ These scripts test SeaJay Stage 14 (Quiescence Search) against previous versions
 
 ### 2. Stage 14 vs Stage 12 - Fast TC with Opening Book
 **Script:** `./run_stage14_vs_stage12_4moves_fast.sh`
-- **Engines:** Stage 14 Candidate 1 vs Stage 12 Baseline
+- **Engines:** Stage 14 Candidate 5 vs Stage 12 Baseline
 - **Opening Book:** 4moves_test.pgn
 - **Time Control:** 10+0.1 seconds
 - **SPRT Bounds:** [50, 100] ELO
@@ -27,7 +29,7 @@ These scripts test SeaJay Stage 14 (Quiescence Search) against previous versions
 
 ### 3. Stage 14 vs Stage 13 - Fast TC from Starting Position
 **Script:** `./run_stage14_vs_stage13_startpos_fast.sh`
-- **Engines:** Stage 14 Candidate 1 vs Stage 13 SPRT-Fixed
+- **Engines:** Stage 14 Candidate 5 vs Stage 13 SPRT-Fixed
 - **Opening:** Starting position (no book)
 - **Time Control:** 10+0.1 seconds
 - **SPRT Bounds:** [0, 30] ELO
@@ -37,7 +39,7 @@ These scripts test SeaJay Stage 14 (Quiescence Search) against previous versions
 
 ### 4. Stage 14 vs Stage 13 - Tournament TC with Opening Book
 **Script:** `./run_stage14_vs_stage13_4moves_60s.sh`
-- **Engines:** Stage 14 Candidate 1 vs Stage 13 SPRT-Fixed
+- **Engines:** Stage 14 Candidate 5 vs Stage 13 SPRT-Fixed
 - **Opening Book:** 4moves_test.pgn
 - **Time Control:** 60+0.6 seconds
 - **SPRT Bounds:** [30, 60] ELO
@@ -93,13 +95,13 @@ grep -c "Result" /workspace/sprt_results/SPRT-*/games.pgn
 ### If Tests Don't Start
 1. Verify binaries exist:
    ```bash
-   ls -la /workspace/binaries/seajay-stage14-sprt-candidate1
+   ls -la /workspace/binaries/seajay-stage14-sprt-candidate5
    ls -la /workspace/binaries/seajay-stage13-sprt-fixed
    ```
 
 2. Test engines manually:
    ```bash
-   echo -e "uci\nquit" | /workspace/binaries/seajay-stage14-sprt-candidate1
+   echo -e "uci\nquit" | /workspace/binaries/seajay-stage14-sprt-candidate5
    ```
 
 ### If Results Are Unexpected

@@ -1,0 +1,73 @@
+Indexing opening suite...
+Started game 1 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 1 (Stage14-QS vs Stage13-ID): 0-1 {Black mates}
+Started game 2 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 2 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 3 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 3 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 4 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 4 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+Started game 5 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 5 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 6 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 6 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 7 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 7 (Stage14-QS vs Stage13-ID): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 8 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 8 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+Started game 9 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 9 (Stage14-QS vs Stage13-ID): 0-1 {Black mates}
+Started game 10 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 10 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 11 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 11 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 12 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 12 (Stage13-ID vs Stage14-QS): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 13 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 13 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 14 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 14 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 15 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 15 (Stage14-QS vs Stage13-ID): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 16 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 16 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+Started game 17 of 20000 (Stage14-QS vs Stage13-ID)
+Warning; Illegal PV move - move e2f2 from Stage14-QS
+Info; info depth 1 seldepth 1 score cp -2225 nodes 4 nps 0 time 0 pv e2f2
+Position; startpos
+Moves; d2d4 g8f6 b1c3 e7e6 g1f3 h7h6 e2e4 f8b4 e4e5 f6d5 c1d2 e8g8 c3d5 b4d2 e1d2 e6d5 d2c1 d7d6 c1b1 f7f6 e5d6 c7d6 c2c4 c8f5 f1d3 f5d3 d1d3 d5c4 d3c4 g8h8 c4e6 d8b6 d4d5 b6f2 h1e1 b8d7 e6d7 a8c8 d7a4 b7b5 a4b3 a7a5 a2a3 f2g2 e1g1 g2e2 f3d4 e2e4 d4c2 a5a4 b3b5 e4c2 b1a2 c8b8 a1c1 c2h2 b5b4 b8b4 a3b4 h2d2 c1d1 d2b4 g1e1 f8b8 d1b1 b4d2 a2a1 d2d5 e1d1 d5a5 d1d3 a5e5 d3a3 e5d4 a3c3 b8b3 b1c1 d6d5 c3b3 a4b3 c1e1 d4a4 a1b1 a4a2 b1c1 a2a1 c1d2 a1b2 d2e3 b2c3 e3e2 b3b2 e1f1 c3c2 e2e3 f6f5 f1e1 b2b1q e1b1 c2b1 e3d2 d5d4 d2e2 d4d3 e2e3 b1c2 e3f3 d3d2 f3e2 d2d1q 
+Warning; Illegal PV move - move e2f2 from Stage14-QS
+Info; info depth 2 seldepth 2 score cp -2225 nodes 50 nps 0 time 0 moveeff 100.0% tthits 100.0% pv e2f2
+Position; startpos
+Moves; d2d4 g8f6 b1c3 e7e6 g1f3 h7h6 e2e4 f8b4 e4e5 f6d5 c1d2 e8g8 c3d5 b4d2 e1d2 e6d5 d2c1 d7d6 c1b1 f7f6 e5d6 c7d6 c2c4 c8f5 f1d3 f5d3 d1d3 d5c4 d3c4 g8h8 c4e6 d8b6 d4d5 b6f2 h1e1 b8d7 e6d7 a8c8 d7a4 b7b5 a4b3 a7a5 a2a3 f2g2 e1g1 g2e2 f3d4 e2e4 d4c2 a5a4 b3b5 e4c2 b1a2 c8b8 a1c1 c2h2 b5b4 b8b4 a3b4 h2d2 c1d1 d2b4 g1e1 f8b8 d1b1 b4d2 a2a1 d2d5 e1d1 d5a5 d1d3 a5e5 d3a3 e5d4 a3c3 b8b3 b1c1 d6d5 c3b3 a4b3 c1e1 d4a4 a1b1 a4a2 b1c1 a2a1 c1d2 a1b2 d2e3 b2c3 e3e2 b3b2 e1f1 c3c2 e2e3 f6f5 f1e1 b2b1q e1b1 c2b1 e3d2 d5d4 d2e2 d4d3 e2e3 b1c2 e3f3 d3d2 f3e2 d2d1q 
+Warning; Illegal PV move - move e2f3 from Stage14-QS
+Info; info depth 3 seldepth 3 score cp -2285 ebf 11.50 nodes 229 nps 0 time 0 moveeff 98.5% tthits 59.6% pv e2f3
+Position; startpos
+Moves; d2d4 g8f6 b1c3 e7e6 g1f3 h7h6 e2e4 f8b4 e4e5 f6d5 c1d2 e8g8 c3d5 b4d2 e1d2 e6d5 d2c1 d7d6 c1b1 f7f6 e5d6 c7d6 c2c4 c8f5 f1d3 f5d3 d1d3 d5c4 d3c4 g8h8 c4e6 d8b6 d4d5 b6f2 h1e1 b8d7 e6d7 a8c8 d7a4 b7b5 a4b3 a7a5 a2a3 f2g2 e1g1 g2e2 f3d4 e2e4 d4c2 a5a4 b3b5 e4c2 b1a2 c8b8 a1c1 c2h2 b5b4 b8b4 a3b4 h2d2 c1d1 d2b4 g1e1 f8b8 d1b1 b4d2 a2a1 d2d5 e1d1 d5a5 d1d3 a5e5 d3a3 e5d4 a3c3 b8b3 b1c1 d6d5 c3b3 a4b3 c1e1 d4a4 a1b1 a4a2 b1c1 a2a1 c1d2 a1b2 d2e3 b2c3 e3e2 b3b2 e1f1 c3c2 e2e3 f6f5 f1e1 b2b1q e1b1 c2b1 e3d2 d5d4 d2e2 d4d3 e2e3 b1c2 e3f3 d3d2 f3e2 d2d1q 
+Warning; Illegal PV move - move e2f3 from Stage14-QS
+Info; info depth 4 seldepth 4 score cp -2285 ebf 6.93 nodes 1215 nps 0 time 0 moveeff 98.9% tthits 74.6% pv e2f3
+Position; startpos
+Moves; d2d4 g8f6 b1c3 e7e6 g1f3 h7h6 e2e4 f8b4 e4e5 f6d5 c1d2 e8g8 c3d5 b4d2 e1d2 e6d5 d2c1 d7d6 c1b1 f7f6 e5d6 c7d6 c2c4 c8f5 f1d3 f5d3 d1d3 d5c4 d3c4 g8h8 c4e6 d8b6 d4d5 b6f2 h1e1 b8d7 e6d7 a8c8 d7a4 b7b5 a4b3 a7a5 a2a3 f2g2 e1g1 g2e2 f3d4 e2e4 d4c2 a5a4 b3b5 e4c2 b1a2 c8b8 a1c1 c2h2 b5b4 b8b4 a3b4 h2d2 c1d1 d2b4 g1e1 f8b8 d1b1 b4d2 a2a1 d2d5 e1d1 d5a5 d1d3 a5e5 d3a3 e5d4 a3c3 b8b3 b1c1 d6d5 c3b3 a4b3 c1e1 d4a4 a1b1 a4a2 b1c1 a2a1 c1d2 a1b2 d2e3 b2c3 e3e2 b3b2 e1f1 c3c2 e2e3 f6f5 f1e1 b2b1q e1b1 c2b1 e3d2 d5d4 d2e2 d4d3 e2e3 b1c2 e3f3 d3d2 f3e2 d2d1q 
+Warning; Illegal PV move - move e2f3 from Stage14-QS
+Info; info depth 5 seldepth 5 score mate -2 bound [-2303,-2267] string stable ebf 6.30 nodes 4031 nps 1007750 time 0 moveeff 99.8% tthits 64.8% pv e2f3
+Position; startpos
+Moves; d2d4 g8f6 b1c3 e7e6 g1f3 h7h6 e2e4 f8b4 e4e5 f6d5 c1d2 e8g8 c3d5 b4d2 e1d2 e6d5 d2c1 d7d6 c1b1 f7f6 e5d6 c7d6 c2c4 c8f5 f1d3 f5d3 d1d3 d5c4 d3c4 g8h8 c4e6 d8b6 d4d5 b6f2 h1e1 b8d7 e6d7 a8c8 d7a4 b7b5 a4b3 a7a5 a2a3 f2g2 e1g1 g2e2 f3d4 e2e4 d4c2 a5a4 b3b5 e4c2 b1a2 c8b8 a1c1 c2h2 b5b4 b8b4 a3b4 h2d2 c1d1 d2b4 g1e1 f8b8 d1b1 b4d2 a2a1 d2d5 e1d1 d5a5 d1d3 a5e5 d3a3 e5d4 a3c3 b8b3 b1c1 d6d5 c3b3 a4b3 c1e1 d4a4 a1b1 a4a2 b1c1 a2a1 c1d2 a1b2 d2e3 b2c3 e3e2 b3b2 e1f1 c3c2 e2e3 f6f5 f1e1 b2b1q e1b1 c2b1 e3d2 d5d4 d2e2 d4d3 e2e3 b1c2 e3f3 d3d2 f3e2 d2d1q 
+Warning; Illegal move e2f3 played by Stage14-QS
+Finished game 17 (Stage14-QS vs Stage13-ID): 0-1 {White makes an illegal move}
+Started game 18 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 18 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 19 of 20000 (Stage14-QS vs Stage13-ID)
+Finished game 19 (Stage14-QS vs Stage13-ID): 1-0 {White mates}
+Started game 20 of 20000 (Stage13-ID vs Stage14-QS)
+Finished game 20 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+--------------------------------------------------
+Results of Stage14-QS vs Stage13-ID (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 17.39 +/- 177.43, nElo: 16.23 +/- 152.27
+LOS: 58.28 %, DrawRatio: 20.00 %, PairsRatio: 1.67
+Games: 20, Wins: 9, Losses: 8, Draws: 3, Points: 10.5 (52.50 %)
+Ptnml(0-2): [3, 0, 2, 3, 2], WL/DD Ratio: inf
+LLR: -0.07 (-2.3%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 21 of 20000 (Stage14-QS vs Stage13-ID)
+
+Test completed at: Fri Aug 15 06:39:34 AM CDT 2025

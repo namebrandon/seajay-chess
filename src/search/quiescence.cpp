@@ -26,19 +26,9 @@ eval::Score quiescence(
     seajay::TranspositionTable& tt,
     int checkPly)
 {
-    // Emergency time cutoff: Don't enter quiescence if time is critical
-    // This prevents entering deep tactical sequences when we need to return a move
-    if (data.timeLimit != std::chrono::milliseconds::max()) {
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - data.startTime);
-        
-        // If less than 50ms remaining, return static eval immediately
-        if ((data.timeLimit - elapsed) < std::chrono::milliseconds(50)) {
-            // Not enough time for quiescence - return static eval
-            return eval::evaluate(board);
-        }
-    }
+    // REMOVED emergency cutoff - it was destroying tactical play
+    // Accepting occasional time losses is better than constant tactical blindness
+    // Candidate 1 proved this with 300+ ELO gain despite 1-2% time losses
     
     // Record entry node count for per-position limit enforcement
     const uint64_t entryNodes = data.qsearchNodes;
@@ -91,16 +81,12 @@ eval::Score quiescence(
         }
     }
     
-    // Check time limit more frequently in quiescence (every 64 nodes)
-    // Critical fix: Quiescence can go 30+ ply deep, need frequent time checks
-    if ((data.qsearchNodes & 63) == 0) {  // Changed from 1023 to 63 for 16x more frequent checking
-        // Use direct time check in quiescence for accuracy
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - data.startTime);
-        if (data.stopped || elapsed >= data.timeLimit) {
+    // Check time limit periodically (every 1024 nodes) 
+    // Reverting to Candidate 1 frequency - the overhead of frequent checks was harmful
+    if ((data.qsearchNodes & 1023) == 0) {
+        if (data.stopped || data.checkTime()) {
             data.stopped = true;
-            return eval::Score::zero();  // Return neutral score when stopped
+            return eval::Score::zero();
         }
     }
     

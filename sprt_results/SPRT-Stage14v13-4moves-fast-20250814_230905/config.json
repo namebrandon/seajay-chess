@@ -1,0 +1,74 @@
+{
+    "opening": {
+        "file": "/workspace/external/books/4moves_test.pgn",
+        "format": 1,
+        "order": 0,
+        "plies": -1,
+        "start": 1
+    },
+    "pgn": {
+        "event_name": "Stage 14 vs Stage 13 SPRT Test (4moves, Fast TC)",
+        "site": "SeaJay Development",
+        "file": "/workspace/sprt_results/SPRT-Stage14v13-4moves-fast-20250814_230905/games.pgn",
+        "notation": 0,
+        "track_nodes": true,
+        "track_seldepth": true,
+        "track_nps": true,
+        "min": false
+    },
+    "sprt": {
+        "alpha": 0.05,
+        "beta": 0.05,
+        "elo0": 0.0,
+        "elo1": 50.0,
+        "model": "normalized",
+        "enabled": true
+    },
+    "log": {
+        "file": "/workspace/sprt_results/SPRT-Stage14v13-4moves-fast-20250814_230905/fastchess.log",
+        "level": 3,
+        "compress": false,
+        "realtime": true,
+        "engine_coms": false
+    },
+    "resign": {
+        "enabled": false
+    },
+    "draw": {
+        "enabled": false
+    },
+    "output": 1,
+    "games": 2,
+    "rounds": 10000,
+    "concurrency": 4,
+    "recover": true,
+    "report_penta": true,
+    "ratinginterval": 10,
+    "scoreinterval": 10,
+    "engines": [
+        {
+            "name": "Stage14-QS-Candidate1",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1",
+            "options": [],
+            "limit": {
+                "tc": {
+                    "time": 10000,
+                    "increment": 100,
+                    "moves": 0
+                }
+            }
+        },
+        {
+            "name": "Stage13-ID-Fixed",
+            "cmd": "/workspace/binaries/seajay-stage13-sprt-fixed",
+            "options": [],
+            "limit": {
+                "tc": {
+                    "time": 10000,
+                    "increment": 100,
+                    "moves": 0
+                }
+            }
+        }
+    ]
+}

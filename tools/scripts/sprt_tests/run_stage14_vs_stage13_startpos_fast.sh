@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SPRT Test: Stage 14 Candidate 2 vs Stage 13 SPRT-Fixed
+# SPRT Test: Stage 14 Candidate 5 (Clean build with reverted code) vs Stage 13 SPRT-Fixed
 # Opening: Starting position (no opening book)
 # Time control: Fast (10+0.1)
 # Expected: Stage 14 should show improvement but possibly less than with varied openings
@@ -15,7 +15,7 @@ RESULT_DIR="${WORKSPACE_ROOT}/sprt_results/${TEST_NAME}"
 mkdir -p "${RESULT_DIR}"
 
 # Engine binaries
-ENGINE_NEW="${WORKSPACE_ROOT}/binaries/seajay-stage14-sprt-candidate2"
+ENGINE_NEW="${WORKSPACE_ROOT}/binaries/seajay-stage14-sprt-candidate5"
 ENGINE_BASE="${WORKSPACE_ROOT}/binaries/seajay-stage13-sprt-fixed"
 
 # Test configuration
@@ -70,7 +70,7 @@ cat > "${RESULT_DIR}/test_info.txt" << EOF
 SPRT Test: Stage 14 vs Stage 13 (Starting Position)
 ====================================================
 Date: $(date)
-Stage 14 Binary: ${ENGINE_NEW} (Candidate 2 - Time Control Fixes)
+Stage 14 Binary: ${ENGINE_NEW} (Candidate 4 - Reverted to C1 approach)
 Stage 13 Binary: ${ENGINE_BASE}
 Time Control: ${TIME_CONTROL}
 SPRT Parameters:

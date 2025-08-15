@@ -1,0 +1,4 @@
+PLEASE submit a bug report to https://github.com/Disservin/fastchess/issues/ and include command line parameters and possibly the stdout/log of fastchess.
+Unrecognized option: --config parsing failed.
+
+Test completed at: Thu Aug 14 11:09:05 PM CDT 2025

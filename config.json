@@ -22,9 +22,9 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/4moves_test.pgn",
-        "format": 1,
-        "order": 0,
+        "file": "",
+        "format": 2,
+        "order": 1,
         "plies": -1,
         "start": 1
     },
@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/games.pgn",
+        "file": "test.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -48,53 +48,53 @@
         "file": ""
     },
     "sprt": {
-        "alpha": 0.05,
-        "beta": 0.05,
+        "alpha": 0.0,
+        "beta": 0.0,
         "elo0": 0.0,
-        "elo1": 30.0,
+        "elo1": 0.0,
         "model": "normalized",
-        "enabled": true
+        "enabled": false
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 3837143811134085151,
+    "seed": 8410899574254218727,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
-    "ratinginterval": 2,
+    "ratinginterval": 10,
     "scoreinterval": 1,
     "wait": 0,
     "autosaveinterval": 20,
-    "games": 2,
-    "rounds": 2000,
+    "games": 1,
+    "rounds": 1,
     "concurrency": 1,
     "force_concurrency": false,
-    "recover": true,
+    "recover": false,
     "noswap": false,
     "reverse": false,
-    "report_penta": true,
+    "report_penta": false,
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-Stage11v2-vs-Stage10-60s-20250813_213406/fastchess.log",
-        "level": 3,
+        "file": "",
+        "level": 2,
         "compress": false,
         "realtime": true,
         "engine_coms": false
     },
     "engines": [
         {
-            "name": "Stage11-MVV-LVA-v2-60s",
+            "name": "Stage14",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage11-candidate2-x86-64",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1",
             "args": "",
             "restart": false,
             "options": [],
             "limit": {
                 "tc": {
-                    "increment": 600,
+                    "increment": 10,
                     "fixed_time": 0,
-                    "time": 60000,
+                    "time": 1000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -104,17 +104,17 @@
             "variant": 0
         },
         {
-            "name": "Stage10-Magic-60s",
+            "name": "Stage13",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage10-x86-64",
+            "cmd": "/workspace/binaries/seajay-stage13-sprt-fixed",
             "args": "",
             "restart": false,
             "options": [],
             "limit": {
                 "tc": {
-                    "increment": 600,
+                    "increment": 10,
                     "fixed_time": 0,
-                    "time": 60000,
+                    "time": 1000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -125,19 +125,19 @@
         }
     ],
     "stats": {
-        "Stage10-Magic-60s vs Stage11-MVV-LVA-v2-60s": {
-            "wins": 15,
-            "losses": 22,
-            "draws": 263,
-            "penta_WW": 0,
-            "penta_WD": 7,
-            "penta_WL": 8,
-            "penta_DD": 122,
-            "penta_LD": 12,
-            "penta_LL": 1
-        },
-        "Stage11-MVV-LVA-v2-60s vs Stage10-Magic-60s": {
+        "Stage13 vs Stage14": {
             "wins": 0,
+            "losses": 0,
+            "draws": 0,
+            "penta_WW": 0,
+            "penta_WD": 0,
+            "penta_WL": 0,
+            "penta_DD": 0,
+            "penta_LD": 0,
+            "penta_LL": 0
+        },
+        "Stage14 vs Stage13": {
+            "wins": 1,
             "losses": 0,
             "draws": 0,
             "penta_WW": 0,
