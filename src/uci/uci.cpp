@@ -51,6 +51,9 @@ void UCIEngine::run() {
         else if (command == "bench") {
             handleBench(tokens);
         }
+        else if (command == "setoption") {
+            handleSetOption(tokens);  // Stage 14, Deliverable 1.8
+        }
         // Ignore unknown commands (UCI protocol requirement)
     }
 }
@@ -59,6 +62,10 @@ void UCIEngine::handleUCI() {
     std::cout << "id name SeaJay Stage-13-FINAL" << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 13: Iterative Deepening with Aspiration Windows
+    
+    // Stage 14, Deliverable 1.8: UCI option for quiescence search
+    std::cout << "option name UseQuiescence type check default true" << std::endl;
+    
     std::cout << "uciok" << std::endl;
 }
 
@@ -347,6 +354,9 @@ void UCIEngine::search(const SearchParams& params) {
     
     limits.infinite = params.infinite;
     
+    // Stage 14, Deliverable 1.8: Pass quiescence option to search
+    limits.useQuiescence = m_useQuiescence;
+    
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
     
@@ -476,4 +486,47 @@ void UCIEngine::handleUCINewGame() {
     m_board.clearGameHistory();
     m_tt.clear();  // Clear TT for new game
     // No need to push - board tracks its own history
+}
+
+// Stage 14, Deliverable 1.8: Handle UCI setoption command
+void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
+    // Format: setoption name <name> value <value>
+    if (tokens.size() < 5) return;
+    
+    // Find the option name
+    size_t nameIdx = 0;
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (tokens[i] == "name" && i + 1 < tokens.size()) {
+            nameIdx = i + 1;
+            break;
+        }
+    }
+    
+    if (nameIdx == 0) return;
+    
+    // Find the value
+    size_t valueIdx = 0;
+    for (size_t i = nameIdx + 1; i < tokens.size(); i++) {
+        if (tokens[i] == "value" && i + 1 < tokens.size()) {
+            valueIdx = i + 1;
+            break;
+        }
+    }
+    
+    if (valueIdx == 0) return;
+    
+    const std::string& optionName = tokens[nameIdx];
+    const std::string& value = tokens[valueIdx];
+    
+    // Handle UseQuiescence option
+    if (optionName == "UseQuiescence") {
+        if (value == "true") {
+            m_useQuiescence = true;
+            std::cerr << "info string Quiescence search enabled" << std::endl;
+        } else if (value == "false") {
+            m_useQuiescence = false;
+            std::cerr << "info string Quiescence search disabled" << std::endl;
+        }
+    }
+    // Ignore unknown options (UCI requirement)
 }

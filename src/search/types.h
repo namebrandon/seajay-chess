@@ -32,6 +32,9 @@ struct SearchLimits {
     bool infinite = false;    // Infinite analysis mode
     bool ponder = false;      // Pondering mode (thinking on opponent's time)
     
+    // Stage 14, Deliverable 1.8: UCI option for quiescence search
+    bool useQuiescence = true;  // Enable/disable quiescence search
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -69,6 +72,9 @@ struct SearchData {
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds timeLimit{0};
     bool stopped = false;          // Search has been stopped
+    
+    // Stage 14, Deliverable 1.8: Runtime quiescence control
+    bool useQuiescence = true;     // Enable/disable quiescence search
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;

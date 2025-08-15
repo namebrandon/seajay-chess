@@ -37,6 +37,9 @@ private:
     bool m_quit;
     TranspositionTable m_tt;  // Transposition table for search
     
+    // UCI options (Stage 14, Deliverable 1.8)
+    bool m_useQuiescence = true;  // Enable/disable quiescence search
+    
     // Helper methods for draw detection
     void updateGameHistory();
     void clearGameHistory();
@@ -52,6 +55,7 @@ private:
     void handleStop();
     void handleQuit();
     void handleBench(const std::vector<std::string>& tokens);
+    void handleSetOption(const std::vector<std::string>& tokens);  // Stage 14, Deliverable 1.8
     
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);

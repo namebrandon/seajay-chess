@@ -187,13 +187,16 @@ eval::Score negamax(Board& board,
     
     // Terminal node - enter quiescence search or return static evaluation
     if (depth <= 0) {
+        // Stage 14, Deliverable 1.8: Runtime control via UCI option
+        // Use quiescence if both compile-time and runtime flags allow it
 #ifdef ENABLE_QUIESCENCE
-        // Stage 14: Use quiescence search to resolve tactical sequences
-        return quiescence(board, ply, alpha, beta, searchInfo, info, *tt);
-#else
-        // Original behavior: return static evaluation
-        return board.evaluate();
+        if (info.useQuiescence) {
+            // Use quiescence search to resolve tactical sequences
+            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt);
+        }
 #endif
+        // Default: return static evaluation
+        return board.evaluate();
     }
     
     // Sub-phase 4B: Draw Detection Order
@@ -493,6 +496,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     IterativeSearchData info;  // Using new class instead of SearchData
     
+    // Stage 14, Deliverable 1.8: Pass quiescence option to search
+    info.useQuiescence = limits.useQuiescence;
+    
     // Stage 13, Deliverable 2.2b: Switch to new time management
     // Calculate initial time limits with neutral stability (1.0)
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
@@ -755,6 +761,10 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
     
     SearchData info;  // For search statistics
+    
+    // Stage 14, Deliverable 1.8: Pass quiescence option to search
+    info.useQuiescence = limits.useQuiescence;
+    
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
     info.timeLimit = timeLimits.optimum;
