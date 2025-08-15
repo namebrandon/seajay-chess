@@ -69,9 +69,9 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-15-SEE-Development" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage-15-SEE-Dev-Day-1" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
-    // Stage 15: Static Exchange Evaluation (SEE)
+    // Stage 15: Static Exchange Evaluation (SEE) - Day 1 Foundation
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
