@@ -192,7 +192,7 @@ eval::Score negamax(Board& board,
 #ifdef ENABLE_QUIESCENCE
         if (info.useQuiescence) {
             // Use quiescence search to resolve tactical sequences
-            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt);
+            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0);
         }
 #endif
         // Default: return static evaluation

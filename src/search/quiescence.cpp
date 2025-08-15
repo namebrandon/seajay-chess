@@ -21,7 +21,8 @@ eval::Score quiescence(
     eval::Score beta,
     seajay::SearchInfo& searchInfo,
     SearchData& data,
-    seajay::TranspositionTable& tt)
+    seajay::TranspositionTable& tt,
+    int checkPly)
 {
     // Record entry node count for per-position limit enforcement
     const uint64_t entryNodes = data.qsearchNodes;
@@ -112,6 +113,15 @@ eval::Score quiescence(
     // Stage 14, Deliverable 1.10: Handle check evasion
     // Check if we're in check - requires different handling
     bool isInCheck = inCheck(board);
+    
+    // Deliverable 3.2.1: Track check ply depth and limit extensions
+    int newCheckPly = isInCheck ? checkPly + 1 : 0;
+    
+    // Stop extending checks after MAX_CHECK_PLY to prevent search explosion
+    if (newCheckPly > MAX_CHECK_PLY) {
+        // Return static evaluation when check depth limit reached
+        return eval::evaluate(board);
+    }
     
     // Stand-pat evaluation (skip if in check - must make a move)
     eval::Score staticEval;
@@ -236,7 +246,8 @@ eval::Score quiescence(
         if (!isInCheck && !isPromotion(move)) {
 #ifdef ENABLE_MVV_LVA
             // Use accurate victim value from MVV-LVA tables
-            PieceType captured = board.pieceTypeAt(move.to());
+            Piece capturedPiece = board.pieceAt(to(move));
+            PieceType captured = (capturedPiece != NO_PIECE) ? typeOf(capturedPiece) : NO_PIECE_TYPE;
             int captureValue = (captured != NO_PIECE_TYPE) ? VICTIM_VALUES[captured] : 0;
 #else
             // Conservative estimate when MVV-LVA not available
@@ -256,9 +267,9 @@ eval::Score quiescence(
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
-        // Recursive quiescence search
+        // Recursive quiescence search with check ply tracking
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
-                                       searchInfo, data, tt);
+                                       searchInfo, data, tt, newCheckPly);
         
         // Unmake the move
         board.unmakeMove(move, undo);

@@ -12,6 +12,7 @@ namespace seajay::search {
 // Safety constants for quiescence search
 static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply depth
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
+static constexpr int MAX_CHECK_PLY = 8;             // Maximum check extensions in quiescence
 
 // Delta pruning constants
 static constexpr int DELTA_MARGIN = 900;            // Conservative margin (queen value)
@@ -60,6 +61,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
  * @param searchInfo Global search information
  * @param data Search statistics
  * @param tt Transposition table
+ * @param checkPly Number of consecutive check plies (default 0)
  * @return Evaluation score of the position
  */
 eval::Score quiescence(
@@ -69,7 +71,8 @@ eval::Score quiescence(
     eval::Score beta,
     seajay::SearchInfo& searchInfo,
     SearchData& data,
-    seajay::TranspositionTable& tt
+    seajay::TranspositionTable& tt,
+    int checkPly = 0
 );
 
 } // namespace seajay::search
