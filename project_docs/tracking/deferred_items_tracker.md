@@ -826,3 +826,133 @@ const char* collisionTests[] = {
 **The Right Decision:** Expert consensus strongly supports deferring remaining phases to focus on higher-impact features in upcoming stages.
 
 **Next Stage:** Ready to proceed with Stage 13 (likely Null Move Pruning) with confidence in our TT foundation
+
+## Items DEFERRED FROM Stage 14 (Quiescence Search) TO Future Stages
+
+**Date:** August 15, 2025  
+**Status:** STAGE 14 COMPLETE ✅ (Basic quiescence with captures and check evasions)  
+**Source Documents:**
+- Regression Analysis: `/workspace/project_docs/stage_investigations/stage14_regression_analysis.md`
+- Candidates Summary: `/workspace/project_docs/stage_implementations/stage14_candidates_summary.md`
+- Decision Document: `/workspace/project_docs/stage_implementations/stage14_quiet_checks_decision.md`
+
+### Core Achievement:
+✅ **Successfully Implemented:**
+- Basic quiescence search with captures and check evasions
+- Delta pruning with conservative margins (900cp/600cp)
+- MVV-LVA move ordering in quiescence
+- Transposition table integration
+- Time pressure panic mode
+- **Performance:** +300 ELO over Stage 13
+- **Status:** Production-ready after fixing missing ENABLE_QUIESCENCE flag
+
+### To Stage 16+ (After Prerequisites):
+
+#### 1. Quiet Checks in Quiescence (DEFERRED)
+
+**Description:** Include quiet (non-capture) checking moves at depth 0 of quiescence
+
+**Why Deferred:**
+- **Missing Prerequisites:** No SEE to filter bad checks
+- **Recent C9 Catastrophe:** Need stability after aggressive pruning failure
+- **High Risk:** Could cause search explosion without proper filtering
+- **Complexity:** Requires efficient `givesCheck()` function
+
+**Prerequisites Required:**
+1. **SEE (Static Exchange Evaluation)** - Critical for filtering hanging piece checks
+2. **Efficient Check Detection** - Fast `givesCheck()` implementation
+3. **Stable Quiescence** - Current implementation fully validated
+4. **Better Time Management** - Fix current 1-2% time losses
+
+**Implementation When Ready:**
+```cpp
+// ONLY at depth 0, with strict limits
+if (ply == 0 && !isInCheck && ENABLE_QUIET_CHECKS) {
+    MoveList quietChecks;
+    generateQuietChecks(board, quietChecks);
+    
+    int checksAdded = 0;
+    const int MAX_QUIET_CHECKS = 2;  // Very conservative
+    
+    for (Move check : quietChecks) {
+        if (see(board, check) >= 0 &&  // Requires SEE!
+            checksAdded++ < MAX_QUIET_CHECKS) {
+            moves.push_back(check);
+        }
+    }
+}
+```
+
+**Expected Gain:** 15-25 ELO (but only after prerequisites)
+
+**Expert Opinion (chess-engine-expert):**
+> "DO NOT IMPLEMENT quiet checks at Stage 14. SeaJay needs stability and consolidation after the C9 catastrophe, not more experimental features."
+
+### To Future Phases:
+
+#### 2. Graduated Delta Margin Tuning
+
+**Description:** Carefully tune delta margins between 900cp and lower values
+
+**Current State:**
+- Using conservative 900cp (can see queen captures)
+- C9's aggressive 200cp caused catastrophic failure
+
+**Future Approach:**
+- Test incrementally: 900 → 800 → 700 → 600
+- Use SPRT at each step
+- Find break-even point for SeaJay's evaluation
+
+#### 3. SEE-Based Pruning in Quiescence
+
+**Description:** Use Static Exchange Evaluation to prune bad captures
+
+**Benefit:** Can safely use lower delta margins with SEE filtering
+
+**Implementation:** Stage 16 or later (after SEE implementation)
+
+#### 4. Singular Reply Extension in Quiescence
+
+**Description:** Extend when only one legal move in check evasion
+
+**Benefit:** Better tactical resolution in forcing lines
+
+**Complexity:** Low, but needs careful testing
+
+### Critical Lessons from Stage 14:
+
+#### The C9 Catastrophe:
+- Delta margin of 200cp pruned away winning captures
+- With 200cp margin, being down 201cp meant missing:
+  - Queen captures (900cp)
+  - Rook captures (500cp)
+  - Minor piece captures (320cp)
+- Result: Lost 0-11 against Golden C1
+
+#### The Recovery:
+- C10 reverted to conservative 900cp margins
+- Performance restored to Golden C1 level
+- Lesson: Delta margins MUST exceed capturable piece values
+
+#### The ENABLE_QUIESCENCE Mystery:
+- Spent 4 hours debugging "regression" 
+- Discovered quiescence was never compiled in (missing flag)
+- Binary size difference (384KB vs 411KB) was the critical clue
+- Lesson: Never use compile-time flags for core features
+
+### Stage 14 Summary:
+
+**What We Built:** 
+- Robust quiescence search with conservative parameters
+- +300 ELO improvement over static evaluation
+- All features compile in, UCI-controlled
+
+**What We Deferred:**
+- Quiet checks (need SEE first)
+- Aggressive delta margin tuning
+- Advanced pruning techniques
+
+**The Right Decision:** 
+Focus on stability and consolidation after C9 failure. Advanced features can wait until prerequisites are in place.
+
+**Next Stage:** Ready to proceed with Stage 15 (Search Extensions) with stable quiescence foundation
