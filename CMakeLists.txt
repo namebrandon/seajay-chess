@@ -289,6 +289,14 @@ add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
 add_test(NAME board_safety_tests COMMAND test_board_safety)
 add_test(NAME en_passant_check_evasion_tests COMMAND test_en_passant_check_evasion)
 
+# Tactical Quiescence test
+add_executable(tactical_test tests/tactical_test.cpp)
+target_link_libraries(tactical_test seajay_core)
+
+# Simple tactical test
+add_executable(tactical_simple tests/tactical_simple.cpp)
+target_link_libraries(tactical_simple seajay_core)
+
 # Benchmark target
 add_custom_target(bench
     COMMAND seajay bench

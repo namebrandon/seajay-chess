@@ -1,0 +1,82 @@
+# Tactical Test Suite for Quiescence Search Validation
+# Format: FEN bm <best_moves>; id "<position_id>"; c0 "<comment>";
+#
+# This suite tests various tactical patterns that quiescence search should resolve:
+# - Hanging pieces
+# - Forks and double attacks
+# - Pins and skewers
+# - Back rank mates
+# - Discovered attacks
+# - Overloaded defenders
+# - Perpetual check avoidance
+# - Promotion races
+
+# Simple hanging piece captures
+r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - bm Qd1f3; id "TAC001"; c0 "Queen can capture hanging knight on f6";
+rnbqkb1r/pp1ppppp/5n2/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - bm Nf3e5; id "TAC002"; c0 "Knight hangs on e5";
+r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - bm Nf3e5; id "TAC003"; c0 "Central pawn capture";
+
+# Fork positions
+r1bqkb1r/pppp1ppp/5n2/4p3/3nP3/3P1N2/PPP2PPP/RNBQKB1R w KQkq - bm c2c3; id "TAC004"; c0 "Black knight forks - defend";
+r1bqkbnr/pppp1ppp/8/4p3/3nP3/5N2/PPPP1PPP/RNBQKB1R w KQkq - bm c2c3; id "TAC005"; c0 "Knight fork threat";
+r2qkb1r/ppp2ppp/2n2n2/3pp3/3PP1b1/3B1N2/PPP2PPP/RNBQK2R w KQkq - bm h2h3; id "TAC006"; c0 "Bishop-knight fork threat";
+
+# Pin positions
+r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 b kq - bm Bc5f2; id "TAC007"; c0 "Absolute pin exploitation";
+r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - bm d7d6; id "TAC008"; c0 "Pin on knight";
+r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - bm O-O; id "TAC009"; c0 "Escape pin by castling";
+
+# Back rank threats
+6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - bm Rd1d8; id "TAC010"; c0 "Back rank mate in 1";
+3r2k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - bm Rd1d8; id "TAC011"; c0 "Back rank exchange";
+6k1/5p1p/6p1/8/8/8/5PPP/3R2K1 w - - bm Rd1d8; id "TAC012"; c0 "Back rank mate threat";
+
+# Discovered attacks
+r1bqk2r/pppp1ppp/2n2n2/2b1p3/2BPP3/3P1N2/PP3PPP/RNBQK2R b KQkq - bm Nc6d4; id "TAC013"; c0 "Discovered attack setup";
+r1bqkb1r/pppp1ppp/2n2n2/4p3/2BPP3/5N2/PPP2PPP/RNBQK2R b KQkq - bm Nf6e4; id "TAC014"; c0 "Discovered check threat";
+r1b1kb1r/pppp1ppp/2n2n2/4p3/2BPP2q/5N2/PPP2PPP/RNBQK2R w KQkq - bm Ke1f1; id "TAC015"; c0 "Escape discovered check";
+
+# Overloaded pieces
+r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQR1K1 b kq - bm Nf6g4; id "TAC016"; c0 "Overloaded defender";
+r1bqkb1r/ppp2ppp/2np1n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - bm Nf6g4; id "TAC017"; c0 "Defender overworked";
+r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - bm O-O; id "TAC018"; c0 "Castle to safety";
+
+# Check evasion
+rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - bm g2g3; id "TAC019"; c0 "Block check";
+rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1q w KQkq - bm Ke1d2; id "TAC020"; c0 "King must move";
+r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1q w KQkq - bm Ke1f1; id "TAC021"; c0 "Escape check";
+
+# Promotion tactics
+8/1P6/8/8/8/8/1p6/R6K b - - bm b2b1Q; id "TAC022"; c0 "Race to promote";
+8/P7/8/8/8/8/p7/R6K b - - bm a2a1Q; id "TAC023"; c0 "Promotion race";
+7k/P7/8/8/8/8/p7/7K b - - bm a2a1Q; id "TAC024"; c0 "Both promote";
+
+# Perpetual check avoidance
+3Q4/8/3K4/8/8/3k4/8/3q4 b - - bm Qd1c2; id "TAC025"; c0 "Avoid perpetual";
+7k/6Q1/6K1/8/8/8/8/8 w - - bm Qg7h6; id "TAC026"; c0 "Checkmate not perpetual";
+8/8/3K4/8/8/3k4/3q4/3Q4 w - - bm Qd1e1; id "TAC027"; c0 "Draw by perpetual";
+
+# Complex tactical sequences
+r3k2r/pb1nqppp/1p2pn2/2p5/2PP4/1PN1PN2/PB2QPPP/R3K2R b KQkq - bm O-O-O; id "TAC028"; c0 "Castle to safety in complex position";
+r1b1kb1r/pp1n1ppp/2p1pn2/q7/3P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - bm Nc3b5; id "TAC029"; c0 "Knight attacks queen and c7";
+r1bqk2r/pp1nbppp/2p1pn2/3p4/2PP4/2N1PN2/PPQ2PPP/R1B1KB1R w KQkq - bm c4d5; id "TAC030"; c0 "Central break with tactics";
+
+# Horizon effect tests - positions where shallow search fails
+r1bqkb1r/1p3ppp/p1np1n2/4p3/4P3/N1N5/PPP2PPP/R1BQKB1R w KQkq - bm Nc3d5; id "TAC031"; c0 "Deep tactical sequence";
+r2qkb1r/1b1n1ppp/p2ppn2/1p6/3NP3/2N1BP2/PPP3PP/R2QKB1R w KQkq - bm Nd4f5; id "TAC032"; c0 "Multi-move combination";
+r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - bm Nf3e5; id "TAC033"; c0 "Tactical sequence with counter-threats";
+
+# Stalemate traps
+7k/8/6KQ/8/8/8/8/8 w - - bm Qh6g7; id "TAC034"; c0 "Avoid stalemate trap";
+7k/7P/6K1/8/8/8/8/8 w - - bm Kg6f6; id "TAC035"; c0 "Promote without stalemate";
+8/8/8/8/8/2k5/1q6/K7 w - - bm Ka1b1; id "TAC036"; c0 "Avoid stalemate in queen endgame";
+
+# Insufficient material detection
+8/8/3K4/8/8/3k4/8/8 w - - bm Kd6d5; id "TAC037"; c0 "Draw - insufficient material";
+8/8/3K4/8/3b4/3k4/8/8 w - - bm Kd6e6; id "TAC038"; c0 "Draw - K+B insufficient";
+8/8/3K4/8/3n4/3k4/8/8 w - - bm Kd6d5; id "TAC039"; c0 "Draw - K+N insufficient";
+
+# Mixed tactics requiring quiescence
+r1bqkbnr/pppp1p1p/2n3p1/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - bm d4e5; id "TAC040"; c0 "Central capture with tactics";
+r1bqk2r/pp1nbppp/2p1pn2/3p4/2PP4/2N1PN2/PPQ2PPP/R1B1KB1R b KQkq - bm d5c4; id "TAC041"; c0 "Pawn capture sequence";
+rnbqk2r/pp2bppp/4pn2/2pp4/2PP4/2N1PN2/PP2BPPP/R1BQK2R w KQkq - bm c4d5; id "TAC042"; c0 "Central tension resolution";
