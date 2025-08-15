@@ -5,7 +5,7 @@
 #include "../evaluation/evaluate.h"
 #include "../core/transposition_table.h"
 #ifdef ENABLE_MVV_LVA
-#include "move_ordering.h"  // For MVV-LVA ordering
+#include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES
 #endif
 #include <algorithm>
 
@@ -199,6 +199,24 @@ eval::Score quiescence(
         // Limit moves per node to prevent explosion (except when in check)
         if (!isInCheck && ++moveCount > MAX_CAPTURES_PER_NODE) {
             break;
+        }
+        
+        // Deliverable 3.3: Per-move delta pruning
+        // Skip bad captures that can't improve alpha even if successful
+        if (!isInCheck && !isPromotion(move)) {
+#ifdef ENABLE_MVV_LVA
+            // Use accurate victim value from MVV-LVA tables
+            PieceType captured = board.pieceTypeAt(move.to());
+            int captureValue = (captured != NO_PIECE_TYPE) ? VICTIM_VALUES[captured] : 0;
+#else
+            // Conservative estimate when MVV-LVA not available
+            int captureValue = 100;  // Assume at least a pawn
+#endif
+            // If even winning this capture + margin can't improve alpha, skip
+            if (staticEval + captureValue + DELTA_MARGIN < alpha) {
+                data.deltasPruned++;
+                continue;  // Skip this capture
+            }
         }
         
         // Push position to search stack
