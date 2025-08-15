@@ -161,6 +161,26 @@ eval::Score quiescence(
             // Checkmate (we're in check with no legal moves)
             return eval::Score(-32000 + ply);
         }
+        
+        // Deliverable 3.2.2: Escape Route Prioritization
+        // Order evasion moves: King moves > Blocking > Capturing checker
+        Square kingSquare = board.kingSquare(board.sideToMove());
+        std::sort(moves.begin(), moves.end(), [kingSquare](Move a, Move b) {
+            // King moves have highest priority
+            bool aIsKingMove = (from(a) == kingSquare);
+            bool bIsKingMove = (from(b) == kingSquare);
+            if (aIsKingMove && !bIsKingMove) return true;
+            if (!aIsKingMove && bIsKingMove) return false;
+            
+            // Then captures (which might capture the checking piece)
+            bool aIsCapture = isCapture(a);
+            bool bIsCapture = isCapture(b);
+            if (aIsCapture && !bIsCapture) return true;
+            if (!aIsCapture && bIsCapture) return false;
+            
+            // Rest maintain original order (blocks)
+            return false;
+        });
     } else {
         // Not in check: only search captures
         MoveGenerator::generateCaptures(board, moves);
