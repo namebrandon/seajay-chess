@@ -22,17 +22,17 @@
         "enabled": false
     },
     "opening": {
-        "file": "/workspace/external/books/4moves_test.pgn",
-        "format": 1,
-        "order": 0,
+        "file": "",
+        "format": 2,
+        "order": 1,
         "plies": -1,
         "start": 1
     },
     "pgn": {
         "additional_lines_rgx": [],
         "event_name": "Stage 15 SEE Test",
-        "site": "SPRT with Book",
-        "file": "/workspace/sprt_results/stage15_see_with_book/games.pgn",
+        "site": "SPRT from Startpos",
+        "file": "/workspace/sprt_results/stage15_see_startpos/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -57,7 +57,7 @@
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 7324911831138867113,
+    "seed": 1708765562976418648,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/stage15_see_with_book/fastchess.log",
+        "file": "/workspace/sprt_results/stage15_see_startpos/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -135,15 +135,15 @@
     ],
     "stats": {
         "Stage14-Base vs Stage15-SEE": {
-            "wins": 21,
-            "losses": 25,
-            "draws": 34,
-            "penta_WW": 0,
-            "penta_WD": 8,
-            "penta_WL": 13,
-            "penta_DD": 8,
-            "penta_LD": 10,
-            "penta_LL": 1
+            "wins": 92,
+            "losses": 100,
+            "draws": 8,
+            "penta_WW": 2,
+            "penta_WD": 3,
+            "penta_WL": 85,
+            "penta_DD": 0,
+            "penta_LD": 5,
+            "penta_LL": 5
         },
         "Stage15-SEE vs Stage14-Base": {
             "wins": 0,
