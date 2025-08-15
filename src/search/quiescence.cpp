@@ -4,6 +4,7 @@
 #include "../core/move_list.h"
 #include "../evaluation/evaluate.h"
 #include "../core/transposition_table.h"
+#include "discovered_check.h"  // For discovered check detection
 #ifdef ENABLE_MVV_LVA
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES
 #endif
@@ -187,7 +188,7 @@ eval::Score quiescence(
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
-    // Order: Queen Promotions → TT moves → Other captures → Quiet moves
+    // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
 #ifdef ENABLE_MVV_LVA
     MvvLvaOrdering mvvLva;
     mvvLva.orderMoves(board, moves);
@@ -201,6 +202,20 @@ eval::Score quiescence(
                 std::rotate(queenPromoIt, it, it + 1);
             }
             ++queenPromoIt;  // Move insertion point for next queen promotion
+        }
+    }
+    
+    // Deliverable 3.2.3: Discovered Check Detection
+    // Prioritize captures that create discovered checks (after queen promos)
+    if (!isInCheck) {  // Only for capture moves, not check evasions
+        auto discoveredCheckIt = queenPromoIt;
+        for (auto it = queenPromoIt; it != moves.end(); ++it) {
+            if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
+                if (it != discoveredCheckIt) {
+                    std::rotate(discoveredCheckIt, it, it + 1);
+                }
+                ++discoveredCheckIt;
+            }
         }
     }
     
