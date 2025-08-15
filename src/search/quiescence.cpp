@@ -87,6 +87,10 @@ eval::Score quiescence(
         data.seldepth = ply;
     }
     
+    // Deliverable 3.4: Detect endgame for delta pruning margin adjustment
+    bool isEndgame = (board.material().value(WHITE).value() < 1300) && (board.material().value(BLACK).value() < 1300);
+    int deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
+    
     // Safety check 1: prevent stack overflow
     if (ply >= TOTAL_MAX_PLY) {
         return eval::evaluate(board);
@@ -121,10 +125,6 @@ eval::Score quiescence(
         }
         
         // Deliverable 3.2 & 3.4: Basic delta pruning with endgame safety
-        // Detect endgame for reduced margin (avoid zugzwang issues)
-        bool isEndgame = (board.materialCount(WHITE) < 1300) && (board.materialCount(BLACK) < 1300);
-        int deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
-        
         // If we're so far behind that even winning a queen won't help, prune
         eval::Score futilityBase = staticEval + eval::Score(deltaMargin);
         if (futilityBase < alpha) {
@@ -217,7 +217,7 @@ eval::Score quiescence(
             int captureValue = 100;  // Assume at least a pawn
 #endif
             // Use endgame-appropriate margin (already calculated above)
-            if (staticEval + captureValue + deltaMargin < alpha) {
+            if (staticEval + eval::Score(captureValue) + eval::Score(deltaMargin) < alpha) {
                 data.deltasPruned++;
                 continue;  // Skip this capture
             }

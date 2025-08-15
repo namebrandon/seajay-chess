@@ -280,6 +280,10 @@ if(NOT SKIP_ALPHABETA_TEST)
     add_executable(test_quiescence_limits tests/search/test_quiescence_limits.cpp)
     target_include_directories(test_quiescence_limits PRIVATE ${GTEST_INCLUDE_DIR})
     target_link_libraries(test_quiescence_limits seajay_core ${GTEST_LIBRARIES} pthread)
+    
+    # Stage 14: Delta pruning tests
+    add_executable(test_delta_pruning_simple tests/search/test_delta_pruning_simple.cpp)
+    target_link_libraries(test_delta_pruning_simple seajay_core)
 endif()
 
 # Add test cases
