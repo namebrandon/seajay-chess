@@ -6,11 +6,18 @@
 **Prerequisites Completed:** Yes  
 **Theme:** METHODICAL VALIDATION
 
+**Related Documents:**
+- Implementation Details: `/workspace/project_docs/planning/stage_15_considerations.md`
+- Master Project Plan: `/workspace/project_docs/SeaJay Chess Engine Development - Master Project Plan.md`
+- Deferred Items Tracker: `/workspace/project_docs/tracking/deferred_items_tracker.md`
+
 ## Executive Summary
 
 Stage 15 implements Static Exchange Evaluation (SEE) to accurately assess capture sequences, replacing our current MVV-LVA ordering with intelligent exchange analysis. Following our "METHODICAL VALIDATION" theme, every component will be tested against Stockfish, every assumption validated, and every deliverable verified complete.
 
 **Expected Outcome:** +30-50 ELO improvement through accurate capture assessment and improved move ordering.
+
+**Note:** This document follows the mandatory Pre-Stage Development Planning Process. For detailed implementation guidance, algorithm specifics, and test positions, refer to the Implementation Details document (`stage_15_considerations.md`).
 
 ## Phase 1: Current State Analysis ✅
 
@@ -394,6 +401,35 @@ This stage emphasizes thorough validation at every step:
 **Reviews:** ✅ Both experts consulted  
 **Theme:** ✅ METHODICAL VALIDATION established  
 **Ready:** ✅ Proceed to Stage 15 implementation
+
+## Key Implementation References
+
+For detailed implementation guidance, refer to specific sections in `stage_15_considerations.md`:
+
+### Algorithm Implementation
+- **Section 1**: SEE Algorithm Best Practices (Swap algorithm, lines 115-333)
+- **Section 2**: Test Positions and Validation (100+ positions, lines 489-859)
+- **Appendix C**: Common SEE Bugs from Chess Engine History (lines 2075-2213)
+
+### C++ Technical Details
+- **C++ Expert Review**: Modern C++20 features and optimizations (lines 9-114)
+- **Section 7**: Code Organization and Architecture (lines 1498-1673)
+- **Section 10**: Additional C++ Best Practices (lines 1759-1868)
+
+### Testing Strategy
+- **UCI-Based Testing**: Shell scripts for board init workaround (lines 737-894)
+- **Section 2.1**: Essential SEE Test Positions (lines 491-658)
+- **Performance Benchmarks**: Target metrics and validation (lines 684-690)
+
+### Integration Approach
+- **Section 4**: Micro-Deliverable Breakdown (lines 1060-1276)
+- **Section 6**: Git Workflow and Version Control (lines 1321-1471)
+- **Section 12**: Explicit Final Configuration Values (lines 1939-2001)
+
+### Risk Mitigation
+- **Section 3**: Integration Risks and Learning from Stage 14 (lines 896-1059)
+- **Section 5**: Early Warning Signs and Validation Gates (lines 1277-1320)
+- **Build System Safeguards**: Binary fingerprinting (lines 119-173)
 
 ---
 

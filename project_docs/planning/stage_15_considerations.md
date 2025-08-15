@@ -1,10 +1,16 @@
 # Stage 15: Static Exchange Evaluation (SEE) - Implementation Considerations
 
+**Related Documents:**
+- Pre-Stage Planning: `/workspace/project_docs/planning/stage15_pre_stage_planning.md`
+- Master Project Plan: `/workspace/project_docs/SeaJay Chess Engine Development - Master Project Plan.md`
+
 ## Executive Summary
 
 Static Exchange Evaluation (SEE) is a critical component for accurate capture evaluation that will replace our current MVV-LVA ordering. Given the challenges faced in Stage 14 (C9 Catastrophe, Build Mode Crisis), this document provides battle-tested guidance to ensure a smooth, validated implementation.
 
 **Expected Outcome:** +30-50 ELO improvement through accurate capture assessment and improved move ordering.
+
+**Note:** This document contains detailed implementation guidance from both C++ and chess engine experts. For the formal pre-stage planning process and METHODICAL VALIDATION theme, see the Pre-Stage Planning document.
 
 ## C++ Expert Review: Critical Implementation Guidance
 
