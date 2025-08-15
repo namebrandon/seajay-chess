@@ -200,10 +200,63 @@ eval::Score quiescence(
                 // Beta cutoff - prune remaining captures
                 if (score >= beta) {
                     data.qsearchCutoffs++;
+                    
+                    // Deliverable 2.2: Store in TT with LOWER bound (fail-high)
+                    if (tt.isEnabled()) {
+                        // Adjust mate scores for storage (relative to root)
+                        eval::Score scoreToStore = score;
+                        if (score.value() >= MATE_BOUND) {
+                            scoreToStore = eval::Score(score.value() + ply);
+                        } else if (score.value() <= -MATE_BOUND) {
+                            scoreToStore = eval::Score(score.value() - ply);
+                        }
+                        
+                        // Store with depth 0 (quiescence) and LOWER bound
+                        tt.store(board.zobristKey(), move, scoreToStore.value(), 
+                                staticEval.value(), 0, Bound::LOWER);
+                    }
+                    
                     return score;
                 }
             }
         }
+    }
+    
+    // Deliverable 2.2: Store final result in TT
+    if (tt.isEnabled()) {
+        // Determine bound type based on search outcome
+        Bound bound;
+        Move bestMove = NO_MOVE;  // No best move tracked in current quiescence
+        
+        if (bestScore > alpha) {
+            // We improved alpha - EXACT bound if not at original alpha
+            // But be careful: if bestScore came from stand-pat, it's an UPPER bound
+            if (!moves.empty() && !isInCheck) {
+                // We searched moves and improved alpha - EXACT
+                bound = Bound::EXACT;
+            } else if (moves.empty() && !isInCheck) {
+                // No captures available, stand-pat value - UPPER bound
+                bound = Bound::UPPER;
+            } else {
+                // In check or found better move - EXACT
+                bound = Bound::EXACT;
+            }
+        } else {
+            // Failed low - UPPER bound
+            bound = Bound::UPPER;
+        }
+        
+        // Adjust mate scores for storage
+        eval::Score scoreToStore = bestScore;
+        if (bestScore.value() >= MATE_BOUND) {
+            scoreToStore = eval::Score(bestScore.value() + ply);
+        } else if (bestScore.value() <= -MATE_BOUND) {
+            scoreToStore = eval::Score(bestScore.value() - ply);
+        }
+        
+        // Store with depth 0 for quiescence
+        tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
+                staticEval.value(), 0, bound);
     }
     
     return bestScore;
