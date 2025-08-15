@@ -120,6 +120,14 @@ eval::Score quiescence(
             return staticEval;
         }
         
+        // Deliverable 3.2: Basic delta pruning
+        // If we're so far behind that even winning a queen won't help, prune
+        eval::Score futilityBase = staticEval + eval::Score(DELTA_MARGIN);
+        if (futilityBase < alpha) {
+            data.deltasPruned++;
+            return staticEval;  // Position is hopeless
+        }
+        
         // Update alpha with stand-pat score
         // In quiet positions, we can choose to not make any move
         alpha = std::max(alpha, staticEval);
