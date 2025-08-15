@@ -47,64 +47,88 @@ eval::Score quiescence(
         return eval::Score::zero();  // Draw score
     }
     
-    // Stand-pat evaluation: static evaluation of the position
-    eval::Score staticEval = eval::evaluate(board);
+    // Stage 14, Deliverable 1.10: Handle check evasion
+    // Check if we're in check - requires different handling
+    bool isInCheck = inCheck(board);
     
-    // Beta cutoff on stand-pat
-    if (staticEval >= beta) {
-        data.standPatCutoffs++;
-        return staticEval;
+    // Stand-pat evaluation (skip if in check - must make a move)
+    eval::Score staticEval;
+    if (!isInCheck) {
+        staticEval = eval::evaluate(board);
+        
+        // Beta cutoff on stand-pat
+        if (staticEval >= beta) {
+            data.standPatCutoffs++;
+            return staticEval;
+        }
+        
+        // Update alpha with stand-pat score
+        // In quiet positions, we can choose to not make any move
+        alpha = std::max(alpha, staticEval);
+    } else {
+        // In check: no stand-pat, must make a move
+        staticEval = eval::Score::minus_infinity();
     }
     
-    // Update alpha with stand-pat score
-    // In quiet positions, we can choose to not make any move
-    alpha = std::max(alpha, staticEval);
+    // Generate moves based on check status
+    MoveList moves;
+    if (isInCheck) {
+        // In check: must generate ALL legal moves (not just captures)
+        moves = generateLegalMoves(board);
+        
+        // Check for checkmate/stalemate
+        if (moves.empty()) {
+            // Checkmate (we're in check with no legal moves)
+            return eval::Score(-32000 + ply);
+        }
+    } else {
+        // Not in check: only search captures
+        MoveGenerator::generateCaptures(board, moves);
+    }
     
-    // Stage 14, Deliverable 1.9: Generate and search captures
-    // Generate all captures
-    MoveList captures;
-    MoveGenerator::generateCaptures(board, captures);
-    
-    // Order captures using MVV-LVA for better pruning
+    // Order moves for better pruning
 #ifdef ENABLE_MVV_LVA
     MvvLvaOrdering mvvLva;
-    mvvLva.orderMoves(board, captures);
+    mvvLva.orderMoves(board, moves);
 #else
-    // Simple ordering: promotions first, then by captured piece value
-    std::sort(captures.begin(), captures.end(), [&board](Move a, Move b) {
-        // Promotions first
-        if (isPromotion(a) && !isPromotion(b)) return true;
-        if (!isPromotion(a) && isPromotion(b)) return false;
-        
-        // Then by captured piece value (approximation without full board access)
-        // This is a simplified ordering when MVV-LVA is not available
-        return false;  // Keep original order
-    });
+    // Simple ordering: promotions first, then captures
+    if (!isInCheck) {
+        std::sort(moves.begin(), moves.end(), [&board](Move a, Move b) {
+            // Promotions first
+            if (isPromotion(a) && !isPromotion(b)) return true;
+            if (!isPromotion(a) && isPromotion(b)) return false;
+            
+            // Then by captured piece value (approximation without full board access)
+            // This is a simplified ordering when MVV-LVA is not available
+            return false;  // Keep original order
+        });
+    }
+    // When in check, keep move generation order (usually good enough)
 #endif
     
-    // Search captures
-    eval::Score bestScore = alpha;
-    int captureCount = 0;
+    // Search moves
+    eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
+    int moveCount = 0;
     
-    for (const Move& capture : captures) {
-        // Limit captures per node to prevent explosion
-        if (++captureCount > MAX_CAPTURES_PER_NODE) {
+    for (const Move& move : moves) {
+        // Limit moves per node to prevent explosion (except when in check)
+        if (!isInCheck && ++moveCount > MAX_CAPTURES_PER_NODE) {
             break;
         }
         
         // Push position to search stack
-        searchInfo.pushSearchPosition(board.zobristKey(), capture, ply);
+        searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         
-        // Make the capture
+        // Make the move
         Board::UndoInfo undo;
-        board.makeMove(capture, undo);
+        board.makeMove(move, undo);
         
         // Recursive quiescence search
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
                                        searchInfo, data, tt);
         
-        // Unmake the capture
-        board.unmakeMove(capture, undo);
+        // Unmake the move
+        board.unmakeMove(move, undo);
         
         // Check if search was stopped
         if (data.stopped) {
