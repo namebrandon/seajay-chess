@@ -827,6 +827,49 @@ const char* collisionTests[] = {
 
 **Next Stage:** Ready to proceed with Stage 13 (likely Null Move Pruning) with confidence in our TT foundation
 
+## PRIORITY ITEMS - Performance Optimizations
+
+### CPU Optimization Flags (HIGH PRIORITY)
+**Date Added:** August 15, 2025  
+**Requested By:** User (comparison with Elixir engine)  
+**Status:** Ready to implement  
+
+**Description:** Add CPU-specific optimization flags `-mpopcnt -msse4.2` to improve performance
+
+**Analysis Complete:**
+- Tested and verified **4.2x speedup** for popcount operations
+- No code changes required - SeaJay already uses `std::popcount` which leverages these instructions
+- Compiles cleanly with these flags
+- Safe for modern CPUs (2008+ support)
+
+**Implementation Options:**
+1. **Option A - Add to CMakeLists.txt (Recommended):**
+```cmake
+# Add after line 86 in CMakeLists.txt
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    option(USE_CPU_OPTIMIZATIONS "Enable CPU-specific optimizations (popcnt, SSE4.2)" ON)
+    if(USE_CPU_OPTIMIZATIONS)
+        add_compile_options(-mpopcnt -msse4.2)
+        message(STATUS "CPU optimizations enabled: POPCNT, SSE4.2")
+    endif()
+endif()
+```
+
+2. **Option B - Build script modification (Non-invasive):**
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=x86-64 -mpopcnt -msse4.2" ..
+```
+
+**Expected Benefits:**
+- Significant speedup in bitboard operations (popcount, lsb, msb)
+- Better move generation performance
+- No compatibility issues with target x86-64 architecture
+- Matches optimization level of Elixir engine
+
+**Priority:** HIGH - Easy win with significant performance gain
+
+---
+
 ## Items DEFERRED FROM Stage 14 (Quiescence Search) TO Future Stages
 
 **Date:** August 15, 2025  

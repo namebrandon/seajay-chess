@@ -75,7 +75,8 @@ public:
         int pieceCount = m_rng() % 20 + 4;  // 4-24 pieces total
         
         for (int i = 0; i < pieceCount; i++) {
-            Square sq = static_cast<Square>(m_squareDist(m_rng));
+            int sqIdx = m_squareDist(m_rng);
+            Square sq = static_cast<Square>(sqIdx);
             
             // Skip if square occupied
             if (board.pieceAt(sq) != NO_PIECE) continue;

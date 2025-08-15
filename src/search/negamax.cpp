@@ -80,16 +80,15 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     }
     
 #ifdef ENABLE_MVV_LVA
-    // Use MVV-LVA ordering for remaining moves
-    // MVV-LVA will handle the entire list, including TT move positioning
-    MvvLvaOrdering mvvLvaOrdering;
-    mvvLvaOrdering.orderMoves(board, moves);
+    // Stage 15 Day 5: Use SEE-aware move ordering (can be MVV-LVA, SEE, or hybrid)
+    // The global g_seeMoveOrdering respects the current SEE mode set via UCI
+    g_seeMoveOrdering.orderMoves(board, moves);
     
-    // After MVV-LVA, ensure TT move is still first if it was valid
+    // After ordering, ensure TT move is still first if it was valid
     if (ttMove != NO_MOVE) {
         auto it = std::find(moves.begin(), moves.end(), ttMove);
         if (it != moves.end() && it != moves.begin()) {
-            // Move TT move back to front (MVV-LVA may have moved it)
+            // Move TT move back to front (ordering may have moved it)
             Move temp = *it;
             std::move_backward(moves.begin(), it, it + 1);
             *moves.begin() = temp;

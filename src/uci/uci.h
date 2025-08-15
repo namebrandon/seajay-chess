@@ -40,6 +40,9 @@ private:
     // UCI options (Stage 14, Deliverable 1.8)
     bool m_useQuiescence = true;  // Enable/disable quiescence search
     
+    // Stage 15 Day 5: SEE integration mode
+    std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
+    
     // Helper methods for draw detection
     void updateGameHistory();
     void clearGameHistory();

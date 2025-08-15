@@ -3,6 +3,7 @@
 #include "../search/search.h"
 #include "../search/negamax.h"
 #include "../search/types.h"
+#include "../search/move_ordering.h"  // Stage 15: For SEE integration
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -69,12 +70,15 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-15-SEE-Dev-Day-1" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage-15-SEE-Dev-Day-3-XRay" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
-    // Stage 15: Static Exchange Evaluation (SEE) - Day 1 Foundation
+    // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
+    
+    // Stage 15 Day 5: SEE integration mode option
+    std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
     std::cout << "uciok" << std::endl;
 }
@@ -536,6 +540,36 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useQuiescence = false;
             std::cerr << "info string Quiescence search disabled" << std::endl;
+        }
+    }
+    // Stage 15 Day 5: Handle SEEMode option
+    else if (optionName == "SEEMode") {
+        if (value == "off" || value == "testing" || value == "shadow" || value == "production") {
+            m_seeMode = value;
+            
+            // Update the global SEE move ordering instance
+            search::SEEMode mode = search::parseSEEMode(value);
+            search::g_seeMoveOrdering.setMode(mode);
+            
+            // Report the mode change
+            std::cerr << "info string SEE mode set to: " << value << std::endl;
+            
+            // Reset statistics when changing modes
+            search::SEEMoveOrdering::getStats().reset();
+            
+            // Additional info for each mode
+            if (value == "testing") {
+                std::cerr << "info string SEE Testing Mode: Using SEE for captures, logging all values" << std::endl;
+            } else if (value == "shadow") {
+                std::cerr << "info string SEE Shadow Mode: Calculating both SEE and MVV-LVA, using MVV-LVA" << std::endl;
+            } else if (value == "production") {
+                std::cerr << "info string SEE Production Mode: Using SEE for all captures" << std::endl;
+            } else {
+                std::cerr << "info string SEE Off: Using MVV-LVA only" << std::endl;
+            }
+        } else {
+            std::cerr << "info string Invalid SEEMode value: " << value << std::endl;
+            std::cerr << "info string Valid values: off, testing, shadow, production" << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

@@ -164,14 +164,6 @@ private:
     // Castling move generation
     static void generateCastlingMoves(const Board& board, MoveList& moves);
     
-    // Attack generation for each piece type (used for check detection)
-    static Bitboard getPawnAttacks(Square square, Color color);
-    static Bitboard getKnightAttacks(Square square);
-    static Bitboard getBishopAttacks(Square square, Bitboard occupied);
-    static Bitboard getRookAttacks(Square square, Bitboard occupied);
-    static Bitboard getQueenAttacks(Square square, Bitboard occupied);
-    static Bitboard getKingAttacks(Square square);
-    
     // Wrapper functions for bitboard attack functions
     static Bitboard bishopAttacks(Square square, Bitboard occupied);
     static Bitboard rookAttacks(Square square, Bitboard occupied);
@@ -193,6 +185,14 @@ public:
     static Bitboard getPinnedPieces(const Board& board, Color kingColor);
     static bool isPinned(const Board& board, Square square, Color kingColor);
     static Bitboard getPinRay(const Board& board, Square pinnedSquare, Square kingSquare);
+    
+    // Attack generation methods (made public for SEE)
+    static Bitboard getPawnAttacks(Square square, Color color);
+    static Bitboard getKnightAttacks(Square square);
+    static Bitboard getBishopAttacks(Square square, Bitboard occupied);
+    static Bitboard getRookAttacks(Square square, Bitboard occupied);
+    static Bitboard getQueenAttacks(Square square, Bitboard occupied);
+    static Bitboard getKingAttacks(Square square);
     static bool couldDiscoverCheck(const Board& board, Square from, Square kingSquare, Color opponent);
     
 private:

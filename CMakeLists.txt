@@ -93,6 +93,7 @@ set(CORE_SOURCES
     src/core/move_list.cpp
     src/core/perft.cpp
     src/core/transposition_table.cpp
+    src/core/see.cpp
     src/core/bitboard.h
     src/core/board.h
     src/core/board_safety.h
@@ -105,6 +106,7 @@ set(CORE_SOURCES
     src/core/magic_bitboards.h
     src/core/magic_constants.h
     src/core/transposition_table.h
+    src/core/see.h
 )
 
 # Evaluation sources
@@ -187,6 +189,10 @@ target_link_libraries(fen_demo seajay_core)
 add_executable(sliding_attacks_demo tests/demo/sliding_attacks_demo.cpp)
 target_link_libraries(sliding_attacks_demo seajay_core)
 
+# Stage 15: SEE Demo
+add_executable(see_demo tests/demo/see_demo.cpp)
+target_link_libraries(see_demo seajay_core)
+
 add_executable(move_generation_demo tests/demo/move_generation_demo.cpp)
 target_link_libraries(move_generation_demo seajay_core)
 
@@ -252,6 +258,23 @@ target_link_libraries(test_tt_chaos seajay_core)
 
 add_executable(test_perft_tt tests/unit/test_perft_tt.cpp)
 target_link_libraries(test_perft_tt seajay_core)
+
+# Stage 15: SEE tests  
+if(NOT SKIP_ALPHABETA_TEST)
+    add_executable(test_see_basic tests/unit/test_see_basic.cpp)
+    target_include_directories(test_see_basic PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_see_basic seajay_core ${GTEST_LIBRARIES} pthread)
+    
+    add_executable(test_see_special tests/unit/test_see_special.cpp)
+    target_include_directories(test_see_special PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_see_special seajay_core ${GTEST_LIBRARIES} pthread)
+else()
+    add_executable(test_see_basic tests/unit/test_see_basic.cpp)
+    target_link_libraries(test_see_basic seajay_core)
+    
+    add_executable(test_see_special tests/unit/test_see_special.cpp)
+    target_link_libraries(test_see_special seajay_core)
+endif()
 
 # Quiescence Performance Benchmark Tool (Phase 2.3 - Missing Item 3)
 add_executable(qsearch_benchmark tools/qsearch_benchmark.cpp)
@@ -319,6 +342,10 @@ target_link_libraries(tactical_test seajay_core)
 # Simple tactical test
 add_executable(tactical_simple tests/tactical_simple.cpp)
 target_link_libraries(tactical_simple seajay_core)
+
+# Stage 15: Simple SEE test (no GoogleTest dependency)
+add_executable(test_see_simple tests/test_see_simple.cpp)
+target_link_libraries(test_see_simple seajay_core)
 
 # Benchmark target
 add_custom_target(bench

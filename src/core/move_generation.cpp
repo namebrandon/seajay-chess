@@ -558,6 +558,19 @@ Bitboard MoveGenerator::queenAttacks(Square square, Bitboard occupied) {
 #endif
 }
 
+// Public wrappers for SEE (Stage 15)
+Bitboard MoveGenerator::getBishopAttacks(Square square, Bitboard occupied) {
+    return bishopAttacks(square, occupied);
+}
+
+Bitboard MoveGenerator::getRookAttacks(Square square, Bitboard occupied) {
+    return rookAttacks(square, occupied);
+}
+
+Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
+    return queenAttacks(square, occupied);
+}
+
 Bitboard MoveGenerator::getKingAttacks(Square square) {
     if (!s_tablesInitialized) {
         initializeAttackTables();
