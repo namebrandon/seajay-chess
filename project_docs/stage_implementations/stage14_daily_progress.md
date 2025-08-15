@@ -172,3 +172,101 @@ This fix ensures we can safely develop with limits while guaranteeing production
 - Safety limits prevent search explosion
 - Check evasion is critical for avoiding horizon effect in tactical positions
 - Progressive limit system ensures safe development and full production strength
+
+---
+
+## Day 3: 2025-08-15 (Continued)
+
+### Afternoon Session (Phase 2: Transposition Table Integration)
+
+**METHODICAL VALIDATION APPROACH**: Each deliverable < 50 lines, test after EVERY change, commit when working.
+
+#### Phase 2 Completed: TT Integration (4 Deliverables)
+
+- ✅ **Deliverable 2.1**: TT Probing in Quiescence
+  - Added TT probe at start of quiescence function
+  - Validate key match (upper 32 bits)
+  - Handle all bound types (EXACT, UPPER, LOWER)
+  - Adjust mate scores relative to current ply (using MATE_BOUND = 29000)
+  - Added qsearchTTHits counter to SearchData
+  - Accept depth >= 0 for quiescence entries
+  - **Validation**: TT probing reduces repeated position evaluations
+  
+- ✅ **Deliverable 2.2**: TT Storage in Quiescence
+  - Store quiescence results with depth 0
+  - Store beta cutoffs with LOWER bound (fail-high)
+  - Store final results with appropriate bounds
+  - **CRITICAL**: Never store stand-pat value as EXACT (prevents TT pollution)
+  - Adjust mate scores relative to root before storage
+  - **Design Decision**: Stand-pat only stored as UPPER bound
+  
+- ✅ **Deliverable 2.3**: TT Move Ordering
+  - Extract TT move from probe results
+  - Prioritize TT move at front of capture list
+  - Integrate with MVV-LVA ordering (TT move takes priority)
+  - Handle both MVV-LVA and non-MVV-LVA configurations
+  - Use std::rotate to preserve relative order
+  - **Benefit**: Better move ordering → more beta cutoffs
+  
+- ✅ **Deliverable 2.4**: Statistics and Verification
+  - qsearchTTHits counter implemented and tracked
+  - Created comprehensive TT efficiency test
+  - Verified scores remain consistent with/without TT
+  - Test shows TT ready for full integration
+  - **Note**: Simple positions show minimal improvement (expected)
+  - Real benefits come during full search with position repetition
+
+### Phase 2 Statistics
+- **Lines Added**: ~130
+- **Files Modified**: 2 (quiescence.cpp, types.h)
+- **Tests Created**: 2 (test_quiescence_tt.cpp, test_tt_efficiency.cpp)
+- **Commits Made**: 4 (one per deliverable)
+- **Validation**: Each deliverable tested independently
+
+### Key Implementation Details
+
+#### TT Probing Logic (quiescence.cpp lines 18-62)
+```cpp
+// Probe TT and check for valid entry
+if (ttEntry && ttEntry->key32 == (zobristKey >> 32)) {
+    // Adjust mate scores
+    if (score >= MATE_BOUND) score -= ply;
+    else if (score <= -MATE_BOUND) score += ply;
+    
+    // Check bound type for early return
+    if (bound == EXACT || 
+        (bound == LOWER && score >= beta) ||
+        (bound == UPPER && score <= alpha)) {
+        return score;
+    }
+}
+```
+
+#### TT Storage Logic (quiescence.cpp lines 205-261)
+```cpp
+// Beta cutoff - store with LOWER bound
+if (score >= beta) {
+    tt.store(zobristKey, move, adjustedScore, 
+            staticEval, 0, Bound::LOWER);
+}
+
+// Final storage - determine bound type
+Bound bound = bestScore > alpha ? EXACT : UPPER;
+// Special case: stand-pat never stored as EXACT
+if (moves.empty() && !isInCheck) bound = UPPER;
+```
+
+### Validation Results
+- ✅ TT probing works correctly
+- ✅ TT storage uses proper bounds
+- ✅ Mate scores adjusted correctly
+- ✅ TT move ordering integrated
+- ✅ Statistics tracked accurately
+- ✅ No TT pollution from stand-pat
+
+### Next Steps (Phase 3: Testing & Validation)
+- [ ] Run comprehensive tactical test suite
+- [ ] Verify no regression in search quality
+- [ ] Check TT hit rates in full search
+- [ ] Performance profiling
+- [ ] SPRT test preparation
