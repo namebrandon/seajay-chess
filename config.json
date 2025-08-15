@@ -22,17 +22,17 @@
         "enabled": false
     },
     "opening": {
-        "file": "./external/books/4moves_test.pgn",
-        "format": 1,
-        "order": 0,
+        "file": "",
+        "format": 2,
+        "order": 1,
         "plies": -1,
         "start": 1
     },
     "pgn": {
         "additional_lines_rgx": [],
-        "event_name": "SeaJay_Stage14_vs_Stockfish_1200",
-        "site": "Stage14_Strength_Test",
-        "file": "./sprt_results/SPRT-2025-EXT-008-SF1200-STAGE14/games_20250815_104051.pgn",
+        "event_name": "Fastchess Tournament",
+        "site": "?",
+        "file": "/workspace/sprt_results/quick_test_20250815_174410/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -48,16 +48,16 @@
         "file": ""
     },
     "sprt": {
-        "alpha": 0.05,
-        "beta": 0.05,
-        "elo0": 300.0,
-        "elo1": 500.0,
+        "alpha": 0.0,
+        "beta": 0.0,
+        "elo0": 0.0,
+        "elo1": 0.0,
         "model": "normalized",
-        "enabled": true
+        "enabled": false
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 11812912868560483011,
+    "seed": 6751153032428847263,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -66,7 +66,7 @@
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
-    "rounds": 200,
+    "rounds": 5,
     "concurrency": 1,
     "force_concurrency": false,
     "recover": true,
@@ -76,25 +76,34 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "./sprt_results/SPRT-2025-EXT-008-SF1200-STAGE14/fastchess_20250815_104051.log",
-        "level": 3,
+        "file": "/workspace/sprt_results/quick_test_20250815_174410/match.log",
+        "level": 2,
         "compress": false,
         "realtime": true,
         "engine_coms": false
     },
     "engines": [
         {
-            "name": "SeaJay-Stage14-C10-CONSERVATIVE",
+            "name": "Stage15-SEE",
             "dir": "",
-            "cmd": "./binaries/seajay-stage14-sprt-candidate10-conservative",
+            "cmd": "/workspace/binaries/seajay_stage15_sprt_candidate1",
             "args": "",
             "restart": false,
-            "options": [],
+            "options": [
+                [
+                    "SEEMode",
+                    "production"
+                ],
+                [
+                    "SEEPruning",
+                    "aggressive"
+                ]
+            ],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 50,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 5000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -104,30 +113,17 @@
             "variant": 0
         },
         {
-            "name": "Stockfish-1200ELO-1CPU",
+            "name": "Stage14-Base",
             "dir": "",
-            "cmd": "./external/engines/stockfish/stockfish",
+            "cmd": "/workspace/binaries/seajay-stage14-final",
             "args": "",
             "restart": false,
-            "options": [
-                [
-                    "Skill Level",
-                    "5"
-                ],
-                [
-                    "Threads",
-                    "1"
-                ],
-                [
-                    "Hash",
-                    "16"
-                ]
-            ],
+            "options": [],
             "limit": {
                 "tc": {
-                    "increment": 100,
+                    "increment": 50,
                     "fixed_time": 0,
-                    "time": 10000,
+                    "time": 5000,
                     "moves": 0,
                     "timemargin": 0
                 },
@@ -138,18 +134,18 @@
         }
     ],
     "stats": {
-        "Stockfish-1200ELO-1CPU vs SeaJay-Stage14-C10-CONSERVATIVE": {
-            "wins": 14,
-            "losses": 5,
+        "Stage14-Base vs Stage15-SEE": {
+            "wins": 2,
+            "losses": 7,
             "draws": 1,
-            "penta_WW": 5,
+            "penta_WW": 0,
             "penta_WD": 0,
-            "penta_WL": 4,
+            "penta_WL": 2,
             "penta_DD": 0,
             "penta_LD": 1,
-            "penta_LL": 0
+            "penta_LL": 2
         },
-        "SeaJay-Stage14-C10-CONSERVATIVE vs Stockfish-1200ELO-1CPU": {
+        "Stage15-SEE vs Stage14-Base": {
             "wins": 0,
             "losses": 0,
             "draws": 0,

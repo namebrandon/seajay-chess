@@ -30,9 +30,9 @@
     },
     "pgn": {
         "additional_lines_rgx": [],
-        "event_name": "Fastchess Tournament",
-        "site": "?",
-        "file": "/workspace/sprt_results/SPRT-GoldenC1-vs-C7-FINAL-20250815_084834/games.pgn",
+        "event_name": "Stage 15 SEE Test",
+        "site": "SPRT with Book",
+        "file": "/workspace/sprt_results/stage15_see_with_book/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -50,19 +50,19 @@
     "sprt": {
         "alpha": 0.05,
         "beta": 0.05,
-        "elo0": -20.0,
-        "elo1": 20.0,
+        "elo0": 0.0,
+        "elo1": 30.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 3627871558338713906,
+    "seed": 7324911831138867113,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
     "ratinginterval": 10,
-    "scoreinterval": 10,
+    "scoreinterval": 1,
     "wait": 0,
     "autosaveinterval": 20,
     "games": 2,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-GoldenC1-vs-C7-FINAL-20250815_084834/fastchess.log",
+        "file": "/workspace/sprt_results/stage15_see_with_book/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,12 +84,21 @@
     },
     "engines": [
         {
-            "name": "Golden-C1",
+            "name": "Stage15-SEE",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1-GOLDEN",
+            "cmd": "/workspace/binaries/seajay_stage15_sprt_candidate1",
             "args": "",
             "restart": false,
-            "options": [],
+            "options": [
+                [
+                    "SEEMode",
+                    "production"
+                ],
+                [
+                    "SEEPruning",
+                    "aggressive"
+                ]
+            ],
             "limit": {
                 "tc": {
                     "increment": 100,
@@ -104,9 +113,9 @@
             "variant": 0
         },
         {
-            "name": "C7-FIXED",
+            "name": "Stage14-Base",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate7-FIXED",
+            "cmd": "/workspace/binaries/seajay-stage14-final",
             "args": "",
             "restart": false,
             "options": [],
@@ -125,18 +134,18 @@
         }
     ],
     "stats": {
-        "C7-FIXED vs Golden-C1": {
-            "wins": 95,
-            "losses": 110,
-            "draws": 75,
-            "penta_WW": 4,
-            "penta_WD": 14,
-            "penta_WL": 73,
-            "penta_DD": 21,
-            "penta_LD": 19,
-            "penta_LL": 9
+        "Stage14-Base vs Stage15-SEE": {
+            "wins": 21,
+            "losses": 25,
+            "draws": 34,
+            "penta_WW": 0,
+            "penta_WD": 8,
+            "penta_WL": 13,
+            "penta_DD": 8,
+            "penta_LD": 10,
+            "penta_LL": 1
         },
-        "Golden-C1 vs C7-FIXED": {
+        "Stage15-SEE vs Stage14-Base": {
             "wins": 0,
             "losses": 0,
             "draws": 0,
