@@ -69,9 +69,9 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-13-FINAL" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage-14-SPRT-Candidate-1" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
-    // Stage 13: Iterative Deepening with Aspiration Windows
+    // Stage 14: Quiescence Search
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
