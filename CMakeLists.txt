@@ -58,6 +58,13 @@ if(TT_SHADOW)
     message(STATUS "TT Shadow hashing enabled")
 endif()
 
+# CRITICAL FIX: Enable Quiescence Search (THIS WAS MISSING!)
+# Without this flag, quiescence search was NEVER called!
+add_compile_definitions(ENABLE_QUIESCENCE)
+add_compile_definitions(ENABLE_MVV_LVA)
+message(STATUS "*** QUIESCENCE SEARCH ENABLED *** Stage 14 is now active!")
+message(STATUS "*** MVV-LVA MOVE ORDERING ENABLED ***")
+
 # Quiescence Search compilation modes
 if(QSEARCH_MODE STREQUAL "TESTING")
     add_compile_definitions(QSEARCH_TESTING)

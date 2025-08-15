@@ -187,15 +187,13 @@ eval::Score negamax(Board& board,
     
     // Terminal node - enter quiescence search or return static evaluation
     if (depth <= 0) {
-        // Stage 14, Deliverable 1.8: Runtime control via UCI option
-        // Use quiescence if both compile-time and runtime flags allow it
-#ifdef ENABLE_QUIESCENCE
+        // Stage 14: Quiescence search - ALWAYS compiled in, controlled by UCI option
+        // This is a CORE FEATURE and should never be behind compile flags!
         if (info.useQuiescence) {
             // Use quiescence search to resolve tactical sequences
             return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0);
         }
-#endif
-        // Default: return static evaluation
+        // Fallback: return static evaluation (only if quiescence disabled via UCI)
         return board.evaluate();
     }
     

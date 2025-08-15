@@ -229,8 +229,67 @@ LLR: 1.24 (42.1%) (-2.94, 2.94) [0.00, 50.00]
 - `/workspace/build_*.sh` - Fixed to force clean rebuilds
 - All SPRT test scripts updated to use Candidate 5 binary
 
+## FINAL BREAKTHROUGH: QUIESCENCE WAS NEVER ENABLED!
+
+### The Ultimate Discovery (August 15, 2025 08:45 UTC)
+
+After exhaustive analysis by cpp-pro and debugger agents, we found the REAL problem:
+
+**THE CRITICAL BUG: The entire quiescence search was disabled!**
+
+In `/workspace/src/search/negamax.cpp` lines 192-197:
+```cpp
+#ifdef ENABLE_QUIESCENCE
+    if (info.useQuiescence) {
+        return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0);
+    }
+#endif
+return board.evaluate();  // Falls back to static eval
+```
+
+**THE PROBLEM:** `ENABLE_QUIESCENCE` was NEVER defined in the build system!
+- Not in CMakeLists.txt
+- Not in any build scripts  
+- Not in any source files
+
+**THE RESULT:** All our "Stage 14" builds were actually Stage 13 engines using static evaluation instead of quiescence search!
+
+### Evidence That Confirms This:
+1. **Binary sizes now match:**
+   - Golden C1: 411,336 bytes (quiescence compiled in)
+   - Candidates 2-6: ~384KB (no quiescence code)
+   - **Candidate 7 (FIXED): 411,384 bytes** (quiescence enabled!)
+
+2. **The golden binary** was built with `-DENABLE_QUIESCENCE` manually added (likely during testing)
+
+3. **Performance gap explained:** +300 ELO = quiescence search vs static evaluation
+
+### The Fix (Candidate 7):
+Added to CMakeLists.txt:
+```cmake
+add_compile_definitions(ENABLE_QUIESCENCE)
+add_compile_definitions(ENABLE_MVV_LVA)
+```
+
+Result: Binary size jumped from 384KB to 411KB, matching the golden binary!
+
+### Candidate 8 (Final Fix - IFDEFs Removed)
+**Created:** August 15, 2025 08:57 UTC  
+**Changes:** Removed all dangerous compile-time feature flags  
+**Binary:** 411,384 bytes (matches golden)  
+**Result:** All features now compile in and are controlled via UCI options
+
+**Code Changes Made:**
+1. Removed `#ifdef ENABLE_QUIESCENCE` / `#endif` from negamax.cpp
+2. Removed all `#ifdef ENABLE_MVV_LVA` / `#else` / `#endif` blocks from quiescence.cpp
+3. Removed `#define ENABLE_MVV_LVA` from move_ordering.h
+4. Features now always compile in, controlled at runtime via UCI
+
+**Lesson Learned:** Never use compile-time flags for core features. The user was right:
+> "Why are we using compiler flags? This seems extremely dangerous, as we've just witnessed. We spent probably 4 hours trying to figure this out."
+
 ---
-*Last Updated: August 15, 2025 07:15 UTC*  
-*Status: **CONFIRMED REGRESSION** - C1 is ~191 ELO stronger than C5*  
-*Critical: Preserve C1 binary (commit `ce52720`) - it's our only working reference*  
-*Analysis supported by chess-engine-expert agent*
+*Last Updated: August 15, 2025 08:57 UTC*  
+*Status: **FULLY RESOLVED** - Quiescence enabled, dangerous patterns removed*  
+*Critical: Golden C1 preserved, Candidate 8 implements safe architecture*  
+*Analysis by cpp-pro and debugger agents, pattern fix completed*

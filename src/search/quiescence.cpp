@@ -6,9 +6,7 @@
 #include "../core/transposition_table.h"
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
-#ifdef ENABLE_MVV_LVA
-#include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES
-#endif
+#include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
 #include <algorithm>
 
 namespace seajay::search {
@@ -194,8 +192,8 @@ eval::Score quiescence(
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
+    // MVV-LVA is a CORE FEATURE - always compile it in!
     // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
-#ifdef ENABLE_MVV_LVA
     MvvLvaOrdering mvvLva;
     mvvLva.orderMoves(board, moves);
     
@@ -234,43 +232,6 @@ eval::Score quiescence(
             std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
         }
     }
-#else
-    // Phase 2.2: Enhanced ordering without MVV-LVA
-    // Order: Queen Promotions → Other Promotions → TT moves → Captures
-    if (!isInCheck) {
-        std::sort(moves.begin(), moves.end(), [&board](Move a, Move b) {
-            // Queen promotions have highest priority
-            bool aQueenPromo = isPromotion(a) && promotionType(a) == QUEEN;
-            bool bQueenPromo = isPromotion(b) && promotionType(b) == QUEEN;
-            if (aQueenPromo && !bQueenPromo) return true;
-            if (!aQueenPromo && bQueenPromo) return false;
-            
-            // Other promotions next
-            if (isPromotion(a) && !isPromotion(b)) return true;
-            if (!isPromotion(a) && isPromotion(b)) return false;
-            
-            // Then captures (approximation without full board access)
-            return false;  // Keep original order
-        });
-    }
-    
-    // TT Move Ordering (after queen promotions but before other moves)
-    if (ttMove != NO_MOVE) {
-        // Find where queen promotions end
-        auto nonQueenPromoStart = moves.begin();
-        while (nonQueenPromoStart != moves.end() && 
-               isPromotion(*nonQueenPromoStart) && 
-               promotionType(*nonQueenPromoStart) == QUEEN) {
-            ++nonQueenPromoStart;
-        }
-        
-        // Look for TT move after queen promotions
-        auto ttMoveIt = std::find(nonQueenPromoStart, moves.end(), ttMove);
-        if (ttMoveIt != moves.end()) {
-            std::rotate(nonQueenPromoStart, ttMoveIt, ttMoveIt + 1);
-        }
-    }
-#endif
     
     // Search moves
     eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
@@ -285,15 +246,10 @@ eval::Score quiescence(
         // Deliverable 3.3 & 3.4: Per-move delta pruning with endgame safety
         // Skip bad captures that can't improve alpha even if successful
         if (!isInCheck && !isPromotion(move)) {
-#ifdef ENABLE_MVV_LVA
-            // Use accurate victim value from MVV-LVA tables
+            // Use accurate victim value from MVV-LVA tables (always available)
             Piece capturedPiece = board.pieceAt(to(move));
             PieceType captured = (capturedPiece != NO_PIECE) ? typeOf(capturedPiece) : NO_PIECE_TYPE;
             int captureValue = (captured != NO_PIECE_TYPE) ? VICTIM_VALUES[captured] : 0;
-#else
-            // Conservative estimate when MVV-LVA not available
-            int captureValue = 100;  // Assume at least a pawn
-#endif
             // Use endgame-appropriate margin (already calculated above)
             if (staticEval + eval::Score(captureValue) + eval::Score(deltaMargin) < alpha) {
                 data.deltasPruned++;

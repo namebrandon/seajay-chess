@@ -10,8 +10,8 @@
 
 namespace seajay::search {
 
-// Feature flag for easy rollback
-#define ENABLE_MVV_LVA
+// MVV-LVA is now always enabled via CMakeLists.txt (Phase 2.3, Stage 8)
+// No longer using dangerous compile-time feature flags
 
 // Type-safe MoveScore wrapper for sorting
 struct MoveScore {
@@ -137,12 +137,8 @@ public:
 template<typename MoveContainer>
 void orderMovesWithMvvLva(const Board& board, MoveContainer& moves) noexcept;
 
-// Feature flag macro for easy integration
-#ifdef ENABLE_MVV_LVA
-    #define MVV_LVA_SCORE_MOVES(board, moves) \
-        orderMovesWithMvvLva(board, moves)
-#else
-    #define MVV_LVA_SCORE_MOVES(board, moves) ((void)0)
-#endif
+// MVV-LVA is always enabled - no conditional compilation
+#define MVV_LVA_SCORE_MOVES(board, moves) \
+    orderMovesWithMvvLva(board, moves)
 
 } // namespace seajay::search
