@@ -12,11 +12,12 @@ namespace seajay::search {
 // Safety constants for quiescence search
 static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply depth
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
-static constexpr int MAX_CHECK_PLY = 8;             // Maximum check extensions in quiescence
+static constexpr int MAX_CHECK_PLY = 3;             // Reduced check extensions (was 8, now 3 to prevent explosion)
 
-// Delta pruning constants
-static constexpr int DELTA_MARGIN = 900;            // Conservative margin (queen value)
-static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Reduced margin for endgames
+// Delta pruning constants - More aggressive following top engine practice
+static constexpr int DELTA_MARGIN = 200;            // Standard margin (was 900, now 200 like top engines)
+static constexpr int DELTA_MARGIN_ENDGAME = 150;    // Endgame margin (was 600, now 150)
+static constexpr int DELTA_MARGIN_PANIC = 100;      // Panic mode margin for time pressure
 
 // Progressive limiter removal system
 // This ensures we remember to remove limiters when transitioning phases
@@ -36,6 +37,7 @@ static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Reduced margin for endgam
 #endif
 
 static constexpr int MAX_CAPTURES_PER_NODE = 32;    // Maximum captures to search per node
+static constexpr int MAX_CAPTURES_PANIC = 8;        // Reduced captures in panic mode
 
 // Static assertions for safety verification
 static_assert(QSEARCH_MAX_PLY > 0 && QSEARCH_MAX_PLY <= 64, 
@@ -63,6 +65,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
  * @param data Search statistics
  * @param tt Transposition table
  * @param checkPly Number of consecutive check plies (default 0)
+ * @param inPanicMode True if time pressure requires aggressive pruning
  * @return Evaluation score of the position
  */
 eval::Score quiescence(
@@ -73,7 +76,8 @@ eval::Score quiescence(
     seajay::SearchInfo& searchInfo,
     SearchData& data,
     seajay::TranspositionTable& tt,
-    int checkPly = 0
+    int checkPly = 0,
+    bool inPanicMode = false
 );
 
 } // namespace seajay::search

@@ -69,7 +69,7 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-14-SPRT-Candidate-8-NO-IFDEFS" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage-14-SPRT-Candidate-9" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 14: Quiescence Search
     

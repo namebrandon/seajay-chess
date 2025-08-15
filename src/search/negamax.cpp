@@ -190,8 +190,15 @@ eval::Score negamax(Board& board,
         // Stage 14: Quiescence search - ALWAYS compiled in, controlled by UCI option
         // This is a CORE FEATURE and should never be behind compile flags!
         if (info.useQuiescence) {
+            // Candidate 9: Detect time pressure for panic mode
+            // Panic mode activates when remaining time < 100ms
+            bool inPanicMode = false;
+            if (info.timeLimit != std::chrono::milliseconds::max()) {
+                auto remainingTime = info.timeLimit - info.elapsed();
+                inPanicMode = (remainingTime < std::chrono::milliseconds(100));
+            }
             // Use quiescence search to resolve tactical sequences
-            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0);
+            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0, inPanicMode);
         }
         // Fallback: return static evaluation (only if quiescence disabled via UCI)
         return board.evaluate();

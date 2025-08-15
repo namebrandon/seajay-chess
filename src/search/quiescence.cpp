@@ -22,7 +22,8 @@ eval::Score quiescence(
     seajay::SearchInfo& searchInfo,
     SearchData& data,
     seajay::TranspositionTable& tt,
-    int checkPly)
+    int checkPly,
+    bool inPanicMode)
 {
     // REMOVED emergency cutoff - it was destroying tactical play
     // Accepting occasional time losses is better than constant tactical blindness
@@ -94,8 +95,14 @@ eval::Score quiescence(
     }
     
     // Deliverable 3.4: Detect endgame for delta pruning margin adjustment
+    // Candidate 9: Add panic mode for time pressure (100cp margin)
     bool isEndgame = (board.material().value(WHITE).value() < 1300) && (board.material().value(BLACK).value() < 1300);
-    int deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
+    int deltaMargin;
+    if (inPanicMode) {
+        deltaMargin = DELTA_MARGIN_PANIC;  // 100cp in panic mode
+    } else {
+        deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
+    }
     
     // Safety check 1: prevent stack overflow
     if (ply >= TOTAL_MAX_PLY) {
@@ -237,9 +244,12 @@ eval::Score quiescence(
     eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
     int moveCount = 0;
     
+    // Candidate 9: Use reduced capture limit in panic mode
+    const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : MAX_CAPTURES_PER_NODE;
+    
     for (const Move& move : moves) {
         // Limit moves per node to prevent explosion (except when in check)
-        if (!isInCheck && ++moveCount > MAX_CAPTURES_PER_NODE) {
+        if (!isInCheck && ++moveCount > maxCaptures) {
             break;
         }
         
@@ -264,9 +274,9 @@ eval::Score quiescence(
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
-        // Recursive quiescence search with check ply tracking
+        // Recursive quiescence search with check ply tracking and panic mode propagation
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
-                                       searchInfo, data, tt, newCheckPly);
+                                       searchInfo, data, tt, newCheckPly, inPanicMode);
         
         // Unmake the move
         board.unmakeMove(move, undo);
