@@ -1,6 +1,6 @@
 # Stage 14: Quiescence Search - Daily Progress Log
 
-## Day 1: 2024-08-14
+## Day 1: 2025-08-14
 
 ### Morning Session (Infrastructure & Stand-Pat)
 - ✅ **Deliverable 1.1**: Created quiescence.h header structure
@@ -48,6 +48,49 @@
 
 ### Key Validation Results
 - ✅ Quiescence extends selective depth (seldepth > depth)
+
+---
+
+## Day 2: 2025-08-15
+
+### Morning Session (Critical Fixes & Build System)
+- ✅ **Critical Fix 1**: Fixed progressive node limit system
+  - Corrected NODE_LIMIT_PER_POSITION usage (was checking wrong constant)
+  - Added proper QSEARCH_TESTING/TUNING/PRODUCTION modes
+  - Fixed compile-time configuration with CMake QSEARCH_MODE variable
+  
+- ✅ **Critical Fix 2**: Build system improvements
+  - Created build.sh and build_testing.sh scripts
+  - Added proper CMake configuration for quiescence modes
+  - TESTING mode: 10K node limit per position
+  - TUNING mode: 100K node limit per position
+  - PRODUCTION mode: No artificial limits
+  
+- ✅ **Deliverable 1.11**: Basic Tactical Position Testing
+  - Created comprehensive tactical test suite (42 positions)
+  - Added tactical_suite.epd with standard patterns
+  - Implemented tactical validation programs
+  - Test categories: forks, pins, back rank mates, perpetual check
+  - Created multiple test programs for different validation approaches
+  
+### Issues Encountered
+- Board initialization hanging in some test scenarios
+- Possible static initialization order issue
+- Tests compile and link but experience runtime hangs
+- Need to debug initialization sequence
+
+### Validation Completed
+- ✅ Build system properly switches between modes
+- ✅ QSEARCH_TESTING pragma message confirms mode
+- ✅ Test suite created with comprehensive positions
+- ⚠️ Runtime validation pending (initialization issue)
+
+### Next Steps (Phase 2: TT Integration)
+- Debug and resolve initialization hang
+- Store quiescence entries with depth 0 in TT
+- Probe TT at start of quiescence
+- Handle bound types correctly
+- Use TT moves for move ordering
 - ✅ Tactical positions show deep quiescence (seldepth 5+ at depth 1)
 - ✅ Check evasions work correctly
 - ✅ No stack overflow or infinite loops
