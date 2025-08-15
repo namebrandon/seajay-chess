@@ -666,3 +666,42 @@ Finished game 274 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
 Started game 275 of 20000 (Golden-C1 vs C7-FIXED)
 Finished game 275 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
 Started game 276 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 276 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 277 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 277 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 278 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 278 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 279 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 279 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 280 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 280 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 18.63 +/- 22.30, nElo: 34.11 +/- 40.70
+LOS: 94.98 %, DrawRatio: 67.14 %, PairsRatio: 1.56
+Games: 280, Wins: 110, Losses: 95, Draws: 75, Points: 147.5 (52.68 %)
+Ptnml(0-2): [4, 14, 94, 19, 9], WL/DD Ratio: 3.48
+LLR: 3.15 (106.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 18.63 +/- 22.30, nElo: 34.11 +/- 40.70
+LOS: 94.98 %, DrawRatio: 67.14 %, PairsRatio: 1.56
+Games: 280, Wins: 110, Losses: 95, Draws: 75, Points: 147.5 (52.68 %)
+Ptnml(0-2): [4, 14, 94, 19, 9], WL/DD Ratio: 3.48
+LLR: 3.15 (106.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+SPRT ([-20.00, 20.00]) completed - H1 was accepted
+
+Player: Golden-C1
+  Timeouts: 6
+  Crashed: 0
+Player: C7-FIXED
+  Timeouts: 6
+  Crashed: 0
+
+Finished match
+Total Time: 01:44:48 (hours:minutes:seconds)
+
+
+Test completed at: Fri Aug 15 10:33:24 AM CDT 2025

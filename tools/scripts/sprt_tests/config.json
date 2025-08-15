@@ -126,15 +126,15 @@
     ],
     "stats": {
         "C7-FIXED vs Golden-C1": {
-            "wins": 90,
-            "losses": 101,
-            "draws": 69,
+            "wins": 95,
+            "losses": 110,
+            "draws": 75,
             "penta_WW": 4,
             "penta_WD": 14,
-            "penta_WL": 68,
-            "penta_DD": 18,
+            "penta_WL": 73,
+            "penta_DD": 21,
             "penta_LD": 19,
-            "penta_LL": 7
+            "penta_LL": 9
         },
         "Golden-C1 vs C7-FIXED": {
             "wins": 0,
