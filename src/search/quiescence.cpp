@@ -156,41 +156,67 @@ eval::Score quiescence(
         MoveGenerator::generateCaptures(board, moves);
     }
     
-    // Order moves for better pruning
+    // Phase 2.2: Enhanced move ordering with queen promotion prioritization
+    // Order: Queen Promotions → TT moves → Other captures → Quiet moves
 #ifdef ENABLE_MVV_LVA
     MvvLvaOrdering mvvLva;
     mvvLva.orderMoves(board, moves);
     
-    // Deliverable 2.3: TT Move Ordering
-    // If we have a TT move, try it first (only if it's in the move list)
+    // Phase 2.2 Missing Item 1: Queen Promotion Prioritization
+    // Move queen promotions to the very front (before TT moves)
+    auto queenPromoIt = moves.begin();
+    for (auto it = moves.begin(); it != moves.end(); ++it) {
+        if (isPromotion(*it) && promotionType(*it) == QUEEN) {
+            if (it != queenPromoIt) {
+                std::rotate(queenPromoIt, it, it + 1);
+            }
+            ++queenPromoIt;  // Move insertion point for next queen promotion
+        }
+    }
+    
+    // TT Move Ordering (after queen promotions)
+    // If we have a TT move and it's not already a queen promotion, prioritize it
     if (ttMove != NO_MOVE) {
-        // Find the TT move in the list and move it to the front
-        auto ttMoveIt = std::find(moves.begin(), moves.end(), ttMove);
+        auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
         if (ttMoveIt != moves.end()) {
-            // Move TT move to the front while preserving other moves' order
-            std::rotate(moves.begin(), ttMoveIt, ttMoveIt + 1);
+            // Move TT move to front of non-queen-promotion moves
+            std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
         }
     }
 #else
-    // Simple ordering: promotions first, then captures
+    // Phase 2.2: Enhanced ordering without MVV-LVA
+    // Order: Queen Promotions → Other Promotions → TT moves → Captures
     if (!isInCheck) {
         std::sort(moves.begin(), moves.end(), [&board](Move a, Move b) {
-            // Promotions first
+            // Queen promotions have highest priority
+            bool aQueenPromo = isPromotion(a) && promotionType(a) == QUEEN;
+            bool bQueenPromo = isPromotion(b) && promotionType(b) == QUEEN;
+            if (aQueenPromo && !bQueenPromo) return true;
+            if (!aQueenPromo && bQueenPromo) return false;
+            
+            // Other promotions next
             if (isPromotion(a) && !isPromotion(b)) return true;
             if (!isPromotion(a) && isPromotion(b)) return false;
             
-            // Then by captured piece value (approximation without full board access)
-            // This is a simplified ordering when MVV-LVA is not available
+            // Then captures (approximation without full board access)
             return false;  // Keep original order
         });
     }
-    // When in check, keep move generation order (usually good enough)
     
-    // Deliverable 2.3: TT Move Ordering (non-MVV_LVA case)
+    // TT Move Ordering (after queen promotions but before other moves)
     if (ttMove != NO_MOVE) {
-        auto ttMoveIt = std::find(moves.begin(), moves.end(), ttMove);
+        // Find where queen promotions end
+        auto nonQueenPromoStart = moves.begin();
+        while (nonQueenPromoStart != moves.end() && 
+               isPromotion(*nonQueenPromoStart) && 
+               promotionType(*nonQueenPromoStart) == QUEEN) {
+            ++nonQueenPromoStart;
+        }
+        
+        // Look for TT move after queen promotions
+        auto ttMoveIt = std::find(nonQueenPromoStart, moves.end(), ttMove);
         if (ttMoveIt != moves.end()) {
-            std::rotate(moves.begin(), ttMoveIt, ttMoveIt + 1);
+            std::rotate(nonQueenPromoStart, ttMoveIt, ttMoveIt + 1);
         }
     }
 #endif
