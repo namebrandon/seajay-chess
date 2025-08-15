@@ -25,6 +25,7 @@ Check `project_docs/project_status.md` for detailed progress tracking.
 5. **Hybrid Architecture**: Combine bitboard and mailbox representations for optimal performance
 6. **Test Everything**: Every stage has specific validation requirements (especially perft tests)
 7. **Stage Completion Checklist**: MANDATORY completion of `/workspace/project_docs/stage_implementations/stage_completion_checklist.md` before marking any stage as COMPLETE
+8. **NO COMPILE-TIME FEATURE FLAGS**: All features MUST compile in. Use UCI options for runtime control. Never use #ifdef for core features (Stage 14 lesson: lost 4 hours to this)
 
 ## PRIMARY DIRECTIVE: Testing Integrity
 
@@ -247,6 +248,39 @@ All these positions MUST pass before moving past Phase 1:
   ./tools/scripts/setup-external-tools.sh
   ```
 
+## Stage 14 Debugging Lessons (CRITICAL)
+
+**The 4-Hour Mystery That Wasn't:**
+When performance regresses after "minor" changes, check these FIRST:
+
+1. **Binary Size Changed?** 
+   - If binary size differs significantly (e.g., 384KB vs 411KB), features may be missing
+   - Always compare MD5 checksums of "identical" binaries
+   - Stage 14: 27KB difference = entire quiescence search missing
+
+2. **Build System Actually Rebuilding?**
+   - CMake can cache aggressively - binaries may not change despite source edits
+   - Always use `make clean` when debugging mysterious behavior
+   - If multiple builds have identical sizes/checksums, the build is broken
+
+3. **Check for Missing Compiler Flags:**
+   ```bash
+   # Quick check for what's actually defined:
+   echo | g++ -dM -E - | grep ENABLE
+   # Check binary symbols:
+   nm binary | grep function_name
+   ```
+
+4. **Preserve Working Binaries:**
+   - NEVER delete a working binary without backup
+   - Always record: size, MD5, build flags, commit hash
+   - Stage 14: Golden binary saved us from losing +300 ELO
+
+5. **Ifdef Pattern is DANGEROUS:**
+   - Core features behind #ifdef can silently disappear
+   - Solution: Always compile features in, use runtime flags
+   - We lost 4 hours because `ENABLE_QUIESCENCE` was never defined
+
 ## Questions to Ask When Stuck
 
 1. What does the Master Project Plan say about this stage?
@@ -254,6 +288,8 @@ All these positions MUST pass before moving past Phase 1:
 3. Would the chess-engine-expert agent have insights?
 4. Are my perft numbers wrong? (Check divide command)
 5. Am I trying to do too much at once?
+6. **Is the binary size what I expect?** (New after Stage 14)
+7. **Did the build actually rebuild?** (Check timestamps/checksums)
 
 ## Next Immediate Steps
 
