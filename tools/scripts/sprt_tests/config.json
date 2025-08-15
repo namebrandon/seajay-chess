@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-Stage14v13-4moves-fast-20250815_063130/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-C1vsC5-direct-20250815_070742/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -57,7 +57,7 @@
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 7008952244740624404,
+    "seed": 13539320856922792633,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-Stage14v13-4moves-fast-20250815_063130/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-C1vsC5-direct-20250815_070742/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,9 +84,9 @@
     },
     "engines": [
         {
-            "name": "Stage14-QS",
+            "name": "C1-Original",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate4",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1",
             "args": "",
             "restart": false,
             "options": [],
@@ -104,9 +104,9 @@
             "variant": 0
         },
         {
-            "name": "Stage13-ID",
+            "name": "C5-Rebuild",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage13-sprt-fixed",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate5",
             "args": "",
             "restart": false,
             "options": [],
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "Stage13-ID vs Stage14-QS": {
-            "wins": 8,
-            "losses": 9,
-            "draws": 3,
-            "penta_WW": 3,
+        "C5-Rebuild vs C1-Original": {
+            "wins": 0,
+            "losses": 11,
+            "draws": 11,
+            "penta_WW": 0,
             "penta_WD": 0,
-            "penta_WL": 2,
-            "penta_DD": 0,
-            "penta_LD": 3,
-            "penta_LL": 2
+            "penta_WL": 0,
+            "penta_DD": 1,
+            "penta_LD": 9,
+            "penta_LL": 1
         },
-        "Stage14-QS vs Stage13-ID": {
+        "C1-Original vs C5-Rebuild": {
             "wins": 0,
             "losses": 0,
             "draws": 0,

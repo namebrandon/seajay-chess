@@ -1,0 +1,31 @@
+SPRT Test: Candidate 1 vs Candidate 5 (Direct Comparison)
+=========================================================
+Date: Fri Aug 15 07:07:42 AM CDT 2025
+Purpose: Validate if C1 truly performs better than C5 or if environmental factors affected original test
+
+Candidate 1 Binary: /workspace/binaries/seajay-stage14-sprt-candidate1
+  - Original implementation showing +300 ELO gain
+  - Size: 411,336 bytes
+  - MD5: 0b0ea4c7f8f0aa60079a2ccc2997bf88
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-1 (Quiescence: PRODUCTION MODE)
+
+Candidate 5 Binary: /workspace/binaries/seajay-stage14-sprt-candidate5  
+  - Clean rebuild with reverted code
+  - Size: 384,312 bytes
+  - MD5: 78781e3c12eec07c1db03d4df1d4393a
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-5 (Quiescence: PRODUCTION MODE)
+
+Time Control: 10+0.1
+SPRT Parameters:
+  - H0 (null): ELO difference <= 0
+  - H1 (alternative): ELO difference >= 50
+  - Alpha (Type I error): 0.05
+  - Beta (Type II error): 0.05
+Opening Book: 4moves_test.pgn
+
+Expected Results:
+  - If C1 truly +300 ELO and C5 ~+87 ELO: H1 should be accepted quickly
+  - If no real difference: Test will hover around LLR=0
+  - If environmental issue in original test: C1 and C5 should perform similarly
+
+Key Question: Is the binary size difference (411KB vs 384KB) causing the performance gap?

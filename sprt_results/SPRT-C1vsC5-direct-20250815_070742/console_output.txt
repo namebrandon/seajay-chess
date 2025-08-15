@@ -1,0 +1,58 @@
+Indexing opening suite...
+Started game 1 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 1 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 2 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 2 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 3 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 3 (C1-Original vs C5-Rebuild): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 4 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 4 (C5-Rebuild vs C1-Original): 0-1 {Black mates}
+Started game 5 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 5 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 6 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 6 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 7 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 7 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 8 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 8 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 9 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 9 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 10 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 10 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 11 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 11 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 12 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 12 (C5-Rebuild vs C1-Original): 0-1 {Black mates}
+Started game 13 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 13 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 14 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 14 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 15 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 15 (C1-Original vs C5-Rebuild): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 16 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 16 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 17 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 17 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 18 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 18 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 19 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 19 (C1-Original vs C5-Rebuild): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 20 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 20 (C5-Rebuild vs C1-Original): 0-1 {Black mates}
+--------------------------------------------------
+Results of C1-Original vs C5-Rebuild (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 190.85 +/- 65.54, nElo: 549.34 +/- 152.27
+LOS: 100.00 %, DrawRatio: 10.00 %, PairsRatio: inf
+Games: 20, Wins: 10, Losses: 0, Draws: 10, Points: 15.0 (75.00 %)
+Ptnml(0-2): [0, 0, 1, 8, 1], WL/DD Ratio: 0.00
+LLR: 1.24 (42.1%) (-2.94, 2.94) [0.00, 50.00]
+--------------------------------------------------
+Started game 21 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 21 (C1-Original vs C5-Rebuild): 1-0 {White mates}
+Started game 22 of 20000 (C5-Rebuild vs C1-Original)
+Finished game 22 (C5-Rebuild vs C1-Original): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 23 of 20000 (C1-Original vs C5-Rebuild)
+Finished game 23 (C1-Original vs C5-Rebuild): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 24 of 20000 (C5-Rebuild vs C1-Original)
+
+Test completed at: Fri Aug 15 07:15:05 AM CDT 2025

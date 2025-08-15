@@ -1,2 +1,12 @@
 Indexing opening suite...
 Started game 1 of 10000 (Stage14-QS vs Stage13-ID)
+Finished game 1 (Stage14-QS vs Stage13-ID): 0-1 {Black mates}
+Started game 2 of 10000 (Stage13-ID vs Stage14-QS)
+Finished game 2 (Stage13-ID vs Stage14-QS): 0-1 {Black mates}
+Started game 3 of 10000 (Stage14-QS vs Stage13-ID)
+Finished game 3 (Stage14-QS vs Stage13-ID): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 4 of 10000 (Stage13-ID vs Stage14-QS)
+Finished game 4 (Stage13-ID vs Stage14-QS): 1-0 {White mates}
+Started game 5 of 10000 (Stage14-QS vs Stage13-ID)
+
+Test completed at: Fri Aug 15 07:06:26 AM CDT 2025

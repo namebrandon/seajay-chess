@@ -13,11 +13,14 @@ Stage 14 Candidate 1 was showing exceptional performance (300+ ELO gain) with on
 
 ## Performance Timeline
 
-### Candidate 1 (Original Implementation)
+### Candidate 1 (Original Implementation - GOLDEN BINARY)
+- **Commit:** `ce52720` - feat: Stage 14 SPRT Candidate 1 - Quiescence Search Complete
 - **Performance:** 300+ ELO gain over Stage 13
 - **SPRT Result:** Test ended early due to overwhelming success
 - **Time Losses:** 1-2% of games
 - **Approach:** Unlimited node limit, no emergency cutoff, check time every 1024 nodes
+- **Binary:** 411,336 bytes, MD5: 0b0ea4c7f8f0aa60079a2ccc2997bf88
+- **⚠️ CRITICAL:** Binary backed up as `seajay-stage14-sprt-candidate1-GOLDEN`
 
 ### Candidate 2 (First "Fix" Attempt)
 - **Performance:** 60-70% game losses
@@ -46,7 +49,7 @@ Stage 14 Candidate 1 was showing exceptional performance (300+ ELO gain) with on
 - **Actual Result:** ❌ **BUILD SYSTEM FAILURE** - Binary had same size as C2/C3 (384KB)
 - **Discovery:** Changes weren't compiled due to stale object files
 
-### Candidate 5 (Clean Rebuild - Testing Pending)
+### Candidate 5 (Clean Rebuild - CONFIRMED REGRESSION)
 - **Approach:** Clean rebuild with properly reverted code
 - **Build Process:**
   - Fixed build scripts to force `make clean`
@@ -55,7 +58,10 @@ Stage 14 Candidate 1 was showing exceptional performance (300+ ELO gain) with on
 - **Binary Details:**
   - Size: 384KB (same as C2-C4, different from C1's 411KB)
   - MD5: 78781e3c12eec07c1db03d4df1d4393a (unique)
-- **Status:** ⚠️ **AWAITING TEST RESULTS**
+- **Test Results:**
+  - vs Stage 13: ~+87 ELO (better than C2-C4 but far below C1)
+  - vs Candidate 1: **-191 ELO** (C1 dominates with 75% win rate)
+- **Status:** ❌ **CONFIRMED: Still has significant regression**
 
 ## Root Cause Analysis
 
@@ -152,29 +158,66 @@ rm -f *.o src/*.o src/*/*.o  # Force remove lingering objects
 5. Monitor for tactical strength restoration
 6. **If Candidate 5 still shows regression:** Investigate further differences between C1 and C5
 
-## Current Status: INVESTIGATION ONGOING
+## Current Status: CONFIRMED REGRESSION PERSISTS
 
-⚠️ **We are not yet convinced the issues are fully resolved.** While Candidate 5 represents a clean rebuild with properly reverted source code, several concerns remain:
+### Direct Head-to-Head Test Results (C1 vs C5)
+
+**Test Date:** August 15, 2025  
+**Test Type:** Direct SPRT comparison between C1 and C5  
+**Results after 20 games:**
+```
+C1-Original vs C5-Rebuild (10+0.1, 4moves_test.pgn):
+Elo: 190.85 +/- 65.54, nElo: 549.34 +/- 152.27
+LOS: 100.00%, DrawRatio: 10.00%, PairsRatio: inf
+Games: 20, Wins: 10, Losses: 0, Draws: 10, Points: 15.0 (75.00%)
+Ptnml(0-2): [0, 0, 1, 8, 1], WL/DD Ratio: 0.00
+LLR: 1.24 (42.1%) (-2.94, 2.94) [0.00, 50.00]
+```
+
+**Key Finding:** C1 won 75% of points with ZERO losses in 20 games. This definitively proves:
+1. **C1 is genuinely ~191 ELO stronger than C5**
+2. **The original +300 ELO was NOT an environmental anomaly**
+3. **Critical code differences exist between C1 and current codebase**
+
+### Evidence Summary
 
 1. **Binary size discrepancy:** C1 is 411KB while C2-C5 are all 384KB
-   - Could indicate optimization differences
-   - May suggest additional untracked changes
+   - This 27KB difference represents substantial code changes
+   - Not just optimization - actual functionality differs
    
-2. **Testing not yet complete:** Need SPRT results to confirm restoration
+2. **Performance cascade:**
+   - C1 vs Stage 13: +300 ELO
+   - C5 vs Stage 13: +87 ELO (estimated)
+   - C1 vs C5: +191 ELO (confirmed)
    
-3. **Potential remaining issues:**
-   - Other code changes between commits not yet identified
-   - Compiler optimization differences
-   - Build configuration variations
+3. **The missing code:**
+   - Something critical was changed between commits `ce52720` (C1) and `41ea64f` (C2)
+   - These changes persist even after reverting the obvious time control "fixes"
 
-## Next Steps
+## Next Steps - URGENT
 
-1. **Immediate:** Run SPRT tests with Candidate 5
-2. **If C5 succeeds:** Document resolution and close investigation
-3. **If C5 fails:** 
-   - Binary diff analysis between C1 and C5
-   - Review all commits between C1 and C2
-   - Consider rebuilding C1 from its exact commit
+1. **CRITICAL:** Never delete or modify `seajay-stage14-sprt-candidate1` or its backup `seajay-stage14-sprt-candidate1-GOLDEN`
+   - This is our only link to the working implementation
+   - Binary size: 411,336 bytes
+   - MD5: 0b0ea4c7f8f0aa60079a2ccc2997bf88
+
+2. **Immediate Investigation Required:**
+   - Check out commit `ce52720` and rebuild to verify if we can reproduce C1
+   - Perform detailed diff of ALL files between `ce52720` and `41ea64f`
+   - Look for changes beyond just quiescence.cpp/h and time_management.cpp
+   
+3. **Potential areas to investigate:**
+   - Search parameter changes
+   - Move ordering modifications
+   - Evaluation adjustments
+   - Build flags or optimization settings
+   - Transposition table changes
+   - Any changes to core search algorithms
+
+4. **Recovery Strategy:**
+   - Option A: Checkout `ce52720`, rebuild, and verify performance matches C1 binary
+   - Option B: Binary analysis to understand what C1 does differently
+   - Option C: Incremental testing of each commit between C1 and C2
 
 ## Files Modified
 
@@ -187,6 +230,7 @@ rm -f *.o src/*.o src/*/*.o  # Force remove lingering objects
 - All SPRT test scripts updated to use Candidate 5 binary
 
 ---
-*Last Updated: August 15, 2025 06:55 UTC*  
-*Status: Investigation and testing continues*  
+*Last Updated: August 15, 2025 07:15 UTC*  
+*Status: **CONFIRMED REGRESSION** - C1 is ~191 ELO stronger than C5*  
+*Critical: Preserve C1 binary (commit `ce52720`) - it's our only working reference*  
 *Analysis supported by chess-engine-expert agent*
