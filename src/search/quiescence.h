@@ -12,12 +12,13 @@ namespace seajay::search {
 // Safety constants for quiescence search
 static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply depth
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
-static constexpr int MAX_CHECK_PLY = 3;             // Reduced check extensions (was 8, now 3 to prevent explosion)
+static constexpr int MAX_CHECK_PLY = 6;             // Balanced check extensions (was 8, now 6 for better time management)
 
-// Delta pruning constants - More aggressive following top engine practice
-static constexpr int DELTA_MARGIN = 200;            // Standard margin (was 900, now 200 like top engines)
-static constexpr int DELTA_MARGIN_ENDGAME = 150;    // Endgame margin (was 600, now 150)
-static constexpr int DELTA_MARGIN_PANIC = 100;      // Panic mode margin for time pressure
+// Delta pruning constants - Conservative for SeaJay's development stage
+// CRITICAL: These must exceed the value of capturable pieces!
+static constexpr int DELTA_MARGIN = 900;            // Must cover queen capture (900cp)
+static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Must cover rook + pawn (600cp)
+static constexpr int DELTA_MARGIN_PANIC = 400;      // At minimum, cover minor piece + pawn
 
 // Progressive limiter removal system
 // This ensures we remember to remove limiters when transitioning phases
