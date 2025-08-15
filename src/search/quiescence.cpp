@@ -120,9 +120,13 @@ eval::Score quiescence(
             return staticEval;
         }
         
-        // Deliverable 3.2: Basic delta pruning
+        // Deliverable 3.2 & 3.4: Basic delta pruning with endgame safety
+        // Detect endgame for reduced margin (avoid zugzwang issues)
+        bool isEndgame = (board.materialCount(WHITE) < 1300) && (board.materialCount(BLACK) < 1300);
+        int deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
+        
         // If we're so far behind that even winning a queen won't help, prune
-        eval::Score futilityBase = staticEval + eval::Score(DELTA_MARGIN);
+        eval::Score futilityBase = staticEval + eval::Score(deltaMargin);
         if (futilityBase < alpha) {
             data.deltasPruned++;
             return staticEval;  // Position is hopeless
@@ -201,7 +205,7 @@ eval::Score quiescence(
             break;
         }
         
-        // Deliverable 3.3: Per-move delta pruning
+        // Deliverable 3.3 & 3.4: Per-move delta pruning with endgame safety
         // Skip bad captures that can't improve alpha even if successful
         if (!isInCheck && !isPromotion(move)) {
 #ifdef ENABLE_MVV_LVA
@@ -212,8 +216,8 @@ eval::Score quiescence(
             // Conservative estimate when MVV-LVA not available
             int captureValue = 100;  // Assume at least a pawn
 #endif
-            // If even winning this capture + margin can't improve alpha, skip
-            if (staticEval + captureValue + DELTA_MARGIN < alpha) {
+            // Use endgame-appropriate margin (already calculated above)
+            if (staticEval + captureValue + deltaMargin < alpha) {
                 data.deltasPruned++;
                 continue;  // Skip this capture
             }
