@@ -60,6 +60,7 @@ struct SearchData {
     uint64_t standPatCutoffs = 0;  // Stand-pat cutoffs
     uint64_t deltasPruned = 0;     // Positions pruned by delta pruning
     uint64_t qsearchNodesLimited = 0; // Times we hit per-position node limit
+    uint64_t qsearchTTHits = 0;    // TT hits in quiescence search
     
     // Depth tracking
     int depth = 0;                 // Current iterative deepening depth
@@ -143,6 +144,7 @@ struct SearchData {
         standPatCutoffs = 0;
         deltasPruned = 0;
         qsearchNodesLimited = 0;
+        qsearchTTHits = 0;
         depth = 0;
         seldepth = 0;
         bestMove = Move();

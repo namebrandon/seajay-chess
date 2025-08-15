@@ -11,6 +11,9 @@
 
 namespace seajay::search {
 
+// Mate score bound for adjustment
+constexpr int MATE_BOUND = 29000;
+
 eval::Score quiescence(
     Board& board,
     int ply,
@@ -25,6 +28,47 @@ eval::Score quiescence(
     
     // Track nodes
     data.qsearchNodes++;
+    
+    // Deliverable 2.1: TT Probing in Quiescence
+    // Probe transposition table at the start of quiescence
+    TTEntry* ttEntry = nullptr;
+    eval::Score ttScore = eval::Score::zero();
+    
+    if (tt.isEnabled() && (ttEntry = tt.probe(board.zobristKey())) != nullptr) {
+        // We have a TT hit
+        if (!ttEntry->isEmpty() && ttEntry->key32 == (board.zobristKey() >> 32)) {
+            // Depth 0 is used for quiescence entries
+            // Accept any depth >= 0 (all quiescence entries have depth 0)
+            if (ttEntry->depth >= 0) {
+                ttScore = eval::Score(ttEntry->score);
+                
+                // Adjust mate scores relative to current ply
+                if (ttScore.value() >= MATE_BOUND) {
+                    // Positive mate score - adjust distance from current position
+                    ttScore = eval::Score(ttScore.value() - ply);
+                } else if (ttScore.value() <= -MATE_BOUND) {
+                    // Negative mate score - adjust distance from current position
+                    ttScore = eval::Score(ttScore.value() + ply);
+                }
+                
+                // Check bound type and use TT score if applicable
+                Bound bound = ttEntry->bound();
+                if (bound == Bound::EXACT) {
+                    // Exact score - we can return immediately
+                    data.qsearchTTHits++;  // Track TT hits in quiescence
+                    return ttScore;
+                } else if (bound == Bound::LOWER && ttScore >= beta) {
+                    // Lower bound (fail-high) - score is at least ttScore
+                    data.qsearchTTHits++;  // Track TT hits in quiescence
+                    return ttScore;
+                } else if (bound == Bound::UPPER && ttScore <= alpha) {
+                    // Upper bound (fail-low) - score is at most ttScore
+                    data.qsearchTTHits++;  // Track TT hits in quiescence
+                    return ttScore;
+                }
+            }
+        }
+    }
     
     // Check time limit periodically (every 1024 nodes)
     if ((data.qsearchNodes & 1023) == 0) {
