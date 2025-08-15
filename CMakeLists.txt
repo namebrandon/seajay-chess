@@ -125,6 +125,8 @@ set(SEARCH_SOURCES
     src/search/quiescence.h
     src/search/quiescence_performance.cpp
     src/search/quiescence_performance.h
+    src/search/quiescence_optimized.cpp
+    src/search/quiescence_optimized.h
 )
 
 # Include directories
@@ -247,6 +249,10 @@ target_link_libraries(test_perft_tt seajay_core)
 # Quiescence Performance Benchmark Tool (Phase 2.3 - Missing Item 3)
 add_executable(qsearch_benchmark tools/qsearch_benchmark.cpp)
 target_link_libraries(qsearch_benchmark seajay_core)
+
+# Quiescence Memory Optimization Analysis Tool (Phase 2.3 - Missing Item 4)
+add_executable(qsearch_memory_analysis tools/qsearch_memory_analysis.cpp)
+target_link_libraries(qsearch_memory_analysis seajay_core)
 
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
