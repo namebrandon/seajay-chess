@@ -1,0 +1,32 @@
+SPRT Test: Golden C1 vs Candidate 6 (MVV-LVA Enabled)
+======================================================
+Date: Fri Aug 15 08:18:08 AM CDT 2025
+Purpose: Validate that MVV-LVA was the critical missing component
+
+Golden C1 Binary: /workspace/binaries/seajay-stage14-sprt-candidate1-GOLDEN
+  - Original binary with MVV-LVA (uncommitted)
+  - Size: 411,336 bytes
+  - MD5: 0b0ea4c7f8f0aa60079a2ccc2997bf88
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-1 (Quiescence: PRODUCTION MODE)
+
+Candidate 6 Binary: /workspace/binaries/seajay-stage14-sprt-candidate6-mvvlva
+  - Rebuilt with MVV-LVA properly enabled
+  - Size: 402648 bytes
+  - MD5: bbd0a6663ff254c00b8f14401216668a
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-6-MVV-LVA (Quiescence: PRODUCTION MODE)
+
+Time Control: 10+0.1
+SPRT Parameters:
+  - H0 (null): ELO difference within [-30, 30]
+  - H1 (alternative): ELO difference outside [-30, 30]
+  - Alpha: 0.05, Beta: 0.05
+Opening Book: 4moves_test.pgn
+
+Expected Results:
+  - If MVV-LVA was the key: Similar performance (H0 accepted)
+  - If other factors matter: Golden C1 still stronger
+
+Discovery:
+  Symbol analysis revealed Golden C1 has 27 MVV-LVA related symbols
+  that were missing from all rebuilt binaries. This explains the
+  27KB size difference and +301 ELO performance gap.

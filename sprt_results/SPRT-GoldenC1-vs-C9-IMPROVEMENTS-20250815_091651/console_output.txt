@@ -1,0 +1,4 @@
+Indexing opening suite...
+Started game 1 of 20000 (Golden-C1 vs C9-IMPROVED)
+Finished game 1 (Golden-C1 vs C9-IMPROVED): 1-0 {White mates}
+Started game 2 of 20000 (C9-IMPROVED vs Golden-C1)

@@ -940,19 +940,24 @@ if (ply == 0 && !isInCheck && ENABLE_QUIET_CHECKS) {
 - Binary size difference (384KB vs 411KB) was the critical clue
 - Lesson: Never use compile-time flags for core features
 
-### Stage 14 Summary:
+### Stage 14 Summary (COMPLETE - August 15, 2025):
 
 **What We Built:** 
 - Robust quiescence search with conservative parameters
 - +300 ELO improvement over static evaluation
 - All features compile in, UCI-controlled
+- Stable 51% performance against baseline after 137+ SPRT games
 
 **What We Deferred:**
-- Quiet checks (need SEE first)
+- Quiet checks (confirmed deferred to Stage 16 after expert re-consultation)
 - Aggressive delta margin tuning
 - Advanced pruning techniques
 
-**The Right Decision:** 
-Focus on stability and consolidation after C9 failure. Advanced features can wait until prerequisites are in place.
+**Expert Re-Assessment (August 15, 2025):**
+User requested reconsideration of quiet checks given increased stability and code familiarity. Chess-engine-expert strongly reaffirmed original decision:
+> "DO NOT implement quiet checks now. Without SEE, you'll examine losing moves. Ship Stage 14 as complete, implement SEE in Stage 15, then enhance quiescence in Stage 16."
 
-**Next Stage:** Ready to proceed with Stage 15 (Search Extensions) with stable quiescence foundation
+**The Right Decision Confirmed:** 
+Despite temptation to add quiet checks, expert consensus and historical engine experience (Fruit, Glaurung) confirms that SEE is a hard prerequisite.
+
+**Next Stage:** Stage 15 - Static Exchange Evaluation (SEE) - Foundation for Stage 16 enhanced quiescence

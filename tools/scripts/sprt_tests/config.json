@@ -32,7 +32,7 @@
         "additional_lines_rgx": [],
         "event_name": "Fastchess Tournament",
         "site": "?",
-        "file": "/workspace/sprt_results/SPRT-C1vsC5-direct-20250815_070742/games.pgn",
+        "file": "/workspace/sprt_results/SPRT-GoldenC1-vs-C7-FINAL-20250815_084834/games.pgn",
         "notation": 0,
         "track_nodes": false,
         "track_seldepth": false,
@@ -50,14 +50,14 @@
     "sprt": {
         "alpha": 0.05,
         "beta": 0.05,
-        "elo0": 0.0,
-        "elo1": 50.0,
+        "elo0": -20.0,
+        "elo1": 20.0,
         "model": "normalized",
         "enabled": true
     },
     "config_name": "config.json",
     "output": 0,
-    "seed": 13539320856922792633,
+    "seed": 3627871558338713906,
     "variant": 0,
     "type": 0,
     "gauntlet_seeds": 1,
@@ -76,7 +76,7 @@
     "affinity": false,
     "show_latency": false,
     "log": {
-        "file": "/workspace/sprt_results/SPRT-C1vsC5-direct-20250815_070742/fastchess.log",
+        "file": "/workspace/sprt_results/SPRT-GoldenC1-vs-C7-FINAL-20250815_084834/fastchess.log",
         "level": 3,
         "compress": false,
         "realtime": true,
@@ -84,9 +84,9 @@
     },
     "engines": [
         {
-            "name": "C1-Original",
+            "name": "Golden-C1",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate1-GOLDEN",
             "args": "",
             "restart": false,
             "options": [],
@@ -104,9 +104,9 @@
             "variant": 0
         },
         {
-            "name": "C5-Rebuild",
+            "name": "C7-FIXED",
             "dir": "",
-            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate5",
+            "cmd": "/workspace/binaries/seajay-stage14-sprt-candidate7-FIXED",
             "args": "",
             "restart": false,
             "options": [],
@@ -125,18 +125,18 @@
         }
     ],
     "stats": {
-        "C5-Rebuild vs C1-Original": {
-            "wins": 0,
-            "losses": 11,
-            "draws": 11,
-            "penta_WW": 0,
-            "penta_WD": 0,
-            "penta_WL": 0,
-            "penta_DD": 1,
-            "penta_LD": 9,
-            "penta_LL": 1
+        "C7-FIXED vs Golden-C1": {
+            "wins": 90,
+            "losses": 101,
+            "draws": 69,
+            "penta_WW": 4,
+            "penta_WD": 14,
+            "penta_WL": 68,
+            "penta_DD": 18,
+            "penta_LD": 19,
+            "penta_LL": 7
         },
-        "C1-Original vs C5-Rebuild": {
+        "Golden-C1 vs C7-FIXED": {
             "wins": 0,
             "losses": 0,
             "draws": 0,

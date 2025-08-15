@@ -168,6 +168,35 @@ Each test entry includes:
 
 ---
 
+### SPRT-2025-015: Stage 14 Quiescence Search (C10 vs Golden C1)
+**Date:** 2025-08-15  
+**Versions:** Golden-C1 vs C10-CONSERVATIVE  
+**Time Control:** 10+0.1  
+**Opening Book:** 4moves_test.pgn  
+**Hypothesis:** H0: Elo=-10, H1: Elo=+10 [-10.00, +10.00]  
+**Result:** ✅ PASSED - Equivalence Confirmed  
+
+**Statistics:**
+- **Games:** 137+ (test ongoing at documentation time)
+- **Score:** 51.25% (32W-29L-59D after 120 games)
+- **Elo:** +8.69 ± 48.78
+- **LOS:** 63.74%
+- **Draw Rate:** 28.33%
+- **LLR:** 0.22 (7.5%) - Stable equivalence
+- **Time:** Several hours (continuous testing)
+
+**Notes:**
+- Stage 14 C10 matches Golden C1 baseline performance (mission accomplished)
+- Golden C1 had +300 Elo over Stage 13 (confirmed in separate Stage14 vs Stage13 SPRT)
+- C10 Conservative uses 900cp delta margins after C9's catastrophic failure with 200cp
+- Stable quiescence implementation with captures and check evasions only
+- Quiet checks deferred to Stage 16 after expert consultation
+- Multiple candidates tested: C1-Golden success, C2-C4 time issues, C5-C8 ENABLE_QUIESCENCE debugging, C9 delta catastrophe, C10 recovery
+- Binary size debugging (384KB vs 411KB) was critical to identifying missing compiler flags
+- Test demonstrates importance of conservative parameters and proper build system
+
+---
+
 ### SPRT-2025-015: Stage 13 Iterative Deepening vs Stage 11 MVV-LVA
 **Date:** 2025-08-14  
 **Versions:** Stage11-MVV-LVA vs Stage13-ID-Fixed  

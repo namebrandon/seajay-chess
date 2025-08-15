@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 14, 2025  
+**Last Updated:** August 15, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 3 - Essential Optimizations  
-**Current Stage:** Stage 13 COMPLETE - Iterative Deepening  
+**Current Stage:** Stage 14 COMPLETE - Quiescence Search  
 
 ## Overview
 
@@ -372,10 +372,12 @@ This document tracks the current development status of the SeaJay Chess Engine p
 1. **Stage 10: Magic bitboards** (COMPLETE - August 12, 2025)
 2. **Stage 11: Move ordering (MVV-LVA)** (COMPLETE - August 13, 2025)
 3. **Stage 12: Transposition tables** (COMPLETE - August 14, 2025)
-4. **Stage 13: Iterative Deepening** (COMPLETE - August 14, 2025)
-5. **Stage 14: Quiescence Search** (next - planning complete)
-6. Stage 15: Null move pruning
-7. Stage 16: Late move reductions
+4. **Stage 13: Iterative Deepening** (COMPLETE - August 14, 2025)  
+5. **Stage 14: Quiescence Search** (COMPLETE - August 15, 2025)
+6. **Stage 15: Static Exchange Evaluation (SEE)** (next - ready to plan)
+7. Stage 16: Enhanced Quiescence (quiet checks after SEE)
+8. Stage 17: Null move pruning  
+9. Stage 18: Late move reductions
 8. Target: >1M NPS performance (achieved with TT)
 
 ### Medium Term (Phase 3)

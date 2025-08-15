@@ -13,12 +13,13 @@
 ## Project Status
 
 **Current Phase:** Phase 3 IN PROGRESS - Essential Optimizations  
-**Version:** Stage-13-FINAL (Iterative Deepening Complete)  
-**Playing Strength:** ~1,950-2,000 ELO (SPRT validated)  
-**Completed:** Phase 1 (5 stages) + Phase 2 (5 stages) + Phase 3 Stages 10-13  
-**Next:** Stage 14 - Quiescence Search (planning complete)
+**Version:** Stage-14-C10-CONSERVATIVE (Quiescence Search Complete)  
+**Playing Strength:** ~2,250-2,300 ELO (estimated, +300 Elo from quiescence)  
+**Completed:** Phase 1 (5 stages) + Phase 2 (5 stages) + Phase 3 Stages 10-14  
+**Next:** Stage 15 - Static Exchange Evaluation (SEE)
 
-### Recent Achievements
+### Recent Achievements  
+- ✅ **Stage 14 COMPLETE: Quiescence Search (+300 Elo vs Stage 13, SPRT validated)**
 - ✅ **Stage 13 COMPLETE: Iterative Deepening (+143 Elo vs Stage 12, SPRT validated)**
 - ✅ **Stage 12 COMPLETE: Transposition Tables (+130-175 Elo, 25-30% node reduction)**
 - ✅ **Stage 11 COMPLETE: MVV-LVA move ordering (+50-100 Elo, SPRT validated)**

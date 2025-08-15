@@ -1,0 +1,51 @@
+SPRT Test: Golden C1 vs Candidate 10 (Conservative Improvements)
+================================================================
+Date: Fri Aug 15 09:24:41 AM CDT 2025
+Purpose: Test conservative improvements after C9's catastrophic failure
+
+LESSONS LEARNED FROM C9 FAILURE:
+- Delta margin of 200cp was catastrophically low
+- SeaJay needs 900cp margin to see queen captures
+- Aggressive pruning causes tactical blindness
+- Engine-specific tuning is critical
+
+IMPROVEMENTS IN C10:
+1. Reverted Delta Margins (Critical Fix)
+   - DELTA_MARGIN: 200 → 900 centipawns (back to Golden)
+   - DELTA_MARGIN_ENDGAME: 150 → 600 centipawns (back to Golden)
+   - DELTA_MARGIN_PANIC: 100 → 400 centipawns (conservative)
+
+2. Moderate Check Ply Reduction
+   - MAX_CHECK_PLY: 8 → 6 plies (balanced)
+   - Not as aggressive as C9's reduction to 3
+
+3. Time Pressure Panic Mode (Retained)
+   - Activates when time < 100ms
+   - But with conservative 400cp margin
+   - Max captures → 8 per node
+
+Golden C1 Binary: /workspace/binaries/seajay-stage14-sprt-candidate1-GOLDEN
+  - The original working binary
+  - Size: 411336 bytes (411,336)
+  - MD5: 0b0ea4c7f8f0aa60079a2ccc2997bf88
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-1 (Quiescence: PRODUCTION MODE)
+  - Baseline performance
+
+Candidate 10 Binary: /workspace/binaries/seajay-stage14-sprt-candidate10-conservative
+  - Conservative improvements only
+  - Size: 411384 bytes
+  - MD5: 50d667bcb7f28aff977becd28691840c
+  - Version: id name SeaJay Stage-14-SPRT-Candidate-10-CONSERVATIVE (Quiescence: PRODUCTION MODE)
+  - Expected: 0-10 ELO improvement
+
+Time Control: 10+0.1
+SPRT Parameters:
+  - H0: ELO difference within [-10, 10]
+  - H1: ELO difference outside [-10, 10]
+  - Alpha: 0.05, Beta: 0.05
+Opening Book: 4moves_test.pgn
+
+Expected Results:
+  - Should perform similarly to Golden C1
+  - Slightly better time management
+  - No tactical blindness like C9

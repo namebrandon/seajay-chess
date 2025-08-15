@@ -1,0 +1,668 @@
+Indexing opening suite...
+Started game 1 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 1 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 2 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 2 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 3 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 3 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 4 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 4 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 5 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 5 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 6 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 6 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 7 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 7 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 8 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 8 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 9 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 9 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 10 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 10 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 11 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 11 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 12 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 12 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 13 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 13 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 14 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 14 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 15 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 15 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 16 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 16 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 17 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 17 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 18 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 18 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 19 of 20000 (Golden-C1 vs C7-FIXED)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 19 (Golden-C1 vs C7-FIXED): 1-0 {Black loses on time}
+Started game 20 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 20 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 52.51 +/- 71.59, nElo: 115.10 +/- 152.27
+LOS: 93.08 %, DrawRatio: 80.00 %, PairsRatio: inf
+Games: 20, Wins: 9, Losses: 6, Draws: 5, Points: 11.5 (57.50 %)
+Ptnml(0-2): [0, 0, 8, 1, 1], WL/DD Ratio: 3.00
+LLR: 0.63 (21.5%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 21 of 20000 (Golden-C1 vs C7-FIXED)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 21 (Golden-C1 vs C7-FIXED): 1-0 {Black loses on time}
+Started game 22 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 22 (C7-FIXED vs Golden-C1): 1-0 {Black loses on time}
+Started game 23 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 23 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 24 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 24 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 25 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 25 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 26 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 26 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 27 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 27 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 28 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 28 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 29 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 29 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 30 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 30 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 31 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 31 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 32 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 32 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 33 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 33 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 34 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 34 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 35 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 35 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 36 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 36 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 37 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 37 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 38 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 38 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 39 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 39 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 40 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 40 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 43.66 +/- 41.68, nElo: 114.55 +/- 107.67
+LOS: 98.15 %, DrawRatio: 80.00 %, PairsRatio: inf
+Games: 40, Wins: 18, Losses: 13, Draws: 9, Points: 22.5 (56.25 %)
+Ptnml(0-2): [0, 0, 16, 3, 1], WL/DD Ratio: 4.33
+LLR: 1.16 (39.3%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 41 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 41 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 42 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 42 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 43 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 43 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 44 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 44 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 45 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 45 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 46 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 46 (C7-FIXED vs Golden-C1): 1-0 {Black loses on time}
+Started game 47 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 47 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 48 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 48 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 49 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 49 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 50 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 50 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 51 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 51 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 52 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 52 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 53 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 53 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by insufficient mating material}
+Started game 54 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 54 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 55 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 55 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 56 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 56 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 57 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 57 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 58 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 58 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 59 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 59 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 60 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 60 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 17.39 +/- 40.73, nElo: 37.76 +/- 87.91
+LOS: 80.01 %, DrawRatio: 76.67 %, PairsRatio: 2.50
+Games: 60, Wins: 25, Losses: 22, Draws: 13, Points: 31.5 (52.50 %)
+Ptnml(0-2): [1, 1, 23, 4, 1], WL/DD Ratio: 4.75
+LLR: 0.71 (24.2%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 61 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 61 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 62 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 62 (C7-FIXED vs Golden-C1): 0-1 {White loses on time}
+Started game 63 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 63 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 64 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 64 (C7-FIXED vs Golden-C1): 1-0 {Black loses on time}
+Started game 65 of 20000 (Golden-C1 vs C7-FIXED)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 65 (Golden-C1 vs C7-FIXED): 1-0 {Black loses on time}
+Started game 66 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 66 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 67 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 67 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 68 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 68 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 69 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 69 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 70 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 70 (C7-FIXED vs Golden-C1): 1-0 {Black loses on time}
+Started game 71 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 71 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 72 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 72 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 73 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 73 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 74 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 74 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 75 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 75 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 76 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 76 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 77 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 77 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 78 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 78 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 79 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 79 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 80 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 80 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 13.03 +/- 39.02, nElo: 25.57 +/- 76.13
+LOS: 74.48 %, DrawRatio: 77.50 %, PairsRatio: 2.00
+Games: 80, Wins: 34, Losses: 31, Draws: 15, Points: 41.5 (51.88 %)
+Ptnml(0-2): [2, 1, 31, 4, 2], WL/DD Ratio: 5.20
+LLR: 0.66 (22.5%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 81 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 81 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 82 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 82 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 83 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 83 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 84 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 84 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 85 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 85 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 86 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 86 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 87 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 87 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 88 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 88 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 89 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 89 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 90 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 90 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 91 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 91 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 92 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 92 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 93 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 93 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 94 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 94 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 95 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 95 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 96 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 96 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 97 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 97 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 98 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 98 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 99 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 99 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 100 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 100 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 10.43 +/- 36.73, nElo: 19.42 +/- 68.10
+LOS: 71.19 %, DrawRatio: 72.00 %, PairsRatio: 1.33
+Games: 100, Wins: 41, Losses: 38, Draws: 21, Points: 51.5 (51.50 %)
+Ptnml(0-2): [2, 4, 36, 5, 3], WL/DD Ratio: 5.00
+LLR: 0.64 (21.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 101 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 101 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 102 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 102 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 103 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 103 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 104 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 104 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 105 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 105 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 106 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 106 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 107 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 107 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 108 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 108 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 109 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 109 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 110 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 110 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 111 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 111 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 112 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 112 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 113 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 113 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 114 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 114 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 115 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 115 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 116 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 116 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 117 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 117 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 118 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 118 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 119 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 119 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 120 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 120 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 17.39 +/- 32.98, nElo: 32.93 +/- 62.16
+LOS: 85.04 %, DrawRatio: 73.33 %, PairsRatio: 1.67
+Games: 120, Wins: 49, Losses: 43, Draws: 28, Points: 63.0 (52.50 %)
+Ptnml(0-2): [2, 4, 44, 6, 4], WL/DD Ratio: 3.89
+LLR: 1.30 (44.1%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 121 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 121 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 122 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 122 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 123 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 123 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 124 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 124 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 125 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 125 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 126 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 126 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 127 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 127 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 128 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 128 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 129 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 129 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 130 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 130 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 131 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 131 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 132 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 132 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 133 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 133 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 134 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 134 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 135 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 135 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 136 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 136 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 137 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 137 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 138 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 138 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 139 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 139 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 140 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 140 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 24.86 +/- 30.44, nElo: 47.28 +/- 57.55
+LOS: 94.63 %, DrawRatio: 72.86 %, PairsRatio: 2.17
+Games: 140, Wins: 58, Losses: 48, Draws: 34, Points: 75.0 (53.57 %)
+Ptnml(0-2): [2, 4, 51, 8, 5], WL/DD Ratio: 3.64
+LLR: 2.14 (72.6%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 141 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 141 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 142 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 142 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 143 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 143 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 144 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 144 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 145 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 145 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 146 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 146 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 147 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 147 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 148 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 148 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 149 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 149 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 150 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 150 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 151 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 151 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 152 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 152 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 153 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 153 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 154 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 154 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 155 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 155 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 156 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 156 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 157 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 157 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 158 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 158 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 159 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 159 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 160 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 160 (C7-FIXED vs Golden-C1): 0-1 {White loses on time}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 19.56 +/- 29.02, nElo: 36.45 +/- 53.83
+LOS: 90.78 %, DrawRatio: 71.25 %, PairsRatio: 1.56
+Games: 160, Wins: 65, Losses: 56, Draws: 39, Points: 84.5 (52.81 %)
+Ptnml(0-2): [2, 7, 57, 8, 6], WL/DD Ratio: 3.75
+LLR: 1.94 (65.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 161 of 20000 (Golden-C1 vs C7-FIXED)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 161 (Golden-C1 vs C7-FIXED): 0-1 {White loses on time}
+Started game 162 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 162 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 163 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 163 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 164 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 164 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 165 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 165 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 166 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 166 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 167 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 167 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 168 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 168 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 169 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 169 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 170 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 170 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 171 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 171 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 172 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 172 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 173 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 173 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 174 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 174 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 175 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 175 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 176 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 176 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 177 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 177 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 178 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from Golden-C1
+Finished game 178 (C7-FIXED vs Golden-C1): 1-0 {Black loses on time}
+Started game 179 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 179 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 180 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 180 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 13.52 +/- 28.02, nElo: 24.56 +/- 50.76
+LOS: 82.86 %, DrawRatio: 68.89 %, PairsRatio: 1.33
+Games: 180, Wins: 71, Losses: 64, Draws: 45, Points: 93.5 (51.94 %)
+Ptnml(0-2): [3, 9, 62, 10, 6], WL/DD Ratio: 3.77
+LLR: 1.47 (49.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 181 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 181 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 182 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 182 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 183 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 183 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 184 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 184 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 185 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 185 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 186 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 186 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 187 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 187 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 188 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 188 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 189 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 189 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 190 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 190 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 191 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 191 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 192 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 192 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 193 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 193 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 194 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 194 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 195 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 195 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 196 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 196 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 197 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 197 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 198 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 198 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 199 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 199 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 200 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 200 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 10.43 +/- 25.92, nElo: 19.42 +/- 48.15
+LOS: 78.53 %, DrawRatio: 69.00 %, PairsRatio: 1.21
+Games: 200, Wins: 77, Losses: 71, Draws: 52, Points: 103.0 (51.50 %)
+Ptnml(0-2): [3, 11, 69, 11, 6], WL/DD Ratio: 3.60
+LLR: 1.29 (43.8%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 201 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 201 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 202 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 202 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 203 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 203 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 204 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 204 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 205 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 205 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 206 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 206 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 207 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 207 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 208 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 208 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 209 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 209 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 210 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 210 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 211 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 211 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 212 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 212 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 213 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 213 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 214 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 214 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 215 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 215 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 216 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 216 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 217 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 217 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 218 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 218 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 219 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 219 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 220 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 220 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 12.64 +/- 24.33, nElo: 23.91 +/- 45.91
+LOS: 84.63 %, DrawRatio: 68.18 %, PairsRatio: 1.33
+Games: 220, Wins: 85, Losses: 77, Draws: 58, Points: 114.0 (51.82 %)
+Ptnml(0-2): [3, 12, 75, 14, 6], WL/DD Ratio: 3.69
+LLR: 1.74 (59.2%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 221 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 221 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by insufficient mating material}
+Started game 222 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 222 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 223 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 223 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 224 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 224 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 225 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 225 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 226 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 226 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 227 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 227 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 228 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 228 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 229 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 229 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 230 of 20000 (C7-FIXED vs Golden-C1)
+Warning; No bestmove found in the last line from C7-FIXED
+Finished game 230 (C7-FIXED vs Golden-C1): 0-1 {White loses on time}
+Started game 231 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 231 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 232 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 232 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 233 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 233 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 234 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 234 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 235 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 235 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 236 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 236 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 237 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 237 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 238 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 238 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 239 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 239 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 240 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 240 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 8.69 +/- 23.74, nElo: 16.12 +/- 43.96
+LOS: 76.38 %, DrawRatio: 66.67 %, PairsRatio: 1.22
+Games: 240, Wins: 91, Losses: 85, Draws: 64, Points: 123.0 (51.25 %)
+Ptnml(0-2): [4, 14, 80, 16, 6], WL/DD Ratio: 3.71
+LLR: 1.28 (43.5%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 241 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 241 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 242 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 242 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 243 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 243 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 244 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 244 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 245 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 245 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by insufficient mating material}
+Started game 246 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 246 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 247 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 247 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 248 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 248 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 249 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 249 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 250 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 250 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 251 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 251 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 252 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 252 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 253 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 253 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 254 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 254 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 255 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 255 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 256 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 256 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 257 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 257 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 258 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 258 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 259 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 259 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 260 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 260 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+--------------------------------------------------
+Results of Golden-C1 vs C7-FIXED (10+0.1, NULL, NULL, 4moves_test.pgn):
+Elo: 14.71 +/- 22.92, nElo: 27.18 +/- 42.23
+LOS: 89.64 %, DrawRatio: 66.15 %, PairsRatio: 1.44
+Games: 260, Wins: 101, Losses: 90, Draws: 69, Points: 135.5 (52.12 %)
+Ptnml(0-2): [4, 14, 86, 19, 7], WL/DD Ratio: 3.78
+LLR: 2.33 (79.1%) (-2.94, 2.94) [-20.00, 20.00]
+--------------------------------------------------
+Started game 261 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 261 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 262 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 262 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 263 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 263 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 264 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 264 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 265 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 265 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 266 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 266 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 267 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 267 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 268 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 268 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 269 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 269 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 270 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 270 (C7-FIXED vs Golden-C1): 0-1 {Black mates}
+Started game 271 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 271 (Golden-C1 vs C7-FIXED): 1-0 {White mates}
+Started game 272 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 272 (C7-FIXED vs Golden-C1): 1-0 {White mates}
+Started game 273 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 273 (Golden-C1 vs C7-FIXED): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 274 of 20000 (C7-FIXED vs Golden-C1)
+Finished game 274 (C7-FIXED vs Golden-C1): 1/2-1/2 {Draw by 3-fold repetition}
+Started game 275 of 20000 (Golden-C1 vs C7-FIXED)
+Finished game 275 (Golden-C1 vs C7-FIXED): 0-1 {Black mates}
+Started game 276 of 20000 (C7-FIXED vs Golden-C1)
