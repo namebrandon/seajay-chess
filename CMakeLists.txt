@@ -26,6 +26,10 @@ option(TT_DEBUG "Enable transposition table debug checks" OFF)
 option(TT_PARANOID "Enable paranoid TT validation (slow)" OFF)
 option(TT_SHADOW "Enable shadow hashing for TT validation" OFF)
 
+# Quiescence Search development options (Stage 14)
+set(QSEARCH_MODE "PRODUCTION" CACHE STRING "Quiescence search mode: TESTING, TUNING, or PRODUCTION")
+set_property(CACHE QSEARCH_MODE PROPERTY STRINGS "TESTING" "TUNING" "PRODUCTION")
+
 if(DEBUG_MAGIC)
     add_compile_definitions(DEBUG_MAGIC)
 endif()
@@ -52,6 +56,18 @@ endif()
 if(TT_SHADOW)
     add_compile_definitions(TT_SHADOW)
     message(STATUS "TT Shadow hashing enabled")
+endif()
+
+# Quiescence Search compilation modes
+if(QSEARCH_MODE STREQUAL "TESTING")
+    add_compile_definitions(QSEARCH_TESTING)
+    message(STATUS "Quiescence Search TESTING mode enabled (10K node limit)")
+elseif(QSEARCH_MODE STREQUAL "TUNING")
+    add_compile_definitions(QSEARCH_TUNING)
+    message(STATUS "Quiescence Search TUNING mode enabled (100K node limit)")
+else()
+    # Production mode - no special defines needed
+    message(STATUS "Quiescence Search PRODUCTION mode enabled (no limits)")
 endif()
 
 # Warning flags

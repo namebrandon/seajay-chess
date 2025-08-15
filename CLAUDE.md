@@ -63,6 +63,34 @@ If testing cannot be completed due to time/context constraints:
 └── project_docs/            # Master plan and status tracking
 ```
 
+## Quiescence Search Build Modes (Stage 14)
+
+SeaJay supports three quiescence search build modes to facilitate development and testing:
+
+### TESTING Mode (10K node limit)
+- **Purpose:** Rapid development iteration and debugging
+- **Build:** `./build_testing.sh` or `./build.sh testing`
+- **Node Limit:** 10,000 nodes per quiescence search
+- **Use When:** Developing new features, debugging search issues
+- **Engine Display:** "Quiescence: TESTING MODE - 10K limit"
+
+### TUNING Mode (100K node limit)
+- **Purpose:** Parameter tuning and experimentation
+- **Build:** `./build_tuning.sh` or `./build.sh tuning`
+- **Node Limit:** 100,000 nodes per quiescence search
+- **Use When:** Finding optimal parameters, testing trade-offs
+- **Engine Display:** "Quiescence: TUNING MODE - 100K limit"
+
+### PRODUCTION Mode (no limits)
+- **Purpose:** Full strength for SPRT testing and competitive play
+- **Build:** `./build_production.sh` or `./build.sh production`
+- **Node Limit:** Unlimited (full quiescence search)
+- **Use When:** SPRT testing, playing matches, final validation
+- **Engine Display:** "Quiescence: PRODUCTION MODE"
+
+**Important:** The engine always displays its mode at UCI startup to prevent confusion.
+Always verify you're running the intended mode before testing.
+
 ## Available AI Agents
 
 ### chess-engine-expert
@@ -119,8 +147,27 @@ Before ANY new stage development:
 
 ### Testing Commands:
 ```bash
-# Build the project
-cd /workspace/build && cmake .. && make -j
+# Build the project (Stage 14: Quiescence Search modes)
+# Quick build with mode selection:
+./build.sh testing      # Testing mode: 10K node limit
+./build.sh tuning       # Tuning mode: 100K node limit  
+./build.sh production   # Production mode: no limits (default)
+
+# Or use dedicated build scripts (recommended for clarity):
+./build_testing.sh      # Testing mode with 10K limit
+./build_tuning.sh       # Tuning mode with 100K limit
+./build_production.sh   # Production mode, no limits
+./build_debug.sh        # Debug build with sanitizers
+
+# Or use CMAKE directly:
+cd /workspace/build
+cmake -DQSEARCH_MODE=TESTING ..   # Testing mode
+cmake -DQSEARCH_MODE=TUNING ..    # Tuning mode  
+cmake -DQSEARCH_MODE=PRODUCTION .. # Production mode
+make -j
+
+# Verify build mode:
+echo 'uci' | ./bin/seajay  # Engine displays mode at startup
 
 # Run perft tests (Phase 1)
 ./bin/seajay perft

@@ -76,8 +76,56 @@ Result: Bishop captures f7 pawn found
 - [ ] Performance testing and optimization
 - [ ] SPRT validation against baseline
 
+## Critical Deviation Fix (Evening Session)
+
+### IMPORTANT: Progressive Node Limit System Added
+**Issue Discovered**: We deviated from the original plan by hard-coding NODE_LIMIT_PER_POSITION = 10000 instead of implementing the progressive limit removal system specified in the design.
+
+**Why This Matters**: Without progressive limits, we risked:
+1. Leaving restrictive limits in production code
+2. Not being able to test with appropriate safety during development
+3. Forgetting to remove limiters before final release
+
+**Solution Implemented**:
+- ✅ Added compile-time progressive limit system:
+  - `QSEARCH_TESTING`: 10,000 node limit (for safe development)
+  - `QSEARCH_TUNING`: 100,000 node limit (for parameter tuning)
+  - Production (default): No limit (UINT64_MAX)
+- ✅ Added actual node limit enforcement (was missing!)
+- ✅ Created dedicated build scripts to prevent forgetting flags:
+  - `./build_testing.sh` - Development with 10K limit
+  - `./build_tuning.sh` - Tuning with 100K limit
+  - `./build_production.sh` - Full strength, no limits
+  - `./build_debug.sh` - Debug with sanitizers
+- ✅ Updated UCI to show mode at startup: "Quiescence: TESTING MODE - 10K limit"
+- ✅ Created verification script: `./check_mode.sh` to verify build mode
+
+**Build System Enhancement**:
+- Main `build.sh` now accepts mode parameter: `./build.sh testing|tuning|production`
+- CMAKE option available: `-DQSEARCH_MODE=TESTING|TUNING|PRODUCTION`
+- Default is PRODUCTION to avoid accidentally leaving limits in place
+- All binaries now clearly indicate their mode at runtime
+
+**Files Modified for Fix**:
+- `/workspace/src/search/quiescence.h` - Progressive limit system
+- `/workspace/src/search/quiescence.cpp` - Node limit enforcement
+- `/workspace/src/search/types.h` - Added qsearchNodesLimited counter
+- `/workspace/CMakeLists.txt` - CMAKE option for mode selection
+- `/workspace/src/uci/uci.cpp` - Display mode at startup
+- Created 4 build scripts for convenience
+- Created `/workspace/BUILD_MODES.md` - Complete user guide
+- Updated `/workspace/CLAUDE.md` - Build instructions
+
+**Documentation Created**:
+- `/workspace/project_docs/stage_implementations/stage14_deviation_fixes.md`
+- `/workspace/project_docs/stage_implementations/stage14_critical_fix_summary.md`
+- `/workspace/BUILD_MODES.md` - User guide for build modes
+
+This fix ensures we can safely develop with limits while guaranteeing production builds have full strength.
+
 ## Notes
 - Implementation is more integrated than originally planned (no separate quiescenceInCheck function)
 - MVV-LVA ordering significantly improves cutoff rate
 - Safety limits prevent search explosion
 - Check evasion is critical for avoiding horizon effect in tactical positions
+- Progressive limit system ensures safe development and full production strength

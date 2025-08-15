@@ -59,7 +59,17 @@ void UCIEngine::run() {
 }
 
 void UCIEngine::handleUCI() {
-    std::cout << "id name SeaJay Stage-13-FINAL" << std::endl;
+    // Build mode indicator for Stage 14 Quiescence Search
+    std::string buildMode;
+#ifdef QSEARCH_TESTING
+    buildMode = " (Quiescence: TESTING MODE - 10K limit)";
+#elif defined(QSEARCH_TUNING)
+    buildMode = " (Quiescence: TUNING MODE - 100K limit)";
+#else
+    buildMode = " (Quiescence: PRODUCTION MODE)";
+#endif
+    
+    std::cout << "id name SeaJay Stage-13-FINAL" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 13: Iterative Deepening with Aspiration Windows
     
