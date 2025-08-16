@@ -42,10 +42,10 @@ static constexpr int DELTA_MARGIN_PANIC = 400;      // At minimum, cover minor p
 static constexpr int MAX_CAPTURES_PER_NODE = 32;    // Maximum captures to search per node
 static constexpr int MAX_CAPTURES_PANIC = 8;        // Reduced captures in panic mode
 
-// Stage 15 Day 8: SEE-based pruning thresholds (TUNED)
-static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -100;  // Conservative: only clearly bad captures
-static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = -75;     // Aggressive: balanced pruning (tuned)
-static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = -25;        // Even more aggressive in endgame
+// Stage 15 Day 6: SEE-based pruning thresholds
+static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -50;  // Conservative: only clearly bad captures
+static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = 0;     // Aggressive: prune more captures
+static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = 0;        // Even more aggressive in endgame
 
 // SEE pruning modes
 enum class SEEPruningMode {

@@ -13,12 +13,13 @@ namespace seajay {
 // SEE-specific piece values in centipawns
 // These differ from regular evaluation values for better capture ordering
 namespace SEEValues {
+    // Stage 15 Day 8.2: Tuned piece values for SEE
     constexpr int PAWN_VALUE = 100;
-    constexpr int KNIGHT_VALUE = 325;
-    constexpr int BISHOP_VALUE = 325;
+    constexpr int KNIGHT_VALUE = 320;   // Slightly lower (was 325)
+    constexpr int BISHOP_VALUE = 330;   // Slightly higher (was 325)
     constexpr int ROOK_VALUE = 500;
-    constexpr int QUEEN_VALUE = 975;
-    constexpr int KING_VALUE = 10000;  // King cannot be captured
+    constexpr int QUEEN_VALUE = 950;    // Reduced (was 975)
+    constexpr int KING_VALUE = 10000;   // King cannot be captured
     
     // Array indexed by PieceType
     constexpr std::array<int, 7> PIECE_VALUES = {
