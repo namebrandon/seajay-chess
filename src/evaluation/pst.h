@@ -64,7 +64,10 @@ public:
         // For black pieces, mirror the square vertically (rank mirroring)
         // Use XOR 56 for efficient rank mirroring as per plan
         Square lookupSq = (c == WHITE) ? sq : (sq ^ 56);
-        return s_pstTables[pt][lookupSq];
+        MgEgScore val = s_pstTables[pt][lookupSq];
+        // CRITICAL FIX: Negate PST values for Black pieces
+        // Black pieces on good squares should decrease White's evaluation
+        return (c == WHITE) ? val : -val;
     }
     
     // Get the PST difference for moving a piece from one square to another

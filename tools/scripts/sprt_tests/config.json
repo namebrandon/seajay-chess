@@ -135,15 +135,15 @@
     ],
     "stats": {
         "Stage14-Base vs Stage15-SEE": {
-            "wins": 205,
-            "losses": 210,
-            "draws": 25,
+            "wins": 213,
+            "losses": 221,
+            "draws": 26,
             "penta_WW": 3,
-            "penta_WD": 14,
-            "penta_WL": 185,
+            "penta_WD": 15,
+            "penta_WL": 192,
             "penta_DD": 0,
             "penta_LD": 11,
-            "penta_LL": 7
+            "penta_LL": 9
         },
         "Stage15-SEE vs Stage14-Base": {
             "wins": 0,
