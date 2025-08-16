@@ -2,6 +2,175 @@
 
 This document tracks identified but unresolved bugs in the SeaJay chess engine, providing detailed analysis and debugging information for future resolution.
 
+## Bug #012: PST Value Sign Error for Black Pieces - CRITICAL
+
+**Status:** OPEN - Root cause identified  
+**Priority:** CRITICAL  
+**Discovery Date:** 2025-08-15 (During investigation of Bug #009 residual issues)  
+**Impact:** Black systematically avoids good moves, White wins 90% from startpos
+
+### Summary
+
+The `PST::value()` function returns the same sign values for both White and Black pieces, when it should return negated values for Black. This causes Black to evaluate good positions as bad and bad positions as good.
+
+### Root Cause Analysis
+
+**Location:** `/workspace/src/evaluation/pst.h` - `PST::value()` function
+
+**The Bug:**
+```cpp
+// CURRENT (INCORRECT):
+[[nodiscard]] static constexpr MgEgScore value(PieceType pt, Square sq, Color c) noexcept {
+    Square lookupSq = (c == WHITE) ? sq : (sq ^ 56);
+    return s_pstTables[pt][lookupSq];  // BUG: Same sign for both colors!
+}
+
+// SHOULD BE:
+[[nodiscard]] static constexpr MgEgScore value(PieceType pt, Square sq, Color c) noexcept {
+    Square lookupSq = (c == WHITE) ? sq : (sq ^ 56);
+    MgEgScore value = s_pstTables[pt][lookupSq];
+    return (c == WHITE) ? value : -value;  // Negate for Black!
+}
+```
+
+### Technical Proof
+
+When Black moves d7 to d5 (objectively good):
+1. `PST::value(PAWN, d7, BLACK)` returns -5 (should return +5)
+2. `PST::value(PAWN, d5, BLACK)` returns +20 (should return -20)
+3. In makeMove: `m_pstScore -= (-5); m_pstScore += 20` = +25 change
+4. This makes m_pstScore MORE positive (appears better for White)
+5. But Black made a good move - should be WORSE for White!
+
+### Impact
+
+- Black systematically avoids all positionally good moves
+- Central pawn advances appear bad to Black
+- Knight outposts appear bad to Black
+- This affects ALL piece types, not just pawns
+- Explains why Black plays a6, h6, b6, g5 consistently
+
+---
+
+## Bug #009: PST Sign Inversion for Black Pieces - PARTIALLY FIXED
+
+**Status:** PARTIALLY RESOLVED  
+**Priority:** CRITICAL  
+**Discovery Date:** 2025-08-15 (During Stage 15 SPRT Testing)  
+**Partial Resolution Date:** 2025-08-15  
+**Impact:** Caused Black to actively worsen its position, White won ~95% of games from startpos
+
+### Summary
+
+Black's Piece-Square Table (PST) values were being updated with inverted signs during move execution in the `makeMove()` function. This caused Black pieces to be rewarded for moving to bad squares and penalized for moving to good squares.
+
+### Root Cause Analysis
+
+**Location:** `/workspace/src/core/board.cpp` - `makeMove()` function
+
+**Technical Details:**
+- The `setPiece()` function correctly used `+pst` for White, `-pst` for Black
+- The `makeMove()` function incorrectly inverted these signs for Black
+- Affected all move types: normal moves, castling, en passant, promotions
+
+**Code Analysis:**
+```cpp
+// INCORRECT (before fix):
+if (movedColor == BLACK) {
+    m_pstScore.mg -= pstFrom;  // Should be +=
+    m_pstScore.mg += pstTo;    // Should be -=
+}
+
+// CORRECT (after fix):
+if (movedColor == BLACK) {
+    m_pstScore.mg += pstFrom;  // Remove piece from old square
+    m_pstScore.mg -= pstTo;    // Add piece to new square
+}
+```
+
+### Impact Assessment
+
+**Before Fix:**
+- White won approximately 95% of games from starting position
+- Black won approximately 2% of games
+- Draws approximately 3%
+- Black actively tried to place pieces on bad squares
+- SPRT tests were completely unreliable
+- Affected all stages since Stage 9 (PST introduction)
+
+**After Fix:**
+- White wins: 50% (down from 95%)
+- Draws: 50% (up from 3%)
+- Black wins: 0% (still concerning)
+
+### Partial Resolution
+
+**Fixes Applied:**
+1. Corrected PST sign handling for Black normal moves (lines ~1447-1465)
+2. Fixed Black castling PST updates (lines ~1340-1396)
+3. Fixed Black en passant PST updates (lines ~1397-1420)
+4. Fixed Black promotion PST updates (lines ~1421-1446)
+
+**Commit:** aa269a9 - "fix: CRITICAL - Fix PST sign inversion bug for Black pieces"
+
+### Remaining Concerns
+
+**Why "MOSTLY RESOLVED":**
+
+1. **No Black Wins Observed** - Even after fix, Black has not won any games in testing
+2. **White Still Dominant** - 50% win rate for White with 50% draws indicates residual bias
+3. **Limited Testing** - Only 10 games tested post-fix at fast time control
+
+**Potential Additional Issues:**
+- Move ordering might still favor White
+- Time management could be asymmetric between colors
+- Search extensions/reductions might have color-dependent behavior
+- Evaluation function might have other asymmetries
+- Alpha-beta window initialization might favor one side
+
+### Verification and Testing
+
+```bash
+# Test symmetric position evaluation
+./binaries/seajay_stage15_pst_bugfix << EOF
+position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+eval
+position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1
+eval
+quit
+EOF
+
+# Run self-play test from startpos
+./tools/scripts/test_pst_fix.sh
+
+# Compare pre-fix and post-fix binaries
+./binaries/seajay_stage15_sprt_candidate1  # Pre-fix
+./binaries/seajay_stage15_pst_bugfix       # Post-fix
+```
+
+### Detection Method
+
+Discovered during Stage 15 SPRT testing when:
+1. White was winning 85/90 games from startpos
+2. Pattern analysis showed Black making objectively bad moves (e.g., g5, weakening kingside)
+3. Chess-engine-expert agent identified PST values were inverted for Black
+
+### Lessons Learned
+
+1. **Sign Convention Consistency** - Always verify sign conventions across related functions
+2. **Color Symmetry Testing** - Explicitly test that evaluation is symmetric for both colors
+3. **Incremental Updates** - Careful tracking needed when incrementally updating values
+4. **SPRT from Startpos** - Can reveal fundamental biases in the engine
+5. **Cross-Function Validation** - When multiple functions update the same data (setPiece/makeMove), ensure consistency
+
+### Follow-up Actions Required
+
+1. **Investigate Residual White Bias** - Determine why Black still doesn't win
+2. **Extended Testing** - Run 1000+ game matches to get statistically significant results
+3. **Profile by Color** - Analyze search statistics separately for White and Black
+4. **Symmetry Tests** - Create specific test positions to verify evaluation symmetry
+5. **Retroactive Testing** - Re-run SPRT tests for Stages 9-14 with fixed binary
+
 ## Bug #008: Stage 13 Time Management Critical Failure
 
 **Status:** RESOLVED  
