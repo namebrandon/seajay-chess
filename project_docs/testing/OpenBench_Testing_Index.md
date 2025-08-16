@@ -10,13 +10,13 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 | Stage | Feature | Original Commit | OpenBench Commit |
 |-------|---------|----------------|------------------|
-| **9** | PST + Draw Detection | `5e3c2bb41a8a11a002f107ff8bc6847c3ca3b62c` | `6b4565004ba63d4e9dd567329732bf167acfbce5` |
-| **10** | Magic Bitboards | `e3c59e234bb2cf0be3fdffc4dcd5e6c7e15e2c7c` | `12781988d917e17dfd1ffe49ff9814f89a7d966e` |
-| **11** | MVV-LVA Move Ordering | `f2ad9b5f4bf40dd895088cd56b304262c76814e2` | `8ed52cf9552152fd780ebcb4d06d41d93dd9f840` |
-| **12** | Transposition Tables | `ffa0e442298728ad22acb6e642e4621840a735cd` | `407839997bd898706752b2eda77f90049775a634` |
-| **13** | Iterative Deepening | `869495edc3c66eafbe825c8fb78f6b3b0d03d39f` | `01c667e374235a2ff3ddba4cdaddfcb8ff168181` |
-| **14** | Quiescence Search | `7ecfc35b3bb844c53f8b6ba9e2cb3a2e9eb73b4b` | `f82d6d74c322425777c61d13017402ffd712ba9f` |
-| **15** | SEE + Parameter Tuning | `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc` | `452acd7a5d45a813eed4dacc9b4d2faac494a9b8` |
+| **9** | PST + Draw Detection | `5e3c2bb41a8a11a002f107ff8bc6847c3ca3b62c` | `cc73cdc1459285c116c0fa2108f1d8bad1e77172` |
+| **10** | Magic Bitboards | `e3c59e234bb2cf0be3fdffc4dcd5e6c7e15e2c7c` | `bcddc04c89b8e222c7e0cf4f2773edab513da6e2` |
+| **11** | MVV-LVA Move Ordering | `f2ad9b5f4bf40dd895088cd56b304262c76814e2` | `9b198733c185d821a967cdebdeb250383b8b2378` |
+| **12** | Transposition Tables | `ffa0e442298728ad22acb6e642e4621840a735cd` | `4da5a91873b9a81e18ecb8a16a01c0332ad0d690` |
+| **13** | Iterative Deepening | `869495edc3c66eafbe825c8fb78f6b3b0d03d39f` | `1678fd6f532b829cf9bb4fd12e67be562786f295` |
+| **14** | Quiescence Search | `7ecfc35b3bb844c53f8b6ba9e2cb3a2e9eb73b4b` | `394698cf8fa3b10609d82fb631101b5c4eac5af6` |
+| **15** | SEE + Parameter Tuning | `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc` | `a221a6f9269aaae240d699ead56132636787e878` |
 
 ## Testing Branch Index
 
@@ -24,7 +24,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `5e3c2bb41a8a11a002f107ff8bc6847c3ca3b62c`  
 **Testing Branch:** `openbench/stage09`  
-**OpenBench Commit:** `6b4565004ba63d4e9dd567329732bf167acfbce5`
+**OpenBench Commit:** `cc73cdc1459285c116c0fa2108f1d8bad1e77172`
 
 **Stage Description:**
 - **Feature:** Complete Phase 2 with PST evaluation and draw detection
@@ -46,7 +46,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `e3c59e234bb2cf0be3fdffc4dcd5e6c7e15e2c7c`  
 **Testing Branch:** `openbench/stage10`  
-**OpenBench Commit:** `12781988d917e17dfd1ffe49ff9814f89a7d966e`
+**OpenBench Commit:** `bcddc04c89b8e222c7e0cf4f2773edab513da6e2`
 
 **Stage Description:**
 - **Feature:** Magic bitboards for sliding piece attack generation
@@ -66,7 +66,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `f2ad9b5f4bf40dd895088cd56b304262c76814e2`  
 **Testing Branch:** `openbench/stage11`  
-**OpenBench Commit:** `8ed52cf9552152fd780ebcb4d06d41d93dd9f840`
+**OpenBench Commit:** `9b198733c185d821a967cdebdeb250383b8b2378`
 
 **Stage Description:**
 - **Feature:** Most Valuable Victim - Least Valuable Attacker move ordering
@@ -83,7 +83,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `ffa0e442298728ad22acb6e642e4621840a735cd`  
 **Testing Branch:** `openbench/stage12`  
-**OpenBench Commit:** `407839997bd898706752b2eda77f90049775a634`
+**OpenBench Commit:** `4da5a91873b9a81e18ecb8a16a01c0332ad0d690`
 
 **Stage Description:**
 - **Feature:** Transposition table implementation with always-replace strategy
@@ -104,7 +104,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `869495edc3c66eafbe825c8fb78f6b3b0d03d39f`  
 **Testing Branch:** `openbench/stage13`  
-**OpenBench Commit:** `01c667e374235a2ff3ddba4cdaddfcb8ff168181`
+**OpenBench Commit:** `1678fd6f532b829cf9bb4fd12e67be562786f295`
 
 **Stage Description:**
 - **Feature:** Full iterative deepening with aspiration windows
@@ -127,7 +127,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `7ecfc35b3bb844c53f8b6ba9e2cb3a2e9eb73b4b`  
 **Testing Branch:** `openbench/stage14`  
-**OpenBench Commit:** `f82d6d74c322425777c61d13017402ffd712ba9f`
+**OpenBench Commit:** `394698cf8fa3b10609d82fb631101b5c4eac5af6`
 
 **Stage Description:**
 - **Feature:** Quiescence search to resolve tactical sequences
@@ -148,7 +148,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 **Original Commit:** `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc`  
 **Testing Branch:** `openbench/stage15`  
-**OpenBench Commit:** `452acd7a5d45a813eed4dacc9b4d2faac494a9b8`
+**OpenBench Commit:** `a221a6f9269aaae240d699ead56132636787e878`
 
 **Stage Description:**
 - **Feature:** Static Exchange Evaluation with comprehensive parameter tuning
@@ -192,32 +192,32 @@ Use these commit hashes in your OpenBench test configurations:
 **Stage 9 vs Stage 10 (PST vs Magic Bitboards):**
 ```json
 {
-  "base_engine": {"commit": "6b4565004ba63d4e9dd567329732bf167acfbce5"},
-  "dev_engine": {"commit": "12781988d917e17dfd1ffe49ff9814f89a7d966e"}
+  "base_engine": {"commit": "cc73cdc1459285c116c0fa2108f1d8bad1e77172"},
+  "dev_engine": {"commit": "bcddc04c89b8e222c7e0cf4f2773edab513da6e2"}
 }
 ```
 
 **Stage 10 vs Stage 11 (Magic Bitboards vs MVV-LVA):**
 ```json
 {
-  "base_engine": {"commit": "12781988d917e17dfd1ffe49ff9814f89a7d966e"},
-  "dev_engine": {"commit": "8ed52cf9552152fd780ebcb4d06d41d93dd9f840"}
+  "base_engine": {"commit": "bcddc04c89b8e222c7e0cf4f2773edab513da6e2"},
+  "dev_engine": {"commit": "9b198733c185d821a967cdebdeb250383b8b2378"}
 }
 ```
 
 **Stage 13 vs Stage 14 (Iterative Deepening vs Quiescence):**
 ```json
 {
-  "base_engine": {"commit": "01c667e374235a2ff3ddba4cdaddfcb8ff168181"},
-  "dev_engine": {"commit": "f82d6d74c322425777c61d13017402ffd712ba9f"}
+  "base_engine": {"commit": "1678fd6f532b829cf9bb4fd12e67be562786f295"},
+  "dev_engine": {"commit": "394698cf8fa3b10609d82fb631101b5c4eac5af6"}
 }
 ```
 
 **Stage 14 vs Stage 15 (Quiescence vs SEE+Tuning):**
 ```json
 {
-  "base_engine": {"commit": "f82d6d74c322425777c61d13017402ffd712ba9f"},
-  "dev_engine": {"commit": "452acd7a5d45a813eed4dacc9b4d2faac494a9b8"}
+  "base_engine": {"commit": "394698cf8fa3b10609d82fb631101b5c4eac5af6"},
+  "dev_engine": {"commit": "a221a6f9269aaae240d699ead56132636787e878"}
 }
 ```
 
