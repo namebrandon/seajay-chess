@@ -11,8 +11,29 @@
  * - GUI compatibility (Arena, Cute Chess, etc.)
  */
 
-int main() {
+int main(int argc, char* argv[]) {
     try {
+        // Check for command-line arguments first
+        if (argc > 1) {
+            std::string command(argv[1]);
+            
+            if (command == "bench") {
+                // Run benchmark and exit (for OpenBench compatibility)
+                seajay::UCIEngine engine;
+                int depth = 0;
+                if (argc > 2) {
+                    try {
+                        depth = std::stoi(argv[2]);
+                    } catch (...) {
+                        depth = 0;
+                    }
+                }
+                engine.runBenchmark(depth);
+                return 0;
+            }
+        }
+        
+        // No arguments or unrecognized argument - start normal UCI loop
         seajay::UCIEngine engine;
         engine.run();
         return 0;
