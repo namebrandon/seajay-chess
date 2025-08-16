@@ -417,6 +417,7 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
     auto result = BenchmarkSuite::runBenchmark(depth, true);
     
     // Send final summary as info string for GUI compatibility
+    std::cout << result.totalNodes << " nodes " 
         << std::fixed << std::setprecision(0) << result.averageNps() << " nps" << std::endl;
     
 }
@@ -482,6 +483,7 @@ void UCIEngine::runBenchmark(int depth) {
     auto result = BenchmarkSuite::runBenchmark(depth, true);
     
     // Output final summary in OpenBench-compatible format
+    std::cout << result.totalNodes << " nodes " 
         << std::fixed << std::setprecision(0) << result.averageNps() << " nps" << std::endl;
     
 }
