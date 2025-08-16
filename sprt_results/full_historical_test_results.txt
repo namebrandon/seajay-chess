@@ -1,0 +1,41 @@
+
+
+--------------------------------------------------
+Results of Stage09-PST vs Stage10-Magic (10+0.1, NULL, NULL, 8moves_v3.pgn):
+Elo: 15.65 +/- 29.85, nElo: 25.33 +/- 48.15
+LOS: 84.87 %, DrawRatio: 44.00 %, PairsRatio: 1.24
+Games: 200, Wins: 60, Losses: 51, Draws: 89, Points: 104.5 (52.25 %)
+Ptnml(0-2): [2, 23, 44, 26, 5], WL/DD Ratio: 1.20
+--------------------------------------------------
+Finished match
+Total Time: 01:12:11 (hours:minutes:seconds)
+
+
+========================================================
+Match Complete!
+========================================================
+
+
+Files saved:
+  PGN: /workspace/tools/scripts/sprt_tests/historical_progression/results/stage09_vs_stage10.pgn
+  Log: /workspace/tools/scripts/sprt_tests/historical_progression/results/stage09_vs_stage10.log
+
+--------------------------------------------------
+Results of Stage10-Magic vs Stage11-MVV (10+0.1, NULL, NULL, 8moves_v3.pgn):
+Elo: -20.87 +/- 33.33, nElo: -30.32 +/- 48.15
+LOS: 10.86 %, DrawRatio: 43.00 %, PairsRatio: 0.73
+Games: 200, Wins: 54, Losses: 66, Draws: 80, Points: 94.0 (47.00 %)
+Ptnml(0-2): [8, 25, 43, 19, 5], WL/DD Ratio: 1.39
+--------------------------------------------------
+Finished match
+Total Time: 01:13:00 (hours:minutes:seconds)
+
+
+========================================================
+Match Complete!
+========================================================
+
+
+Files saved:
+  PGN: /workspace/tools/scripts/sprt_tests/historical_progression/results/stage10_vs_stage11.pgn
+  Log: /workspace/tools/scripts/sprt_tests/historical_progression/results/stage10_vs_stage11.lo
