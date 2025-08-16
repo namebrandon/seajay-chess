@@ -482,9 +482,8 @@ void UCIEngine::runBenchmark(int depth) {
     // The benchmark will output to stdout if verbose=true
     auto result = BenchmarkSuite::runBenchmark(depth, true);
     
-    // Also send final summary as info string (for OpenBench parsing)
-    std::ostringstream oss;
-    oss << "Benchmark complete: " << result.totalNodes << " nodes, "
-        << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
-    sendInfo(oss.str());
+    // Output final summary in OpenBench-compatible format
+    // OpenBench typically expects: "<nodes> nodes <nps> nps"
+    std::cout << result.totalNodes << " nodes " 
+              << std::fixed << std::setprecision(0) << result.averageNps() << " nps" << std::endl;
 }
