@@ -1067,3 +1067,124 @@ Marked as Medium priority because:
 3. Investigate thread-local storage in quiescence search
 4. Review differences in how test scripts vs UCI initialize the board
 5. Consider if rapid FEN parsing triggers resource exhaustion
+
+---
+
+## Bug #013: Illegal PV Move Reported in UCI Output
+
+**Status:** OPEN - Under Investigation  
+**Priority:** HIGH  
+**Discovery Date:** 2025-08-15 (During Stage 15 SPRT Testing)  
+**Impact:** Engine reports illegal moves in PV output, though bestmove is correct
+
+### Summary
+
+The Stage 15 tuned binary is reporting illegal moves in its Principal Variation (PV) output during SPRT testing. The engine reports moves like "c2d2" in the PV at depths 1-3, but then correctly plays a different legal move as bestmove. This suggests corruption in PV extraction from the transposition table.
+
+### Symptoms
+
+**FastChess Warning Output:**
+```
+Warning; Illegal PV move - move c2d2 from Stage15-Tuned
+Info; info depth 1 seldepth 2 score cp -2460 nodes 4 nps 0 time 0 pv c2d2
+Position; startpos
+Moves; [140 ply game moves ending with b2b1q]
+```
+
+**Engine Search Output:**
+```
+info depth 1 seldepth 2 score cp -2460 nodes 4 nps 222 time 0 pv c2d2
+info depth 2 seldepth 3 score cp -2475 nodes 68 nps 3400 time 0 moveeff 0.0% tthits 33.3% pv c2d2
+info depth 3 seldepth 3 score cp -2475 ebf 16.00 nodes 157 nps 7136 time 0 moveeff 95.2% tthits 76.6% pv c2d2
+bestmove c2d3
+```
+
+### Position Context
+
+After 140 plies from startpos, the position has:
+- Black has just promoted a pawn to queen on b1 (last move: b2b1q)
+- White's king is on c2
+- Engine is in a lost position (evaluation around -2460 to -2475 centipawns)
+- The move c2d2 would be illegal (reason to be determined)
+- The correct bestmove c2d3 is played
+
+### Technical Details
+
+**Affected Binary:** 
+- `/workspace/binaries/seajay_stage15_tuned_fixed` (MD5: 91e908b3f96a11cc5dbf8b0829821eda)
+- Built with PST bias fixes and Stage 15 SEE tuning
+
+**Position FEN (reconstructed from move list):**
+After the 140-ply move sequence, Black has promoted on b1 and White's king is on c2.
+
+### Potential Root Causes
+
+1. **TT Corruption Around Promotions**
+   - Promotion moves may corrupt TT entries
+   - Move encoding/decoding issues with promotion moves
+   
+2. **PV Extraction Logic**
+   - Bug in extracting PV from transposition table
+   - TT probe returning corrupted move data
+   
+3. **Move Encoding Issues**
+   - Incorrect move encoding in TT storage
+   - Bit manipulation errors in move compression
+   
+4. **Race Condition** (less likely in single-threaded)
+   - TT access patterns causing data corruption
+   
+5. **Memory Corruption**
+   - Buffer overflow or uninitialized memory access
+   - Particularly around promotion handling
+
+### Investigation Areas
+
+**Primary Code Locations:**
+- `/workspace/src/search/transposition_table.h` - TT store/probe logic
+- `/workspace/src/search/negamax.cpp` - PV extraction from TT
+- `/workspace/src/core/move.h` - Move encoding/decoding
+- `/workspace/src/core/board.cpp` - Promotion handling in makeMove/unmakeMove
+
+**Specific Functions to Review:**
+- PV extraction logic in search
+- TT entry packing/unpacking
+- Move validation in TT probe
+- Promotion move special handling
+
+### Severity Assessment
+
+**HIGH Priority because:**
+- Occurs during competitive SPRT testing
+- Could indicate deeper TT corruption issues
+- May affect move ordering and search efficiency
+- Creates confusion in game analysis
+- Though bestmove is correct, PV corruption suggests underlying issues
+
+**Mitigating Factors:**
+- Engine still plays the correct bestmove
+- Does not appear to affect playing strength directly
+- Only PV display is affected, not actual move selection
+
+### Reproduction Steps
+
+1. Set up position after 140-ply game from startpos
+2. Position has Black queen on b1, White king on c2  
+3. Search to depth 3
+4. Observe PV contains illegal move c2d2
+5. Note that bestmove played is legal (c2d3)
+
+### Test Command
+
+```bash
+echo -e "position startpos moves e2e4 c7c5 b1c3 e7e5 g1f3 b8c6 f1c4 g8f6 d2d3 f8d6 c3b5 d6e7 b5c3 d7d6 a2a4 c8e6 c4e6 f7e6 e1g1 e8g8 f1e1 c6d4 a4a5 d8c7 b2b3 a8d8 c1g5 d6d5 e4d5 f6d5 g5e7 c7e7 c3e4 d5b4 a1c1 d4b3 c2b3 b4d3 d1c2 h7h5 e1d1 d3c1 d1c1 f8f5 c2c5 e7c5 e4c5 d8c8 f3h4 f5f6 h4f3 b7b6 a5b6 a7b6 c5d3 c8c1 d3c1 f6f5 b3b4 e5e4 f3d2 f5d5 c1b3 d5d3 h2h4 e6e5 b4b5 g7g6 g2g3 d3c3 g1f1 c3d3 f1g1 e4e3 f2e3 d3e3 g1f2 e3d3 f2e2 d3g3 b3c1 g6g5 d2e4 g3g1 c1d3 g5h4 d3e5 g1b1 e4c3 h4h3 c3e4 h3h2 e4g3 h5h4 g3h1 b1h1 e5f3 h4h3 e2f2 h1f1 f2f1 h2h1q f1e2 h1g2 e2e3 h3h2 f3h2 g2h2 e3f3 h2g1 f3e2 g1g3 e2f1 g3h2 f1e1 h2g2 e1d1 g2f1 d1c2 f1b5 c2c1 b5b3 c1d2 b6b5 d2e1 b5b4 e1d2 b3a2 d2d3 b4b3 d3c3 b3b2 c3c2 b2b1q\ngo depth 3\nquit" | /workspace/binaries/seajay_stage15_tuned_fixed
+```
+
+### Next Steps
+
+1. Validate the exact position to understand why c2d2 is illegal
+2. Review PV extraction code in negamax.cpp
+3. Check TT move validation logic
+4. Add defensive checks to prevent illegal moves in PV
+5. Consider adding move legality validation before adding to PV
+6. Investigate if this is a regression from Stage 15 changes or pre-existing
