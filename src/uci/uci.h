@@ -29,6 +29,11 @@ public:
      * Main UCI loop - processes commands until quit
      */
     void run();
+    
+    /**
+     * Run benchmark from command line (for OpenBench compatibility)
+     */
+    void runBenchmark(int depth = 0);
 
 private:
     // Core engine state
