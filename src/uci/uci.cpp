@@ -477,3 +477,15 @@ void UCIEngine::handleUCINewGame() {
     m_tt.clear();  // Clear TT for new game
     // No need to push - board tracks its own history
 }
+
+void UCIEngine::runBenchmark(int depth) {
+    // Run the benchmark suite directly (for command-line invocation)
+    // The benchmark will output to stdout if verbose=true
+    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    
+    // Also send final summary as info string (for OpenBench parsing)
+    std::ostringstream oss;
+    oss << "Benchmark complete: " << result.totalNodes << " nodes, "
+        << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
+    sendInfo(oss.str());
+}
