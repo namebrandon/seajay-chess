@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <cstring>
 #include "uci/uci.h"
 
 /**
@@ -9,10 +11,37 @@
  * - Legal move generation (99.974% accuracy)
  * - Random move selection for gameplay
  * - GUI compatibility (Arena, Cute Chess, etc.)
+ * 
+ * Command-line usage:
+ * - ./seajay         : Start UCI interface
+ * - ./seajay bench   : Run benchmark (OpenBench compatible)
  */
 
-int main() {
+int main(int argc, char* argv[]) {
     try {
+        // Check for command-line arguments first
+        if (argc > 1) {
+            std::string command(argv[1]);
+            
+            if (command == "bench") {
+                // Run benchmark and exit (for OpenBench compatibility)
+                seajay::UCIEngine engine;
+                int depth = 0;
+                if (argc > 2) {
+                    try {
+                        depth = std::stoi(argv[2]);
+                    } catch (...) {
+                        depth = 0;
+                    }
+                }
+                engine.runBenchmark(depth);
+                return 0;
+            }
+            // Could add other command-line options here in future
+            // like "perft", "eval", etc.
+        }
+        
+        // No arguments or unrecognized argument - start normal UCI loop
         seajay::UCIEngine engine;
         engine.run();
         return 0;
