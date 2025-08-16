@@ -437,10 +437,8 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
     auto result = BenchmarkSuite::runBenchmark(depth, true);
     
     // Send final summary as info string for GUI compatibility
-    std::ostringstream oss;
-    oss << "Benchmark complete: " << result.totalNodes << " nodes, "
-        << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
-    sendInfo(oss.str());
+        << std::fixed << std::setprecision(0) << result.averageNps() << " nps" << std::endl;
+    
 }
 
 void UCIEngine::sendInfo(const std::string& message) {
@@ -546,9 +544,7 @@ void UCIEngine::runBenchmark(int depth) {
     // The benchmark will output to stdout if verbose=true
     auto result = BenchmarkSuite::runBenchmark(depth, true);
     
-    // Also send final summary as info string (for OpenBench parsing)
-    std::ostringstream oss;
-    oss << "Benchmark complete: " << result.totalNodes << " nodes, "
-        << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
-    sendInfo(oss.str());
+    // Output final summary in OpenBench-compatible format
+        << std::fixed << std::setprecision(0) << result.averageNps() << " nps" << std::endl;
+    
 }
