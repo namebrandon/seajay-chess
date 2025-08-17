@@ -28,7 +28,7 @@ Each remediation needs to be testable against the previous remediation to measur
 | Stage | Feature | Branch | Commit (Short) | Full SHA | Bench | Status |
 |-------|---------|--------|----------------|----------|-------|--------|
 | **10** | Magic Bitboards (UCI) | `openbench/remediated-stage10` | `753da6d` | `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5` | 19191913 | ✅ Complete |
-| **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `1007058` | `1007058e7dd8e8e9f59fbafd7faf8001bfed0802` | 19191913 | ⏸️ Awaiting SPRT |
+| **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `4d8d796` | `4d8d7965656502ff1e3f507a02392ff13e20d79c` | 19191913 | ✅ Complete |
 | **12** | Transposition Tables | - | - | - | 🔄 Pending |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
 | **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
@@ -52,10 +52,10 @@ Each remediation needs to be testable against the previous remediation to measur
 
 **Working Branch:** `remediate/stage11-mvv-lva` (can be deleted after merge)  
 **OpenBench Reference Branch:** `openbench/remediated-stage11` (permanent for testing)  
-**Final Commit:** `1007058e7dd8e8e9f59fbafd7faf8001bfed0802`  
+**Final Commit:** `4d8d7965656502ff1e3f507a02392ff13e20d79c`  
 **Bench:** 19191913 nodes  
 **UCI Name:** `SeaJay Stage11-Remediated-22dfb81`  
-**ELO Gain:** Pending SPRT test vs Stage 10 remediation
+**ELO Gain:** Testing with manual bench override (OpenBench limitation)
 
 **Remediation Summary:**
 - **Critical Bug Fixed:** Dual scoring system with wrong values (header formula vs implementation table)

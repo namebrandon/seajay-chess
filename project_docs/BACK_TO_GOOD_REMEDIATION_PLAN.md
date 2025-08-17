@@ -733,14 +733,13 @@ main (latest merged remediations)
     - Bench must work from command line, not just UCI
     - Need reference branches for future testing
 
-## In-Progress Remediations
-
-- ⏸️ **Stage 11**: MVV-LVA - Fixed scoring bug, removed compile flag
-  - Working Branch: `remediate/stage11-mvv-lva`
+- ✅ **Stage 11**: MVV-LVA - Fixed scoring bug, removed compile flag
+  - Working Branch: `remediate/stage11-mvv-lva` (merged)
   - Reference Branch: `openbench/remediated-stage11`
-  - Current Commit: `1007058e7dd8e8e9f59fbafd7faf8001bfed0802`
+  - Final Commit: `4d8d7965656502ff1e3f507a02392ff13e20d79c`
+  - Tag: `v0.11.1-remediated`
   - Bench: 19191913
-  - Status: Awaiting SPRT test and human approval
+  - ELO Gain: Pending final SPRT results
   - Key Fixes:
     - Fixed critical scoring bug (dual system with wrong values)
     - Removed ENABLE_MVV_LVA compile flag (always active now)
