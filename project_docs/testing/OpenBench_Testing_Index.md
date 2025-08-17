@@ -10,7 +10,7 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 | Stage | Feature | Branch | Commit (Short) | Full SHA | Bench | Status |
 |-------|---------|--------|----------------|----------|-------|--------|
-| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `dcdca97` | `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18` | 19191913 | ✅ Complete |
+| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `6960d56` | `6960d5640e071fc4e8c39d5e880b0754526655b3` | 19191913 | ✅ Complete |
 | **11** | MVV-LVA (UCI) | - | - | - | 🔄 Pending |
 | **12** | Transposition Tables | - | - | - | 🔄 Pending |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
@@ -34,8 +34,9 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 ### Stage 10 Remediation - Magic Bitboards to UCI Option
 
 **Remediation Branch:** `remediate/stage10-magic-bitboards`  
-**Remediation Commit (Short):** `dcdca97`  
-**Remediation Commit (Full):** `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18`  
+**Remediation Commit (Short):** `6960d56` (includes Makefile fix)  
+**Remediation Commit (Full):** `6960d5640e071fc4e8c39d5e880b0754526655b3`  
+**Previous Commit:** `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18` (main remediation)  
 **Bench:** 19191913 nodes  
 **UCI Name:** `SeaJay Stage10-Remediated-01929ec`
 
@@ -268,7 +269,7 @@ Use these commit hashes in your OpenBench test configurations:
   },
   "dev_engine": {
     "repository": "https://github.com/namebrandon/seajay-chess",
-    "commit": "dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18"
+    "commit": "6960d5640e071fc4e8c39d5e880b0754526655b3"
   }
 }
 ```
