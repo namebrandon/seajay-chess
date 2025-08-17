@@ -8,9 +8,9 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 ## Remediation Quick Reference Table
 
-| Stage | Feature | Branch | Commit | Bench | Status |
-|-------|---------|--------|--------|-------|--------|
-| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `dcdca97` | 19191913 | ✅ Complete |
+| Stage | Feature | Branch | Commit (Short) | Full SHA | Bench | Status |
+|-------|---------|--------|----------------|----------|-------|--------|
+| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `dcdca97` | `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18` | 19191913 | ✅ Complete |
 | **11** | MVV-LVA (UCI) | - | - | - | 🔄 Pending |
 | **12** | Transposition Tables | - | - | - | 🔄 Pending |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
@@ -34,7 +34,8 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 ### Stage 10 Remediation - Magic Bitboards to UCI Option
 
 **Remediation Branch:** `remediate/stage10-magic-bitboards`  
-**Remediation Commit:** `dcdca97`  
+**Remediation Commit (Short):** `dcdca97`  
+**Remediation Commit (Full):** `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18`  
 **Bench:** 19191913 nodes  
 **UCI Name:** `SeaJay Stage10-Remediated-01929ec`
 
@@ -258,20 +259,26 @@ Use these commit hashes in your OpenBench test configurations:
 
 ### Remediation Testing Examples
 
-**Stage 10 Original vs Stage 10 Remediated (Testing magic bitboards fix):**
+**CORRECT - Stage 15 Historical vs Stage 10 Remediated (Testing the remediation impact):**
 ```json
 {
-  "base_engine": {"commit": "bcddc04c89b8e222c7e0cf4f2773edab513da6e2"},
-  "dev_engine": {"commit": "dcdca97"}
+  "base_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "a221a6f9269aaae240d699ead56132636787e878"
+  },
+  "dev_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18"
+  }
 }
 ```
+**Note:** This tests the historical Stage 15 build (which has magic bitboards OFF due to compile flag) against the remediated build with magic bitboards ON by default via UCI option.
 
-**Stage 15 Pre-Remediation vs Stage 10 Remediated (Current baseline vs first fix):**
+**INCORRECT - Stage 10 Historical vs Stage 10 Remediated:**
 ```json
-{
-  "base_engine": {"commit": "a221a6f9269aaae240d699ead56132636787e878"},
-  "dev_engine": {"commit": "dcdca97"}
-}
+// DO NOT USE - This would compare Stage 10 vs Stage 15+remediation
+// The historical Stage 10 branch was created from Stage 10 commits
+// The remediation branch was created from Stage 15 (main)
 ```
 
 ## Build Verification
