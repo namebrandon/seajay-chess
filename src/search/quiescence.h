@@ -68,6 +68,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
  * @param tt Transposition table
  * @param checkPly Number of consecutive check plies (default 0)
  * @param inPanicMode True if time pressure requires aggressive pruning
+ * @param staticEval Cached static evaluation (pass minus_infinity() to force re-evaluation)
  * @return Evaluation score of the position
  */
 eval::Score quiescence(
@@ -80,7 +81,8 @@ eval::Score quiescence(
     const SearchLimits& limits,
     seajay::TranspositionTable& tt,
     int checkPly = 0,
-    bool inPanicMode = false
+    bool inPanicMode = false,
+    eval::Score cachedStaticEval = eval::Score::minus_infinity()
 );
 
 } // namespace seajay::search

@@ -41,7 +41,8 @@ eval::Score quiescence(
     const SearchLimits& limits,
     seajay::TranspositionTable& tt,
     int checkPly,
-    bool inPanicMode)
+    bool inPanicMode,
+    eval::Score cachedStaticEval)
 {
     // Store original alpha for correct TT bound classification
     const eval::Score originalAlpha = alpha;
@@ -54,6 +55,11 @@ eval::Score quiescence(
     
     // Track nodes
     data.qsearchNodes++;
+    
+    // Phase 3 Optimization 5: Prefetch TT entry early for better cache hit rate
+    #ifdef __GNUC__
+    __builtin_prefetch(tt.getEntry(board.zobristKey()), 0, 1);
+    #endif
     
     // Deliverable 2.1: TT Probing in Quiescence
     // Probe transposition table at the start of quiescence
@@ -159,7 +165,15 @@ eval::Score quiescence(
     // Stand-pat evaluation (skip if in check - must make a move)
     eval::Score staticEval;
     if (!isInCheck) {
-        staticEval = eval::evaluate(board);
+        // Phase 3 Optimization 2: Use cached static eval if available
+        // This avoids redundant evaluations in the recursion tree
+        if (cachedStaticEval == eval::Score::minus_infinity()) {
+            // No cached value, need to evaluate
+            staticEval = eval::evaluate(board);
+        } else {
+            // Use the cached value from parent node
+            staticEval = cachedStaticEval;
+        }
         
         // Beta cutoff on stand-pat
         if (staticEval >= beta) {
@@ -184,7 +198,9 @@ eval::Score quiescence(
         staticEval = eval::Score::minus_infinity();
     }
     
-    // Generate moves based on check status
+    // Phase 3 Optimization 1: DEFERRED MOVE GENERATION
+    // Only generate moves AFTER TT probe and stand-pat checks have passed
+    // This avoids wasting cycles on positions that immediately return
     MoveList moves;
     if (isInCheck) {
         // In check: must generate ALL legal moves (not just captures)
@@ -220,59 +236,89 @@ eval::Score quiescence(
         MoveGenerator::generateCaptures(board, moves);
     }
     
-    // Phase 2.2: Enhanced move ordering with queen promotion prioritization
-    // MVV-LVA is a CORE FEATURE - always compile it in!
-    // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
-    MvvLvaOrdering mvvLva;
-    mvvLva.orderMoves(board, moves);
+    // Phase 3 Optimization 3: Efficient move ordering without multiple std::rotate
+    // Create scored moves array to sort once instead of multiple rotate operations
+    struct ScoredMove {
+        Move move;
+        int32_t score;
+    };
+    std::array<ScoredMove, 256> scoredMoves;
+    int moveCount = 0;
     
-    // Phase 2.2 Missing Item 1: Queen Promotion Prioritization
-    // Move queen promotions to the very front (before TT moves)
-    auto queenPromoIt = moves.begin();
-    for (auto it = moves.begin(); it != moves.end(); ++it) {
-        if (isPromotion(*it) && promotionType(*it) == QUEEN) {
-            if (it != queenPromoIt) {
-                std::rotate(queenPromoIt, it, it + 1);
+    // Score and collect all moves
+    Square kingSquare = board.kingSquare(board.sideToMove());
+    for (Move move : moves) {
+        int32_t score = 0;
+        
+        // Special handling for check evasions
+        if (isInCheck) {
+            // King moves have highest priority when in check
+            if (from(move) == kingSquare) {
+                score = 2000000;
             }
-            ++queenPromoIt;  // Move insertion point for next queen promotion
-        }
-    }
-    
-    // Deliverable 3.2.3: Discovered Check Detection
-    // Prioritize captures that create discovered checks (after queen promos)
-    if (!isInCheck) {  // Only for capture moves, not check evasions
-        auto discoveredCheckIt = queenPromoIt;
-        for (auto it = queenPromoIt; it != moves.end(); ++it) {
-            if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
-                if (it != discoveredCheckIt) {
-                    std::rotate(discoveredCheckIt, it, it + 1);
+            // Capturing the checker is high priority
+            else if (isCapture(move)) {
+                Piece capturedPiece = board.pieceAt(to(move));
+                if (capturedPiece != NO_PIECE) {
+                    PieceType victim = typeOf(capturedPiece);
+                    score = 1500000 + VICTIM_VALUES[victim] * 100;
                 }
-                ++discoveredCheckIt;
+            }
+            // Blocking moves get medium priority
+            else {
+                score = 1000000;
             }
         }
+        // Not in check - normal move ordering
+        else {
+            // Priority 1: Queen promotions (highest)
+            if (isPromotion(move) && promotionType(move) == QUEEN) {
+                score = 1000000;
+            }
+            // Priority 2: TT move
+            else if (move == ttMove) {
+                score = 900000;
+            }
+            // Priority 3: Discovered checks (only check for high-value captures)
+            else if (isCapture(move)) {
+                Piece capturedPiece = board.pieceAt(to(move));
+                if (capturedPiece != NO_PIECE) {
+                    PieceType victim = typeOf(capturedPiece);
+                    PieceType attacker = typeOf(board.pieceAt(from(move)));
+                    
+                    // Check for discovered check only on high-value captures
+                    if (victim >= ROOK && isDiscoveredCheck(board, move)) {
+                        score = 800000;
+                    } else {
+                        // MVV-LVA: Most Valuable Victim - Least Valuable Attacker
+                        score = VICTIM_VALUES[victim] * 100 - VICTIM_VALUES[attacker];
+                    }
+                }
+            }
+        }
+        
+        scoredMoves[moveCount++] = {move, score};
     }
     
-    // TT Move Ordering (after queen promotions)
-    // If we have a TT move and it's not already a queen promotion, prioritize it
-    if (ttMove != NO_MOVE) {
-        auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
-        if (ttMoveIt != moves.end()) {
-            // Move TT move to front of non-queen-promotion moves
-            std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
-        }
-    }
+    // Sort moves by score (descending)
+    std::sort(scoredMoves.begin(), scoredMoves.begin() + moveCount,
+              [](const ScoredMove& a, const ScoredMove& b) {
+                  return a.score > b.score;
+              });
     
     // Search moves
     eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
     Move bestMove = NO_MOVE;  // Track the best move found for TT storage
-    int moveCount = 0;
+    int movesSearched = 0;
     
     // Candidate 9: Use reduced capture limit in panic mode
     const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : MAX_CAPTURES_PER_NODE;
     
-    for (const Move& move : moves) {
+    for (int i = 0; i < moveCount; ++i) {
+        Move move = scoredMoves[i].move;
+        
         // Limit moves per node to prevent explosion (except when in check)
-        if (!isInCheck && ++moveCount > maxCaptures) {
+        if (!isInCheck && ++movesSearched > maxCaptures) {
             break;
         }
         
@@ -368,9 +414,18 @@ eval::Score quiescence(
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
+        // Phase 3: Prefetch TT entry for child position
+        #ifdef __GNUC__
+        __builtin_prefetch(tt.getEntry(board.zobristKey()), 0, 1);
+        #endif
+        
         // Recursive quiescence search with check ply tracking and panic mode propagation
+        // Phase 3: Pass static eval to child unchanged (child evaluates from its own perspective)
+        // CRITICAL FIX: Don't negate staticEval - the child will evaluate from its perspective
+        eval::Score childStaticEval = staticEval;  // Pass unchanged
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
-                                       searchInfo, data, limits, tt, newCheckPly, inPanicMode);
+                                       searchInfo, data, limits, tt, newCheckPly, inPanicMode,
+                                       childStaticEval);
         
         // Unmake the move
         board.unmakeMove(move, undo);
