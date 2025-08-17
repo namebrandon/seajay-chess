@@ -455,6 +455,16 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
     sendInfo(oss.str());
 }
 
+void UCIEngine::runBenchmark(int depth) {
+    // Run benchmark directly without UCI loop (for OpenBench)
+    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    
+    // Output final result as info string (OpenBench format)
+    std::cout << "info string Benchmark complete: " << result.totalNodes 
+              << " nodes, " << std::fixed << std::setprecision(0) 
+              << result.averageNps() << " nps" << std::endl;
+}
+
 void UCIEngine::sendInfo(const std::string& message) {
     std::cout << "info string " << message << std::endl;
 }

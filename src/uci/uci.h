@@ -30,6 +30,12 @@ public:
      * Main UCI loop - processes commands until quit
      */
     void run();
+    
+    /**
+     * Run benchmark suite directly (for OpenBench compatibility)
+     * @param depth Optional fixed depth (0 = use default depths)
+     */
+    void runBenchmark(int depth = 0);
 
 private:
     // Core engine state
