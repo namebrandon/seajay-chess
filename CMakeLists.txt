@@ -25,9 +25,8 @@ option(TT_DEBUG "Enable transposition table debug checks" OFF)
 option(TT_PARANOID "Enable paranoid TT validation (slow)" OFF)
 option(TT_SHADOW "Enable shadow hashing for TT validation" OFF)
 
-# Quiescence Search development options (Stage 14)
-set(QSEARCH_MODE "PRODUCTION" CACHE STRING "Quiescence search mode: TESTING, TUNING, or PRODUCTION")
-set_property(CACHE QSEARCH_MODE PROPERTY STRINGS "TESTING" "TUNING" "PRODUCTION")
+# Stage 14 Remediation: Quiescence node limits now controlled via UCI at runtime
+# No compile-time modes needed
 
 if(DEBUG_MAGIC)
     add_compile_definitions(DEBUG_MAGIC)
@@ -55,22 +54,18 @@ add_compile_definitions(ENABLE_QUIESCENCE)
 message(STATUS "*** QUIESCENCE SEARCH ENABLED *** Stage 14 is now active!")
 message(STATUS "*** MVV-LVA MOVE ORDERING ALWAYS ENABLED (Stage 11) ***")
 
-# Quiescence Search compilation modes
-if(QSEARCH_MODE STREQUAL "TESTING")
-    add_compile_definitions(QSEARCH_TESTING)
-    message(STATUS "Quiescence Search TESTING mode enabled (10K node limit)")
-elseif(QSEARCH_MODE STREQUAL "TUNING")
-    add_compile_definitions(QSEARCH_TUNING)
-    message(STATUS "Quiescence Search TUNING mode enabled (100K node limit)")
-else()
-    # Production mode - no special defines needed
-    message(STATUS "Quiescence Search PRODUCTION mode enabled (no limits)")
-endif()
+# Stage 14 Remediation: Quiescence modes removed - all controlled via UCI
 
 # Warning flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
-    add_compile_options(-Wno-unused-parameter -Wno-unused-function)
+    # For Debug builds, use strict warnings
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
+        add_compile_options(-Wno-unused-parameter -Wno-unused-function)
+    else()
+        # For Release builds (including OpenBench), use less strict warnings
+        add_compile_options(-Wall -Wno-conversion -Wno-sign-conversion -Wno-maybe-uninitialized)
+    endif()
     # Ensure 64-bit arithmetic for magic bitboards
     add_compile_options(-m64)
 endif()

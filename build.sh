@@ -1,79 +1,44 @@
 #!/bin/bash
-# Quick build script for SeaJay with Quiescence Search mode support
-# Usage: ./build.sh [mode] [build_type]
-#   mode: testing, tuning, production (default: production)
-#   build_type: Debug, Release (default: Release)
+# Build script for SeaJay Chess Engine
+# Stage 14 Remediation: Simplified build - all modes controlled via UCI
+# Usage: ./build.sh [Debug|Release]
 #
 # Examples:
-#   ./build.sh                  # Production mode, Release build
-#   ./build.sh testing          # Testing mode (10K limit), Release build
-#   ./build.sh tuning Debug     # Tuning mode (100K limit), Debug build
+#   ./build.sh                  # Release build (default)
+#   ./build.sh Debug            # Debug build with sanitizers
+#   ./build.sh Release          # Explicit release build
 
-MODE=${1:-production}
-BUILD_TYPE=${2:-Release}
-
-# Convert mode to uppercase for CMAKE
-QSEARCH_MODE="PRODUCTION"
-MODE_DESC="PRODUCTION (no limits)"
-
-case "${MODE,,}" in
-    testing)
-        QSEARCH_MODE="TESTING"
-        MODE_DESC="TESTING (10K node limit)"
-        ;;
-    tuning)
-        QSEARCH_MODE="TUNING"
-        MODE_DESC="TUNING (100K node limit)"
-        ;;
-    production|prod)
-        QSEARCH_MODE="PRODUCTION"
-        MODE_DESC="PRODUCTION (no limits)"
-        ;;
-    *)
-        echo "Invalid mode: $MODE"
-        echo "Usage: $0 [testing|tuning|production] [Debug|Release]"
-        exit 1
-        ;;
-esac
+BUILD_TYPE=${1:-Release}
 
 echo "=========================================="
 echo "Building SeaJay Chess Engine"
 echo "Build Type: $BUILD_TYPE"
-echo "Quiescence Mode: $MODE_DESC"
 echo "=========================================="
 echo ""
 
-# Show what this mode means
-case "${MODE,,}" in
-    testing)
-        echo "TESTING MODE:"
-        echo "  - Quiescence search limited to 10K nodes"
-        echo "  - Fast iteration for development"
-        echo "  - Not suitable for strength testing"
-        ;;
-    tuning)
-        echo "TUNING MODE:"
-        echo "  - Quiescence search limited to 100K nodes"
-        echo "  - Good for parameter experimentation"
-        echo "  - Balanced speed vs accuracy"
-        ;;
-    production|prod)
-        echo "PRODUCTION MODE:"
-        echo "  - No quiescence search limits"
-        echo "  - Full engine strength"
-        echo "  - Use for SPRT and competitive play"
-        ;;
-esac
+if [ "$BUILD_TYPE" == "Debug" ]; then
+    echo "DEBUG BUILD:"
+    echo "  - Debug symbols enabled"
+    echo "  - Optimizations disabled"
+    echo "  - Assertions enabled"
+    echo "  - Suitable for debugging"
+else
+    echo "RELEASE BUILD:"
+    echo "  - Full optimizations enabled"
+    echo "  - No debug symbols"
+    echo "  - Maximum performance"
+    echo "  - Suitable for play and testing"
+fi
 echo ""
 
 mkdir -p build
 cd build
 
-# Clean if switching modes
+# Clean if switching build types
 if [ -f CMakeCache.txt ]; then
-    CURRENT_MODE=$(grep QSEARCH_MODE CMakeCache.txt | cut -d= -f2)
-    if [ "$CURRENT_MODE" != "$QSEARCH_MODE" ]; then
-        echo "Switching modes - cleaning build..."
+    CURRENT_TYPE=$(grep CMAKE_BUILD_TYPE CMakeCache.txt | cut -d= -f2)
+    if [ "$CURRENT_TYPE" != "$BUILD_TYPE" ]; then
+        echo "Switching build types - cleaning build..."
         rm -rf CMakeCache.txt CMakeFiles/
     fi
 fi
@@ -81,11 +46,11 @@ fi
 # Try to use ninja if available, otherwise fall back to make
 if command -v ninja >/dev/null 2>&1; then
     echo "Using Ninja build system..."
-    cmake -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DQSEARCH_MODE=$QSEARCH_MODE ..
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
     ninja
 else
     echo "Using Make build system..."
-    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DQSEARCH_MODE=$QSEARCH_MODE ..
+    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
     make -j
 fi
 
@@ -93,10 +58,12 @@ echo ""
 echo "=========================================="
 echo "Build complete!"
 echo "Binary: /workspace/bin/seajay"
-echo "Mode: $MODE_DESC"
 echo ""
-echo "To verify mode, run:"
+echo "Quiescence search node limits are now controlled via UCI:"
+echo "  setoption name QSearchNodeLimit value 0       # Unlimited (default)"
+echo "  setoption name QSearchNodeLimit value 10000   # Testing mode equivalent"
+echo "  setoption name QSearchNodeLimit value 100000  # Tuning mode equivalent"
+echo ""
+echo "To verify build, run:"
 echo "  echo 'uci' | /workspace/bin/seajay"
-echo ""
-echo "The engine will display its mode at startup."
 echo "=========================================="
