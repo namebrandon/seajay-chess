@@ -140,6 +140,9 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
         return eval::evaluate(board);
     }
     
+    // Check per-position node limit if configured
+    // Use a fallback constant since NODE_LIMIT_PER_POSITION is not defined in this Phase 1 commit
+    const uint64_t NODE_LIMIT_PER_POSITION = 10000;
     if (data.qsearchNodes - entryNodes > NODE_LIMIT_PER_POSITION) {
         data.qsearchNodesLimited++;
         return eval::evaluate(board);

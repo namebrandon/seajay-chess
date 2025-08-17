@@ -1,6 +1,7 @@
 #include "quiescence_performance.h"
 #include "quiescence.h"
 #include "negamax.h"
+#include "types.h"  // For SearchLimits
 #include "../core/board.h"
 #include "../core/move_generation.h"
 #include <iostream>
@@ -117,10 +118,11 @@ QuiescencePerformanceData QuiescencePerformanceBenchmark::benchmarkPosition(
         uint64_t initialQNodes = searchData.qsearchNodes;
         
         // Run negamax search (which will call quiescence if enabled)
+        SearchLimits limits;  // Use default limits for benchmarking
         [[maybe_unused]] eval::Score result = negamax(board, depth, 0, 
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, searchData, &tt);
+                                   searchInfo, searchData, limits, &tt);
         
         // Calculate node counts
         data.totalNodes = searchData.nodes - initialNodes;
