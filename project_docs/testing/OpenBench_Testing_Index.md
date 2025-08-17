@@ -6,7 +6,18 @@ This document provides an index of all OpenBench-compatible testing branches cre
 
 These testing branches enable OpenBench to test historical versions of SeaJay by providing retroactive OpenBench compatibility while preserving the original development history.
 
-## Quick Reference Table
+## Remediation Quick Reference Table
+
+| Stage | Feature | Branch | Commit | Bench | Status |
+|-------|---------|--------|--------|-------|--------|
+| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `dcdca97` | 19191913 | ✅ Complete |
+| **11** | MVV-LVA (UCI) | - | - | - | 🔄 Pending |
+| **12** | Transposition Tables | - | - | - | 🔄 Pending |
+| **13** | Iterative Deepening | - | - | - | 🔄 Pending |
+| **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
+| **15** | SEE | - | - | - | 🔄 Pending |
+
+## Historical Build Table
 
 | Stage | Feature | Original Commit | OpenBench Commit |
 |-------|---------|----------------|------------------|
@@ -18,7 +29,31 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 | **14** | Quiescence Search | `7ecfc35b3bb844c53f8b6ba9e2cb3a2e9eb73b4b` | `394698cf8fa3b10609d82fb631101b5c4eac5af6` |
 | **15** | SEE + Parameter Tuning | `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc` | `a221a6f9269aaae240d699ead56132636787e878` |
 
-## Testing Branch Index
+## Remediation Branch Index
+
+### Stage 10 Remediation - Magic Bitboards to UCI Option
+
+**Remediation Branch:** `remediate/stage10-magic-bitboards`  
+**Remediation Commit:** `dcdca97`  
+**Bench:** 19191913 nodes  
+**UCI Name:** `SeaJay Stage10-Remediated-01929ec`
+
+**Remediation Summary:**
+- **Issue Fixed:** Magic bitboards were compile-time flag (OFF by default)
+- **Solution:** Converted to UCI runtime option (ON by default)
+- **Performance:** 79x speedup for sliding pieces now enabled by default
+- **OpenBench Impact:** Can now A/B test magic bitboards without recompilation
+- **Implementation:**
+  - Added `UseMagicBitboards` UCI option (default: true)
+  - Created runtime configuration system (`engine_config.h`)
+  - Removed `USE_MAGIC_BITBOARDS` compile flag
+  - Cleaned up redundant implementations (3 → 1)
+- **Validation:**
+  - With magic: 7.6M NPS
+  - Without magic: 4.8M NPS
+  - Overall speedup: 1.57x
+
+## Historical Testing Branch Index
 
 ### Stage 9 - Piece-Square Tables (PST) and Draw Detection
 
@@ -218,6 +253,24 @@ Use these commit hashes in your OpenBench test configurations:
 {
   "base_engine": {"commit": "394698cf8fa3b10609d82fb631101b5c4eac5af6"},
   "dev_engine": {"commit": "a221a6f9269aaae240d699ead56132636787e878"}
+}
+```
+
+### Remediation Testing Examples
+
+**Stage 10 Original vs Stage 10 Remediated (Testing magic bitboards fix):**
+```json
+{
+  "base_engine": {"commit": "bcddc04c89b8e222c7e0cf4f2773edab513da6e2"},
+  "dev_engine": {"commit": "dcdca97"}
+}
+```
+
+**Stage 15 Pre-Remediation vs Stage 10 Remediated (Current baseline vs first fix):**
+```json
+{
+  "base_engine": {"commit": "a221a6f9269aaae240d699ead56132636787e878"},
+  "dev_engine": {"commit": "dcdca97"}
 }
 ```
 
