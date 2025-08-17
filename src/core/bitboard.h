@@ -82,7 +82,7 @@ inline Bitboard between(Square s1, Square s2) {
     
     int f = f1 + df, r = r1 + dr;
     while (f != f2 || r != r2) {
-        result |= squareBB(makeSquare(f, r));
+        result |= squareBB(makeSquare(static_cast<File>(f), static_cast<Rank>(r)));
         f += df;
         r += dr;
     }
@@ -205,7 +205,7 @@ inline std::string bitboardToString(Bitboard bb) {
     for (int r = 7; r >= 0; --r) {
         result += std::to_string(r + 1) + " |";
         for (File f = 0; f < 8; ++f) {
-            Square s = makeSquare(f, r);
+            Square s = makeSquare(f, static_cast<Rank>(r));
             result += testBit(bb, s) ? " X |" : "   |";
         }
         result += "\n  +---+---+---+---+---+---+---+---+\n";

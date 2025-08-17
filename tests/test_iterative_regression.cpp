@@ -209,12 +209,16 @@ TEST_F(IterativeRegressionTest, StableEvaluationPosition) {
     
     // Search at different depths and check score stability
     std::vector<eval::Score> scores;
+    SearchLimits limits;
+    limits.maxDepth = 8;  // Max depth for testing
+    
     for (int depth = 4; depth <= 8; depth += 2) {
         info.reset();
+        limits.maxDepth = depth;
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, info, m_tt.get());
+                                   searchInfo, info, limits, m_tt.get());
         scores.push_back(score);
     }
     

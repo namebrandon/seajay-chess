@@ -13,10 +13,6 @@
 
 namespace seajay::search {
 
-// Stage 15 Day 6: Global SEE pruning mode and statistics
-SEEPruningMode g_seePruningMode = SEEPruningMode::OFF;
-SEEPruningStats g_seePruningStats;
-
 // Helper functions for SEE pruning mode
 SEEPruningMode parseSEEPruningMode(const std::string& mode) {
     if (mode == "conservative") return SEEPruningMode::CONSERVATIVE;
@@ -171,12 +167,13 @@ eval::Score quiescence(
             return staticEval;
         }
         
-        // Deliverable 3.2 & 3.4: Basic delta pruning with endgame safety
-        // If we're so far behind that even winning a queen won't help, prune
-        eval::Score futilityBase = staticEval + eval::Score(deltaMargin);
-        if (futilityBase < alpha) {
+        // Deliverable 3.2 & 3.4: Basic delta pruning pre-check
+        // If we're so far behind that even the best possible capture won't help, we can return early
+        // This is a coarse filter - we still do per-move delta pruning later
+        // Only do this aggressive pruning if we're really far behind (queen value + margin)
+        if (staticEval + eval::Score(900 + deltaMargin) < alpha) {
             data.deltasPruned++;
-            return staticEval;  // Position is hopeless
+            return staticEval;  // Position is hopeless even with best capture
         }
         
         // Update alpha with stand-pat score
@@ -267,6 +264,7 @@ eval::Score quiescence(
     
     // Search moves
     eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
+    Move bestMove = NO_MOVE;  // Track the best move found for TT storage
     int moveCount = 0;
     
     // Candidate 9: Use reduced capture limit in panic mode
@@ -278,32 +276,35 @@ eval::Score quiescence(
             break;
         }
         
-        // Deliverable 3.3 & 3.4: Per-move delta pruning with endgame safety
-        // Skip bad captures that can't improve alpha even if successful
+        // Deliverable 3.3 & 3.4: Per-move delta pruning
+        // Formula: static_eval + captured_piece_value + margin < alpha
+        // This is the standard delta pruning used by all modern engines
         if (!isInCheck && !isPromotion(move)) {
-            // Use accurate victim value from MVV-LVA tables (always available)
+            // Get the value of the piece we're capturing
             Piece capturedPiece = board.pieceAt(to(move));
             PieceType captured = (capturedPiece != NO_PIECE) ? typeOf(capturedPiece) : NO_PIECE_TYPE;
             int captureValue = (captured != NO_PIECE_TYPE) ? VICTIM_VALUES[captured] : 0;
-            // Use endgame-appropriate margin (already calculated above)
-            if (staticEval + eval::Score(captureValue) + eval::Score(deltaMargin) < alpha) {
+            
+            // Standard delta pruning formula: can this capture possibly improve alpha?
+            if (staticEval + eval::Score(captureValue + deltaMargin) < alpha) {
                 data.deltasPruned++;
-                continue;  // Skip this capture
+                continue;  // Skip this capture - it can't improve our position enough
             }
         }
         
         // Stage 15 Day 6: SEE-based pruning
         // Only prune captures (not promotions or check evasions)
-        if (g_seePruningMode != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
-            g_seePruningStats.totalCaptures++;
+        // Stage 14 Remediation: Use pre-parsed mode from SearchData to avoid string parsing
+        if (data.seePruningModeEnum != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
+            data.seeStats.totalCaptures++;
             
             // Calculate SEE value for this capture
             SEEValue seeValue = see(board, move);
-            g_seePruningStats.seeEvaluations++;
+            data.seeStats.seeEvaluations++;
             
             // Determine pruning threshold based on mode, game phase, and depth
             int pruneThreshold;
-            if (g_seePruningMode == SEEPruningMode::CONSERVATIVE) {
+            if (data.seePruningModeEnum == SEEPruningMode::CONSERVATIVE) {
                 // Conservative: fixed threshold -100
                 pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
             } else {  // AGGRESSIVE
@@ -319,33 +320,24 @@ eval::Score quiescence(
             
             // Prune if SEE value is below threshold
             if (seeValue < pruneThreshold) {
-                g_seePruningStats.seePruned++;
+                data.seeStats.seePruned++;
                 
                 // Track which threshold was used
                 if (pruneThreshold == SEE_PRUNE_THRESHOLD_CONSERVATIVE) {
-                    g_seePruningStats.conservativePrunes++;
+                    data.seeStats.conservativePrunes++;
                 } else if (pruneThreshold == SEE_PRUNE_THRESHOLD_AGGRESSIVE) {
-                    g_seePruningStats.aggressivePrunes++;
+                    data.seeStats.aggressivePrunes++;
                 } else {
-                    g_seePruningStats.endgamePrunes++;
+                    data.seeStats.endgamePrunes++;
                 }
                 
-                // Debug logging in testing mode
-                if (g_seePruningMode == SEEPruningMode::CONSERVATIVE || g_seePruningMode == SEEPruningMode::AGGRESSIVE) {
-                    if ((g_seePruningStats.seePruned % 1000) == 0 && g_seePruningStats.seePruned > 0) {  // Log every 1000 prunes
-                        std::cerr << "info string SEE pruned " << g_seePruningStats.seePruned 
-                                  << " captures (" << std::fixed << std::setprecision(1) 
-                                  << g_seePruningStats.pruneRate() 
-                                  << "% prune rate)" << std::endl;
-                    }
-                }
-                
+                // Note: Debug logging removed from hot path - stats can be logged after search
                 continue;  // Skip this capture
             }
             
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
-            if (g_seePruningMode == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
+            if (data.seePruningModeEnum == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
                 // Prune equal exchanges based on depth
                 // At ply 3-4: prune if position is quiet
                 // At ply 5-6: prune more aggressively  
@@ -362,8 +354,8 @@ eval::Score quiescence(
                 }
                 
                 if (pruneEqual) {
-                    g_seePruningStats.seePruned++;
-                    g_seePruningStats.equalExchangePrunes++;
+                    data.seeStats.seePruned++;
+                    data.seeStats.equalExchangePrunes++;
                     continue;
                 }
             }
@@ -391,6 +383,7 @@ eval::Score quiescence(
         // Update best score
         if (score > bestScore) {
             bestScore = score;
+            bestMove = move;  // Always track which move produced the best score
             
             // Update alpha
             if (score > alpha) {
@@ -411,6 +404,7 @@ eval::Score quiescence(
                         }
                         
                         // Store with depth 0 (quiescence) and LOWER bound
+                        // Note: 'move' is the best move that caused the beta cutoff
                         tt.store(board.zobristKey(), move, scoreToStore.value(), 
                                 staticEval.value(), 0, Bound::LOWER);
                     }
@@ -425,7 +419,7 @@ eval::Score quiescence(
     if (tt.isEnabled()) {
         // Correct TT bound classification using original alpha
         Bound bound;
-        Move bestMove = NO_MOVE;  // TODO Phase 2: Track best move
+        // bestMove already tracked during search - use it for TT storage
         
         if (bestScore >= beta) {
             // Beta cutoff - this is a lower bound (fail-high)
@@ -446,7 +440,8 @@ eval::Score quiescence(
             scoreToStore = eval::Score(bestScore.value() - ply);
         }
         
-        // Store with depth 0 for quiescence
+        // Store with depth 0 for quiescence and the best move found
+        // Even for UPPER bounds (fail-low), storing the best move helps move ordering
         tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
                 staticEval.value(), 0, bound);
     }

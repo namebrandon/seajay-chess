@@ -117,6 +117,7 @@ public:
         eval::Score beta,
         SearchInfo& searchInfo,
         SearchData& data,
+        const SearchLimits& limits,
         TranspositionTable& tt
     );
     
@@ -128,6 +129,7 @@ public:
         eval::Score beta,
         SearchInfo& searchInfo,
         SearchData& data,
+        const SearchLimits& limits,
         TranspositionTable& tt
     );
     
@@ -158,6 +160,7 @@ private:
         eval::Score beta,
         SearchInfo& searchInfo,
         SearchData& data,
+        const SearchLimits& limits,
         TranspositionTable& tt
     );
 };

@@ -405,6 +405,9 @@ void UCIEngine::search(const SearchParams& params) {
     limits.middlegameStability = m_middlegameStability;
     limits.endgameStability = m_endgameStability;
     
+    // Stage 15: Pass SEE pruning mode
+    limits.seePruningMode = m_seePruning;
+    
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
     
@@ -672,17 +675,13 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         if (value == "off" || value == "conservative" || value == "aggressive") {
             m_seePruning = value;
             
-            // Update the global quiescence search SEE pruning mode
-            search::g_seePruningMode = search::parseSEEPruningMode(value);
-            search::g_seePruningStats.reset();  // Reset statistics when changing mode
-            
             std::cerr << "info string SEE pruning mode set to: " << value << std::endl;
             
             // Additional info for each mode
             if (value == "conservative") {
                 std::cerr << "info string Conservative SEE Pruning: Prune captures with SEE < -100" << std::endl;
             } else if (value == "aggressive") {
-                std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50" << std::endl;
+                std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50 to -75" << std::endl;
             } else {
                 std::cerr << "info string SEE Pruning disabled" << std::endl;
             }
