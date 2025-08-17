@@ -48,6 +48,9 @@ struct SearchLimits {
     int middlegameStability = 6;      // Stability threshold for middlegame
     int endgameStability = 8;         // Stability threshold for endgame
     
+    // Stage 14 Remediation: Runtime quiescence node limit
+    uint64_t qsearchNodeLimit = 0;    // Per-position node limit (0 = unlimited)
+    
     // Default constructor
     SearchLimits() = default;
 };

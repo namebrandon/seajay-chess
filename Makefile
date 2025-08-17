@@ -16,7 +16,6 @@ EVALFILE ?=
 # Build configuration
 BUILD_DIR = openbench-build
 CMAKE_BUILD_TYPE = Release
-QSEARCH_MODE = PRODUCTION
 
 # Compiler flags for optimization
 CXXFLAGS = -O2 -DNDEBUG
@@ -33,7 +32,6 @@ all:
 		-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
 		-DCMAKE_CXX_COMPILER=$(CXX) \
 		-DCMAKE_CXX_FLAGS="$(CMAKE_CXX_FLAGS)" \
-		-DQSEARCH_MODE=$(QSEARCH_MODE) \
 		-DEVALFILE="$(EVALFILE)" \
 		-DBUILD_TESTING=OFF
 	

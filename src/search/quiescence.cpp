@@ -42,10 +42,13 @@ eval::Score quiescence(
     eval::Score beta,
     seajay::SearchInfo& searchInfo,
     SearchData& data,
+    const SearchLimits& limits,
     seajay::TranspositionTable& tt,
     int checkPly,
     bool inPanicMode)
 {
+    // Store original alpha for correct TT bound classification
+    const eval::Score originalAlpha = alpha;
     // REMOVED emergency cutoff - it was destroying tactical play
     // Accepting occasional time losses is better than constant tactical blindness
     // Candidate 1 proved this with 300+ ELO gain despite 1-2% time losses
@@ -130,9 +133,10 @@ eval::Score quiescence(
         return eval::evaluate(board);
     }
     
-    // Safety check 2: enforce per-position node limit
+    // Safety check 2: enforce per-position node limit (if set)
     // This prevents search explosion in complex tactical positions
-    if (data.qsearchNodes - entryNodes > NODE_LIMIT_PER_POSITION) {
+    if (limits.qsearchNodeLimit > 0 && 
+        data.qsearchNodes - entryNodes > limits.qsearchNodeLimit) {
         data.qsearchNodesLimited++;  // Track when we hit limits (for debugging)
         return eval::evaluate(board);
     }
@@ -374,7 +378,7 @@ eval::Score quiescence(
         
         // Recursive quiescence search with check ply tracking and panic mode propagation
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
-                                       searchInfo, data, tt, newCheckPly, inPanicMode);
+                                       searchInfo, data, limits, tt, newCheckPly, inPanicMode);
         
         // Unmake the move
         board.unmakeMove(move, undo);
@@ -419,25 +423,18 @@ eval::Score quiescence(
     
     // Deliverable 2.2: Store final result in TT
     if (tt.isEnabled()) {
-        // Determine bound type based on search outcome
+        // Correct TT bound classification using original alpha
         Bound bound;
-        Move bestMove = NO_MOVE;  // No best move tracked in current quiescence
+        Move bestMove = NO_MOVE;  // TODO Phase 2: Track best move
         
-        if (bestScore > alpha) {
-            // We improved alpha - EXACT bound if not at original alpha
-            // But be careful: if bestScore came from stand-pat, it's an UPPER bound
-            if (!moves.empty() && !isInCheck) {
-                // We searched moves and improved alpha - EXACT
-                bound = Bound::EXACT;
-            } else if (moves.empty() && !isInCheck) {
-                // No captures available, stand-pat value - UPPER bound
-                bound = Bound::UPPER;
-            } else {
-                // In check or found better move - EXACT
-                bound = Bound::EXACT;
-            }
+        if (bestScore >= beta) {
+            // Beta cutoff - this is a lower bound (fail-high)
+            bound = Bound::LOWER;
+        } else if (bestScore > originalAlpha) {
+            // We raised alpha - this is an exact score
+            bound = Bound::EXACT;
         } else {
-            // Failed low - UPPER bound
+            // Failed low - this is an upper bound
             bound = Bound::UPPER;
         }
         

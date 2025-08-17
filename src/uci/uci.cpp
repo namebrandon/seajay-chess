@@ -62,17 +62,7 @@ void UCIEngine::run() {
 }
 
 void UCIEngine::handleUCI() {
-    // Build mode indicator for Stage 14 Quiescence Search
-    std::string buildMode;
-#ifdef QSEARCH_TESTING
-    buildMode = " (Quiescence: TESTING MODE - 10K limit)";
-#elif defined(QSEARCH_TUNING)
-    buildMode = " (Quiescence: TUNING MODE - 100K limit)";
-#else
-    buildMode = " (Quiescence: PRODUCTION MODE)";
-#endif
-    
-    std::cout << "id name SeaJay Stage12-TT-Improved" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage14-Remediated" << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     
@@ -81,6 +71,9 @@ void UCIEngine::handleUCI() {
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
+    
+    // Stage 14 Remediation: Runtime node limit for quiescence search
+    std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
     
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
@@ -396,6 +389,9 @@ void UCIEngine::search(const SearchParams& params) {
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
     
+    // Stage 14 Remediation: Pass runtime node limit
+    limits.qsearchNodeLimit = m_qsearchNodeLimit;
+    
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
     limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
@@ -589,6 +585,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useQuiescence = false;
             std::cerr << "info string Quiescence search disabled" << std::endl;
+        }
+    }
+    // Stage 14 Remediation: Handle QSearchNodeLimit option
+    else if (optionName == "QSearchNodeLimit") {
+        try {
+            uint64_t limit = std::stoull(value);
+            m_qsearchNodeLimit = limit;
+            if (limit == 0) {
+                std::cerr << "info string Quiescence node limit: unlimited" << std::endl;
+            } else {
+                std::cerr << "info string Quiescence node limit: " << limit << " nodes per position" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QSearchNodeLimit value: " << value << std::endl;
         }
     }
     // Stage 10 Remediation: Handle UseMagicBitboards option

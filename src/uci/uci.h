@@ -46,6 +46,7 @@ private:
     // UCI options (Stage 14, Deliverable 1.8)
     bool m_useQuiescence = true;  // Enable/disable quiescence search
     bool m_useMagicBitboards = true;  // Stage 10: Enable/disable magic bitboards (79x speedup!)
+    uint64_t m_qsearchNodeLimit = 0;  // Stage 14 Remediation: Runtime node limit (0 = unlimited)
     
     // Stage 15 Day 5: SEE integration mode
     std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
