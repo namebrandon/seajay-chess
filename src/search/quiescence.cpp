@@ -422,6 +422,7 @@ eval::Score quiescence(
         // Recursive quiescence search with check ply tracking and panic mode propagation
         // FIXED: Negate staticEval when passing to child (negamax requires sign flip)
         // Phase 3 bug was passing staticEval unchanged, violating negamax principles
+        // Resubmit for OpenBench testing - ensuring clean build
         eval::Score childStaticEval = isInCheck ? eval::Score::minus_infinity() : -staticEval;
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
                                        searchInfo, data, limits, tt, newCheckPly, inPanicMode,
