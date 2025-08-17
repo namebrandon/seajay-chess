@@ -240,6 +240,11 @@ echo -e "uci\nsetoption name [OptionName] value [true/false]\nisready\nquit" | .
 4. **Create Stage Completion Report**
    `/workspace/project_docs/remediation/stage[N]_complete.md`
 
+5. **Update OpenBench Testing Index**
+   - Add entry to Remediation Quick Reference Table
+   - Document branch, commit, and bench node count
+   - Add remediation testing examples
+
 ### Phase 6: Final Verification Checklist
 
 Before considering stage complete:
@@ -249,37 +254,66 @@ Before considering stage complete:
 - [ ] OpenBench Makefile works
 - [ ] `./seajay bench` works correctly
 - [ ] Bench output format correct for OpenBench
+- [ ] Get bench node count: `echo "bench" | ./seajay | grep "Benchmark complete"`
 - [ ] No test utilities compiled by Makefile
 - [ ] All relevant tests pass
-- [ ] SPRT shows no regression (or expected improvement)
-- [ ] Documentation updated
+- [ ] Performance comparison documented (feature ON vs OFF)
+- [ ] Documentation updated (including OpenBench Testing Index)
 - [ ] No new compile flags introduced
 - [ ] Code follows project style guidelines
+- [ ] UCI name updated to reflect remediation
 
-### Phase 7: Merge to Main
+### Phase 7: Commit and Version Management
 
+#### Commit Format for OpenBench
+```bash
+# Build final binary and get bench count
+make clean && make -j4 seajay
+BENCH_COUNT=$(echo "bench" | ./seajay 2>&1 | grep "Benchmark complete" | awk '{print $4}')
+
+# Commit with OpenBench format
+git commit -m "Stage [N] Remediation: [Brief description]
+
+bench: ${BENCH_COUNT}
+
+[Detailed description of changes]
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+#### UCI Version Management
+Update UCI engine name to include remediation info:
+- Option 1: `SeaJay Stage[N]-Remediated-[short_hash]`
+- Option 2: `SeaJay 0.[N].1-remediated` (semantic versioning)
+- Consider using `src/version.h` for consistent versioning
+
+#### Final Push
 ```bash
 # After ALL validation passes
-git checkout main
-git pull origin main
-git merge remediate/stage[N]-description
-git push origin main
-git tag stage[N]-remediated
+git push origin remediate/stage[N]-description
+# Create PR to main or merge directly depending on workflow
 ```
 
 ## Stage-Specific Investigation Areas
 
-### Stage 10: Magic Bitboards
+### Stage 10: Magic Bitboards ✅ REMEDIATED
 **Known Issues**:
-- `USE_MAGIC_BITBOARDS` compile flag (OFF by default!)
+- `USE_MAGIC_BITBOARDS` compile flag (OFF by default!) ✅ FIXED
 
-**Investigation Areas**:
-- Is the magic number generation correct?
-- Are the lookup tables properly initialized?
-- Is the performance gain being realized?
-- Why was it disabled by default?
-- Are there multiple implementations (v1, v2, simple)?
-- Which implementation should be used?
+**Investigation Results**:
+- Magic numbers correct (from Stockfish, properly attributed) ✅
+- Lookup tables properly initialized ✅
+- Performance gain: 79x for move generation, 1.57x overall ✅
+- Disabled by default: Conservative development approach ✅
+- Three implementations found (v1, v2, simple) - kept v2 ✅
+- Implementation perfect, just needed runtime control ✅
+
+**Lessons Learned**:
+- Working features can be inadvertently disabled
+- Multiple implementations accumulate as technical debt
+- Always check binary size/performance when "minor" changes break things
 
 ### Stage 11: MVV-LVA Move Ordering
 **Known Issues**:
@@ -422,6 +456,52 @@ endif()
 - **ALWAYS** document everything found
 - **ALWAYS** test OpenBench compatibility
 - **ALWAYS** verify UCI options work correctly
+- **ALWAYS** clean up test files before committing
+- **ALWAYS** get bench node count for OpenBench format
+- **ALWAYS** update OpenBench Testing Index with results
+
+## Quick Remediation Checklist Template
+
+```markdown
+# Stage [N] Remediation Checklist
+
+## Phase 1: Setup
+- [ ] Create branch: `git checkout -b remediate/stage[N]-description`
+- [ ] Create audit file: `/workspace/project_docs/remediation/stage[N]_audit.md`
+
+## Phase 2: Audit
+- [ ] Review original planning docs
+- [ ] Check for compile-time flags
+- [ ] Search for multiple implementations
+- [ ] Test current behavior
+- [ ] Document all findings
+
+## Phase 3: Implementation
+- [ ] Create/update engine_config.h if needed
+- [ ] Convert compile flags to runtime
+- [ ] Add UCI option(s)
+- [ ] Update all callers
+- [ ] Remove dead code
+- [ ] Update CMakeLists.txt
+
+## Phase 4: Validation
+- [ ] Build clean: `make clean && make -j4 seajay`
+- [ ] Test UCI option works
+- [ ] Run perft tests
+- [ ] Get bench count: `echo "bench" | ./seajay | grep "complete"`
+- [ ] Compare performance (ON vs OFF)
+
+## Phase 5: Documentation
+- [ ] Create completion report: `stage[N]_complete.md`
+- [ ] Update OpenBench Testing Index
+- [ ] Update CLAUDE.md if needed
+
+## Phase 6: Commit
+- [ ] Stage all changes
+- [ ] Commit with bench: [count] format
+- [ ] Update UCI name with version
+- [ ] Push to GitHub
+```
 
 ## Timeline Estimate
 
@@ -442,8 +522,41 @@ Total per stage: 4-8 hours depending on issues found
 5. **Stage 13** (Iterative Deepening) - Verify correct
 6. **Stage 15** (SEE) - May already be correct
 
+## Procedural Lessons from Stage 10 Remediation
+
+### What Worked Well
+1. **Comprehensive Audit First** - Understanding the full scope before fixing
+2. **Chess Engine Expert Consultation** - Validated implementation correctness
+3. **Runtime Configuration System** - `engine_config.h` singleton pattern
+4. **Performance Validation** - Comparing ON vs OFF to verify improvement
+5. **Documentation Throughout** - Audit report, completion report, index update
+
+### Common Patterns to Expect
+1. **Multiple Implementations** - Dead code from development iterations
+2. **Include Path Issues** - May need to update multiple files for wrapper functions
+3. **Build System Complexity** - Remove flags from CMakeLists.txt carefully
+4. **UCI Integration** - Follow existing patterns in handleSetOption()
+5. **Bench Testing** - Use `echo "bench" | ./seajay` for reliable results
+
+### Implementation Strategy
+1. **Create Global Config** - Singleton pattern for runtime flags
+2. **Update Wrappers** - Convert #ifdef to if statements
+3. **Fix All Callers** - Search for direct function calls to update
+4. **Add UCI Option** - Declaration in handleUCI(), handler in handleSetOption()
+5. **Clean Build System** - Remove compile flags, keep debug options
+
+### Version Management Strategy
+1. **Commit First** - Get the working changes committed
+2. **Update UCI Name** - Include stage and commit info
+3. **Amend if Needed** - Update with bench count and final name
+4. **Document in Index** - Add to remediation table immediately
+
 ## Conclusion
 
 This remediation is critical for SeaJay's development. Each stage must be thoroughly audited, fixed, and validated as an independent effort. The goal is a clean, professional codebase where all features are runtime-controllable via UCI options and properly documented.
 
 Remember the Stage 14 lesson: **"NO COMPILE-TIME FEATURE FLAGS"** - All features MUST compile in, with runtime control via UCI options.
+
+## Completed Remediations
+
+- ✅ **Stage 10**: Magic Bitboards - Converted to UCI option, 79x speedup enabled
