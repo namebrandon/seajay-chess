@@ -72,7 +72,7 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage10-Remediated-01929ec" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage11-Remediated-22dfb81" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     
