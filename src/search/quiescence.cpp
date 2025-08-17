@@ -165,15 +165,9 @@ eval::Score quiescence(
     // Stand-pat evaluation (skip if in check - must make a move)
     eval::Score staticEval;
     if (!isInCheck) {
-        // Phase 3 Optimization 2: Use cached static eval if available
-        // This avoids redundant evaluations in the recursion tree
-        if (cachedStaticEval == eval::Score::minus_infinity()) {
-            // No cached value, need to evaluate
-            staticEval = eval::evaluate(board);
-        } else {
-            // Use the cached value from parent node
-            staticEval = cachedStaticEval;
-        }
+        // Always evaluate - can't use parent's eval for a different position
+        // Phase 3's caching was fundamentally flawed
+        staticEval = eval::evaluate(board);
         
         // Beta cutoff on stand-pat
         if (staticEval >= beta) {
@@ -420,12 +414,11 @@ eval::Score quiescence(
         #endif
         
         // Recursive quiescence search with check ply tracking and panic mode propagation
-        // Phase 3: Pass static eval to child unchanged (child evaluates from its own perspective)
-        // Reverting negation fix - testing if original Phase 3 approach was correct
-        eval::Score childStaticEval = isInCheck ? eval::Score::minus_infinity() : staticEval;
+        // FIX: Remove broken static eval caching - can't use parent's eval for different position!
+        // The fundamental flaw: parent's eval is for position BEFORE the move, not after
         eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
                                        searchInfo, data, limits, tt, newCheckPly, inPanicMode,
-                                       childStaticEval);
+                                       eval::Score::minus_infinity());
         
         // Unmake the move
         board.unmakeMove(move, undo);
