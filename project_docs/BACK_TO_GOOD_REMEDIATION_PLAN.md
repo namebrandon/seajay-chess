@@ -6,6 +6,13 @@ SeaJay Chess Engine has reached Stage 15 with accumulated technical debt from ra
 
 ## Core Principles
 
+### 0. PRIME DIRECTIVE: NO MERGE WITHOUT APPROVAL
+**⚠️ ONLY THE PROJECT OWNER CAN APPROVE MERGES TO MAIN ⚠️**
+- Each remediation MUST complete OpenBench SPRT testing
+- Results MUST be reviewed by human
+- Explicit approval MUST be received before merge
+- This is non-negotiable
+
 ### 1. NO COMPILE-TIME FEATURE FLAGS
 **All features MUST compile in. Runtime control via UCI options only.**
 
@@ -254,7 +261,7 @@ echo -e "uci\nsetoption name [OptionName] value [true/false]\nisready\nquit" | .
 
 ### Phase 6: Final Verification Checklist
 
-Before considering stage complete:
+Before proceeding to OpenBench testing:
 - [ ] **Makefile exists in root directory** (critical for OpenBench!)
 - [ ] All compile flags removed for this stage
 - [ ] All features work via UCI options
@@ -297,7 +304,30 @@ Update UCI engine name to include remediation info:
 - Option 2: `SeaJay 0.[N].1-remediated` (semantic versioning)
 - Consider using `src/version.h` for consistent versioning
 
-### Phase 8: Create Reference Branches and Merge
+### Phase 8: OpenBench Testing (MANDATORY)
+
+**⚠️ CRITICAL: NO MERGE TO MAIN WITHOUT HUMAN APPROVAL ⚠️**
+
+#### OpenBench SPRT Test Requirements
+1. **Test Against Previous Remediation**:
+   - Base: `openbench/remediated-stage[N-1]` (or stage15-pre-remediation for Stage 10)
+   - Dev: Current remediation branch
+   - Time Control: 10+0.1 minimum
+   - Book: Standard opening book
+   - Expected: No regression (minimum)
+
+2. **Wait for Results**:
+   - SPRT tests can take hours to days
+   - Must pass statistical significance
+   - Document ELO gain/loss
+   - Save test URL for reference
+
+3. **Human Approval Required**:
+   - Only the project owner can approve merge to main
+   - Provide test results and summary
+   - Wait for explicit approval before proceeding
+
+### Phase 9: Create Reference Branches and Merge
 
 #### Create OpenBench Reference Branch (CRITICAL)
 ```bash
@@ -321,9 +351,15 @@ ELO Gain: [+X over previous]"
 git push origin --tags
 ```
 
-#### Merge to Main
+#### Merge to Main (ONLY WITH HUMAN APPROVAL)
 ```bash
-# After ALL validation passes and reference branch created
+# ⚠️ STOP - DO NOT PROCEED WITHOUT EXPLICIT HUMAN APPROVAL ⚠️
+# Required before merge:
+# 1. OpenBench SPRT test completed and passed
+# 2. Human has reviewed results
+# 3. Human has given explicit approval to merge
+
+# After receiving approval:
 git checkout main
 git pull origin main
 git merge remediate/stage[N]-description
@@ -471,10 +507,11 @@ endif()
 3. **Algorithm Correct** - Matches specification
 4. **OpenBench Compatible** - Makefile and bench work
 5. **Tests Pass** - All relevant tests
-6. **No Regression** - SPRT confirms
-7. **Documented** - All changes and findings recorded
-8. **Clean Code** - No compile-time feature flags
-9. **Merged to Main** - Clean history
+6. **OpenBench SPRT Testing** - Completed with no regression
+7. **Human Approval** - Explicit approval received
+8. **Documented** - All changes and findings recorded
+9. **Clean Code** - No compile-time feature flags
+10. **Merged to Main** - Only after approval
 
 ## Reference Baseline
 
@@ -487,8 +524,9 @@ endif()
 
 - **DO NOT** automatically continue to next stage
 - **DO NOT** assume known issues are the only issues  
-- **DO NOT** skip OpenBench validation
-- **DO NOT** merge without full validation
+- **DO NOT** skip OpenBench SPRT testing
+- **DO NOT** merge to main without human approval
+- **DO NOT** merge without completed SPRT test
 - **DO NOT** introduce new compile-time flags
 - **DO NOT** delete OpenBench reference branches
 - **ALWAYS** start fresh from main for each stage
@@ -546,12 +584,19 @@ endif()
 - [ ] Push to GitHub
 - [ ] Note full SHA for OpenBench Testing Index
 
-## Phase 7: Create References & Merge
+## Phase 7: OpenBench Testing
+- [ ] Submit SPRT test to OpenBench
+- [ ] Wait for test completion
+- [ ] Document results and ELO gain
+- [ ] Request human approval for merge
+
+## Phase 8: Create References & Merge (After Approval)
+- [ ] Receive explicit human approval
 - [ ] Create OpenBench reference branch: `openbench/remediated-stage[N]`
 - [ ] Push reference branch to origin
 - [ ] Create version tag: `v0.[N].1-remediated`
 - [ ] Push tags to origin
-- [ ] Merge to main
+- [ ] Merge to main (only with approval)
 - [ ] Update documentation with ELO gain
 ```
 
@@ -687,3 +732,17 @@ main (latest merged remediations)
     - Makefile was missing (must copy from OpenBench branches)
     - Bench must work from command line, not just UCI
     - Need reference branches for future testing
+
+## In-Progress Remediations
+
+- ⏸️ **Stage 11**: MVV-LVA - Fixed scoring bug, removed compile flag
+  - Working Branch: `remediate/stage11-mvv-lva`
+  - Reference Branch: `openbench/remediated-stage11`
+  - Current Commit: `1007058e7dd8e8e9f59fbafd7faf8001bfed0802`
+  - Bench: 19191913
+  - Status: Awaiting SPRT test and human approval
+  - Key Fixes:
+    - Fixed critical scoring bug (dual system with wrong values)
+    - Removed ENABLE_MVV_LVA compile flag (always active now)
+    - Separated from SEE (Stage 15)
+    - Fixed sort stability

@@ -27,8 +27,8 @@ Each remediation needs to be testable against the previous remediation to measur
 
 | Stage | Feature | Branch | Commit (Short) | Full SHA | Bench | Status |
 |-------|---------|--------|----------------|----------|-------|--------|
-| **10** | Magic Bitboards (UCI) | `remediate/stage10-magic-bitboards` | `753da6d` | `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5` | 19191913 | ✅ Complete |
-| **11** | MVV-LVA (UCI) | - | - | - | 🔄 Pending |
+| **10** | Magic Bitboards (UCI) | `openbench/remediated-stage10` | `753da6d` | `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5` | 19191913 | ✅ Complete |
+| **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `1007058` | `1007058e7dd8e8e9f59fbafd7faf8001bfed0802` | 19191913 | ⏸️ Awaiting SPRT |
 | **12** | Transposition Tables | - | - | - | 🔄 Pending |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
 | **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
@@ -47,6 +47,34 @@ Each remediation needs to be testable against the previous remediation to measur
 | **15** | SEE + Parameter Tuning | `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc` | `a221a6f9269aaae240d699ead56132636787e878` |
 
 ## Remediation Branch Index
+
+### Stage 11 Remediation - MVV-LVA Move Ordering Fixed
+
+**Working Branch:** `remediate/stage11-mvv-lva` (can be deleted after merge)  
+**OpenBench Reference Branch:** `openbench/remediated-stage11` (permanent for testing)  
+**Final Commit:** `1007058e7dd8e8e9f59fbafd7faf8001bfed0802`  
+**Bench:** 19191913 nodes  
+**UCI Name:** `SeaJay Stage11-Remediated-22dfb81`  
+**ELO Gain:** Pending SPRT test vs Stage 10 remediation
+
+**Remediation Summary:**
+- **Critical Bug Fixed:** Dual scoring system with wrong values (header formula vs implementation table)
+- **Issue Fixed:** MVV-LVA was compile-time flag `ENABLE_MVV_LVA`
+- **Solution:** Removed compile flag, MVV-LVA always active (no UCI option per expert recommendation)
+- **Algorithm Fix:** Now uses correct formula: `VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker]`
+- **Scoring Examples:** PxQ=899, QxP=91, PxP=99 (now correct)
+- **Stage Separation:** Removed Stage 15 SEE integration from Stage 11 code
+- **Sort Stability:** Changed to `std::stable_sort` for deterministic ordering
+- **Code Quality:** Removed duplicated scoring logic
+- **Implementation:**
+  - Fixed scoring to use simple formula instead of wrong table
+  - Removed `ENABLE_MVV_LVA` compile flag completely
+  - MVV-LVA always active (fundamental to alpha-beta per expert)
+  - Separated from SEE (Stage 15) - pure Stage 11 implementation
+- **Validation:**
+  - All unit tests pass with correct values
+  - Benchmark maintained at 19,191,913 nodes
+  - Chess-engine-expert approved design
 
 ### Stage 10 Remediation - Magic Bitboards to UCI Option
 
@@ -279,6 +307,21 @@ Use these commit hashes in your OpenBench test configurations:
 ```
 
 ### Remediation Testing Examples
+
+**Stage 10 Remediated vs Stage 11 Remediated (Testing MVV-LVA impact):**
+```json
+{
+  "base_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5"
+  },
+  "dev_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "1007058e7dd8e8e9f59fbafd7faf8001bfed0802"
+  }
+}
+```
+**Note:** This tests the incremental improvement of Stage 11's corrected MVV-LVA implementation.
 
 **CORRECT - Stage 15 Historical vs Stage 10 Remediated (Testing the remediation impact):**
 ```json
