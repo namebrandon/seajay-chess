@@ -6,6 +6,23 @@ This document provides an index of all OpenBench-compatible testing branches cre
 
 These testing branches enable OpenBench to test historical versions of SeaJay by providing retroactive OpenBench compatibility while preserving the original development history.
 
+## Remediation Branching Strategy
+
+### Purpose
+Each remediation needs to be testable against the previous remediation to measure incremental improvements. We maintain OpenBench reference branches for this purpose.
+
+### Branch Types
+1. **Working Branches** (`remediate/stage[N]-*`) - Temporary, deleted after merge
+2. **OpenBench Reference Branches** (`openbench/remediated-stage[N]`) - Permanent for testing
+3. **Main Branch** - Latest merged remediations
+
+### Workflow
+1. Create remediation on working branch
+2. Test and validate
+3. Create OpenBench reference branch before merging
+4. Merge to main
+5. Next remediation tests against previous OpenBench reference branch
+
 ## Remediation Quick Reference Table
 
 | Stage | Feature | Branch | Commit (Short) | Full SHA | Bench | Status |
@@ -33,14 +50,15 @@ These testing branches enable OpenBench to test historical versions of SeaJay by
 
 ### Stage 10 Remediation - Magic Bitboards to UCI Option
 
-**Remediation Branch:** `remediate/stage10-magic-bitboards`  
-**Remediation Commit (Short):** `753da6d` (includes bench command-line fix)  
-**Remediation Commit (Full):** `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5`  
+**Working Branch:** `remediate/stage10-magic-bitboards` (can be deleted after merge)  
+**OpenBench Reference Branch:** `openbench/remediated-stage10` (permanent for testing)  
+**Final Commit:** `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5`  
 **Previous Commits:**
 - `6960d5640e071fc4e8c39d5e880b0754526655b3` (Makefile fix)
 - `dcdca97657a5c6ed9ae9552a7b287a0f5c44eb18` (main remediation)  
 **Bench:** 19191913 nodes  
-**UCI Name:** `SeaJay Stage10-Remediated-01929ec`
+**UCI Name:** `SeaJay Stage10-Remediated-01929ec`  
+**ELO Gain:** +35 over Stage 15 historical
 
 **Remediation Summary:**
 - **Issue Fixed:** Magic bitboards were compile-time flag (OFF by default)
