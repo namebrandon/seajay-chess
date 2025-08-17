@@ -26,8 +26,9 @@ void MoveGenerator::initializeAttackTables() {
         int rank = rankOf(sq);
         
         for (int offset : knightOffsets) {
-            int target = sq + offset;
-            if (target >= 0 && target < 64) {
+            int targetInt = sq + offset;
+            if (targetInt >= 0 && targetInt < 64) {
+                Square target = static_cast<Square>(targetInt);
                 int targetFile = fileOf(target);
                 int targetRank = rankOf(target);
                 
@@ -53,8 +54,9 @@ void MoveGenerator::initializeAttackTables() {
         int rank = rankOf(sq);
         
         for (int offset : kingOffsets) {
-            int target = sq + offset;
-            if (target >= 0 && target < 64) {
+            int targetInt = sq + offset;
+            if (targetInt >= 0 && targetInt < 64) {
+                Square target = static_cast<Square>(targetInt);
                 int targetFile = fileOf(target);
                 int targetRank = rankOf(target);
                 

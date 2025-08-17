@@ -2,6 +2,29 @@
 
 This document tracks identified but unresolved bugs in the SeaJay chess engine, providing detailed analysis and debugging information for future resolution.
 
+## ⚠️ CRITICAL NOTICE: Stage 14 SEE Refactoring (2025-08-17)
+
+**IMPORTANT:** On 2025-08-17, during Stage 14 Remediation Phase 2, we performed a COMPLEX refactoring of SEE (Static Exchange Evaluation) pruning from global state to thread-local SearchData. This change touches critical search components and should be considered as a PRIMARY SUSPECT for any bugs or regressions after this date.
+
+**If you encounter issues after 2025-08-17 related to:**
+- SEE pruning not working correctly
+- Incorrect move pruning in quiescence search
+- Performance regression in search
+- Stats reporting issues
+- Crashes or hangs in quiescence search
+- Thread safety issues (when multi-threading is added)
+
+**CHECK THESE AREAS FIRST:**
+1. `/workspace/src/search/quiescence.cpp` - Lines ~293-380 (SEE pruning logic)
+2. `/workspace/src/search/types.h` - SearchData.seeStats initialization
+3. `/workspace/src/uci/uci.cpp` - SEE mode setting and passing
+4. String parsing of limits.seePruningMode in quiescence
+5. SearchData::reset() clearing SEE stats properly
+
+See `/workspace/project_docs/remediation/stage14_see_refactoring_warning.md` for full details.
+
+---
+
 ## Bug #012: PST Value Sign Error for Black Pieces - CRITICAL
 
 **Status:** OPEN - Root cause identified  

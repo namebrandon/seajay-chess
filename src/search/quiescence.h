@@ -16,11 +16,11 @@ static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply de
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
 static constexpr int MAX_CHECK_PLY = 6;             // Balanced check extensions (was 8, now 6 for better time management)
 
-// Delta pruning constants - Conservative for SeaJay's development stage
-// CRITICAL: These must exceed the value of capturable pieces!
-static constexpr int DELTA_MARGIN = 900;            // Must cover queen capture (900cp)
-static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Must cover rook + pawn (600cp)
-static constexpr int DELTA_MARGIN_PANIC = 400;      // At minimum, cover minor piece + pawn
+// Delta pruning margins - Standard chess engine practice
+// These are positional margins only - piece values are added separately in the pruning formula
+static constexpr int DELTA_MARGIN = 200;            // Standard positional margin (most engines use 175-225)
+static constexpr int DELTA_MARGIN_ENDGAME = 100;    // Tighter margin in endgame (fewer pieces = more accurate eval)
+static constexpr int DELTA_MARGIN_PANIC = 50;       // Very aggressive when far behind (we're already losing)
 
 // Stage 14 Remediation: Node limits now controlled via UCI at runtime
 // Default is unlimited (0) for production use
@@ -34,50 +34,13 @@ static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -100;  // Conservative: 
 static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = -75;     // Aggressive: balanced pruning (tuned)
 static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = -25;        // Even more aggressive in endgame
 
-// SEE pruning modes
-enum class SEEPruningMode {
-    OFF,          // No SEE pruning
-    CONSERVATIVE, // Prune captures with SEE < -100
-    AGGRESSIVE    // Prune captures with SEE < -50
-};
+// SEE pruning modes are now defined in types.h to avoid circular dependency
 
 // Parse string to SEE pruning mode
 SEEPruningMode parseSEEPruningMode(const std::string& mode);
 
 // Convert SEE pruning mode to string
 std::string seePruningModeToString(SEEPruningMode mode);
-
-// Global SEE pruning mode (set via UCI)
-extern SEEPruningMode g_seePruningMode;
-
-// SEE pruning statistics
-struct SEEPruningStats {
-    std::atomic<uint64_t> totalCaptures{0};       // Total captures considered
-    std::atomic<uint64_t> seePruned{0};           // Captures pruned by SEE
-    std::atomic<uint64_t> seeEvaluations{0};      // Number of SEE evaluations
-    std::atomic<uint64_t> conservativePrunes{0};  // Prunes with threshold -100
-    std::atomic<uint64_t> aggressivePrunes{0};    // Prunes with threshold -50
-    std::atomic<uint64_t> endgamePrunes{0};       // Prunes in endgame positions
-    std::atomic<uint64_t> equalExchangePrunes{0}; // Prunes of equal exchanges (SEE=0)
-    
-    void reset() {
-        totalCaptures = 0;
-        seePruned = 0;
-        seeEvaluations = 0;
-        conservativePrunes = 0;
-        aggressivePrunes = 0;
-        endgamePrunes = 0;
-        equalExchangePrunes = 0;
-    }
-    
-    double pruneRate() const {
-        uint64_t total = totalCaptures.load();
-        return total > 0 ? (100.0 * seePruned.load() / total) : 0.0;
-    }
-};
-
-// Global SEE pruning statistics
-extern SEEPruningStats g_seePruningStats;
 
 // Static assertions for safety verification
 static_assert(QSEARCH_MAX_PLY > 0 && QSEARCH_MAX_PLY <= 64, 

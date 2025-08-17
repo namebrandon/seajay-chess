@@ -462,6 +462,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
+    // Stage 14 Remediation: Parse SEE mode once at search start
+    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
+    
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
     if (limits.usePhaseStability) {
@@ -734,6 +737,26 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         }
     }
     
+    // Stage 15: Report final SEE pruning statistics after search completes
+    // Only report once at the end, not per iteration
+    if (info.seeStats.totalCaptures > 0) {
+        std::cout << "info string SEE pruning final: "
+                  << info.seeStats.seePruned << "/" << info.seeStats.totalCaptures
+                  << " captures pruned (" << std::fixed << std::setprecision(1) 
+                  << info.seeStats.pruneRate() << "%)";
+        
+        // Determine mode from statistics patterns
+        if (info.seeStats.conservativePrunes > 0 && info.seeStats.aggressivePrunes == 0) {
+            std::cout << " [Conservative mode]";
+        } else if (info.seeStats.aggressivePrunes > 0) {
+            std::cout << " [Aggressive mode]";
+            if (info.seeStats.equalExchangePrunes > 0) {
+                std::cout << ", equal exchanges: " << info.seeStats.equalExchangePrunes;
+            }
+        }
+        std::cout << std::endl;
+    }
+    
     return bestMove;
 }
 
@@ -754,6 +777,9 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
+    
+    // Stage 14 Remediation: Parse SEE mode once at search start to avoid hot path parsing
+    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
     
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
@@ -1014,24 +1040,6 @@ void sendIterationInfo(const IterativeSearchData& info) {
     }
     
     std::cout << std::endl;
-    
-    // Stage 15 Day 6: Report SEE pruning statistics if enabled
-    if (g_seePruningMode != SEEPruningMode::OFF && g_seePruningStats.totalCaptures > 0) {
-        std::cout << "info string SEE pruning: "
-                  << g_seePruningStats.seePruned << "/" << g_seePruningStats.totalCaptures
-                  << " captures pruned (" << std::fixed << std::setprecision(1) 
-                  << g_seePruningStats.pruneRate() << "%)";
-        
-        if (g_seePruningMode == SEEPruningMode::CONSERVATIVE) {
-            std::cout << " [Conservative mode]";
-        } else if (g_seePruningMode == SEEPruningMode::AGGRESSIVE) {
-            std::cout << " [Aggressive mode]";
-            if (g_seePruningStats.equalExchangePrunes > 0) {
-                std::cout << " Equal exchanges pruned: " << g_seePruningStats.equalExchangePrunes;
-            }
-        }
-        std::cout << std::endl;
-    }
 }
 
 } // namespace seajay::search

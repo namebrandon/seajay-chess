@@ -16,6 +16,13 @@
 
 namespace seajay::search {
 
+// Stage 15: SEE pruning modes (moved from quiescence.h to avoid circular dependency)
+enum class SEEPruningMode {
+    OFF = 0,
+    CONSERVATIVE = 1,
+    AGGRESSIVE = 2
+};
+
 // Search time limits and constraints
 struct SearchLimits {
     // Time controls (in milliseconds)
@@ -50,6 +57,9 @@ struct SearchLimits {
     
     // Stage 14 Remediation: Runtime quiescence node limit
     uint64_t qsearchNodeLimit = 0;    // Per-position node limit (0 = unlimited)
+    
+    // Stage 15: SEE pruning mode (read-only during search)
+    std::string seePruningMode = "off";  // off, conservative, aggressive
     
     // Default constructor
     SearchLimits() = default;
@@ -93,6 +103,34 @@ struct SearchData {
     
     // Stage 14, Deliverable 1.8: Runtime quiescence control
     bool useQuiescence = true;     // Enable/disable quiescence search
+    
+    // Stage 14 Remediation: Pre-parsed SEE mode to avoid string parsing in hot path
+    SEEPruningMode seePruningModeEnum = SEEPruningMode::OFF;
+    
+    // Stage 15: SEE pruning statistics (thread-local, no atomics needed)
+    struct SEEStats {
+        uint64_t totalCaptures = 0;       // Total captures considered
+        uint64_t seePruned = 0;           // Captures pruned by SEE
+        uint64_t seeEvaluations = 0;      // Number of SEE evaluations
+        uint64_t conservativePrunes = 0;  // Prunes with threshold -100
+        uint64_t aggressivePrunes = 0;    // Prunes with threshold -50 to -75
+        uint64_t endgamePrunes = 0;       // Prunes in endgame positions
+        uint64_t equalExchangePrunes = 0; // Prunes of equal exchanges (SEE=0)
+        
+        void reset() {
+            totalCaptures = 0;
+            seePruned = 0;
+            seeEvaluations = 0;
+            conservativePrunes = 0;
+            aggressivePrunes = 0;
+            endgamePrunes = 0;
+            equalExchangePrunes = 0;
+        }
+        
+        double pruneRate() const {
+            return totalCaptures > 0 ? (100.0 * seePruned / totalCaptures) : 0.0;
+        }
+    } seeStats;
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
@@ -165,6 +203,7 @@ struct SearchData {
         deltasPruned = 0;
         qsearchNodesLimited = 0;
         qsearchTTHits = 0;
+        seeStats.reset();
         depth = 0;
         seldepth = 0;
         bestMove = Move();
