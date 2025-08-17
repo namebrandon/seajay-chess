@@ -98,6 +98,13 @@ void UCIEngine::handleUCI() {
     std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
     std::cout << "option name UseAspirationWindows type check default true" << std::endl;
     
+    // Stage 13 Remediation Phase 4: Advanced features
+    std::cout << "option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive" << std::endl;
+    std::cout << "option name UsePhaseStability type check default true" << std::endl;
+    std::cout << "option name OpeningStability type spin default 4 min 2 max 8" << std::endl;
+    std::cout << "option name MiddlegameStability type spin default 6 min 3 max 10" << std::endl;
+    std::cout << "option name EndgameStability type spin default 8 min 4 max 12" << std::endl;
+    
     std::cout << "uciok" << std::endl;
 }
 
@@ -394,6 +401,13 @@ void UCIEngine::search(const SearchParams& params) {
     limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
     limits.stabilityThreshold = m_stabilityThreshold;
     limits.useAspirationWindows = m_useAspirationWindows;
+    
+    // Stage 13 Remediation Phase 4: Pass advanced features
+    limits.aspirationGrowth = m_aspirationGrowth;
+    limits.usePhaseStability = m_usePhaseStability;
+    limits.openingStability = m_openingStability;
+    limits.middlegameStability = m_middlegameStability;
+    limits.endgameStability = m_endgameStability;
     
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
@@ -708,6 +722,57 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useAspirationWindows = false;
             std::cerr << "info string Aspiration windows disabled" << std::endl;
+        }
+    }
+    // Stage 13 Remediation Phase 4: Advanced features
+    else if (optionName == "AspirationGrowth") {
+        if (value == "linear" || value == "moderate" || value == "exponential" || value == "adaptive") {
+            m_aspirationGrowth = value;
+            std::cerr << "info string Aspiration growth mode set to: " << value << std::endl;
+        } else {
+            std::cerr << "info string Invalid AspirationGrowth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "UsePhaseStability") {
+        if (value == "true") {
+            m_usePhaseStability = true;
+            std::cerr << "info string Game phase stability adjustment enabled" << std::endl;
+        } else if (value == "false") {
+            m_usePhaseStability = false;
+            std::cerr << "info string Game phase stability adjustment disabled" << std::endl;
+        }
+    }
+    else if (optionName == "OpeningStability") {
+        try {
+            int threshold = std::stoi(value);
+            if (threshold >= 2 && threshold <= 8) {
+                m_openingStability = threshold;
+                std::cerr << "info string Opening stability threshold set to: " << threshold << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid OpeningStability value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "MiddlegameStability") {
+        try {
+            int threshold = std::stoi(value);
+            if (threshold >= 3 && threshold <= 10) {
+                m_middlegameStability = threshold;
+                std::cerr << "info string Middlegame stability threshold set to: " << threshold << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid MiddlegameStability value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EndgameStability") {
+        try {
+            int threshold = std::stoi(value);
+            if (threshold >= 4 && threshold <= 12) {
+                m_endgameStability = threshold;
+                std::cerr << "info string Endgame stability threshold set to: " << threshold << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EndgameStability value: " << value << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

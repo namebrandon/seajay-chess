@@ -3,6 +3,8 @@
 #include "iterative_search_data.h"  // Stage 13 addition
 #include "time_management.h"        // Stage 13, Deliverable 2.2a
 #include "aspiration_window.h"       // Stage 13, Deliverable 3.2b
+#include "window_growth_mode.h"      // Stage 13 Remediation Phase 4
+#include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "../core/board.h"
 #include "../core/board_safety.h"
@@ -460,7 +462,27 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.useQuiescence = limits.useQuiescence;
     
     // Stage 13 Remediation: Set configurable stability threshold
-    info.setRequiredStability(limits.stabilityThreshold);
+    // Phase 4: Adjust for game phase if enabled
+    if (limits.usePhaseStability) {
+        GamePhase phase = detectGamePhase(board);
+        int adjustedThreshold = getPhaseStabilityThreshold(phase, 
+                                                          limits.stabilityThreshold,
+                                                          limits.openingStability,
+                                                          limits.middlegameStability,
+                                                          limits.endgameStability,
+                                                          true);  // Use specific values
+        info.setRequiredStability(adjustedThreshold);
+        
+        // Debug output for phase detection
+        #ifndef NDEBUG
+        const char* phaseName = (phase == GamePhase::OPENING) ? "Opening" :
+                               (phase == GamePhase::MIDDLEGAME) ? "Middlegame" : "Endgame";
+        std::cerr << "[Phase Stability] Game phase: " << phaseName 
+                  << ", stability threshold: " << adjustedThreshold << std::endl;
+        #endif
+    } else {
+        info.setRequiredStability(limits.stabilityThreshold);
+    }
     
     // Stage 13, Deliverable 2.2b: Switch to new time management
     // Calculate initial time limits with neutral stability (1.0)
@@ -522,8 +544,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Progressive widening loop
             while (score <= alpha || score >= beta) {
-                // Widen the window progressively with configurable max attempts
-                window = widenWindow(window, score, failedHigh, limits.aspirationMaxAttempts);
+                // Widen the window progressively with configurable growth mode
+                WindowGrowthMode growthMode = parseWindowGrowthMode(limits.aspirationGrowth);
+                window = widenWindow(window, score, failedHigh, limits.aspirationMaxAttempts, growthMode);
                 alpha = window.alpha;
                 beta = window.beta;
                 

@@ -1,0 +1,74 @@
+# OpenBench-compatible Makefile for SeaJay Chess Engine
+# This is a direct compilation fallback if CMake fails
+# 
+# OpenBench expects:
+# - make with CXX=compiler EXE=output_name
+# - Binary placed at $(EXE) in the root directory
+# - Support for EVALFILE if using neural networks
+
+.PHONY: all clean
+
+# OpenBench variables
+CXX ?= g++
+EXE ?= seajay
+EVALFILE ?=
+
+# Compiler flags
+CXXFLAGS = -std=c++20 -O3 -DNDEBUG -m64
+CXXFLAGS += -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-unused-variable
+CXXFLAGS += -DENABLE_QUIESCENCE -DTT_ENABLE
+CXXFLAGS += -I./src
+
+# Source files
+SOURCES = \
+    src/main.cpp \
+    src/core/board.cpp \
+    src/core/board_safety.cpp \
+    src/core/move_generation.cpp \
+    src/core/move_list.cpp \
+    src/core/perft.cpp \
+    src/core/transposition_table.cpp \
+    src/core/see.cpp \
+    src/evaluation/evaluate.cpp \
+    src/search/search.cpp \
+    src/search/negamax.cpp \
+    src/search/move_ordering.cpp \
+    src/search/time_management.cpp \
+    src/search/aspiration_window.cpp \
+    src/search/quiescence.cpp \
+    src/search/quiescence_performance.cpp \
+    src/search/quiescence_optimized.cpp \
+    src/uci/uci.cpp \
+    src/benchmark/benchmark.cpp
+
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+
+all:
+	@echo "Building SeaJay for OpenBench..."
+	@echo "Compiler: $(CXX)"
+	@echo "Output: $(EXE)"
+	
+	# Compile all source files
+	@for src in $(SOURCES); do \
+		echo "Compiling $$src..."; \
+		$(CXX) $(CXXFLAGS) -c -o $${src%.cpp}.o $$src 2>/dev/null || \
+		(echo "Error compiling $$src" && exit 1); \
+	done
+	
+	# Link the executable
+	@echo "Linking $(EXE)..."
+	@$(CXX) $(CXXFLAGS) -o $(EXE) $(OBJECTS)
+	@strip $(EXE)
+	@echo "Successfully built $(EXE)"
+	@echo "Binary size: `ls -lh $(EXE) | awk '{print $$5}'`"
+
+clean:
+	@echo "Cleaning OpenBench build..."
+	@rm -f $(OBJECTS) $(EXE) seajay test-binary
+	@echo "Clean complete"
+
+# Individual compilation rules (for parallel make)
+%.o: %.cpp
+	@echo "Compiling $<..."
+	@$(CXX) $(CXXFLAGS) -c -o $@ $<

@@ -59,6 +59,13 @@ private:
     int m_stabilityThreshold = 6;       // Iterations needed for move stability
     bool m_useAspirationWindows = true; // Enable/disable aspiration windows
     
+    // Stage 13 Remediation Phase 4: Advanced features
+    std::string m_aspirationGrowth = "exponential";  // Window growth mode
+    bool m_usePhaseStability = true;    // Use game phase-based stability
+    int m_openingStability = 4;         // Stability threshold for opening
+    int m_middlegameStability = 6;      // Stability threshold for middlegame
+    int m_endgameStability = 8;         // Stability threshold for endgame
+    
     // Helper methods for draw detection
     void updateGameHistory();
     void clearGameHistory();

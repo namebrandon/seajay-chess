@@ -33,7 +33,8 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth, int init
 AspirationWindow widenWindow(const AspirationWindow& window, 
                              Score score, 
                              bool failedHigh,
-                             int maxAttempts) {
+                             int maxAttempts,
+                             WindowGrowthMode growthMode) {
     AspirationWindow newWindow = window;
     
     // Increment attempt counter
@@ -45,9 +46,36 @@ AspirationWindow widenWindow(const AspirationWindow& window,
         return newWindow;
     }
     
-    // Apply delta growth: delta += delta/3 (approximately 1.33x per fail)
-    // This is the chess-engine-expert recommended growth rate
-    newWindow.delta += newWindow.delta / AspirationConstants::GROWTH_DIVISOR;
+    // Apply growth strategy based on mode
+    switch (growthMode) {
+        case WindowGrowthMode::LINEAR:
+            // Original linear growth: delta += delta/3 (approximately 1.33x)
+            newWindow.delta += newWindow.delta / AspirationConstants::GROWTH_DIVISOR;
+            break;
+            
+        case WindowGrowthMode::MODERATE:
+            // Moderate growth: delta *= 1.5
+            newWindow.delta = newWindow.delta * 3 / 2;
+            break;
+            
+        case WindowGrowthMode::EXPONENTIAL:
+            // Exponential growth: delta *= 2^failCount (capped at 8x)
+            // Cap at 3 doublings to prevent explosion
+            {
+                int failCount = std::min(newWindow.attempts, 3);
+                newWindow.delta = newWindow.delta * (1 << failCount);
+            }
+            break;
+            
+        case WindowGrowthMode::ADAPTIVE:
+            // Adaptive: Use exponential for first 2 fails, then moderate
+            if (newWindow.attempts <= 2) {
+                newWindow.delta = newWindow.delta * (1 << newWindow.attempts);
+            } else {
+                newWindow.delta = newWindow.delta * 3 / 2;
+            }
+            break;
+    }
     
     if (failedHigh) {
         // Score exceeded beta - raise beta, keep alpha close

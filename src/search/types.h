@@ -41,6 +41,13 @@ struct SearchLimits {
     int stabilityThreshold = 6;       // Iterations needed for move stability
     bool useAspirationWindows = true; // Enable/disable aspiration windows
     
+    // Stage 13 Remediation Phase 4: Advanced features
+    std::string aspirationGrowth = "exponential";  // Window growth mode
+    bool usePhaseStability = true;    // Use game phase-based stability
+    int openingStability = 4;         // Stability threshold for opening
+    int middlegameStability = 6;      // Stability threshold for middlegame
+    int endgameStability = 8;         // Stability threshold for endgame
+    
     // Default constructor
     SearchLimits() = default;
 };

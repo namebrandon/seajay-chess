@@ -2,6 +2,7 @@
 
 #include "../core/types.h"
 #include "../evaluation/types.h"
+#include "window_growth_mode.h"
 
 namespace seajay::search {
 
@@ -81,11 +82,13 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth,
  * @param score Score that failed high/low
  * @param failedHigh True if failed high, false if failed low
  * @param maxAttempts Maximum attempts before infinite window (default 5)
+ * @param growthMode Window growth strategy (default EXPONENTIAL)
  * @return Widened aspiration window
  */
 AspirationWindow widenWindow(const AspirationWindow& window, 
                              Score score, 
                              bool failedHigh,
-                             int maxAttempts = AspirationConstants::MAX_ATTEMPTS);
+                             int maxAttempts = AspirationConstants::MAX_ATTEMPTS,
+                             WindowGrowthMode growthMode = WindowGrowthMode::EXPONENTIAL);
 
 } // namespace seajay::search

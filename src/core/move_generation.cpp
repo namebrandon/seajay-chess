@@ -1009,7 +1009,6 @@ void MoveGenerator::generateKingEvasions(const Board& board, MoveList& moves, Sq
 
 void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Square target) {
     Color us = board.sideToMove();
-    Color them = ~us;
     
     Bitboard targetBB = squareBB(target);
     
@@ -1077,7 +1076,6 @@ void MoveGenerator::generateBlockingMoves(const Board& board, MoveList& moves, B
         Square blockSq = popLsb(blockSquares);
         
         // Pawn blocks
-        Bitboard ourPawns = board.pieces(us, PAWN);
         int pawnDirection = (us == WHITE) ? 8 : -8;  // WHITE moves +8 (up), BLACK moves -8 (down)
         
         // Single pawn push to block

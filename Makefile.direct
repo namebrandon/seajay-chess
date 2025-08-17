@@ -1,0 +1,55 @@
+# Direct compilation Makefile for SeaJay (OpenBench fallback)
+# This bypasses CMake and compiles directly
+
+CXX ?= g++
+EXE ?= seajay
+
+# Compiler flags
+CXXFLAGS = -std=c++20 -O3 -DNDEBUG -m64 -Wall -Wextra -Wpedantic
+CXXFLAGS += -DENABLE_QUIESCENCE -DTT_ENABLE
+CXXFLAGS += -I./src
+
+# Source files
+SOURCES = \
+    src/main.cpp \
+    src/core/board.cpp \
+    src/core/board_safety.cpp \
+    src/core/move_generation.cpp \
+    src/core/move_list.cpp \
+    src/core/perft.cpp \
+    src/core/transposition_table.cpp \
+    src/core/see.cpp \
+    src/evaluation/evaluate.cpp \
+    src/search/search.cpp \
+    src/search/negamax.cpp \
+    src/search/move_ordering.cpp \
+    src/search/time_management.cpp \
+    src/search/aspiration_window.cpp \
+    src/search/quiescence.cpp \
+    src/search/quiescence_performance.cpp \
+    src/search/quiescence_optimized.cpp \
+    src/uci/uci.cpp \
+    src/benchmark/benchmark.cpp
+
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+
+# Default target
+all: $(EXE)
+
+# Link the executable
+$(EXE): $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+	strip $@
+	@echo "Successfully built $(EXE)"
+
+# Compile source files
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# Clean build
+clean:
+	rm -f $(OBJECTS) $(EXE)
+	@echo "Clean complete"
+
+.PHONY: all clean
