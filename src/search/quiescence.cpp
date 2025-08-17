@@ -461,8 +461,10 @@ eval::Score quiescence(
                         
                         // Store with depth 0 (quiescence) and LOWER bound
                         // Note: 'move' is the best move that caused the beta cutoff
+                        // CRITICAL FIX: Don't store minus_infinity as eval when in check
+                        int16_t evalToStore = isInCheck ? 0 : staticEval.value();
                         tt.store(board.zobristKey(), move, scoreToStore.value(), 
-                                staticEval.value(), 0, Bound::LOWER);
+                                evalToStore, 0, Bound::LOWER);
                     }
                     
                     return score;
@@ -498,8 +500,10 @@ eval::Score quiescence(
         
         // Store with depth 0 for quiescence and the best move found
         // Even for UPPER bounds (fail-low), storing the best move helps move ordering
+        // CRITICAL FIX: Don't store minus_infinity as eval when in check
+        int16_t evalToStore = isInCheck ? 0 : staticEval.value();
         tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
-                staticEval.value(), 0, bound);
+                evalToStore, 0, bound);
     }
     
     return bestScore;
