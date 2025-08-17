@@ -29,7 +29,7 @@ Each remediation needs to be testable against the previous remediation to measur
 |-------|---------|--------|----------------|----------|-------|--------|
 | **10** | Magic Bitboards (UCI) | `openbench/remediated-stage10` | `753da6d` | `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5` | 19191913 | ✅ Complete |
 | **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `4d8d796` | `4d8d7965656502ff1e3f507a02392ff13e20d79c` | 19191913 | ✅ Complete |
-| **12** | Transposition Tables | - | - | - | 🔄 Pending |
+| **12** | TT (UCI Hash/Enable) | `openbench/remediated-stage12` | `a0f514c` | `a0f514c70dc4f113b5f02e5962cf4e6f634c8493` | 19191913 | ✅ Complete |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
 | **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
 | **15** | SEE | - | - | - | 🔄 Pending |
@@ -322,6 +322,22 @@ Use these commit hashes in your OpenBench test configurations:
 }
 ```
 **Note:** This tests the incremental improvement of Stage 11's corrected MVV-LVA implementation.
+
+**Stage 11 Remediated vs Stage 12 Remediated (Testing TT improvements):**
+```json
+{
+  "base_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "4d8d7965656502ff1e3f507a02392ff13e20d79c"
+  },
+  "dev_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "a0f514c70dc4f113b5f02e5962cf4e6f634c8493"
+  }
+}
+```
+**Result:** +6.89 ± 13.54 ELO (1110 games)
+**Note:** TT improvements including removal of fifty-move from hash, UCI options, and depth-preferred replacement.
 
 **CORRECT - Stage 15 Historical vs Stage 10 Remediated (Testing the remediation impact):**
 ```json
