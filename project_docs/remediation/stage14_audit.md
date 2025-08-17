@@ -145,7 +145,7 @@ From `/workspace/project_docs/planning/stage14_quiescence_search_implementation_
 
 ### Phase 3: Performance Optimizations (Will Do)
 1. Optimize move ordering to single-pass
-2. Integrate optimized implementation if beneficial
+2. Integrate optimized implementation
 3. Cache static evaluation results
 
 ### Phase 4: Future Enhancements (Deferred)
