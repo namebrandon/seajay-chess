@@ -68,9 +68,11 @@ struct AspirationWindow {
  * 
  * @param previousScore Score from previous iteration
  * @param depth Current search depth
+ * @param initialDelta Initial window size in centipawns (default 16)
  * @return Initial aspiration window
  */
-AspirationWindow calculateInitialWindow(Score previousScore, int depth);
+AspirationWindow calculateInitialWindow(Score previousScore, int depth, 
+                                       int initialDelta = AspirationConstants::INITIAL_DELTA);
 
 /**
  * @brief Widen aspiration window after fail high or fail low
@@ -78,10 +80,12 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth);
  * @param window Current window to widen
  * @param score Score that failed high/low
  * @param failedHigh True if failed high, false if failed low
+ * @param maxAttempts Maximum attempts before infinite window (default 5)
  * @return Widened aspiration window
  */
 AspirationWindow widenWindow(const AspirationWindow& window, 
                              Score score, 
-                             bool failedHigh);
+                             bool failedHigh,
+                             int maxAttempts = AspirationConstants::MAX_ATTEMPTS);
 
 } // namespace seajay::search

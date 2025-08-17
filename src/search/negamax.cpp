@@ -459,6 +459,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
+    // Stage 13 Remediation: Set configurable stability threshold
+    info.setRequiredStability(limits.stabilityThreshold);
+    
     // Stage 13, Deliverable 2.2b: Switch to new time management
     // Calculate initial time limits with neutral stability (1.0)
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
@@ -494,13 +497,16 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         eval::Score alpha, beta;
         AspirationWindow window;
         
-        if (depth >= AspirationConstants::MIN_DEPTH && previousScore != eval::Score::zero()) {
-            // Calculate aspiration window based on previous score
-            window = calculateInitialWindow(previousScore, depth);
+        // Stage 13 Remediation: Use configurable aspiration windows
+        if (limits.useAspirationWindows && 
+            depth >= AspirationConstants::MIN_DEPTH && 
+            previousScore != eval::Score::zero()) {
+            // Calculate aspiration window based on previous score with configurable delta
+            window = calculateInitialWindow(previousScore, depth, limits.aspirationWindow);
             alpha = window.alpha;
             beta = window.beta;
         } else {
-            // Use infinite window for shallow depths
+            // Use infinite window for shallow depths or when disabled
             alpha = eval::Score::minus_infinity();
             beta = eval::Score::infinity();
         }
@@ -516,8 +522,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Progressive widening loop
             while (score <= alpha || score >= beta) {
-                // Widen the window progressively
-                window = widenWindow(window, score, failedHigh);
+                // Widen the window progressively with configurable max attempts
+                window = widenWindow(window, score, failedHigh, limits.aspirationMaxAttempts);
                 alpha = window.alpha;
                 beta = window.beta;
                 

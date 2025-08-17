@@ -41,7 +41,7 @@ public:
     // Move stability tracking (Phase 2, Deliverable 2.1d)
     Move m_stableBestMove{NO_MOVE};     // Best move that has been stable
     int m_stabilityCount{0};             // How many iterations with same best move
-    int m_requiredStability{2};          // Iterations needed to consider stable
+    int m_requiredStability{6};          // Iterations needed to consider stable (default 6)
     bool m_positionStable{false};        // Is position considered stable?
     
     // Score stability tracking
@@ -71,6 +71,11 @@ public:
     }
     
     // Basic methods for iteration tracking (Deliverable 1.1c)
+    
+    // Set required stability threshold (Stage 13 Remediation)
+    void setRequiredStability(int threshold) {
+        m_requiredStability = threshold;
+    }
     
     // Record data from a completed iteration
     void recordIteration(const IterationInfo& info) {

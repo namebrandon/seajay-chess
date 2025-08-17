@@ -53,6 +53,12 @@ private:
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive
     
+    // Stage 13 Remediation: Configurable aspiration window parameters
+    int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
+    int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window
+    int m_stabilityThreshold = 6;       // Iterations needed for move stability
+    bool m_useAspirationWindows = true; // Enable/disable aspiration windows
+    
     // Helper methods for draw detection
     void updateGameHistory();
     void clearGameHistory();

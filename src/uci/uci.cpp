@@ -92,6 +92,12 @@ void UCIEngine::handleUCI() {
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
     
+    // Stage 13 Remediation: Aspiration window and time management options
+    std::cout << "option name AspirationWindow type spin default 16 min 5 max 50" << std::endl;
+    std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
+    std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
+    std::cout << "option name UseAspirationWindows type check default true" << std::endl;
+    
     std::cout << "uciok" << std::endl;
 }
 
@@ -383,6 +389,12 @@ void UCIEngine::search(const SearchParams& params) {
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
     
+    // Stage 13 Remediation: Pass aspiration window parameters
+    limits.aspirationWindow = m_aspirationWindow;
+    limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
+    limits.stabilityThreshold = m_stabilityThreshold;
+    limits.useAspirationWindows = m_useAspirationWindows;
+    
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
     
@@ -653,6 +665,49 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
             std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+        }
+    }
+    // Stage 13 Remediation: Handle aspiration window options
+    else if (optionName == "AspirationWindow") {
+        try {
+            int windowSize = std::stoi(value);
+            if (windowSize >= 5 && windowSize <= 50) {
+                m_aspirationWindow = windowSize;
+                std::cerr << "info string Aspiration window set to: " << windowSize << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid AspirationWindow value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "AspirationMaxAttempts") {
+        try {
+            int attempts = std::stoi(value);
+            if (attempts >= 3 && attempts <= 10) {
+                m_aspirationMaxAttempts = attempts;
+                std::cerr << "info string Aspiration max attempts set to: " << attempts << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid AspirationMaxAttempts value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "StabilityThreshold") {
+        try {
+            int threshold = std::stoi(value);
+            if (threshold >= 3 && threshold <= 12) {
+                m_stabilityThreshold = threshold;
+                std::cerr << "info string Stability threshold set to: " << threshold << " iterations" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid StabilityThreshold value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "UseAspirationWindows") {
+        if (value == "true") {
+            m_useAspirationWindows = true;
+            std::cerr << "info string Aspiration windows enabled" << std::endl;
+        } else if (value == "false") {
+            m_useAspirationWindows = false;
+            std::cerr << "info string Aspiration windows disabled" << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

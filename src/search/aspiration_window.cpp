@@ -3,7 +3,7 @@
 
 namespace seajay::search {
 
-AspirationWindow calculateInitialWindow(Score previousScore, int depth) {
+AspirationWindow calculateInitialWindow(Score previousScore, int depth, int initialDelta) {
     AspirationWindow window;
     
     // For depths below MIN_DEPTH, use infinite window
@@ -11,10 +11,10 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth) {
         return window; // Already initialized to infinite
     }
     
-    // Calculate initial delta based on Stockfish-proven 16 cp value
+    // Calculate initial delta using configurable value
     // Slightly adjust for depth (wider windows at higher depths)
     int depthAdjustment = depth / AspirationConstants::DEPTH_ADJUSTMENT_FACTOR;
-    int delta = AspirationConstants::INITIAL_DELTA + depthAdjustment;
+    int delta = initialDelta + depthAdjustment;
     
     // Set window bounds around previous score
     // Clamp to prevent overflow
@@ -32,14 +32,15 @@ AspirationWindow calculateInitialWindow(Score previousScore, int depth) {
 
 AspirationWindow widenWindow(const AspirationWindow& window, 
                              Score score, 
-                             bool failedHigh) {
+                             bool failedHigh,
+                             int maxAttempts) {
     AspirationWindow newWindow = window;
     
     // Increment attempt counter
     newWindow.attempts++;
     
     // Check if we've exceeded max attempts - use infinite window
-    if (newWindow.exceedsMaxAttempts()) {
+    if (newWindow.attempts >= maxAttempts) {
         newWindow.makeInfinite();
         return newWindow;
     }
