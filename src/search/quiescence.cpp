@@ -58,7 +58,7 @@ eval::Score quiescence(
     
     // Phase 3 Optimization 5: Prefetch TT entry early for better cache hit rate
     #ifdef __GNUC__
-    __builtin_prefetch(tt.getEntry(board.zobristKey()), 0, 1);
+    __builtin_prefetch(tt.probe(board.zobristKey()), 0, 1);
     #endif
     
     // Deliverable 2.1: TT Probing in Quiescence
@@ -416,7 +416,7 @@ eval::Score quiescence(
         
         // Phase 3: Prefetch TT entry for child position
         #ifdef __GNUC__
-        __builtin_prefetch(tt.getEntry(board.zobristKey()), 0, 1);
+        __builtin_prefetch(tt.probe(board.zobristKey()), 0, 1);
         #endif
         
         // Recursive quiescence search with check ply tracking and panic mode propagation
