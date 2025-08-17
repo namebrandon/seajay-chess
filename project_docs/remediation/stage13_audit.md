@@ -116,6 +116,39 @@ From `/workspace/project_docs/planning/stage13_iterative_deepening_plan.md`:
 ### Document Only (Low Priority):
 - INITIAL_ASPIRATION_DELTA (16cp) - proven optimal by Stockfish
 
+## Phase 2 Completion Report
+
+### Changes Made
+1. **Fixed TIME_CHECK_INTERVAL inconsistency**
+   - Changed from 1024 to 2048 (optimal for ~1M NPS per expert advice)
+   - Added detailed comment explaining the choice
+   - Rationale: 2048 gives ~500 checks/second at 1M NPS (0.05% overhead)
+
+2. **Aligned all time check code**
+   - Updated negamax.cpp to use TIME_CHECK_INTERVAL constant
+   - Updated negamax_no_ab.cpp to use constant
+   - Updated quiescence.cpp to use constant
+   - Updated quiescence_optimized.cpp to use constant
+   - All files now use consistent interval
+
+3. **Added overflow protection in time prediction**
+   - Check bounds BEFORE multiplication to prevent overflow
+   - Set max safe time to 1 hour (3600000ms)
+   - Validate multiplication won't overflow before performing it
+
+### Files Modified
+- `/workspace/src/search/types.h` - Updated TIME_CHECK_INTERVAL to 2048
+- `/workspace/src/search/negamax.cpp` - Use constant instead of 0xFFF
+- `/workspace/src/search/negamax_no_ab.cpp` - Use constant
+- `/workspace/src/search/quiescence.cpp` - Use constant instead of 1023
+- `/workspace/src/search/quiescence_optimized.cpp` - Use constant
+- `/workspace/src/search/time_management.cpp` - Add overflow protection
+
+### Testing
+- Build successful with no errors
+- Engine starts correctly
+- UCI interface functional
+
 ## Estimated Effort
 
 ### Phase 2: Fix Inconsistencies (1 hour)

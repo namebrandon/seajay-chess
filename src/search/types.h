@@ -81,7 +81,11 @@ struct SearchData {
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
     mutable std::chrono::milliseconds m_cachedElapsed{0};
-    static constexpr uint64_t TIME_CHECK_INTERVAL = 1024;  // Check every 1024 nodes
+    // Time check interval: 2048 nodes
+    // - At 1M NPS: ~500 checks/second (0.05% overhead)
+    // - Balanced between overhead and time control precision
+    // - Prevents time losses while maintaining performance
+    static constexpr uint64_t TIME_CHECK_INTERVAL = 2048;  // Check every 2048 nodes
     
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}

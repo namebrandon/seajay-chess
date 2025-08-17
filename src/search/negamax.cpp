@@ -126,8 +126,8 @@ eval::Score negamax(Board& board,
         return alpha;  // Return alpha as a fail-soft bound
     }
     
-    // Time check - only check every 4096 nodes to reduce overhead
-    if ((info.nodes & 0xFFF) == 0 && info.checkTime()) {
+    // Time check - only check periodically to reduce overhead
+    if ((info.nodes & (SearchData::TIME_CHECK_INTERVAL - 1)) == 0 && info.checkTime()) {
         info.stopped = true;
         return eval::Score::zero();
     }

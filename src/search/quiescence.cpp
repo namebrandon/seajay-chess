@@ -101,9 +101,9 @@ eval::Score quiescence(
         }
     }
     
-    // Check time limit periodically (every 1024 nodes) 
-    // Reverting to Candidate 1 frequency - the overhead of frequent checks was harmful
-    if ((data.qsearchNodes & 1023) == 0) {
+    // Check time limit periodically to prevent time losses
+    // Using consistent interval with main search for uniformity
+    if ((data.qsearchNodes & (SearchData::TIME_CHECK_INTERVAL - 1)) == 0) {
         if (data.stopped || data.checkTime()) {
             data.stopped = true;
             return eval::Score::zero();

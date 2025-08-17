@@ -146,7 +146,7 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
     }
     
     // Time and repetition checks (same as original)
-    if ((data.qsearchNodes & 1023) == 0) {
+    if ((data.qsearchNodes & (SearchData::TIME_CHECK_INTERVAL - 1)) == 0) {
         if (data.stopped || data.checkTime()) {
             data.stopped = true;
             return eval::Score::zero();

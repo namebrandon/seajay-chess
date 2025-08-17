@@ -206,16 +206,26 @@ std::chrono::milliseconds predictNextIterationTime(
         depthFactor = 0.95;  // Expect 5% reduction at medium-high depths
     }
     
-    // Calculate predicted time
-    // Basic formula: next_time = last_time * EBF * depth_adjustment
-    double predictedTime = lastIterationTime.count() * clampedEBF * depthFactor;
+    // Calculate predicted time with overflow protection
+    // Check bounds before multiplication to prevent overflow
+    const double maxSafeTime = 3600000.0;  // 1 hour in milliseconds
+    
+    // Check if multiplication would overflow
+    double lastTime = static_cast<double>(lastIterationTime.count());
+    if (lastTime > maxSafeTime / (clampedEBF * depthFactor * 1.1)) {
+        // Would overflow, return max time
+        return std::chrono::milliseconds(static_cast<int64_t>(maxSafeTime));
+    }
+    
+    // Safe to calculate: next_time = last_time * EBF * depth_adjustment
+    double predictedTime = lastTime * clampedEBF * depthFactor;
     
     // Add safety margin (10% extra, was 20% which was too conservative)
     predictedTime *= 1.1;
     
-    // Convert to milliseconds, ensuring we don't overflow
-    if (predictedTime > 3600000) {  // Cap at 1 hour
-        return std::chrono::milliseconds(3600000);
+    // Final safety check
+    if (predictedTime > maxSafeTime) {
+        return std::chrono::milliseconds(static_cast<int64_t>(maxSafeTime));
     }
     
     return std::chrono::milliseconds(static_cast<int64_t>(predictedTime));
