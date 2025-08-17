@@ -297,11 +297,41 @@ Update UCI engine name to include remediation info:
 - Option 2: `SeaJay 0.[N].1-remediated` (semantic versioning)
 - Consider using `src/version.h` for consistent versioning
 
-#### Final Push
+### Phase 8: Create Reference Branches and Merge
+
+#### Create OpenBench Reference Branch (CRITICAL)
 ```bash
-# After ALL validation passes
-git push origin remediate/stage[N]-description
-# Create PR to main or merge directly depending on workflow
+# Create permanent reference branch for future testing
+git checkout -b openbench/remediated-stage[N]
+git push origin openbench/remediated-stage[N]
+
+# Document the commit hash and bench
+echo "Stage [N] Reference: $(git rev-parse HEAD)" >> remediation_log.txt
+echo "Bench: ${BENCH_COUNT}" >> remediation_log.txt
+```
+
+#### Tag the Release
+```bash
+# Create annotated tag for version tracking
+git tag -a "v0.[N].1-remediated" -m "Stage [N] Remediation: [Description]
+Bench: ${BENCH_COUNT}
+Commit: $(git rev-parse HEAD)
+ELO Gain: [+X over previous]"
+
+git push origin --tags
+```
+
+#### Merge to Main
+```bash
+# After ALL validation passes and reference branch created
+git checkout main
+git pull origin main
+git merge remediate/stage[N]-description
+git push origin main
+
+# The working branch can now be deleted locally
+git branch -d remediate/stage[N]-description
+# But keep the openbench/remediated-stage[N] branch!
 ```
 
 ## Stage-Specific Investigation Areas
@@ -460,6 +490,7 @@ endif()
 - **DO NOT** skip OpenBench validation
 - **DO NOT** merge without full validation
 - **DO NOT** introduce new compile-time flags
+- **DO NOT** delete OpenBench reference branches
 - **ALWAYS** start fresh from main for each stage
 - **ALWAYS** document everything found
 - **ALWAYS** test OpenBench compatibility
@@ -467,6 +498,8 @@ endif()
 - **ALWAYS** clean up test files before committing
 - **ALWAYS** get bench node count for OpenBench format
 - **ALWAYS** update OpenBench Testing Index with results
+- **ALWAYS** create openbench/remediated-stage[N] before merging
+- **ALWAYS** tag the release with version number
 
 ## Quick Remediation Checklist Template
 
@@ -498,19 +531,28 @@ endif()
 - [ ] Run perft tests
 - [ ] Get bench count: `echo "bench" | ./seajay | grep "complete"`
 - [ ] Compare performance (ON vs OFF)
+- [ ] Test in OpenBench against previous remediation
 
 ## Phase 5: Documentation
 - [ ] Create completion report: `stage[N]_complete.md`
 - [ ] Update OpenBench Testing Index
 - [ ] Update CLAUDE.md if needed
 
-## Phase 6: Commit
+## Phase 6: Commit & Version
 - [ ] Ensure Makefile is included if it was missing
 - [ ] Stage all changes
 - [ ] Commit with bench: [count] format
 - [ ] Update UCI name with version
 - [ ] Push to GitHub
 - [ ] Note full SHA for OpenBench Testing Index
+
+## Phase 7: Create References & Merge
+- [ ] Create OpenBench reference branch: `openbench/remediated-stage[N]`
+- [ ] Push reference branch to origin
+- [ ] Create version tag: `v0.[N].1-remediated`
+- [ ] Push tags to origin
+- [ ] Merge to main
+- [ ] Update documentation with ELO gain
 ```
 
 ## Timeline Estimate
@@ -581,15 +623,67 @@ OpenBench uses `make` command, NOT CMake directly. Remediation branches created 
 3. **Remove only compile-time flags** - Don't modify the Makefile structure
 4. **Commit with bench value**: Include Makefile in remediation commits
 
+### Command-Line Bench Requirement
+OpenBench runs `./seajay bench` as a command-line argument, NOT through UCI:
+
+1. **Main function must handle arguments**: `int main(int argc, char* argv[])`
+2. **Check for bench argument**: 
+   ```cpp
+   if (argc > 1 && std::string(argv[1]) == "bench") {
+       engine.runBenchmark();
+       return 0;
+   }
+   ```
+3. **Exit after benchmark**: Must return, not enter UCI loop
+4. **Output format**: `info string Benchmark complete: [nodes] nodes, [nps] nps`
+
 ### Testing Configuration
 When testing remediation in OpenBench:
 - **Base**: Use Stage 15 historical (has all features but with compile flags)
 - **Dev**: Use remediation commit (has UCI runtime options)
 - **Full SHA required**: OpenBench needs complete commit hash, not short version
 
+## Remediation Testing Strategy
+
+### Branch Hierarchy
+```
+main (latest merged remediations)
+├── openbench/remediated-stage10 (reference: 753da6d)
+├── openbench/remediated-stage11 (future)
+├── openbench/remediated-stage12 (future)
+└── ...
+```
+
+### Testing Chain
+- Stage 11 tests against: `openbench/remediated-stage10`
+- Stage 12 tests against: `openbench/remediated-stage11`
+- Each stage measures incremental improvement
+- Reference branches are NEVER deleted
+
+### OpenBench Configuration
+```json
+{
+  "base_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "[previous remediation SHA]"
+  },
+  "dev_engine": {
+    "repository": "https://github.com/namebrandon/seajay-chess",
+    "commit": "[current remediation SHA]"
+  }
+}
+```
+
 ## Completed Remediations
 
 - ✅ **Stage 10**: Magic Bitboards - Converted to UCI option, 79x speedup enabled
-  - Commit: `6960d5640e071fc4e8c39d5e880b0754526655b3`
+  - Working Branch: `remediate/stage10-magic-bitboards` (merged)
+  - Reference Branch: `openbench/remediated-stage10`
+  - Final Commit: `753da6dd7cb03cb1e5b7aa26f7dc5bc2f20b47a5`
+  - Tag: `v0.10.1-remediated`
   - Bench: 19191913
-  - Lesson: Makefile was missing, causing OpenBench build failure
+  - ELO Gain: +35 over Stage 15 historical
+  - Lessons: 
+    - Makefile was missing (must copy from OpenBench branches)
+    - Bench must work from command line, not just UCI
+    - Need reference branches for future testing
