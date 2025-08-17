@@ -186,7 +186,14 @@ Create `/workspace/project_docs/remediation/stage[N]_audit.md`:
    ```
 
 #### B. OpenBench Validation (CRITICAL)
+
+**IMPORTANT**: Ensure Makefile exists in root directory!
 ```bash
+# Check if Makefile exists (OpenBench requirement)
+ls -la Makefile
+# If missing, copy from an OpenBench branch:
+# git show openbench/stage15:Makefile > Makefile
+
 # Test that Makefile still works
 make clean
 make EXE=seajay
@@ -248,10 +255,11 @@ echo -e "uci\nsetoption name [OptionName] value [true/false]\nisready\nquit" | .
 ### Phase 6: Final Verification Checklist
 
 Before considering stage complete:
+- [ ] **Makefile exists in root directory** (critical for OpenBench!)
 - [ ] All compile flags removed for this stage
 - [ ] All features work via UCI options
 - [ ] Default values are sensible (usually feature ON)
-- [ ] OpenBench Makefile works
+- [ ] OpenBench Makefile works: `make clean && make EXE=test`
 - [ ] `./seajay bench` works correctly
 - [ ] Bench output format correct for OpenBench
 - [ ] Get bench node count: `echo "bench" | ./seajay | grep "Benchmark complete"`
@@ -497,10 +505,12 @@ endif()
 - [ ] Update CLAUDE.md if needed
 
 ## Phase 6: Commit
+- [ ] Ensure Makefile is included if it was missing
 - [ ] Stage all changes
 - [ ] Commit with bench: [count] format
 - [ ] Update UCI name with version
 - [ ] Push to GitHub
+- [ ] Note full SHA for OpenBench Testing Index
 ```
 
 ## Timeline Estimate
@@ -537,6 +547,7 @@ Total per stage: 4-8 hours depending on issues found
 3. **Build System Complexity** - Remove flags from CMakeLists.txt carefully
 4. **UCI Integration** - Follow existing patterns in handleSetOption()
 5. **Bench Testing** - Use `echo "bench" | ./seajay` for reliable results
+6. **Missing Makefile** - Remediation branches created from main may lack Makefile
 
 ### Implementation Strategy
 1. **Create Global Config** - Singleton pattern for runtime flags
@@ -557,6 +568,28 @@ This remediation is critical for SeaJay's development. Each stage must be thorou
 
 Remember the Stage 14 lesson: **"NO COMPILE-TIME FEATURE FLAGS"** - All features MUST compile in, with runtime control via UCI options.
 
+## Critical OpenBench Notes
+
+### Makefile Requirement
+OpenBench uses `make` command, NOT CMake directly. Remediation branches created from main may be missing the Makefile since we use CMake locally. Always ensure:
+
+1. **Check for Makefile**: `ls -la Makefile`
+2. **If missing, copy from OpenBench branch**: 
+   ```bash
+   git show openbench/stage15:Makefile > Makefile
+   ```
+3. **Remove only compile-time flags** - Don't modify the Makefile structure
+4. **Commit with bench value**: Include Makefile in remediation commits
+
+### Testing Configuration
+When testing remediation in OpenBench:
+- **Base**: Use Stage 15 historical (has all features but with compile flags)
+- **Dev**: Use remediation commit (has UCI runtime options)
+- **Full SHA required**: OpenBench needs complete commit hash, not short version
+
 ## Completed Remediations
 
 - ✅ **Stage 10**: Magic Bitboards - Converted to UCI option, 79x speedup enabled
+  - Commit: `6960d5640e071fc4e8c39d5e880b0754526655b3`
+  - Bench: 19191913
+  - Lesson: Makefile was missing, causing OpenBench build failure
