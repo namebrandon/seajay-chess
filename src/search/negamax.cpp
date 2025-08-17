@@ -3,9 +3,7 @@
 #include "iterative_search_data.h"  // Stage 13 addition
 #include "time_management.h"        // Stage 13, Deliverable 2.2a
 #include "aspiration_window.h"       // Stage 13, Deliverable 3.2b
-#ifdef ENABLE_MVV_LVA
-#include "move_ordering.h"  // MVV-LVA ordering
-#endif
+#include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -79,10 +77,9 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         }
     }
     
-#ifdef ENABLE_MVV_LVA
-    // Stage 15 Day 5: Use SEE-aware move ordering (can be MVV-LVA, SEE, or hybrid)
-    // The global g_seeMoveOrdering respects the current SEE mode set via UCI
-    g_seeMoveOrdering.orderMoves(board, moves);
+    // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
+    static MvvLvaOrdering mvvLva;
+    mvvLva.orderMoves(board, moves);
     
     // After ordering, ensure TT move is still first if it was valid
     if (ttMove != NO_MOVE) {
@@ -94,47 +91,6 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
             *moves.begin() = temp;
         }
     }
-#else
-    // Fallback to simple ordering without MVV-LVA
-    (void)board; // Unused in simple ordering
-    if (ttMove != NO_MOVE && !moves.empty() && moves[0] == ttMove) {
-        // Order everything except the TT move
-        auto first = moves.begin() + 1;
-        auto last = moves.end();
-        auto partition_point = first;
-        
-        // Phase 1: Move all promotions to the front (after TT move)
-        for (auto it = first; it != last; ++it) {
-            if (isPromotion(*it)) {
-                if (promotionType(*it) == QUEEN) {
-                    if (it != first) {
-                        Move temp = *it;
-                        std::move_backward(first, it, it + 1);
-                        *first = temp;
-                        partition_point = std::next(first);
-                    }
-                } else if (it != partition_point) {
-                    std::iter_swap(it, partition_point);
-                    ++partition_point;
-                } else {
-                    ++partition_point;
-                }
-            }
-        }
-        
-        // Phase 2: Move captures after promotions
-        for (auto it = partition_point; it != last; ++it) {
-            if (isCapture(*it) && !isPromotion(*it)) {
-                if (it != partition_point) {
-                    std::iter_swap(it, partition_point);
-                }
-                ++partition_point;
-            }
-        }
-    } else {
-        orderMovesSimple(moves);
-    }
-#endif
 }
 
 // Mate score constants for TT integration

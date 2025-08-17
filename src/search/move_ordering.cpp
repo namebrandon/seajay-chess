@@ -13,17 +13,11 @@
 
 namespace seajay::search {
 
-// MVV-LVA table: [victim_type][attacker_type] = score
-// Higher scores = better moves (capture high value with low value)
-static constexpr int MVV_LVA_TABLE[7][7] = {
-    {0, 0, 0, 0, 0, 0, 0},              // NO_PIECE_TYPE victim (not used)
-    {0, 105, 104, 103, 102, 101, 100},  // PAWN victim
-    {0, 205, 204, 203, 202, 201, 200},  // KNIGHT victim
-    {0, 305, 304, 303, 302, 301, 300},  // BISHOP victim
-    {0, 405, 404, 403, 402, 401, 400},  // ROOK victim
-    {0, 505, 504, 503, 502, 501, 500},  // QUEEN victim
-    {0, 605, 604, 603, 602, 601, 600},  // KING victim (shouldn't happen)
-};
+// MVV-LVA scoring uses the simple formula:
+// score = VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker]
+// This gives us scores like PxQ=899, QxP=91, PxP=99
+// Note: Promotions are handled separately with PROMOTION_BASE_SCORE
+// This ensures promotions are searched before captures
 
 // Score a single move using MVV-LVA heuristic
 int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
@@ -50,8 +44,8 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
             
             if (capturedPiece != NO_PIECE) {
                 PieceType victim = typeOf(capturedPiece);
-                // Use table lookup for consistency
-                baseScore += MVV_LVA_TABLE[victim][PAWN];
+                // Use MVV-LVA formula (attacker is always PAWN for promotions)
+                baseScore += VICTIM_VALUES[victim] - ATTACKER_VALUES[PAWN];
             }
         }
         
@@ -62,7 +56,7 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
     if (isEnPassant(move)) {
         stats.en_passants_scored++;
         // En passant is always PxP (pawn captures pawn)
-        return MVV_LVA_TABLE[PAWN][PAWN];
+        return VICTIM_VALUES[PAWN] - ATTACKER_VALUES[PAWN];  // 100 - 1 = 99
     }
     
     // Handle regular captures
@@ -89,7 +83,8 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
         // King captures should never happen in legal chess
         MVV_LVA_ASSERT(victim != KING, "Attempting to capture king!");
         
-        return MVV_LVA_TABLE[victim][attacker];
+        // Use the simple MVV-LVA formula
+        return VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker];
     }
     
     // Quiet moves get zero score (will be ordered last)
@@ -122,64 +117,13 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     // Only sort the captures/promotions portion if there are any
     if (captureEnd != moves.begin()) {
         // Sort captures by MVV-LVA score (higher scores first)
-        std::sort(moves.begin(), captureEnd,
-            [&board](const Move& a, const Move& b) {
-                // Inline scoring for performance (avoid function call overhead)
-                int scoreA, scoreB;
-                
-                // Score move A
-                if (isPromotion(a)) {
-                    scoreA = PROMOTION_BASE_SCORE;
-                    PieceType promoType = promotionType(a);
-                    if (promoType >= KNIGHT && promoType <= QUEEN) {
-                        scoreA += PROMOTION_TYPE_BONUS[promoType - KNIGHT];
-                    }
-                    if (isCapture(a)) {
-                        Piece victim = board.pieceAt(moveTo(a));
-                        if (victim != NO_PIECE) {
-                            scoreA += MVV_LVA_TABLE[typeOf(victim)][PAWN];
-                        }
-                    }
-                } else if (isEnPassant(a)) {
-                    scoreA = MVV_LVA_TABLE[PAWN][PAWN];
-                } else if (isCapture(a)) {
-                    Piece victim = board.pieceAt(moveTo(a));
-                    Piece attacker = board.pieceAt(moveFrom(a));
-                    if (victim != NO_PIECE && attacker != NO_PIECE) {
-                        scoreA = MVV_LVA_TABLE[typeOf(victim)][typeOf(attacker)];
-                    } else {
-                        scoreA = 0;
-                    }
-                } else {
-                    scoreA = 0;
-                }
-                
-                // Score move B
-                if (isPromotion(b)) {
-                    scoreB = PROMOTION_BASE_SCORE;
-                    PieceType promoType = promotionType(b);
-                    if (promoType >= KNIGHT && promoType <= QUEEN) {
-                        scoreB += PROMOTION_TYPE_BONUS[promoType - KNIGHT];
-                    }
-                    if (isCapture(b)) {
-                        Piece victim = board.pieceAt(moveTo(b));
-                        if (victim != NO_PIECE) {
-                            scoreB += MVV_LVA_TABLE[typeOf(victim)][PAWN];
-                        }
-                    }
-                } else if (isEnPassant(b)) {
-                    scoreB = MVV_LVA_TABLE[PAWN][PAWN];
-                } else if (isCapture(b)) {
-                    Piece victim = board.pieceAt(moveTo(b));
-                    Piece attacker = board.pieceAt(moveFrom(b));
-                    if (victim != NO_PIECE && attacker != NO_PIECE) {
-                        scoreB = MVV_LVA_TABLE[typeOf(victim)][typeOf(attacker)];
-                    } else {
-                        scoreB = 0;
-                    }
-                } else {
-                    scoreB = 0;
-                }
+        // Use stable_sort to maintain relative order of equal scores
+        std::stable_sort(moves.begin(), captureEnd,
+            [this, &board](const Move& a, const Move& b) {
+                // Use scoreMove function for consistency and maintainability
+                // Modern compilers will inline this anyway
+                int scoreA = scoreMove(board, a);
+                int scoreB = scoreMove(board, b);
                 
                 return scoreA > scoreB;  // Higher scores first
             });

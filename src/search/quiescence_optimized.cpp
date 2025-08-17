@@ -84,18 +84,8 @@ void OptimizedQSearchMoveGen::orderMovesInPlace(const Board& board, QSearchMoveB
     // Cache move scores to avoid repeated calculation
     std::array<int, qsearch_opt::QSEARCH_MOVE_BUFFER_SIZE> scores;
     for (int i = 0; i < size; ++i) {
-#ifdef ENABLE_MVV_LVA
+        // Stage 11: Always use MVV-LVA scoring (remediated)
         scores[i] = MvvLvaOrdering::scoreMove(board, buffer[i]);
-#else
-        // Simplified scoring without MVV-LVA
-        if (isPromotion(buffer[i])) {
-            scores[i] = promotionType(buffer[i]) == QUEEN ? 10000 : 1000;
-        } else if (isCapture(buffer[i])) {
-            scores[i] = 100;  // Basic capture value
-        } else {
-            scores[i] = 0;
-        }
-#endif
     }
     
     // Selection sort with cached scores
@@ -296,18 +286,8 @@ inline int OptimizedQuiescence::generateAndScoreCaptures(
         if (isEnPassant(move)) moveType |= CachedMoveScore::EN_PASSANT_FLAG;
         
         // Calculate score
-        int score = 0;
-#ifdef ENABLE_MVV_LVA
-        score = MvvLvaOrdering::scoreMove(board, move);
-#else
-        if (moveType & CachedMoveScore::QUEEN_PROMOTION_FLAG) {
-            score = 10000;
-        } else if (moveType & CachedMoveScore::PROMOTION_FLAG) {
-            score = 1000;
-        } else if (moveType & CachedMoveScore::CAPTURE_FLAG) {
-            score = 100;
-        }
-#endif
+        // Stage 11: Always use MVV-LVA scoring (remediated)
+        int score = MvvLvaOrdering::scoreMove(board, move);
         
         scores[i] = CachedMoveScore(move, score, moveType);
     }

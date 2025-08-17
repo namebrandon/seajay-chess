@@ -51,9 +51,9 @@ endif()
 # CRITICAL FIX: Enable Quiescence Search (THIS WAS MISSING!)
 # Without this flag, quiescence search was NEVER called!
 add_compile_definitions(ENABLE_QUIESCENCE)
-add_compile_definitions(ENABLE_MVV_LVA)
+# Stage 11: MVV-LVA is now always enabled (no compile flag needed)
 message(STATUS "*** QUIESCENCE SEARCH ENABLED *** Stage 14 is now active!")
-message(STATUS "*** MVV-LVA MOVE ORDERING ENABLED ***")
+message(STATUS "*** MVV-LVA MOVE ORDERING ALWAYS ENABLED (Stage 11) ***")
 
 # Quiescence Search compilation modes
 if(QSEARCH_MODE STREQUAL "TESTING")

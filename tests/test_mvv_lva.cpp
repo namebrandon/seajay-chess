@@ -401,7 +401,7 @@ int main() {
     std::cout << "=== Stage 11: MVV-LVA Move Ordering Test ===" << std::endl;
     
     // Initialize magic bitboards for move generation
-    seajay::magic::initMagics();
+    seajay::magic_v2::initMagics();
     
     testPhase1_Infrastructure();
     testPhase2_BasicCaptures();
