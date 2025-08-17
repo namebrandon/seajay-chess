@@ -147,6 +147,12 @@ add_executable(seajay
 )
 target_link_libraries(seajay seajay_core)
 
+# Copy seajay binary to bin directory after build
+add_custom_command(TARGET seajay POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:seajay> ${CMAKE_BINARY_DIR}/../bin/seajay
+    COMMENT "Copying seajay to bin directory"
+)
+
 # Perft tool executable
 add_executable(perft_tool
     src/tools/perft_tool.cpp

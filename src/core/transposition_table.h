@@ -97,7 +97,7 @@ class TranspositionTable {
 public:
     // Default sizes
     static constexpr size_t DEFAULT_SIZE_MB_DEBUG = 16;
-    static constexpr size_t DEFAULT_SIZE_MB_RELEASE = 128;
+    static constexpr size_t DEFAULT_SIZE_MB_RELEASE = 16;
     
     TranspositionTable();
     explicit TranspositionTable(size_t sizeInMB);

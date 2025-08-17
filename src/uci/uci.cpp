@@ -72,7 +72,7 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage11-Remediated-22dfb81" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage12-TT-Improved" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     
@@ -87,6 +87,10 @@ void UCIEngine::handleUCI() {
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::cout << "option name SEEPruning type combo default off var off var conservative var aggressive" << std::endl;
+    
+    // Stage 12: Transposition Table options
+    std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
+    std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
     
     std::cout << "uciok" << std::endl;
 }
@@ -457,7 +461,8 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
 
 void UCIEngine::runBenchmark(int depth) {
     // Run benchmark directly without UCI loop (for OpenBench)
-    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    // Use verbose=false to avoid console output conflicts
+    auto result = BenchmarkSuite::runBenchmark(depth, false);
     
     // Output final result as info string (OpenBench format)
     std::cout << "info string Benchmark complete: " << result.totalNodes 
@@ -570,6 +575,30 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             m_useMagicBitboards = false;
             seajay::getConfig().useMagicBitboards = false;
             std::cerr << "info string Magic bitboards disabled (using ray-based)" << std::endl;
+        }
+    }
+    // Stage 12: Handle Hash option (TT size in MB)
+    else if (optionName == "Hash") {
+        try {
+            int sizeInMB = std::stoi(value);
+            if (sizeInMB >= 1 && sizeInMB <= 16384) {
+                m_tt.resize(sizeInMB);
+                std::cerr << "info string Hash table resized to " << sizeInMB << " MB" << std::endl;
+            } else {
+                std::cerr << "info string Invalid hash size (must be 1-16384 MB)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid hash size value" << std::endl;
+        }
+    }
+    // Stage 12: Handle UseTranspositionTable option
+    else if (optionName == "UseTranspositionTable") {
+        if (value == "true") {
+            m_tt.setEnabled(true);
+            std::cerr << "info string Transposition table enabled" << std::endl;
+        } else if (value == "false") {
+            m_tt.setEnabled(false);
+            std::cerr << "info string Transposition table disabled" << std::endl;
         }
     }
     // Stage 15 Day 5: Handle SEEMode option
