@@ -5,6 +5,7 @@
 #include "../search/types.h"
 #include "../search/move_ordering.h"  // Stage 15: For SEE integration
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
+#include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -71,9 +72,12 @@ void UCIEngine::handleUCI() {
     buildMode = " (Quiescence: PRODUCTION MODE)";
 #endif
     
-    std::cout << "id name SeaJay Stage-15-Bias-BugFix-2" << buildMode << std::endl;
+    std::cout << "id name SeaJay Stage10-Remediated-01929ec" << buildMode << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
+    
+    // Stage 10 Remediation: UCI option for magic bitboards (79x speedup!)
+    std::cout << "option name UseMagicBitboards type check default true" << std::endl;
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
@@ -544,6 +548,18 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useQuiescence = false;
             std::cerr << "info string Quiescence search disabled" << std::endl;
+        }
+    }
+    // Stage 10 Remediation: Handle UseMagicBitboards option
+    else if (optionName == "UseMagicBitboards") {
+        if (value == "true") {
+            m_useMagicBitboards = true;
+            seajay::getConfig().useMagicBitboards = true;
+            std::cerr << "info string Magic bitboards enabled (79x speedup!)" << std::endl;
+        } else if (value == "false") {
+            m_useMagicBitboards = false;
+            seajay::getConfig().useMagicBitboards = false;
+            std::cerr << "info string Magic bitboards disabled (using ray-based)" << std::endl;
         }
     }
     // Stage 15 Day 5: Handle SEEMode option

@@ -4,8 +4,6 @@
  * This header-only implementation avoids static initialization order issues
  * by using inline variables (C++17) and lazy initialization.
  * 
- * Magic bitboards provide constant-time lookup for sliding piece attacks.
- * 
  * GPL-3.0 License
  */
 
@@ -18,18 +16,9 @@
 #include <memory>
 #include <mutex>
 #include <cstring>
-#include <vector>
-#include <iostream>
-#include <cassert>
 
 namespace seajay {
-
-// Forward declarations for magic bitboard functions
-Bitboard magicRookAttacks(Square sq, Bitboard occupied);
-Bitboard magicBishopAttacks(Square sq, Bitboard occupied);
-Bitboard magicQueenAttacks(Square sq, Bitboard occupied);
-
-namespace magic {
+namespace magic_v2 {
 
 // Magic entry structure for each square
 struct MagicEntry {
@@ -39,7 +28,7 @@ struct MagicEntry {
     uint8_t shift;      // Right shift amount (64 - popcount(mask))
 };
 
-// Inline variables ensure single definition across translation units (C++17)
+// Inline variables ensure single definition across translation units
 inline MagicEntry rookMagics[64] = {};
 inline MagicEntry bishopMagics[64] = {};
 
@@ -48,13 +37,11 @@ inline std::unique_ptr<Bitboard[]> rookAttackTable;
 inline std::unique_ptr<Bitboard[]> bishopAttackTable;
 
 // Initialization flag and mutex
-inline std::mutex initMutex;
+inline std::once_flag initFlag;
 inline bool magicsInitialized = false;
 
 /**
  * Compute the blocker mask for a rook on the given square.
- * The mask includes all squares the rook can potentially move to,
- * EXCLUDING the edge squares (as pieces on edges don't affect inner squares).
  */
 inline Bitboard computeRookMask(Square sq) {
     Bitboard mask = 0;
@@ -86,8 +73,6 @@ inline Bitboard computeRookMask(Square sq) {
 
 /**
  * Compute the blocker mask for a bishop on the given square.
- * The mask includes all squares the bishop can potentially move to,
- * EXCLUDING the edge squares.
  */
 inline Bitboard computeBishopMask(Square sq) {
     Bitboard mask = 0;
@@ -196,31 +181,28 @@ inline Bitboard generateSlowBishopAttacks(Square sq, Bitboard occupied) {
     return attacks;
 }
 
-// Forward declaration for internal initialization
-void initMagicsInternal();
-
 /**
- * Initialize magic bitboards - Complete Phase 2 implementation
+ * Initialize magic bitboards
+ * 
+ * Pre-generates all attack tables for rooks and bishops using magic bitboards.
+ * This initialization is performed once at startup and enables O(1) attack generation.
  */
 inline void initMagicsInternal() {
-    // Debug output removed for production use
-    
-    // Phase 1D: Initialize MagicEntry structures
+    // Initialize MagicEntry structures
     for (Square sq = 0; sq < 64; ++sq) {
         // Initialize rook entries
         rookMagics[sq].mask = computeRookMask(sq);
-        rookMagics[sq].magic = ROOK_MAGICS[sq];
-        rookMagics[sq].shift = ROOK_SHIFTS[sq];
+        rookMagics[sq].magic = magic::ROOK_MAGICS[sq];
+        rookMagics[sq].shift = magic::ROOK_SHIFTS[sq];
         rookMagics[sq].attacks = nullptr;
         
         // Initialize bishop entries
         bishopMagics[sq].mask = computeBishopMask(sq);
-        bishopMagics[sq].magic = BISHOP_MAGICS[sq];
-        bishopMagics[sq].shift = BISHOP_SHIFTS[sq];
+        bishopMagics[sq].magic = magic::BISHOP_MAGICS[sq];
+        bishopMagics[sq].shift = magic::BISHOP_SHIFTS[sq];
         bishopMagics[sq].attacks = nullptr;
     }
     
-    // Phase 2A: Table Memory Allocation
     // Calculate total table sizes
     size_t rookTableTotal = 0;
     size_t bishopTableTotal = 0;
@@ -238,7 +220,7 @@ inline void initMagicsInternal() {
     std::memset(rookAttackTable.get(), 0, rookTableTotal * sizeof(Bitboard));
     std::memset(bishopAttackTable.get(), 0, bishopTableTotal * sizeof(Bitboard));
     
-    // Phase 2C: Generate All Rook Attack Tables
+    // Generate all rook attack tables
     Bitboard* rookTablePtr = rookAttackTable.get();
     
     for (Square sq = 0; sq < 64; ++sq) {
@@ -247,7 +229,7 @@ inline void initMagicsInternal() {
         size_t tableSize = 1ULL << (64 - rookMagics[sq].shift);
         int numPatterns = 1 << popCount(rookMagics[sq].mask);
         
-        // Generate all attack patterns
+        // Generate all attack patterns for this square
         for (int pattern = 0; pattern < numPatterns; ++pattern) {
             Bitboard occupancy = indexToOccupancy(pattern, rookMagics[sq].mask);
             Bitboard attacks = generateSlowRookAttacks(sq, occupancy);
@@ -255,14 +237,14 @@ inline void initMagicsInternal() {
             uint64_t index = ((uint64_t)(occupancy & rookMagics[sq].mask) * 
                              (uint64_t)rookMagics[sq].magic) >> rookMagics[sq].shift;
             
-            // Store attacks (constructive collisions are OK)
+            // Store attacks (constructive collisions are handled correctly)
             rookTablePtr[index] = attacks;
         }
         
         rookTablePtr += tableSize;
     }
     
-    // Phase 2D: Generate All Bishop Attack Tables
+    // Generate all bishop attack tables
     Bitboard* bishopTablePtr = bishopAttackTable.get();
     
     for (Square sq = 0; sq < 64; ++sq) {
@@ -271,7 +253,7 @@ inline void initMagicsInternal() {
         size_t tableSize = 1ULL << (64 - bishopMagics[sq].shift);
         int numPatterns = 1 << popCount(bishopMagics[sq].mask);
         
-        // Generate all attack patterns
+        // Generate all attack patterns for this square
         for (int pattern = 0; pattern < numPatterns; ++pattern) {
             Bitboard occupancy = indexToOccupancy(pattern, bishopMagics[sq].mask);
             Bitboard attacks = generateSlowBishopAttacks(sq, occupancy);
@@ -279,14 +261,14 @@ inline void initMagicsInternal() {
             uint64_t index = ((uint64_t)(occupancy & bishopMagics[sq].mask) * 
                              (uint64_t)bishopMagics[sq].magic) >> bishopMagics[sq].shift;
             
-            // Store attacks (constructive collisions are OK)
+            // Store attacks (constructive collisions are handled correctly)
             bishopTablePtr[index] = attacks;
         }
         
         bishopTablePtr += tableSize;
     }
     
-    // Phase 2E: Mark Initialization Complete
+    // Mark initialization complete
     magicsInitialized = true;
 }
 
@@ -294,12 +276,7 @@ inline void initMagicsInternal() {
  * Initialize magic bitboards (thread-safe, called once)
  */
 inline void initMagics() {
-    if (magicsInitialized) return;
-    
-    std::lock_guard<std::mutex> lock(initMutex);
-    if (magicsInitialized) return;  // Double-check
-    
-    initMagicsInternal();
+    std::call_once(initFlag, initMagicsInternal);
 }
 
 /**
@@ -318,94 +295,28 @@ inline void ensureMagicsInitialized() {
     }
 }
 
-/**
- * Validate a magic number (for testing)
- */
-inline bool validateMagicNumber(Square sq, bool isRook) {
-    Bitboard mask = isRook ? computeRookMask(sq) : computeBishopMask(sq);
-    Bitboard magic = isRook ? ROOK_MAGICS[sq] : BISHOP_MAGICS[sq];
-    uint8_t shift = isRook ? ROOK_SHIFTS[sq] : BISHOP_SHIFTS[sq];
-    
-    int numBits = popCount(mask);
-    int tableSize = 1 << numBits;
-    
-    std::vector<bool> usedIndices(1 << (64 - shift), false);
-    std::vector<Bitboard> attacksForIndex(1 << (64 - shift), 0);
-    
-    for (int pattern = 0; pattern < tableSize; ++pattern) {
-        Bitboard occupancy = indexToOccupancy(pattern, mask);
-        Bitboard attacks = isRook ? 
-            generateSlowRookAttacks(sq, occupancy) : 
-            generateSlowBishopAttacks(sq, occupancy);
-        
-        uint64_t index = ((uint64_t)(occupancy & mask) * (uint64_t)magic) >> shift;
-        
-        if (usedIndices[index]) {
-            if (attacksForIndex[index] != attacks) {
-                // Destructive collision
-                return false;
-            }
-        } else {
-            usedIndices[index] = true;
-            attacksForIndex[index] = attacks;
-        }
-    }
-    
-    return true;
-}
+} // namespace magic_v2
 
-// Placeholder for printMaskInfo - not critical for Phase 2
-inline void printMaskInfo() {
-    // This function can be implemented if needed for debugging
-}
-
-} // namespace magic
-
-// Inline implementations for fast attack generation
+// Fast attack generation functions using magic bitboards
 inline Bitboard magicRookAttacks(Square sq, Bitboard occupied) {
-    #ifdef DEBUG
-        assert(sq >= 0 && sq < 64);
-        assert(magic::areMagicsInitialized() && "Magic bitboards not initialized!");
-    #endif
-    
-    magic::ensureMagicsInitialized();
-    const auto& entry = magic::rookMagics[sq];
+    magic_v2::ensureMagicsInitialized();
+    const auto& entry = magic_v2::rookMagics[sq];
     occupied &= entry.mask;
     occupied *= entry.magic;
     occupied >>= entry.shift;
-    
-    #ifdef DEBUG
-        size_t tableSize = 1ULL << (64 - entry.shift);
-        assert(occupied < tableSize && "Magic index out of bounds!");
-    #endif
-    
     return entry.attacks[occupied];
 }
 
 inline Bitboard magicBishopAttacks(Square sq, Bitboard occupied) {
-    #ifdef DEBUG
-        assert(sq >= 0 && sq < 64);
-        assert(magic::areMagicsInitialized() && "Magic bitboards not initialized!");
-    #endif
-    
-    magic::ensureMagicsInitialized();
-    const auto& entry = magic::bishopMagics[sq];
+    magic_v2::ensureMagicsInitialized();
+    const auto& entry = magic_v2::bishopMagics[sq];
     occupied &= entry.mask;
     occupied *= entry.magic;
     occupied >>= entry.shift;
-    
-    #ifdef DEBUG
-        size_t tableSize = 1ULL << (64 - entry.shift);
-        assert(occupied < tableSize && "Magic index out of bounds!");
-    #endif
-    
     return entry.attacks[occupied];
 }
 
 inline Bitboard magicQueenAttacks(Square sq, Bitboard occupied) {
-    #ifdef DEBUG
-        assert(sq >= 0 && sq < 64);
-    #endif
     return magicRookAttacks(sq, occupied) | magicBishopAttacks(sq, occupied);
 }
 

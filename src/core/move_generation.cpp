@@ -1,8 +1,6 @@
 #include "move_generation.h"
 #include "bitboard.h"
-#ifdef USE_MAGIC_BITBOARDS
-#include "magic_bitboards.h"
-#endif
+#include "attack_wrapper.h"  // Use runtime-switchable attacks
 #include <algorithm>
 #include <cstdlib>
 
@@ -316,7 +314,7 @@ void MoveGenerator::generateBishopCaptures(const Board& board, MoveList& moves) 
     
     while (ourBishops) {
         Square from = popLsb(ourBishops);
-        Bitboard attacks = bishopAttacks(from, occupied);
+        Bitboard attacks = seajay::getBishopAttacks(from, occupied);
         Bitboard captures = attacks & theirPieces;
         
         while (captures) {
@@ -333,7 +331,7 @@ void MoveGenerator::generateBishopQuietMoves(const Board& board, MoveList& moves
     
     while (ourBishops) {
         Square from = popLsb(ourBishops);
-        Bitboard attacks = bishopAttacks(from, occupied);
+        Bitboard attacks = seajay::getBishopAttacks(from, occupied);
         Bitboard quietMoves = attacks & ~occupied;
         
         while (quietMoves) {
@@ -358,7 +356,7 @@ void MoveGenerator::generateRookCaptures(const Board& board, MoveList& moves) {
     
     while (ourRooks) {
         Square from = popLsb(ourRooks);
-        Bitboard attacks = rookAttacks(from, occupied);
+        Bitboard attacks = seajay::getRookAttacks(from, occupied);
         Bitboard captures = attacks & theirPieces;
         
         while (captures) {
@@ -375,7 +373,7 @@ void MoveGenerator::generateRookQuietMoves(const Board& board, MoveList& moves) 
     
     while (ourRooks) {
         Square from = popLsb(ourRooks);
-        Bitboard attacks = rookAttacks(from, occupied);
+        Bitboard attacks = seajay::getRookAttacks(from, occupied);
         Bitboard quietMoves = attacks & ~occupied;
         
         while (quietMoves) {
@@ -400,7 +398,7 @@ void MoveGenerator::generateQueenCaptures(const Board& board, MoveList& moves) {
     
     while (ourQueens) {
         Square from = popLsb(ourQueens);
-        Bitboard attacks = queenAttacks(from, occupied);
+        Bitboard attacks = seajay::getQueenAttacks(from, occupied);
         Bitboard captures = attacks & theirPieces;
         
         while (captures) {
@@ -417,7 +415,7 @@ void MoveGenerator::generateQueenQuietMoves(const Board& board, MoveList& moves)
     
     while (ourQueens) {
         Square from = popLsb(ourQueens);
-        Bitboard attacks = queenAttacks(from, occupied);
+        Bitboard attacks = seajay::getQueenAttacks(from, occupied);
         Bitboard quietMoves = attacks & ~occupied;
         
         while (quietMoves) {
@@ -534,7 +532,7 @@ Bitboard MoveGenerator::bishopAttacks(Square square, Bitboard occupied) {
     return magicBishopAttacks(square, occupied);
 #else
     // Use ray-based generation
-    return ::seajay::bishopAttacks(square, occupied);
+    return seajay::getBishopAttacks(square, occupied);
 #endif
 }
 
@@ -544,7 +542,7 @@ Bitboard MoveGenerator::rookAttacks(Square square, Bitboard occupied) {
     return magicRookAttacks(square, occupied);
 #else
     // Use ray-based generation
-    return ::seajay::rookAttacks(square, occupied);
+    return seajay::getRookAttacks(square, occupied);
 #endif
 }
 
@@ -554,21 +552,21 @@ Bitboard MoveGenerator::queenAttacks(Square square, Bitboard occupied) {
     return magicQueenAttacks(square, occupied);
 #else
     // Use ray-based generation
-    return ::seajay::bishopAttacks(square, occupied) | ::seajay::rookAttacks(square, occupied);
+    return seajay::getBishopAttacks(square, occupied) | seajay::getRookAttacks(square, occupied);
 #endif
 }
 
 // Public wrappers for SEE (Stage 15)
 Bitboard MoveGenerator::getBishopAttacks(Square square, Bitboard occupied) {
-    return bishopAttacks(square, occupied);
+    return seajay::getBishopAttacks(square, occupied);
 }
 
 Bitboard MoveGenerator::getRookAttacks(Square square, Bitboard occupied) {
-    return rookAttacks(square, occupied);
+    return seajay::getRookAttacks(square, occupied);
 }
 
 Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
-    return queenAttacks(square, occupied);
+    return seajay::getQueenAttacks(square, occupied);
 }
 
 Bitboard MoveGenerator::getKingAttacks(Square square) {
@@ -592,11 +590,11 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     
     // Check for bishop/queen attacks
     Bitboard bishopsQueens = board.pieces(attackingColor, BISHOP) | board.pieces(attackingColor, QUEEN);
-    if (bishopsQueens & bishopAttacks(square, board.occupied())) return true;
+    if (bishopsQueens & seajay::getBishopAttacks(square, board.occupied())) return true;
     
     // Check for rook/queen attacks
     Bitboard rooksQueens = board.pieces(attackingColor, ROOK) | board.pieces(attackingColor, QUEEN);
-    if (rooksQueens & rookAttacks(square, board.occupied())) return true;
+    if (rooksQueens & seajay::getRookAttacks(square, board.occupied())) return true;
     
     // Check for king attacks
     Bitboard king = board.pieces(attackingColor, KING);
@@ -639,21 +637,21 @@ Bitboard MoveGenerator::getAttackedSquares(const Board& board, Color color) {
     Bitboard bishops = board.pieces(color, BISHOP);
     while (bishops) {
         Square square = popLsb(bishops);
-        attacked |= bishopAttacks(square, occupied);
+        attacked |= seajay::getBishopAttacks(square, occupied);
     }
     
     // Rook attacks
     Bitboard rooks = board.pieces(color, ROOK);
     while (rooks) {
         Square square = popLsb(rooks);
-        attacked |= rookAttacks(square, occupied);
+        attacked |= seajay::getRookAttacks(square, occupied);
     }
     
     // Queen attacks
     Bitboard queens = board.pieces(color, QUEEN);
     while (queens) {
         Square square = popLsb(queens);
-        attacked |= queenAttacks(square, occupied);
+        attacked |= seajay::getQueenAttacks(square, occupied);
     }
     
     // King attacks
@@ -739,7 +737,7 @@ Bitboard MoveGenerator::getPinnedPieces(const Board& board, Color kingColor) {
         Square attackerSquare = popLsb(rookAttackers);
         
         // Check if this attacker can pin along a rank/file to the king
-        Bitboard rayToKing = ::seajay::rookAttacks(attackerSquare, occupied) & squareBB(kingSquare);
+        Bitboard rayToKing = seajay::getRookAttacks(attackerSquare, occupied) & squareBB(kingSquare);
         if (rayToKing) {
             // There's a ray from attacker to king - check what's in between
             Bitboard between = ::seajay::between(attackerSquare, kingSquare) & occupied;
@@ -763,7 +761,7 @@ Bitboard MoveGenerator::getPinnedPieces(const Board& board, Color kingColor) {
         Square attackerSquare = popLsb(bishopAttackers);
         
         // Check if this attacker can pin along a diagonal to the king
-        Bitboard rayToKing = ::seajay::bishopAttacks(attackerSquare, occupied) & squareBB(kingSquare);
+        Bitboard rayToKing = seajay::getBishopAttacks(attackerSquare, occupied) & squareBB(kingSquare);
         if (rayToKing) {
             // There's a ray from attacker to king - check what's in between
             Bitboard between = ::seajay::between(attackerSquare, kingSquare) & occupied;
@@ -841,7 +839,7 @@ bool MoveGenerator::couldDiscoverCheck(const Board& board, Square from, Square k
     if (rankOf(from) == rankOf(kingSquare) || fileOf(from) == fileOf(kingSquare)) {
         // Moving piece is on same rank/file as king
         Bitboard rookAttackers = (board.pieces(opponent, ROOK) | board.pieces(opponent, QUEEN));
-        Bitboard rookAttacksFromKing = ::seajay::rookAttacks(kingSquare, occupied ^ squareBB(from));
+        Bitboard rookAttacksFromKing = seajay::getRookAttacks(kingSquare, occupied ^ squareBB(from));
         
         if (rookAttacksFromKing & rookAttackers) {
             return true; // Moving this piece would expose king to rook/queen
@@ -853,7 +851,7 @@ bool MoveGenerator::couldDiscoverCheck(const Board& board, Square from, Square k
         std::abs(fileOf(from) - fileOf(kingSquare))) {
         // Moving piece is on same diagonal as king
         Bitboard bishopAttackers = (board.pieces(opponent, BISHOP) | board.pieces(opponent, QUEEN));
-        Bitboard bishopAttacksFromKing = ::seajay::bishopAttacks(kingSquare, occupied ^ squareBB(from));
+        Bitboard bishopAttacksFromKing = seajay::getBishopAttacks(kingSquare, occupied ^ squareBB(from));
         
         if (bishopAttacksFromKing & bishopAttackers) {
             return true; // Moving this piece would expose king to bishop/queen
@@ -877,11 +875,11 @@ Bitboard MoveGenerator::getCheckers(const Board& board, Square kingSquare, Color
     checkers |= knightAttacks & board.pieces(attackingColor, KNIGHT);
     
     // Check for bishop/queen checks
-    Bitboard bishopAttacks = ::seajay::bishopAttacks(kingSquare, board.occupied());
+    Bitboard bishopAttacks = seajay::getBishopAttacks(kingSquare, board.occupied());
     checkers |= bishopAttacks & (board.pieces(attackingColor, BISHOP) | board.pieces(attackingColor, QUEEN));
     
     // Check for rook/queen checks
-    Bitboard rookAttacks = ::seajay::rookAttacks(kingSquare, board.occupied());
+    Bitboard rookAttacks = seajay::getRookAttacks(kingSquare, board.occupied());
     checkers |= rookAttacks & (board.pieces(attackingColor, ROOK) | board.pieces(attackingColor, QUEEN));
     
     // King cannot give check (but include for completeness)
@@ -1046,7 +1044,7 @@ void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Squa
     Bitboard ourBishops = board.pieces(us, BISHOP);
     while (ourBishops) {
         Square from = popLsb(ourBishops);
-        if (bishopAttacks(from, board.occupied()) & targetBB) {
+        if (seajay::getBishopAttacks(from, board.occupied()) & targetBB) {
             moves.addMove(from, target, CAPTURE);
         }
     }
@@ -1055,7 +1053,7 @@ void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Squa
     Bitboard ourRooks = board.pieces(us, ROOK);
     while (ourRooks) {
         Square from = popLsb(ourRooks);
-        if (rookAttacks(from, board.occupied()) & targetBB) {
+        if (seajay::getRookAttacks(from, board.occupied()) & targetBB) {
             moves.addMove(from, target, CAPTURE);
         }
     }
@@ -1064,7 +1062,7 @@ void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Squa
     Bitboard ourQueens = board.pieces(us, QUEEN);
     while (ourQueens) {
         Square from = popLsb(ourQueens);
-        if (queenAttacks(from, board.occupied()) & targetBB) {
+        if (seajay::getQueenAttacks(from, board.occupied()) & targetBB) {
             moves.addMove(from, target, CAPTURE);
         }
     }
@@ -1110,21 +1108,21 @@ void MoveGenerator::generateBlockingMoves(const Board& board, MoveList& moves, B
         }
         
         // Bishop blocks
-        Bitboard bishopAttackers = bishopAttacks(blockSq, occupied) & board.pieces(us, BISHOP);
+        Bitboard bishopAttackers = seajay::getBishopAttacks(blockSq, occupied) & board.pieces(us, BISHOP);
         while (bishopAttackers) {
             Square from = popLsb(bishopAttackers);
             moves.addMove(from, blockSq, NORMAL);
         }
         
         // Rook blocks
-        Bitboard rookAttackers = rookAttacks(blockSq, occupied) & board.pieces(us, ROOK);
+        Bitboard rookAttackers = seajay::getRookAttacks(blockSq, occupied) & board.pieces(us, ROOK);
         while (rookAttackers) {
             Square from = popLsb(rookAttackers);
             moves.addMove(from, blockSq, NORMAL);
         }
         
         // Queen blocks
-        Bitboard queenAttackers = queenAttacks(blockSq, occupied) & board.pieces(us, QUEEN);
+        Bitboard queenAttackers = seajay::getQueenAttacks(blockSq, occupied) & board.pieces(us, QUEEN);
         while (queenAttackers) {
             Square from = popLsb(queenAttackers);
             moves.addMove(from, blockSq, NORMAL);

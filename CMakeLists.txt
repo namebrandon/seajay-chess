@@ -17,9 +17,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
 
 # Magic bitboards development options (Stage 10)
-option(USE_MAGIC_BITBOARDS "Use magic bitboards instead of ray-based" OFF)
+# REMEDIATED: USE_MAGIC_BITBOARDS removed - now controlled via UCI option (default: ON)
 option(DEBUG_MAGIC "Enable magic bitboard debug output" OFF)
-option(SANITIZE_MAGIC "Enable all sanitizers for magic development" OFF)
 
 # Transposition Table development options (Stage 12)
 option(TT_DEBUG "Enable transposition table debug checks" OFF)
@@ -32,15 +31,6 @@ set_property(CACHE QSEARCH_MODE PROPERTY STRINGS "TESTING" "TUNING" "PRODUCTION"
 
 if(DEBUG_MAGIC)
     add_compile_definitions(DEBUG_MAGIC)
-endif()
-
-if(USE_MAGIC_BITBOARDS)
-    add_compile_definitions(USE_MAGIC_BITBOARDS)
-endif()
-
-if(SANITIZE_MAGIC)
-    add_compile_options(-fsanitize=address,undefined,leak)
-    add_link_options(-fsanitize=address,undefined,leak)
 endif()
 
 # Transposition Table compilation modes
