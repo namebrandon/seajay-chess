@@ -73,7 +73,9 @@ No compilation fixes required - Phase 3 compiles as-is.
 | **Phase 2** | `f5b328a74` vs `b949c427` | **+13.90 ± 20.96 ELO** | 300 games (W:83 L:71 D:146) | ✅ GOOD - No regression |
 | **Phase 3** | `3a5f4f780` vs `b949c427` | **-350 ELO** | Confirmed | ❌ CATASTROPHIC REGRESSION |
 | **Phase 3 Fixed** | `fd3d575e3` vs `b949c427` | **+3.82 ± 17.63 ELO** | 728 games (W:205 L:197 D:326) | ⚠️ Bug fixed but no ELO gain |
-| **Phase 3 Fixed vs Phase 2** | `fd3d575e3` vs `f5b328a74` | *Testing in progress* | Target: 1000+ games | 🔄 Testing Phase 3 impact |
+| **Phase 3 Fixed vs Phase 2** | `fd3d575e3` vs `f5b328a74` | **+0.31 ± 12.70 ELO** | 1108 games (W:299 L:298 D:511) | ⚠️ No difference! |
+| **Phase 2 vs Phase 1** | `f5b328a74` vs `c8966a678` | **+13.98 ± 11.92 ELO** | 1492 games (W:419 L:359 D:714) | ✅ Phases ARE additive! |
+| **Phase 3 Fixed vs Stage 13 (60+0.6s)** | `fd3d575e3` vs `b949c427` | *Testing in progress* | Longer TC test | 🔄 Testing TC scaling |
 
 ### 🔍 Critical Finding: Phase 3 is the Culprit
 
@@ -175,11 +177,29 @@ Despite fixing the catastrophic bug:
 - But cumulative (all phases fixed) shows only ~4 ELO gain
 - This suggests Phase 3's other changes may have negated improvements
 
-### Current Investigation
-Testing Phase 3 Fixed vs Phase 2 directly to determine if:
-1. Phase 3's move ordering rewrite is problematic
-2. Other Phase 3 changes (prefetching, etc.) hurt performance
-3. There are negative interactions between phases
+### Investigation Results - The Mystery Deepens
+
+**Phase 3 Fixed vs Phase 2: +0.31 ELO (essentially identical)**
+
+This reveals something very strange:
+- Phase 2 vs Stage 13: **+13.90 ELO**
+- Phase 3 Fixed vs Stage 13: **+3.82 ELO**
+- Phase 3 Fixed vs Phase 2: **+0.31 ELO** (no difference)
+
+**Mathematical Inconsistency:**
+If Phase 3 Fixed ≈ Phase 2, and Phase 2 is +14 ELO over Stage 13, then Phase 3 Fixed should also be ~+14 ELO over Stage 13. But it measured only +3.82 ELO!
+
+**Key Findings from Additional Testing:**
+1. **Phase 2 vs Phase 1 shows +14 ELO** - Improvements ARE additive!
+2. **Phase 3 Fixed = Phase 2** - Phase 3's optimizations add nothing
+3. **The +3.82 ELO result appears to be an outlier** - Expected ~+28 ELO based on Phase 1+2
+4. **Testing at longer time control (60+0.6s)** - Will clarify true strength and TC scaling
+
+**Current Understanding:**
+- Phase 1: +14 ELO (compile flag removal)
+- Phase 2: +14 ELO additional (algorithm improvements)  
+- Phase 3: +0 ELO (move ordering changes are neutral)
+- **Expected cumulative: ~+28 ELO**
 
 ### Root Cause of Original Bug
 Phase 3's "static eval caching optimization" was fundamentally broken:
