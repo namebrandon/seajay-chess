@@ -75,7 +75,8 @@ No compilation fixes required - Phase 3 compiles as-is.
 | **Phase 3 Fixed** | `fd3d575e3` vs `b949c427` | **+3.82 ± 17.63 ELO** | 728 games (W:205 L:197 D:326) | ⚠️ Bug fixed but no ELO gain |
 | **Phase 3 Fixed vs Phase 2** | `fd3d575e3` vs `f5b328a74` | **+0.31 ± 12.70 ELO** | 1108 games (W:299 L:298 D:511) | ⚠️ No difference! |
 | **Phase 2 vs Phase 1** | `f5b328a74` vs `c8966a678` | **+13.98 ± 11.92 ELO** | 1492 games (W:419 L:359 D:714) | ✅ Phases ARE additive! |
-| **Phase 3 Fixed vs Stage 13 (60+0.6s)** | `fd3d575e3` vs `b949c427` | *Testing in progress* | Longer TC test | 🔄 Testing TC scaling |
+| **Phase 3 Fixed vs Stage 13 (60+0.6s)** | `fd3d575e3` vs `b949c427` | **-0.95 ± 13.95 ELO** | 1096 games (W:300 L:303 D:493) | ❌ No improvement at longer TC! |
+| **Phase 2 vs Stage 13 (60+0.6s)** | `f5b328a74` vs `b949c427` | *Testing in progress* | Longer TC test | 🔄 Validate Phase 2 at depth |
 
 ### 🔍 Critical Finding: Phase 3 is the Culprit
 
@@ -199,7 +200,13 @@ If Phase 3 Fixed ≈ Phase 2, and Phase 2 is +14 ELO over Stage 13, then Phase 3
 - Phase 1: +14 ELO (compile flag removal)
 - Phase 2: +14 ELO additional (algorithm improvements)  
 - Phase 3: +0 ELO (move ordering changes are neutral)
-- **Expected cumulative: ~+28 ELO**
+- **Expected cumulative: ~+28 ELO** (but not showing in tests)
+
+**Decision Point:**
+Testing Phase 2 at 60+0.6s to determine if:
+- The algorithmic improvements (delta pruning, TT bounds) are worth keeping
+- Phase 3 should be completely discarded (adds complexity, no benefit)
+- Stage 14 should be Phase 1 + Phase 2 only
 
 ### Root Cause of Original Bug
 Phase 3's "static eval caching optimization" was fundamentally broken:
