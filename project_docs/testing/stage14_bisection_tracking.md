@@ -76,7 +76,7 @@ No compilation fixes required - Phase 3 compiles as-is.
 | **Phase 3 Fixed vs Phase 2** | `fd3d575e3` vs `f5b328a74` | **+0.31 ± 12.70 ELO** | 1108 games (W:299 L:298 D:511) | ⚠️ No difference! |
 | **Phase 2 vs Phase 1** | `f5b328a74` vs `c8966a678` | **+13.98 ± 11.92 ELO** | 1492 games (W:419 L:359 D:714) | ✅ Phases ARE additive! |
 | **Phase 3 Fixed vs Stage 13 (60+0.6s)** | `fd3d575e3` vs `b949c427` | **-0.95 ± 13.95 ELO** | 1096 games (W:300 L:303 D:493) | ❌ No improvement at longer TC! |
-| **Phase 2 vs Stage 13 (60+0.6s)** | `f5b328a74` vs `b949c427` | *Testing in progress* | Longer TC test | 🔄 Validate Phase 2 at depth |
+| **Phase 2 vs Stage 13 (60+0.6s)** | `f5b328a74` vs `b949c427` | **-3.20 ± 11.91 ELO** | 1518 games (W:426 L:440 D:652) | ❌ No improvement at 60+0.6s! |
 
 ### 🔍 Critical Finding: Phase 3 is the Culprit
 
