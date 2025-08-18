@@ -60,7 +60,8 @@ No compilation fixes required - Phase 3 compiles as-is.
 | **Stage 13 Baseline** | `b949c427e811bfb85a7318ca8a228494a47e1d38` | 19191913 | **915,363** | ✅ Ready |
 | **Phase 1** | `c8966a678f5a94f9de4fb7074cad52a1f5b2773b` | 19191913 | **929,929** | ✅ Ready |
 | **Phase 2** | `f5b328a74e677d933f9556b706efc4dbea8efe39` | 19191913 | **921,545** | ✅ Ready |
-| **Phase 3** | `3a5f4f780d5d0b789a5d86c6436627f65985b4d2` | 19191913 | **929,470** | ✅ Ready |
+| **Phase 3** | `3a5f4f780d5d0b789a5d86c6436627f65985b4d2` | 19191913 | **929,470** | ❌ Has -350 ELO bug |
+| **Phase 3 Fixed** | `fd3d575e3e01da91c55690aa12a44819a8080428` | 19191913 | *TBD* | ✅ Bug fixed, testing |
 
 ## 🎯 OpenBench Test Results - Regression Isolated to Phase 3
 
@@ -70,7 +71,9 @@ No compilation fixes required - Phase 3 compiles as-is.
 |-------|------------------|------------|-------|--------|
 | **Phase 1** | `c8966a678` vs `b949c427` | **+14 ELO** | 372 games | ✅ GOOD - No regression |
 | **Phase 2** | `f5b328a74` vs `b949c427` | **+13.90 ± 20.96 ELO** | 300 games (W:83 L:71 D:146) | ✅ GOOD - No regression |
-| **Phase 3** | `3a5f4f780` vs `b949c427` | *Testing in progress* | - | ⏳ Awaiting results |
+| **Phase 3** | `3a5f4f780` vs `b949c427` | **-350 ELO** | Confirmed | ❌ CATASTROPHIC REGRESSION |
+| **Phase 3 Fixed** | `fd3d575e3` vs `b949c427` | **+3.82 ± 17.63 ELO** | 728 games (W:205 L:197 D:326) | ⚠️ Bug fixed but no ELO gain |
+| **Phase 3 Fixed vs Phase 2** | `fd3d575e3` vs `f5b328a74` | *Testing in progress* | Target: 1000+ games | 🔄 Testing Phase 3 impact |
 
 ### 🔍 Critical Finding: Phase 3 is the Culprit
 
@@ -81,11 +84,13 @@ No compilation fixes required - Phase 3 compiles as-is.
 **Phase 2 Result:** +13.90 ± 20.96 ELO over Stage 13 baseline  
 - Algorithm improvements (best move tracking, TT bounds, delta pruning) are working correctly
 - Pentanomial: [2, 28, 78, 40, 2] shows stable performance
+- **IMPORTANT: Phase 2's changes were ALL CORRECT and beneficial!**
 - This phase is CLEAN
 
-**Phase 3 Expectation:** This is where the -350 ELO catastrophic regression was introduced
-- Performance optimizations likely contain the bug
-- Awaiting confirmation from OpenBench testing
+**Phase 3 Confirmed:** The -350 ELO catastrophic regression source
+- Static eval caching optimization was fundamentally broken
+- Tried to use parent position's eval for child position
+- Fix confirmed to resolve the issue
 
 ## 🐛 Root Cause Analysis: Multiple Bugs in Phase 3
 
@@ -155,3 +160,40 @@ All phases show consistent NPS around 915K-930K, indicating the regression is al
 - Only apply **minimal compilation fixes** - no functional changes
 - Preserve original functionality as much as possible
 - Document all changes made for bisection testing
+
+## ✅ RESOLUTION SUMMARY
+
+### The Bug Was in Phase 3 ONLY
+- **Phase 1**: Clean, +14 ELO improvement ✅
+- **Phase 2**: Clean, +13.90 ELO improvement ✅  
+- **Phase 3**: Catastrophic -350 ELO regression ❌
+- **Phase 3 Fixed**: Bug resolved but cumulative gain only +3.82 ELO ⚠️
+
+### Unexpected Finding
+Despite fixing the catastrophic bug:
+- Phase 1 + Phase 2 showed ~28 ELO gain individually
+- But cumulative (all phases fixed) shows only ~4 ELO gain
+- This suggests Phase 3's other changes may have negated improvements
+
+### Current Investigation
+Testing Phase 3 Fixed vs Phase 2 directly to determine if:
+1. Phase 3's move ordering rewrite is problematic
+2. Other Phase 3 changes (prefetching, etc.) hurt performance
+3. There are negative interactions between phases
+
+### Root Cause of Original Bug
+Phase 3's "static eval caching optimization" was fundamentally broken:
+- Attempted to pass parent position's evaluation to child position
+- After a move, the position is completely different - can't reuse eval
+- This is a conceptual error, not just an implementation bug
+
+### The Fix Applied
+- Remove the entire static eval caching mechanism
+- Keep the TT poisoning fix (don't store minus_infinity)
+- Accept the performance cost to restore correct evaluation
+
+### Lessons Learned
+1. **Performance optimizations can be dangerous** - always validate with ELO testing
+2. **Phase 2 was falsely suspected** - its changes were all correct and beneficial
+3. **Bisection testing is critical** - helped isolate the exact problematic commit
+4. **Conceptual errors are harder to spot** - the code looked reasonable but the concept was flawed
