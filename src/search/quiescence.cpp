@@ -64,9 +64,10 @@ eval::Score quiescence(
     if (tt.isEnabled() && (ttEntry = tt.probe(board.zobristKey())) != nullptr) {
         // We have a TT hit
         if (!ttEntry->isEmpty() && ttEntry->key32 == (board.zobristKey() >> 32)) {
-            // Depth 0 is used for quiescence entries
-            // Accept any depth >= 0 (all quiescence entries have depth 0)
-            if (ttEntry->depth >= 0) {
+            // FIX: Only accept negative depth entries (quiescence-specific)
+            // This prevents TT pollution where main search entries interfere with quiescence
+            // Negative depth = quiescence entry, positive/zero = main search entry
+            if (ttEntry->depth < 0) {
                 ttScore = eval::Score(ttEntry->score);
                 
                 // Adjust mate scores relative to current ply
@@ -403,10 +404,11 @@ eval::Score quiescence(
                             scoreToStore = eval::Score(score.value() - ply);
                         }
                         
-                        // Store with depth 0 (quiescence) and LOWER bound
+                        // Store with depth -1 (negative = quiescence) and LOWER bound
                         // Note: 'move' is the best move that caused the beta cutoff
+                        // FIX: Use negative depth to prevent TT pollution with main search
                         tt.store(board.zobristKey(), move, scoreToStore.value(), 
-                                staticEval.value(), 0, Bound::LOWER);
+                                staticEval.value(), -1, Bound::LOWER);
                     }
                     
                     return score;
@@ -440,10 +442,11 @@ eval::Score quiescence(
             scoreToStore = eval::Score(bestScore.value() - ply);
         }
         
-        // Store with depth 0 for quiescence and the best move found
+        // Store with depth -1 for quiescence and the best move found
         // Even for UPPER bounds (fail-low), storing the best move helps move ordering
+        // FIX: Use negative depth to prevent TT pollution with main search
         tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
-                staticEval.value(), 0, bound);
+                staticEval.value(), -1, bound);
     }
     
     return bestScore;
