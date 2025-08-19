@@ -5,10 +5,11 @@ This document tracks identified but unresolved bugs in the SeaJay chess engine, 
 ## 📊 Current Priority Status (Updated 2025-08-19)
 
 ### HIGHEST PRIORITY OPEN BUG:
-**Bug #011: Test Script Initialization Hangs** - This is now the only remaining open bug, affecting test automation only (not gameplay).
+**Bug #014: Illegal Moves During Game Play** - CRITICAL: Engine makes illegal moves causing immediate game loss. Must be investigated after LMR testing.
 
 ### Open Bugs Summary:
-1. **Bug #011** (MEDIUM): Test script initialization hangs - Does not affect actual gameplay
+1. **Bug #014** (CRITICAL): Engine makes illegal moves during gameplay - Causes immediate game loss
+2. **Bug #011** (MEDIUM): Test script initialization hangs - Does not affect actual gameplay
 
 ### Recently Resolved:
 - **Bug #013** (RESOLVED 2025-08-19): Illegal PV moves - Fixed with move validation, no strength loss
@@ -1320,3 +1321,134 @@ echo -e "position startpos moves e2e4 c7c5 b1c3 e7e5 g1f3 b8c6 f1c4 g8f6 d2d3 f8
 4. Add defensive checks to prevent illegal moves in PV
 5. Consider adding move legality validation before adding to PV
 6. Investigate if this is a regression from Stage 15 changes or pre-existing
+
+---
+
+## Bug #014: Illegal Moves During Game Play
+
+**Status:** OPEN - Requires Investigation  
+**Priority:** CRITICAL  
+**Discovery Date:** 2025-08-19 (During OpenBench testing)  
+**Impact:** Engine makes illegal moves causing game termination
+
+### Summary
+
+During OpenBench testing of the LMR feature branch, SeaJay made illegal moves in at least two games, causing immediate game termination. The illegal moves appear to be related to king movement, specifically attempting to move the king to an invalid square (f2f1 and h2h1).
+
+### Game 1 Details
+
+**Position:** Custom FEN starting position
+**FEN:** `rnbqkbnr/p5pp/2p1pp2/1p1p4/3P4/4PN1P/PPPNBPP1/R1BQK2R b KQkq - 0 1`
+**Result:** 0-1 (White makes illegal move f2f1 at move 39)
+
+**Critical Moment:**
+```
+38. Kf2 Rf7+ 
+39. Nd6 Bh4+ 
+White attempts: f2f1 (illegal - king cannot move to f1)
+```
+
+**Game Duration:** 20 seconds  
+**Time Control:** 12.34+0.12
+
+### Game 2 Details
+
+**Position:** Custom FEN starting position  
+**FEN:** `r2qkbnr/p1pbpppp/1pn5/8/2PN4/1Q6/PP1PPPPP/RNB1KB1R w KQkq - 0 1`
+**Result:** 0-1 (White makes illegal move h2h1 at move 18)
+
+**Critical Moment:**
+```
+17. Kh2 Qh5 (threatening mate)
+18. Bxf4 Nxf3+ 
+White attempts: h2h1 (illegal - king cannot move to h1)
+```
+
+**Game Duration:** 10 seconds  
+**Time Control:** 12.34+0.12
+
+### Pattern Analysis
+
+**Common Elements:**
+1. Both illegal moves involve the king
+2. Both are attempted escapes from check/threats
+3. Both try to move the king backwards (f2→f1, h2→h1)
+4. Both occur in complex tactical positions with multiple threats
+5. Both games use custom FEN starting positions (not standard startpos)
+
+### Potential Root Causes
+
+1. **Check Evasion Bug**
+   - Engine may incorrectly generate king escape squares when in check
+   - Possibly related to Bug #001 (en passant check evasion) patterns
+   
+2. **King Safety Calculation**
+   - Attack maps may not be properly updated in complex positions
+   - King safety checks might fail under time pressure
+   
+3. **Move Generation Under Threat**
+   - Complex tactical positions with multiple threats may corrupt move generation
+   - Similar to how en passant was missed in check positions (Bug #001)
+
+4. **Custom FEN Handling**
+   - Both games started from custom FEN positions
+   - May indicate initialization issues with non-standard positions
+
+5. **Time Pressure Effects**
+   - Fast time control (12.34+0.12) may expose race conditions
+   - Move validation might be skipped under time pressure
+
+### Relationship to Other Bugs
+
+- **Bug #013:** Also involved illegal moves, but in PV output rather than actual moves
+- **Bug #001:** En passant check evasion - similar pattern of missing moves in check
+- **Bug #009/012:** PST sign issues - though supposedly fixed, may have residual effects
+
+### Severity Assessment
+
+**CRITICAL Priority because:**
+- Causes immediate game loss
+- Occurs during competitive testing
+- Makes engine unusable for tournaments
+- Indicates fundamental move generation/validation issues
+- Happened multiple times in short testing period
+
+### Investigation Priority
+
+This should be investigated with **HIGHEST PRIORITY** after current LMR testing because:
+1. It causes actual game losses (not just display issues)
+2. It occurs in real games, not just test positions
+3. It may indicate deeper issues in move generation or validation
+4. It could be related to recent changes or long-standing issues
+
+### Debugging Strategy
+
+1. **Reproduce positions:** Set up exact positions where illegal moves occurred
+2. **Trace move generation:** Step through generateMoves() for those positions
+3. **Check validation:** Verify leavesKingInCheck() and isLegal() functions
+4. **Review check evasion:** Similar to Bug #001 fix, may need special handling
+5. **Test with standard startpos:** Determine if custom FEN is a factor
+6. **Time pressure testing:** Check if time management affects move validation
+
+### Test Commands
+
+**Game 1 Final Position:**
+```bash
+# Reconstruct position at move 39 and check move generation
+echo -e "position fen [reconstructed FEN at move 39]\ngo depth 1\nquit" | ./bin/seajay
+```
+
+**Game 2 Final Position:**
+```bash
+# Reconstruct position at move 18 and check move generation  
+echo -e "position fen [reconstructed FEN at move 18]\ngo depth 1\nquit" | ./bin/seajay
+```
+
+### Next Steps
+
+1. Complete current LMR regression testing
+2. Reconstruct exact positions where illegal moves occurred
+3. Verify move generation produces these illegal moves
+4. Trace through move validation logic
+5. Check if recent changes (LMR, Bug #013 fix) introduced this issue
+6. Implement additional move validation before making moves
