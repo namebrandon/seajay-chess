@@ -529,33 +529,18 @@ Bitboard MoveGenerator::getKnightAttacks(Square square) {
 }
 
 Bitboard MoveGenerator::bishopAttacks(Square square, Bitboard occupied) {
-#ifdef USE_MAGIC_BITBOARDS
     // Use magic bitboards for fast attack generation
     return magicBishopAttacks(square, occupied);
-#else
-    // Use ray-based generation
-    return seajay::getBishopAttacks(square, occupied);
-#endif
 }
 
 Bitboard MoveGenerator::rookAttacks(Square square, Bitboard occupied) {
-#ifdef USE_MAGIC_BITBOARDS
     // Use magic bitboards for fast attack generation
     return magicRookAttacks(square, occupied);
-#else
-    // Use ray-based generation
-    return seajay::getRookAttacks(square, occupied);
-#endif
 }
 
 Bitboard MoveGenerator::queenAttacks(Square square, Bitboard occupied) {
-#ifdef USE_MAGIC_BITBOARDS
     // Use magic bitboards for fast attack generation
     return magicQueenAttacks(square, occupied);
-#else
-    // Use ray-based generation
-    return seajay::getBishopAttacks(square, occupied) | seajay::getRookAttacks(square, occupied);
-#endif
 }
 
 // Public wrappers for SEE (Stage 15)

@@ -49,7 +49,7 @@ private:
     uint64_t m_qsearchNodeLimit = 0;  // Stage 14 Remediation: Runtime node limit (0 = unlimited)
     
     // Stage 15 Day 5: SEE integration mode
-    std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
+    std::string m_seeMode = "testing";  // SEE mode: off, testing, shadow, production
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive

@@ -452,7 +452,7 @@ SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
     while (m_swapList.depth > 1) {
         m_swapList.depth--;
         m_swapList.gains[m_swapList.depth - 1] = 
-            std::min(m_swapList.gains[m_swapList.depth - 1], 
+            std::max(m_swapList.gains[m_swapList.depth - 1], 
                     -m_swapList.gains[m_swapList.depth]);
     }
     
