@@ -84,14 +84,14 @@ No compilation fixes required - Phase 3 compiles as-is.
 |------|---------|------------|-------|--------|
 | **Phase 2 + Negative Depth Fix** | `22800efd9` vs `b949c427` | **-696.15 ± 503.68 ELO** | 56 games (W:0 L:54 D:2) | ❌ CATASTROPHIC! |
 | **Phase 2 + Conservative Fix (depth==0)** | `726e02404` vs `b949c427` | **+7.91 ± 14.74 ELO** | 1010 games (W:295 L:272 D:443) | ⚠️ Small improvement |
-| **Phase 2 + Optimized Fix (depth<=1)** | `aad0baf68` vs `b949c427` | *Testing at 60+0.6s* | Target: 1000+ games | 🔄 In progress |
+| **Phase 2 + Optimized Fix (depth<=1)** | `aad0baf68` vs `b949c427` | **+7.28 ± 14.77 ELO** | 1002 games (W:291 L:270 D:441) | ⚠️ Same as depth==0 |
 
 ### 📊 Key Insights from TT Fix Testing
 
 1. **Conservative fix shows ~11 ELO improvement** over unfixed Phase 2 (-3.20 → +7.91)
 2. **Partial validation of TT pollution theory** - There was interference, but not the full story
-3. **depth == 0 is likely too conservative** - Rejecting useful shallow main search entries
-4. **Next step**: Try `depth <= 1` to find the sweet spot between too permissive and too strict
+3. **depth == 0 is optimal** - Testing shows depth <= 1 gives identical results
+4. **Conclusion**: TT filtering helps ~11 ELO but this is the maximum benefit
 
 ### 🔍 Critical Finding: Phase 3 is the Culprit
 
