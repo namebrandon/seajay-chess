@@ -31,7 +31,7 @@ Each remediation needs to be testable against the previous remediation to measur
 | **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `4d8d796` | `4d8d7965656502ff1e3f507a02392ff13e20d79c` | 19191913 | ✅ Complete |
 | **12** | TT (UCI Hash/Enable) | `openbench/remediated-stage12` | `a0f514c` | `a0f514c70dc4f113b5f02e5962cf4e6f634c8493` | 19191913 | ✅ Complete |
 | **13** | Iterative Deepening | - | - | - | 🔄 Pending |
-| **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
+| **14** | Quiescence Search | `openbench/remediated-stage14` | `e8fe7cf` | `e8fe7cfc9ce5943ae9a826bbb30e85f52f28afce` | 19191913 | ✅ Complete |
 | **15** | SEE | - | - | - | 🔄 Pending |
 
 ## Historical Build Table
@@ -47,6 +47,41 @@ Each remediation needs to be testable against the previous remediation to measur
 | **15** | SEE + Parameter Tuning | `c570c83ff3de3b80bbfa2a7e79d3a6c03c08d8bc` | `a221a6f9269aaae240d699ead56132636787e878` |
 
 ## Remediation Branch Index
+
+### Stage 14 Remediation - Quiescence Search Fixed
+
+**Working Branch:** `remediate/stage14-quiescence-search` (ready for merge)  
+**OpenBench Reference Branch:** `openbench/remediated-stage14` (permanent for testing)  
+**Final Commit:** `e8fe7cfc9ce5943ae9a826bbb30e85f52f28afce`  
+**Tag:** `v0.14.1-remediated`  
+**bench:** 19191913 nodes  
+**UCI Name:** `SeaJay Stage14-Remediated`  
+**ELO Gain:** +5.55 ± 14.85 over Stage 13 (http://openbench:8000/test/37/)
+
+**Remediation Summary:**
+- **Critical Bug Fixed:** -350 ELO regression from broken static eval caching
+- **Issue Fixed:** Compile-time build modes (TESTING/TUNING/PRODUCTION)
+- **Solution:** Removed all compile flags, single binary with no artificial limits
+- **Algorithm Fixes:**
+  - Removed Phase 3's broken static eval caching (passed parent eval to child)
+  - Added TT depth filtering (only accept depth==0 in quiescence)
+  - Kept Phase 1 (compile flag removal) and Phase 2 (algorithm improvements)
+- **Testing Process:**
+  - Systematic bisection testing isolated bug to Phase 3
+  - Phase 1: +14 ELO (clean)
+  - Phase 2: +13.90 ELO (clean)
+  - Phase 3: -350 ELO (catastrophic bug)
+  - Final: Phase 1 + Phase 2 + TT fix
+- **Key Components:**
+  - Stand-pat evaluation working correctly
+  - Delta pruning (pre-check and per-move)
+  - Check extensions limited to MAX_CHECK_PLY
+  - MVV-LVA move ordering integrated
+  - TT probing/storage with depth filtering
+- **Validation:**
+  - SPRT test passed: +5.55 ELO, 1002 games
+  - Benchmark maintained at 19,191,913 nodes
+  - No regression confirmed
 
 ### Stage 11 Remediation - MVV-LVA Move Ordering Fixed
 
