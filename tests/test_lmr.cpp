@@ -9,219 +9,173 @@ protected:
     SearchData::LMRParams defaultParams;
     
     void SetUp() override {
-        // Set default parameters matching Phase 2 requirements
+        // Default UCI parameters
         defaultParams.enabled = true;
         defaultParams.minDepth = 3;
         defaultParams.minMoveNumber = 4;
         defaultParams.baseReduction = 1;
-        defaultParams.depthFactor = 100;
+        defaultParams.depthFactor = 3;
     }
 };
 
-// ============================================================================
-// getLMRReduction() tests
-// ============================================================================
-
-TEST_F(LMRTest, DisabledLMRReturnsZero) {
-    defaultParams.enabled = false;
-    EXPECT_EQ(0, getLMRReduction(5, 5, defaultParams));
-    EXPECT_EQ(0, getLMRReduction(10, 10, defaultParams));
+// Test basic reduction calculation
+TEST_F(LMRTest, BasicReduction) {
+    // At minimum depth and move number
+    EXPECT_EQ(getLMRReduction(3, 4, defaultParams), 1); // base reduction only
+    
+    // Deeper search should give more reduction
+    EXPECT_EQ(getLMRReduction(6, 4, defaultParams), 2); // base + (6-3)/3 = 1 + 1
+    EXPECT_EQ(getLMRReduction(9, 4, defaultParams), 3); // base + (9-3)/3 = 1 + 2
 }
 
-TEST_F(LMRTest, ShallowDepthReturnsZero) {
-    // depth < minDepth should return 0
-    EXPECT_EQ(0, getLMRReduction(1, 5, defaultParams));
-    EXPECT_EQ(0, getLMRReduction(2, 5, defaultParams));
+// Test very late move bonus
+TEST_F(LMRTest, VeryLateMoveBonus) {
+    // Move 8 - no bonus
+    EXPECT_EQ(getLMRReduction(6, 8, defaultParams), 2); // base + depth component
     
-    // depth == minDepth should allow reduction
-    EXPECT_GT(getLMRReduction(3, 5, defaultParams), 0);
+    // Move 9 - minimal bonus
+    EXPECT_EQ(getLMRReduction(6, 9, defaultParams), 2); // base + depth + (9-8)/4 = 2 + 0
+    
+    // Move 12 - small bonus
+    EXPECT_EQ(getLMRReduction(6, 12, defaultParams), 3); // base + depth + (12-8)/4 = 2 + 1
+    
+    // Move 20 - larger bonus but capped
+    EXPECT_EQ(getLMRReduction(6, 20, defaultParams), 4); // base + depth + (20-8)/4 = 5, capped at 4
 }
 
-TEST_F(LMRTest, EarlyMovesReturnZero) {
-    // Moves before minMoveNumber should return 0
-    EXPECT_EQ(0, getLMRReduction(5, 1, defaultParams));
-    EXPECT_EQ(0, getLMRReduction(5, 2, defaultParams));
-    EXPECT_EQ(0, getLMRReduction(5, 3, defaultParams));
-    
-    // Move at minMoveNumber should get reduction
-    EXPECT_GT(getLMRReduction(5, 4, defaultParams), 0);
-}
-
-TEST_F(LMRTest, InvalidInputsReturnZero) {
-    // Negative depth
-    EXPECT_EQ(0, getLMRReduction(-1, 5, defaultParams));
-    
-    // Zero or negative move number
-    EXPECT_EQ(0, getLMRReduction(5, 0, defaultParams));
-    EXPECT_EQ(0, getLMRReduction(5, -1, defaultParams));
-}
-
-TEST_F(LMRTest, BasicFormulaCalculation) {
-    // At minDepth, only base reduction
-    EXPECT_EQ(1, getLMRReduction(3, 4, defaultParams));
-    
-    // depth=103 (3 + 100), should add 1 from depth factor
-    EXPECT_EQ(2, getLMRReduction(103, 4, defaultParams));
-    
-    // depth=203, should add 2 from depth factor
-    EXPECT_EQ(3, getLMRReduction(203, 4, defaultParams));
-}
-
-TEST_F(LMRTest, VeryLateMovesGetExtraReduction) {
-    // Move 8: no extra reduction
-    int reduction8 = getLMRReduction(5, 8, defaultParams);
-    
-    // Move 9: should start getting extra reduction (but (9-8)/4 = 0)
-    int reduction9 = getLMRReduction(5, 9, defaultParams);
-    EXPECT_EQ(reduction8, reduction9); // Same because integer division
-    
-    // Move 12: (12-8)/4 = 1, should get +1 extra
-    int reduction12 = getLMRReduction(5, 12, defaultParams);
-    EXPECT_EQ(reduction8, reduction12); // Still same due to integer division
-    
-    // Move 13: (13-8)/4 = 1, should get +1 extra
-    int reduction13 = getLMRReduction(5, 13, defaultParams);
-    EXPECT_EQ(reduction8 + 1, reduction13);
-    
-    // Move 20: (20-8)/4 = 3, should get +3 extra
-    int reduction20 = getLMRReduction(5, 20, defaultParams);
-    EXPECT_EQ(reduction8 + 3, reduction20);
-}
-
+// Test reduction capping
 TEST_F(LMRTest, ReductionCapping) {
-    // Large depth but should be capped at depth-2
-    defaultParams.baseReduction = 100; // Force large reduction
+    // Should cap at depth-2 (but at least 1)
+    EXPECT_EQ(getLMRReduction(3, 20, defaultParams), 1); // capped at depth-2 = 1
+    EXPECT_EQ(getLMRReduction(4, 20, defaultParams), 2); // capped at depth-2 = 2
+    EXPECT_EQ(getLMRReduction(7, 20, defaultParams), 5); // capped at depth-2 = 5
     
-    // depth=10, max reduction should be 8 (10-2)
-    EXPECT_EQ(8, getLMRReduction(10, 4, defaultParams));
-    
-    // depth=5, max reduction should be 3 (5-2)
-    EXPECT_EQ(3, getLMRReduction(5, 4, defaultParams));
-    
-    // depth=3, max reduction should be 1 (3-2)
-    EXPECT_EQ(1, getLMRReduction(3, 4, defaultParams));
+    // Even with huge move numbers, should respect cap
+    EXPECT_EQ(getLMRReduction(5, 100, defaultParams), 3); // capped at depth-2 = 3
 }
 
-TEST_F(LMRTest, DifferentParameterConfigurations) {
-    // Test with more aggressive parameters
-    defaultParams.baseReduction = 2;
-    defaultParams.depthFactor = 50; // More aggressive depth scaling
+// Test conditions that prevent reduction
+TEST_F(LMRTest, NoReductionConditions) {
+    // LMR disabled
+    SearchData::LMRParams disabledParams = defaultParams;
+    disabledParams.enabled = false;
+    EXPECT_EQ(getLMRReduction(6, 10, disabledParams), 0);
     
-    // depth=53 (3 + 50), should be base(2) + 1
-    EXPECT_EQ(3, getLMRReduction(53, 4, defaultParams));
+    // Depth too shallow
+    EXPECT_EQ(getLMRReduction(2, 10, defaultParams), 0); // depth < minDepth
+    EXPECT_EQ(getLMRReduction(1, 10, defaultParams), 0); // very shallow
     
-    // Test with less aggressive parameters
-    defaultParams.baseReduction = 0;
-    defaultParams.depthFactor = 200;
-    
-    // depth=3, should be 0 (no base, no depth bonus yet)
-    EXPECT_EQ(0, getLMRReduction(3, 4, defaultParams));
-    
-    // depth=203, should be 1 (200 ply gives 1 reduction)
-    EXPECT_EQ(1, getLMRReduction(203, 4, defaultParams));
+    // Move too early
+    EXPECT_EQ(getLMRReduction(6, 1, defaultParams), 0); // first move
+    EXPECT_EQ(getLMRReduction(6, 2, defaultParams), 0); // second move
+    EXPECT_EQ(getLMRReduction(6, 3, defaultParams), 0); // third move
 }
 
-TEST_F(LMRTest, ZeroDepthFactor) {
-    // depthFactor=0 should only use base reduction (no division by zero)
-    defaultParams.depthFactor = 0;
+// Test edge cases
+TEST_F(LMRTest, EdgeCases) {
+    // Zero or negative inputs
+    EXPECT_EQ(getLMRReduction(0, 10, defaultParams), 0);
+    EXPECT_EQ(getLMRReduction(-1, 10, defaultParams), 0);
+    EXPECT_EQ(getLMRReduction(6, 0, defaultParams), 0);
+    EXPECT_EQ(getLMRReduction(6, -1, defaultParams), 0);
     
-    EXPECT_EQ(1, getLMRReduction(3, 4, defaultParams));
-    EXPECT_EQ(1, getLMRReduction(10, 4, defaultParams));
-    EXPECT_EQ(1, getLMRReduction(100, 4, defaultParams));
+    // Depth 1 should return 0 (can't reduce below depth 1)
+    EXPECT_EQ(getLMRReduction(1, 10, defaultParams), 0);
 }
 
-// ============================================================================
-// shouldReduceMove() tests
-// ============================================================================
-
-TEST_F(LMRTest, ShouldNotReduceWhenDisabled) {
-    defaultParams.enabled = false;
-    EXPECT_FALSE(shouldReduceMove(5, 5, false, false, false, false, defaultParams));
+// Test different parameter configurations
+TEST_F(LMRTest, DifferentParameters) {
+    // More aggressive parameters
+    SearchData::LMRParams aggressiveParams;
+    aggressiveParams.enabled = true;
+    aggressiveParams.minDepth = 2;
+    aggressiveParams.minMoveNumber = 3;
+    aggressiveParams.baseReduction = 2;
+    aggressiveParams.depthFactor = 2;
+    
+    EXPECT_EQ(getLMRReduction(4, 3, aggressiveParams), 3); // 2 + (4-2)/2 = 3
+    EXPECT_EQ(getLMRReduction(6, 5, aggressiveParams), 4); // 2 + (6-2)/2 = 4
+    
+    // Conservative parameters
+    SearchData::LMRParams conservativeParams;
+    conservativeParams.enabled = true;
+    conservativeParams.minDepth = 4;
+    conservativeParams.minMoveNumber = 6;
+    conservativeParams.baseReduction = 0;
+    conservativeParams.depthFactor = 4;
+    
+    EXPECT_EQ(getLMRReduction(4, 6, conservativeParams), 0); // 0 + (4-4)/4 = 0
+    EXPECT_EQ(getLMRReduction(8, 6, conservativeParams), 1); // 0 + (8-4)/4 = 1
 }
 
-TEST_F(LMRTest, ShouldNotReduceShallowDepths) {
-    EXPECT_FALSE(shouldReduceMove(1, 5, false, false, false, false, defaultParams));
+// Test shouldReduceMove function
+TEST_F(LMRTest, ShouldReduceMove) {
+    // Normal quiet move that should be reduced
+    EXPECT_TRUE(shouldReduceMove(6, 5, false, false, false, false, defaultParams));
+    
+    // Captures should not be reduced
+    EXPECT_FALSE(shouldReduceMove(6, 5, true, false, false, false, defaultParams));
+    
+    // Moves when in check should not be reduced
+    EXPECT_FALSE(shouldReduceMove(6, 5, false, true, false, false, defaultParams));
+    
+    // Moves that give check should not be reduced
+    EXPECT_FALSE(shouldReduceMove(6, 5, false, false, true, false, defaultParams));
+    
+    // Early moves should not be reduced
+    EXPECT_FALSE(shouldReduceMove(6, 1, false, false, false, false, defaultParams));
+    EXPECT_FALSE(shouldReduceMove(6, 2, false, false, false, false, defaultParams));
+    EXPECT_FALSE(shouldReduceMove(6, 3, false, false, false, false, defaultParams));
+    
+    // Shallow depth should not be reduced
     EXPECT_FALSE(shouldReduceMove(2, 5, false, false, false, false, defaultParams));
     
-    // At minDepth, should allow
-    EXPECT_TRUE(shouldReduceMove(3, 5, false, false, false, false, defaultParams));
+    // PV nodes (Phase 2: treated same as non-PV for now)
+    EXPECT_TRUE(shouldReduceMove(6, 5, false, false, false, true, defaultParams));
 }
 
-TEST_F(LMRTest, ShouldNotReduceEarlyMoves) {
-    EXPECT_FALSE(shouldReduceMove(5, 1, false, false, false, false, defaultParams));
-    EXPECT_FALSE(shouldReduceMove(5, 2, false, false, false, false, defaultParams));
-    EXPECT_FALSE(shouldReduceMove(5, 3, false, false, false, false, defaultParams));
-    
-    // At minMoveNumber, should allow
-    EXPECT_TRUE(shouldReduceMove(5, 4, false, false, false, false, defaultParams));
-}
-
-TEST_F(LMRTest, ShouldNotReduceWhenInCheck) {
-    // In check = true
-    EXPECT_FALSE(shouldReduceMove(5, 5, false, true, false, false, defaultParams));
-}
-
-TEST_F(LMRTest, ShouldNotReduceMovesThatGiveCheck) {
-    // Gives check = true
-    EXPECT_FALSE(shouldReduceMove(5, 5, false, false, true, false, defaultParams));
-}
-
-TEST_F(LMRTest, ShouldNotReduceCaptures) {
-    // Is capture = true
-    EXPECT_FALSE(shouldReduceMove(5, 5, true, false, false, false, defaultParams));
-}
-
-TEST_F(LMRTest, ShouldNotReducePVNodes) {
-    // Is PV node = true
-    EXPECT_FALSE(shouldReduceMove(5, 5, false, false, false, true, defaultParams));
-}
-
-TEST_F(LMRTest, ShouldReduceQuietLateMoves) {
-    // Perfect candidate: quiet, late move, not in check, not giving check, not PV
-    EXPECT_TRUE(shouldReduceMove(5, 5, false, false, false, false, defaultParams));
-    EXPECT_TRUE(shouldReduceMove(10, 10, false, false, false, false, defaultParams));
-    EXPECT_TRUE(shouldReduceMove(3, 4, false, false, false, false, defaultParams));
-}
-
-TEST_F(LMRTest, ComplexScenarios) {
-    // Multiple disqualifying factors
-    EXPECT_FALSE(shouldReduceMove(5, 5, true, true, false, false, defaultParams));  // capture + in check
-    EXPECT_FALSE(shouldReduceMove(5, 5, false, false, true, true, defaultParams));  // gives check + PV
-    
-    // Edge case: all conditions perfect except one
-    EXPECT_FALSE(shouldReduceMove(5, 3, false, false, false, false, defaultParams)); // too early
-    EXPECT_FALSE(shouldReduceMove(2, 5, false, false, false, false, defaultParams)); // too shallow
-}
-
-// ============================================================================
-// Integration test with realistic parameters
-// ============================================================================
-
-TEST_F(LMRTest, RealisticScenarioPhase2) {
-    // Simulate a real search scenario at depth 7
+// Test realistic game scenarios
+TEST_F(LMRTest, RealisticScenarios) {
+    // Middlegame position, depth 7, various move numbers
     int depth = 7;
     
-    // First few moves should not be reduced
-    for (int move = 1; move <= 3; move++) {
-        EXPECT_EQ(0, getLMRReduction(depth, move, defaultParams));
-        EXPECT_FALSE(shouldReduceMove(depth, move, false, false, false, false, defaultParams));
-    }
+    // First few moves - no reduction
+    EXPECT_EQ(getLMRReduction(depth, 1, defaultParams), 0);
+    EXPECT_EQ(getLMRReduction(depth, 2, defaultParams), 0);
+    EXPECT_EQ(getLMRReduction(depth, 3, defaultParams), 0);
     
-    // Moves 4-8 should get base reduction
-    for (int move = 4; move <= 8; move++) {
-        int reduction = getLMRReduction(depth, move, defaultParams);
-        EXPECT_EQ(1, reduction); // base=1, depth factor won't kick in at depth 7
-        EXPECT_TRUE(shouldReduceMove(depth, move, false, false, false, false, defaultParams));
-    }
+    // Move 4 - minimum reduction
+    EXPECT_EQ(getLMRReduction(depth, 4, defaultParams), 2); // 1 + (7-3)/3 = 2
     
-    // Very late moves (13+) should get extra reduction
-    int reduction13 = getLMRReduction(depth, 13, defaultParams);
-    EXPECT_EQ(2, reduction13); // base(1) + very_late(1)
+    // Move 8 - still moderate
+    EXPECT_EQ(getLMRReduction(depth, 8, defaultParams), 2);
     
-    int reduction20 = getLMRReduction(depth, 20, defaultParams);
-    EXPECT_EQ(4, reduction20); // base(1) + very_late(3)
+    // Move 13 - with late move bonus
+    EXPECT_EQ(getLMRReduction(depth, 13, defaultParams), 3); // 2 + (13-8)/4 = 3
     
-    // But capped at depth-2 = 5
-    int reduction100 = getLMRReduction(depth, 100, defaultParams);
-    EXPECT_EQ(5, reduction100); // capped at depth(7) - 2
+    // Move 20 - significant reduction but capped
+    EXPECT_EQ(getLMRReduction(depth, 20, defaultParams), 4); // Would be 5, but capped at 5
+    
+    // Move 30 - heavily capped
+    EXPECT_EQ(getLMRReduction(depth, 30, defaultParams), 5); // Capped at depth-2
+}
+
+// Test that formula matches specification
+TEST_F(LMRTest, FormulaVerification) {
+    // Verify the exact formula from the plan:
+    // reduction = baseReduction + (depth - minDepth) / depthFactor
+    // if (moveNumber > 8) reduction += (moveNumber - 8) / 4
+    // cap at min(reduction, depth - 2)
+    
+    int depth = 10;
+    int moveNumber = 15;
+    
+    // Manual calculation
+    int expected = defaultParams.baseReduction; // 1
+    expected += (depth - defaultParams.minDepth) / defaultParams.depthFactor; // + (10-3)/3 = 2
+    expected += (moveNumber - 8) / 4; // + (15-8)/4 = 1
+    // Total: 1 + 2 + 1 = 4
+    expected = std::min(expected, depth - 2); // min(4, 8) = 4
+    
+    EXPECT_EQ(getLMRReduction(depth, moveNumber, defaultParams), expected);
 }

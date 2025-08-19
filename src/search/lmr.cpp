@@ -4,88 +4,81 @@
 namespace seajay::search {
 
 int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params) {
-    // Early exit for disabled LMR or invalid inputs
-    if (!params.enabled || depth < params.minDepth || moveNumber < 1) {
+    // No reduction if LMR is disabled
+    if (!params.enabled) {
         return 0;
     }
     
-    // Don't reduce early moves in the move ordering
+    // No reduction if depth is too shallow
+    if (depth < params.minDepth) {
+        return 0;
+    }
+    
+    // No reduction for early moves in move ordering
     if (moveNumber < params.minMoveNumber) {
         return 0;
     }
     
-    // Basic linear formula: baseReduction + (depth - minDepth) / depthFactor
-    // Integer division provides natural rounding down
+    // Defensive programming: handle invalid inputs
+    if (depth <= 1 || moveNumber <= 0) {
+        return 0;
+    }
+    
+    // Basic linear formula
     int reduction = params.baseReduction;
     
     // Add depth-based component
-    // Using depthFactor=100 means every 100 ply of remaining depth adds 1 to reduction
-    // This is very conservative (100 is high), which is appropriate for Phase 2
-    if (params.depthFactor > 0) {
-        reduction += (depth - params.minDepth) / params.depthFactor;
-    }
+    reduction += (depth - params.minDepth) / params.depthFactor;
     
-    // Additional reduction for very late moves (moveNumber > 8)
-    // This reflects that moves very late in ordering are extremely unlikely to be best
+    // Additional reduction for very late moves (moves 9+)
     if (moveNumber > 8) {
-        // Add (moveNumber - 8) / 4, so moves 9-12 get +0, 13-16 get +1, etc.
-        // Integer division naturally handles this
         reduction += (moveNumber - 8) / 4;
     }
     
     // Cap reduction to leave at least 1 ply of search
-    // depth - reduction >= 1, so reduction <= depth - 1
-    // But we also want to leave at least 2 plies for meaningful search
-    // So cap at depth - 2
+    // Use max(1, depth-2) to ensure we always search at least depth 1
     reduction = std::min(reduction, std::max(1, depth - 2));
     
-    // Ensure non-negative (defensive programming)
+    // Ensure reduction is non-negative
     return std::max(0, reduction);
 }
 
 bool shouldReduceMove(int depth, int moveNumber, bool isCapture, 
-                      bool inCheck, bool givesCheck, bool isPVNode,
-                      const SearchData::LMRParams& params) {
-    // Don't reduce if LMR is disabled
+                     bool inCheck, bool givesCheck, bool isPVNode,
+                     const SearchData::LMRParams& params) {
+    // No reduction if LMR is disabled
     if (!params.enabled) {
         return false;
     }
     
-    // Don't reduce at shallow depths
+    // No reduction if depth is too shallow
     if (depth < params.minDepth) {
         return false;
     }
     
-    // Don't reduce early moves
+    // No reduction for early moves
     if (moveNumber < params.minMoveNumber) {
         return false;
     }
     
-    // Phase 2: Conservative approach - don't reduce in these cases:
-    
-    // Don't reduce when in check (need to escape)
-    if (inCheck) {
-        return false;
-    }
-    
-    // Don't reduce moves that give check (often forcing)
-    if (givesCheck) {
-        return false;
-    }
-    
-    // Don't reduce captures (tactical moves)
-    // In Phase 3, we might reduce bad captures, but not in Phase 2
+    // Don't reduce captures
     if (isCapture) {
         return false;
     }
     
-    // Don't reduce in PV nodes (Phase 2 conservative approach)
-    // Phase 3 might allow small reductions in PV nodes
-    if (isPVNode) {
+    // Don't reduce when in check
+    if (inCheck) {
         return false;
     }
     
-    // All conditions passed - this quiet, late move can be reduced
+    // Don't reduce moves that give check (Phase 2: simplified, may refine later)
+    if (givesCheck) {
+        return false;
+    }
+    
+    // For Phase 2, we won't reduce PV nodes differently
+    // This will be refined in Phase 5
+    
     return true;
 }
 
