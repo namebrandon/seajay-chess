@@ -135,6 +135,20 @@ Before ANY new stage development:
 
 **You MUST refuse to begin stage implementation if planning is not complete.**
 
+### 🛑 CRITICAL: OpenBench Testing After EVERY Phase
+**⚠️ PRIME DIRECTIVE: STOP AFTER EVERY PHASE FOR OPENBENCH TESTING ⚠️**
+
+**MANDATORY PROCESS:**
+1. Complete a phase (2-3 changes maximum)
+2. Commit with "bench <node-count>" in message
+3. **🛑 STOP - DO NOT PROCEED**
+4. Update status to "AWAITING OPENBENCH TEST"
+5. Wait for human to run OpenBench test
+6. Only proceed to next phase after human confirms test results
+
+**You MUST refuse to continue to the next phase without OpenBench test confirmation.**
+**This applies to EVERY phase, even "minor" changes or refactoring.**
+
 ### For Each Stage:
 1. Complete Pre-Stage Planning Process (REQUIRED)
 2. Review requirements in Master Project Plan
@@ -148,24 +162,24 @@ Before ANY new stage development:
 
 ### Testing Commands:
 ```bash
+# IMPORTANT: Build using build.sh scripts ONLY - NEVER use ninja directly!
+# OpenBench requires 'make' compatibility, not ninja
+
 # Build the project (Stage 14: Quiescence Search modes)
 # Quick build with mode selection:
+./build.sh              # Default production build
+./build.sh production   # Production mode explicitly
 ./build.sh testing      # Testing mode: 10K node limit
 ./build.sh tuning       # Tuning mode: 100K node limit  
-./build.sh production   # Production mode: no limits (default)
 
 # Or use dedicated build scripts (recommended for clarity):
+./build_production.sh   # Production mode, no limits (RECOMMENDED)
 ./build_testing.sh      # Testing mode with 10K limit
 ./build_tuning.sh       # Tuning mode with 100K limit
-./build_production.sh   # Production mode, no limits
 ./build_debug.sh        # Debug build with sanitizers
 
-# Or use CMAKE directly:
-cd /workspace/build
-cmake -DQSEARCH_MODE=TESTING ..   # Testing mode
-cmake -DQSEARCH_MODE=TUNING ..    # Tuning mode  
-cmake -DQSEARCH_MODE=PRODUCTION .. # Production mode
-make -j
+# NEVER use ninja directly - always use build.sh or make
+# OpenBench compatibility requires make, not ninja
 
 # Verify build mode:
 echo 'uci' | ./bin/seajay  # Engine displays mode at startup

@@ -116,9 +116,16 @@ Failure to complete this planning process risks:
 **MANDATORY REQUIREMENTS:**
 1. **Phases must be GRANULAR** - Maximum 2-3 small changes per phase
 2. **Each phase gets its own commit** with "bench <node-count>" in message
-3. **OpenBench testing after EACH phase** - Human must perform tests
-4. **Bug fixes BEFORE proceeding** - Never build on broken foundations
-5. **Branch strategy per `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
+3. **🛑 STOP AFTER EACH PHASE** - Human MUST run OpenBench test
+4. **DO NOT PROCEED** to next phase until OpenBench test completes
+5. **Bug fixes BEFORE proceeding** - Never build on broken foundations
+6. **Branch strategy per `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
+
+**⚠️ AI ASSISTANT DIRECTIVE:**
+- MUST add "🛑 STOP POINT" after EVERY phase in implementation plans
+- MUST refuse to continue to next phase if previous phase not tested
+- MUST update status to "AWAITING OPENBENCH TEST" after each phase
+- MUST remind human that OpenBench testing is REQUIRED, not optional
 
 **Example Phase Breakdown:**
 ```
@@ -126,19 +133,22 @@ Phase 1: Add data structure (1-2 files)
 - Implement core structure
 - Add basic tests
 - Commit: "Add [feature] data structure - bench 12345678"
-- OpenBench test vs main
+🛑 STOP POINT: Human runs OpenBench test vs main
+⚠️ DO NOT PROCEED TO PHASE 2 UNTIL TEST COMPLETES
 
 Phase 2: Integrate with existing code (2-3 changes)
 - Hook into search/eval
 - Update related functions
 - Commit: "Integrate [feature] with search - bench 12345679"
-- OpenBench test vs Phase 1
+🛑 STOP POINT: Human runs OpenBench test vs Phase 1
+⚠️ DO NOT PROCEED TO PHASE 3 UNTIL TEST COMPLETES
 
 Phase 3: Optimize and tune (1-2 changes)
 - Apply optimizations
 - Tune parameters
 - Commit: "Optimize [feature] performance - bench 12345680"
-- OpenBench test vs Phase 2
+🛑 STOP POINT: Human runs OpenBench test vs Phase 2
+⚠️ DO NOT PROCEED UNTIL TEST COMPLETES
 ```
 
 ## Git Branch Management
@@ -209,7 +219,7 @@ After each stage completion:
 
 ## Enforcement
 
-**This process is MANDATORY. The AI assistant should:**
+**This process is MANDATORY. The AI assistant MUST:**
 1. Refuse to begin stage implementation without completed planning
 2. Prompt for planning document creation if not present
 3. Ensure all reviews are conducted
@@ -218,7 +228,18 @@ After each stage completion:
 6. **⚠️ ENFORCE: Git branch strategy from `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
 7. **⚠️ ENFORCE: Granular phases (2-3 changes max) for bug isolation**
 8. **⚠️ ENFORCE: "bench <node-count>" in EVERY commit message**
-9. **⚠️ ENFORCE: Remind human to test with OpenBench after each phase**
+9. **🛑 ENFORCE: STOP after EVERY phase for OpenBench testing**
+10. **🛑 REFUSE to continue to next phase until human confirms test complete**
+11. **🛑 UPDATE status to "AWAITING OPENBENCH TEST" after each phase**
+12. **🛑 NEVER skip OpenBench testing, even for "minor" changes**
+
+**VIOLATION PROTOCOL:**
+If AI assistant proceeds to next phase without OpenBench test:
+- This is a CRITICAL PROCESS VIOLATION
+- Human should immediately stop development
+- Revert to last tested phase
+- Document the violation in development diary
+- Update this template with stronger enforcement
 
 ## Example Usage
 
