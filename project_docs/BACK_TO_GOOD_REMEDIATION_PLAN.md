@@ -68,11 +68,19 @@ if (m_useMagicBitboards) {
 **IMPORTANT**: This process is repeated for EACH stage (10-15) as a separate, manually-initiated effort.
 
 ### Phase 1: Create Branch
+
+**Use Git Branch Strategy for Naming:**
 ```bash
 git checkout main
 git pull origin main
+
+# For bug fixes (remediation is fixing bugs)
+git bugfix stage[N]-remediation
+# Example: git bugfix stage10-magic-bitboards
+# Creates: bugfix/20250819-stage10-magic-bitboards
+
+# Alternative: Use remediate/ prefix if preferred
 git checkout -b remediate/stage[N]-description
-# Example: git checkout -b remediate/stage10-magic-bitboards
 ```
 
 ### Phase 2: Comprehensive Audit
@@ -281,15 +289,18 @@ Before proceeding to OpenBench testing:
 ### Phase 7: Commit and Version Management
 
 #### Commit Format for OpenBench
+
+**CRITICAL: Every commit MUST include "bench <node-count>" for OpenBench compatibility**
+
 ```bash
 # Build final binary and get bench count
 make clean && make -j4 seajay
 BENCH_COUNT=$(echo "bench" | ./seajay 2>&1 | grep "Benchmark complete" | awk '{print $4}')
 
-# Commit with OpenBench format
+# Commit with MANDATORY OpenBench format
 git commit -m "Stage [N] Remediation: [Brief description]
 
-bench: ${BENCH_COUNT}
+bench ${BENCH_COUNT}
 
 [Detailed description of changes]
 
@@ -297,6 +308,8 @@ bench: ${BENCH_COUNT}
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
+
+**Note the format:** "bench <node-count>" with no colon, no uppercase. This exact format is required.
 
 #### UCI Version Management
 Update UCI engine name to include remediation info:
@@ -332,6 +345,11 @@ Update UCI engine name to include remediation info:
 #### Create OpenBench Reference Branch (CRITICAL)
 ```bash
 # Create permanent reference branch for future testing
+# Using ob/ prefix for historical references per Git strategy
+git ob remediated-stage[N]
+# Creates: ob/20250819-remediated-stage[N]
+
+# Alternative: Keep using openbench/ prefix for clarity
 git checkout -b openbench/remediated-stage[N]
 git push origin openbench/remediated-stage[N]
 
@@ -732,6 +750,7 @@ main (latest merged remediations)
     - Makefile was missing (must copy from OpenBench branches)
     - Bench must work from command line, not just UCI
     - Need reference branches for future testing
+    - **CRITICAL: All commits must include "bench <node-count>"**
 
 - ✅ **Stage 11**: MVV-LVA - Fixed scoring bug, removed compile flag
   - Working Branch: `remediate/stage11-mvv-lva` (merged)
@@ -739,9 +758,37 @@ main (latest merged remediations)
   - Final Commit: `4d8d7965656502ff1e3f507a02392ff13e20d79c`
   - Tag: `v0.11.1-remediated`
   - Bench: 19191913
-  - ELO Gain: Pending final SPRT results
+  - ELO Gain: Testing with manual bench override (OpenBench limitation)
   - Key Fixes:
     - Fixed critical scoring bug (dual system with wrong values)
     - Removed ENABLE_MVV_LVA compile flag (always active now)
     - Separated from SEE (Stage 15)
     - Fixed sort stability
+
+- ✅ **Stage 12**: Transposition Tables - Fixed and converted to UCI
+  - Working Branch: `remediate/stage12-transposition-tables` (merged)
+  - Reference Branch: `openbench/remediated-stage12`
+  - Final Commit: `a0f514c70dc4f113b5f02e5962cf4e6f634c8493`
+  - Tag: `v0.12.1-remediated`
+  - Bench: 19191913
+  - ELO Gain: +82.89 ± 11.83 (SPRT validated)
+
+- ✅ **Stage 13**: Iterative Deepening - Enhanced with UCI options
+  - Working Branch: `remediate/stage13-iterative-deepening` (merged)
+  - Reference Branch: `openbench/remediated-stage13`
+  - Final Commit: `b949c427e811bfb85a7318ca8a228494a47e1d38`
+  - Tag: `v0.13.1-remediated`
+  - Bench: 19191913
+  - ELO Gain: +7.11 ± 11.34 (SPRT validated)
+
+- ✅ **Stage 14**: Quiescence Search - Fixed regression
+  - Working Branch: `remediate/stage14-quiescence` (merged)
+  - Reference Branch: `openbench/remediated-stage14`
+  - Final Commit: `e8fe7cfc9ce5943ae9a826bbb30e85f52f28afce`
+  - Tag: `v0.14.1-remediated`
+  - Bench: 19191913
+  - ELO Gain: +5.55 ± 14.85 (SPRT validated)
+  - Key Fixes:
+    - Fixed static eval caching bug in Phase 3
+    - Added TT depth==0 filtering
+    - Removed Phase 3 optimizations that hurt performance

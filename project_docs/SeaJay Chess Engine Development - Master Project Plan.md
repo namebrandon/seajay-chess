@@ -21,6 +21,37 @@ This comprehensive project plan outlines a methodical, modular approach to build
 
 **Historical Journaling**: We track our development efforts, doing our best to create a journal or diary so that others who wish to follow along, or better understand our efforts and review what decisions we made and what steps we took during this development effort. 
 
+## Git Branch Strategy
+
+### Branch Naming Convention for OpenBench Testing
+
+SeaJay uses a structured branch naming system to ensure readable OpenBench test identification:
+
+| Prefix | Purpose | Example | Lifecycle |
+|--------|---------|---------|----------|
+| `feature/` | New functionality | `feature/20250819-null-move` | Merge to main if successful |
+| `bugfix/` | Bug fixes | `bugfix/20250819-castling-rights` | Merge to main when fixed |
+| `test/` | Experimental ideas | `test/20250819-aggressive-lmr` | Delete after testing |
+| `tune/` | SPSA parameter tuning | `tune/20250819-eval-weights` | Delete after tuning |
+| `ob/` | Historical references | `ob/20250819-v1.0-release` | Keep long-term |
+
+### Critical Commit Requirements
+
+**EVERY commit to ANY branch must include the bench node count:**
+```bash
+# Get bench count
+BENCH_COUNT=$(echo "bench" | ./bin/seajay 2>&1 | grep "Benchmark complete" | awk '{print $4}')
+
+# Commit with required format
+git commit -m "Feature: Description here
+
+bench ${BENCH_COUNT}
+
+Detailed explanation..."
+```
+
+**This is MANDATORY for OpenBench compatibility** - without the "bench <node-count>" line, OpenBench cannot test the commit.
+
 ## Phase 1: Foundation and Move Generation
 
 ### Objective

@@ -216,14 +216,40 @@ All these positions MUST pass before moving past Phase 1:
 - Phase 4: >1M NPS with NNUE
 - Final: 3200+ Elo strength
 
+## Git Branch Management
+
+This project uses a structured branch naming convention for OpenBench testing:
+- `feature/YYYYMMDD-name` - New features
+- `bugfix/YYYYMMDD-name` - Bug fixes  
+- `test/YYYYMMDD-name` - Experiments
+- `tune/YYYYMMDD-name` - SPSA tuning
+- `ob/YYYYMMDD-name` - Historical references
+
+Use Git aliases to create branches:
+- `git feature <name>` - Create feature branch
+- `git bugfix <name>` - Create bugfix branch
+- `git test <name>` - Create test branch
+- `git tune <name>` - Create tuning branch
+- `git ob <name>` - Create historical reference
+
+List branches with:
+- `git list-all-branches` - Show all organized branches
+- `git show-branch-age` - Show branch ages
+
+**CRITICAL for OpenBench:** Every commit MUST include "bench <node-count>" in the message. Get node count with:
+```bash
+echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'
+```
+
 ## Important Reminders
 
 1. **Always run perft tests** after move generation changes
 2. **Use the specialized agents** when you need domain expertise
 3. **Document your journey** - this project emphasizes historical journaling
-4. **Commit with attribution** - Include "Co-authored-by: Claude AI <claude@anthropic.com>"
+4. **Commit with bench count** - MUST include "bench <node-count>" for OpenBench
 5. **Check project_status.md** before starting new work
 6. **One feature at a time** - resist the temptation to implement multiple things
+7. **Use branch naming convention** - feature/YYYYMMDD-name for readable OpenBench tests
 
 ## External Resources
 
