@@ -85,6 +85,7 @@ No compilation fixes required - Phase 3 compiles as-is.
 | **Phase 2 + Negative Depth Fix** | `22800efd9` vs `b949c427` | **-696.15 ± 503.68 ELO** | 56 games (W:0 L:54 D:2) | ❌ CATASTROPHIC! |
 | **Phase 2 + Conservative Fix (depth==0)** | `726e02404` vs `b949c427` | **+7.91 ± 14.74 ELO** | 1010 games (W:295 L:272 D:443) | ⚠️ Small improvement |
 | **Phase 2 + Optimized Fix (depth<=1)** | `aad0baf68` vs `b949c427` | **+7.28 ± 14.77 ELO** | 1002 games (W:291 L:270 D:441) | ⚠️ Same as depth==0 |
+| **Phase 3 Fixed + TT Fix (depth==0)** | `4c10bcfa2` vs `b949c427` | *Testing at 60+0.6s* | Target: 1000+ games | 🔄 Testing Phase 3 optimizations |
 
 ### 📊 Key Insights from TT Fix Testing
 
