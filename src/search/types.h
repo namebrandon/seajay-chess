@@ -58,6 +58,13 @@ struct SearchLimits {
     // Stage 14 Remediation: Runtime quiescence node limit
     uint64_t qsearchNodeLimit = 0;    // Per-position node limit (0 = unlimited)
     
+    // Stage 18: Late Move Reductions (LMR) parameters
+    bool lmrEnabled = true;           // Enable/disable LMR via UCI
+    int lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
+    int lmrMinMoveNumber = 4;         // Start reducing after this many moves
+    int lmrBaseReduction = 1;         // Base reduction amount
+    int lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
+    
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
     
@@ -132,6 +139,36 @@ struct SearchData {
             return totalCaptures > 0 ? (100.0 * seePruned / totalCaptures) : 0.0;
         }
     } seeStats;
+    
+    // Stage 18: Late Move Reductions (LMR) parameters
+    struct LMRParams {
+        bool enabled = true;           // Enable/disable LMR via UCI
+        int minDepth = 3;              // Minimum depth to apply LMR
+        int minMoveNumber = 4;         // Start reducing after this many moves
+        int baseReduction = 1;         // Base reduction amount
+        int depthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
+    } lmrParams;
+    
+    // Stage 18: LMR statistics
+    struct LMRStats {
+        uint64_t totalReductions = 0;     // Total moves reduced
+        uint64_t reSearches = 0;           // Re-searches after fail-high on reduced search
+        uint64_t successfulReductions = 0; // Reductions that held (no re-search needed)
+        
+        void reset() {
+            totalReductions = 0;
+            reSearches = 0;
+            successfulReductions = 0;
+        }
+        
+        double reSearchRate() const {
+            return totalReductions > 0 ? (100.0 * reSearches / totalReductions) : 0.0;
+        }
+        
+        double successRate() const {
+            return totalReductions > 0 ? (100.0 * successfulReductions / totalReductions) : 0.0;
+        }
+    } lmrStats;
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;

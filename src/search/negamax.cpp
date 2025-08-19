@@ -476,6 +476,14 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14 Remediation: Parse SEE mode once at search start
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
     
+    // Stage 18: Initialize LMR parameters from limits
+    info.lmrParams.enabled = limits.lmrEnabled;
+    info.lmrParams.minDepth = limits.lmrMinDepth;
+    info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
+    info.lmrParams.baseReduction = limits.lmrBaseReduction;
+    info.lmrParams.depthFactor = limits.lmrDepthFactor;
+    info.lmrStats.reset();
+    
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
     if (limits.usePhaseStability) {
@@ -791,6 +799,14 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     // Stage 14 Remediation: Parse SEE mode once at search start to avoid hot path parsing
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
+    
+    // Stage 18: Initialize LMR parameters from limits
+    info.lmrParams.enabled = limits.lmrEnabled;
+    info.lmrParams.minDepth = limits.lmrMinDepth;
+    info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
+    info.lmrParams.baseReduction = limits.lmrBaseReduction;
+    info.lmrParams.depthFactor = limits.lmrDepthFactor;
+    info.lmrStats.reset();
     
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);

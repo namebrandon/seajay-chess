@@ -54,6 +54,13 @@ private:
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive
     
+    // Stage 18: Late Move Reductions (LMR) parameters
+    bool m_lmrEnabled = true;           // Enable/disable LMR via UCI
+    int m_lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
+    int m_lmrMinMoveNumber = 4;         // Start reducing after this many moves  
+    int m_lmrBaseReduction = 1;         // Base reduction amount
+    int m_lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
+    
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
     int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window

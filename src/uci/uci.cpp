@@ -81,6 +81,13 @@ void UCIEngine::handleUCI() {
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::cout << "option name SEEPruning type combo default off var off var conservative var aggressive" << std::endl;
     
+    // Stage 18: Late Move Reductions (LMR) options
+    std::cout << "option name LMREnabled type check default true" << std::endl;
+    std::cout << "option name LMRMinDepth type spin default 3 min 0 max 10" << std::endl;
+    std::cout << "option name LMRMinMoveNumber type spin default 4 min 0 max 20" << std::endl;
+    std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
+    std::cout << "option name LMRDepthFactor type spin default 100 min 10 max 200" << std::endl;
+    
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
@@ -392,6 +399,13 @@ void UCIEngine::search(const SearchParams& params) {
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
     
+    // Stage 18: Pass LMR parameters  
+    limits.lmrEnabled = m_lmrEnabled;
+    limits.lmrMinDepth = m_lmrMinDepth;
+    limits.lmrMinMoveNumber = m_lmrMinMoveNumber;
+    limits.lmrBaseReduction = m_lmrBaseReduction;
+    limits.lmrDepthFactor = m_lmrDepthFactor;
+    
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
     limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
@@ -688,6 +702,60 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
             std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+        }
+    }
+    // Stage 18: Handle LMR options
+    else if (optionName == "LMREnabled") {
+        if (value == "true") {
+            m_lmrEnabled = true;
+            std::cerr << "info string LMR enabled" << std::endl;
+        } else if (value == "false") {
+            m_lmrEnabled = false;
+            std::cerr << "info string LMR disabled" << std::endl;
+        }
+    }
+    else if (optionName == "LMRMinDepth") {
+        try {
+            int depth = std::stoi(value);
+            if (depth >= 0 && depth <= 10) {
+                m_lmrMinDepth = depth;
+                std::cerr << "info string LMR min depth set to: " << depth << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRMinDepth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRMinMoveNumber") {
+        try {
+            int moveNum = std::stoi(value);
+            if (moveNum >= 0 && moveNum <= 20) {
+                m_lmrMinMoveNumber = moveNum;
+                std::cerr << "info string LMR min move number set to: " << moveNum << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRMinMoveNumber value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRBaseReduction") {
+        try {
+            int reduction = std::stoi(value);
+            if (reduction >= 0 && reduction <= 3) {
+                m_lmrBaseReduction = reduction;
+                std::cerr << "info string LMR base reduction set to: " << reduction << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRBaseReduction value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRDepthFactor") {
+        try {
+            int factor = std::stoi(value);
+            if (factor >= 10 && factor <= 200) {
+                m_lmrDepthFactor = factor;
+                std::cerr << "info string LMR depth factor set to: " << factor << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRDepthFactor value: " << value << std::endl;
         }
     }
     // Stage 13 Remediation: Handle aspiration window options
