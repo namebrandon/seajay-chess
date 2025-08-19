@@ -107,6 +107,7 @@ eval::Score negamax(Board& board,
                    eval::Score beta,
                    SearchInfo& searchInfo,
                    SearchData& info,
+                   const SearchLimits& limits,
                    TranspositionTable* tt) {
     
     // Debug output at root
@@ -155,7 +156,7 @@ eval::Score negamax(Board& board,
                 inPanicMode = (remainingTime < std::chrono::milliseconds(100));
             }
             // Use quiescence search to resolve tactical sequences
-            return quiescence(board, ply, alpha, beta, searchInfo, info, *tt, 0, inPanicMode);
+            return quiescence(board, ply, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
         }
         // Fallback: return static evaluation (only if quiescence disabled via UCI)
         return board.evaluate();
@@ -347,7 +348,7 @@ eval::Score negamax(Board& board,
         // Recursive search with negation and swapped window
         // Note: When negating, we swap alpha and beta
         eval::Score score = -negamax(board, depth - 1, ply + 1, 
-                                    -beta, -alpha, searchInfo, info, tt);
+                                    -beta, -alpha, searchInfo, info, limits, tt);
         
         // Unmake the move
         board.unmakeMove(move, undo);
@@ -461,6 +462,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
+    // Stage 14 Remediation: Parse SEE mode once at search start
+    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
+    
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
     if (limits.usePhaseStability) {
@@ -533,7 +537,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             beta = eval::Score::infinity();
         }
         
-        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
         
         // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
@@ -551,7 +555,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 beta = window.beta;
                 
                 // Re-search with widened window
-                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, tt);
+                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
                 
                 // Check if we're now using an infinite window
                 if (window.isInfinite()) {
@@ -733,6 +737,26 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         }
     }
     
+    // Stage 15: Report final SEE pruning statistics after search completes
+    // Only report once at the end, not per iteration
+    if (info.seeStats.totalCaptures > 0) {
+        std::cout << "info string SEE pruning final: "
+                  << info.seeStats.seePruned << "/" << info.seeStats.totalCaptures
+                  << " captures pruned (" << std::fixed << std::setprecision(1) 
+                  << info.seeStats.pruneRate() << "%)";
+        
+        // Determine mode from statistics patterns
+        if (info.seeStats.conservativePrunes > 0 && info.seeStats.aggressivePrunes == 0) {
+            std::cout << " [Conservative mode]";
+        } else if (info.seeStats.aggressivePrunes > 0) {
+            std::cout << " [Aggressive mode]";
+            if (info.seeStats.equalExchangePrunes > 0) {
+                std::cout << ", equal exchanges: " << info.seeStats.equalExchangePrunes;
+            }
+        }
+        std::cout << std::endl;
+    }
+    
     return bestMove;
 }
 
@@ -753,6 +777,9 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
+    
+    // Stage 14 Remediation: Parse SEE mode once at search start to avoid hot path parsing
+    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
     
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
@@ -784,7 +811,7 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, info, tt);
+                                   searchInfo, info, limits, tt);
         
         // Clear search mode after search
         board.setSearchMode(false);
@@ -1013,24 +1040,6 @@ void sendIterationInfo(const IterativeSearchData& info) {
     }
     
     std::cout << std::endl;
-    
-    // Stage 15 Day 6: Report SEE pruning statistics if enabled
-    if (g_seePruningMode != SEEPruningMode::OFF && g_seePruningStats.totalCaptures > 0) {
-        std::cout << "info string SEE pruning: "
-                  << g_seePruningStats.seePruned << "/" << g_seePruningStats.totalCaptures
-                  << " captures pruned (" << std::fixed << std::setprecision(1) 
-                  << g_seePruningStats.pruneRate() << "%)";
-        
-        if (g_seePruningMode == SEEPruningMode::CONSERVATIVE) {
-            std::cout << " [Conservative mode]";
-        } else if (g_seePruningMode == SEEPruningMode::AGGRESSIVE) {
-            std::cout << " [Aggressive mode]";
-            if (g_seePruningStats.equalExchangePrunes > 0) {
-                std::cout << " Equal exchanges pruned: " << g_seePruningStats.equalExchangePrunes;
-            }
-        }
-        std::cout << std::endl;
-    }
 }
 
 } // namespace seajay::search

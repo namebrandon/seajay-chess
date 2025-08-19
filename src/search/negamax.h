@@ -23,6 +23,7 @@ namespace seajay::search {
 //   beta  - Upper bound of the search window
 //   searchInfo - Search stack for repetition detection
 //   info  - Search statistics and control information
+//   limits - Search limits for quiescence node control
 //   tt    - Transposition table (can be nullptr)
 eval::Score negamax(Board& board, 
                    int depth, 
@@ -31,6 +32,7 @@ eval::Score negamax(Board& board,
                    eval::Score beta,
                    SearchInfo& searchInfo,
                    SearchData& info,
+                   const SearchLimits& limits,
                    TranspositionTable* tt = nullptr);
 
 // Iterative deepening search controller

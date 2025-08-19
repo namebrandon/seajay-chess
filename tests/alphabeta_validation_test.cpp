@@ -100,10 +100,11 @@ protected:
         searchInfoAB.clear();
         searchInfoAB.setRootHistorySize(board1.gameHistorySize());
         SearchData infoWithAB;
+        SearchLimits limits;  // Default limits (no restrictions)
         result.scoreWithAB = negamax(board1, depth, 0,
                                      eval::Score::minus_infinity(),
                                      eval::Score::infinity(),
-                                     searchInfoAB, infoWithAB);
+                                     searchInfoAB, infoWithAB, limits);
         result.moveWithAB = infoWithAB.bestMove;
         result.nodesWithAB = infoWithAB.nodes;
         
@@ -234,7 +235,8 @@ TEST_F(AlphaBetaValidationTest, MoveOrderingEfficiency) {
     searchInfo.clear();
     searchInfo.setRootHistorySize(board.gameHistorySize());
     SearchData info;
-    negamax(board, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo, info);
+    SearchLimits limits;  // Default limits (no restrictions)
+    negamax(board, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo, info, limits);
     
     double efficiency = info.moveOrderingEfficiency();
     
@@ -286,8 +288,9 @@ TEST_F(AlphaBetaValidationTest, PerformanceBenchmark) {
     searchInfo1.clear();
     searchInfo1.setRootHistorySize(board1.gameHistorySize());
     SearchData info1;
+    SearchLimits limits1;  // Default limits (no restrictions)
     auto start1 = std::chrono::steady_clock::now();
-    negamax(board1, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo1, info1);
+    negamax(board1, 5, 0, eval::Score::minus_infinity(), eval::Score::infinity(), searchInfo1, info1, limits1);
     auto end1 = std::chrono::steady_clock::now();
     auto timeWithAB = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
     

@@ -16,28 +16,15 @@ static constexpr int QSEARCH_MAX_PLY = 32;          // Maximum quiescence ply de
 static constexpr int TOTAL_MAX_PLY = 128;           // Combined main + quiescence depth
 static constexpr int MAX_CHECK_PLY = 6;             // Balanced check extensions (was 8, now 6 for better time management)
 
-// Delta pruning constants - Conservative for SeaJay's development stage
-// CRITICAL: These must exceed the value of capturable pieces!
-static constexpr int DELTA_MARGIN = 900;            // Must cover queen capture (900cp)
-static constexpr int DELTA_MARGIN_ENDGAME = 600;    // Must cover rook + pawn (600cp)
-static constexpr int DELTA_MARGIN_PANIC = 400;      // At minimum, cover minor piece + pawn
+// Delta pruning margins - Standard chess engine practice
+// These are positional margins only - piece values are added separately in the pruning formula
+static constexpr int DELTA_MARGIN = 200;            // Standard positional margin (most engines use 175-225)
+static constexpr int DELTA_MARGIN_ENDGAME = 100;    // Tighter margin in endgame (fewer pieces = more accurate eval)
+static constexpr int DELTA_MARGIN_PANIC = 50;       // Very aggressive when far behind (we're already losing)
 
-// Progressive limiter removal system
-// This ensures we remember to remove limiters when transitioning phases
-#ifdef QSEARCH_TESTING
-    // Phase 1: Conservative testing with strict limits
-    static constexpr uint64_t NODE_LIMIT_PER_POSITION = 10000;
-    #pragma message("QSEARCH_TESTING mode: Node limit = 10,000 per position")
-#elif defined(QSEARCH_TUNING)
-    // Phase 2: Tuning with higher limits
-    static constexpr uint64_t NODE_LIMIT_PER_POSITION = 100000;
-    #pragma message("QSEARCH_TUNING mode: Node limit = 100,000 per position")
-#else
-    // Production: Unlimited nodes - tactical excellence requires freedom
-    // Reverting to Candidate 1 - the "safety" limits destroyed performance
-    static constexpr uint64_t NODE_LIMIT_PER_POSITION = UINT64_MAX;
-    // No pragma message in production - silent operation
-#endif
+// Stage 14 Remediation: Node limits now controlled via UCI at runtime
+// Default is unlimited (0) for production use
+// Testing can set to 10000, tuning to 100000 via UCI option
 
 static constexpr int MAX_CAPTURES_PER_NODE = 32;    // Maximum captures to search per node
 static constexpr int MAX_CAPTURES_PANIC = 8;        // Reduced captures in panic mode
@@ -47,12 +34,7 @@ static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -100;  // Conservative: 
 static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = -75;     // Aggressive: balanced pruning (tuned)
 static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = -25;        // Even more aggressive in endgame
 
-// SEE pruning modes
-enum class SEEPruningMode {
-    OFF,          // No SEE pruning
-    CONSERVATIVE, // Prune captures with SEE < -100
-    AGGRESSIVE    // Prune captures with SEE < -50
-};
+// SEE pruning modes are now defined in types.h to avoid circular dependency
 
 // Parse string to SEE pruning mode
 SEEPruningMode parseSEEPruningMode(const std::string& mode);
@@ -60,45 +42,11 @@ SEEPruningMode parseSEEPruningMode(const std::string& mode);
 // Convert SEE pruning mode to string
 std::string seePruningModeToString(SEEPruningMode mode);
 
-// Global SEE pruning mode (set via UCI)
-extern SEEPruningMode g_seePruningMode;
-
-// SEE pruning statistics
-struct SEEPruningStats {
-    std::atomic<uint64_t> totalCaptures{0};       // Total captures considered
-    std::atomic<uint64_t> seePruned{0};           // Captures pruned by SEE
-    std::atomic<uint64_t> seeEvaluations{0};      // Number of SEE evaluations
-    std::atomic<uint64_t> conservativePrunes{0};  // Prunes with threshold -100
-    std::atomic<uint64_t> aggressivePrunes{0};    // Prunes with threshold -50
-    std::atomic<uint64_t> endgamePrunes{0};       // Prunes in endgame positions
-    std::atomic<uint64_t> equalExchangePrunes{0}; // Prunes of equal exchanges (SEE=0)
-    
-    void reset() {
-        totalCaptures = 0;
-        seePruned = 0;
-        seeEvaluations = 0;
-        conservativePrunes = 0;
-        aggressivePrunes = 0;
-        endgamePrunes = 0;
-        equalExchangePrunes = 0;
-    }
-    
-    double pruneRate() const {
-        uint64_t total = totalCaptures.load();
-        return total > 0 ? (100.0 * seePruned.load() / total) : 0.0;
-    }
-};
-
-// Global SEE pruning statistics
-extern SEEPruningStats g_seePruningStats;
-
 // Static assertions for safety verification
 static_assert(QSEARCH_MAX_PLY > 0 && QSEARCH_MAX_PLY <= 64, 
               "Quiescence max ply must be reasonable");
 static_assert(TOTAL_MAX_PLY >= QSEARCH_MAX_PLY, 
               "Total max ply must include quiescence depth");
-static_assert(NODE_LIMIT_PER_POSITION > 0, 
-              "Node limit must be positive");
 static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
               "Capture limit must be reasonable");
 
@@ -116,6 +64,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
  * @param beta Upper bound of search window
  * @param searchInfo Global search information
  * @param data Search statistics
+ * @param limits Search limits including quiescence node limit
  * @param tt Transposition table
  * @param checkPly Number of consecutive check plies (default 0)
  * @param inPanicMode True if time pressure requires aggressive pruning
@@ -128,6 +77,7 @@ eval::Score quiescence(
     eval::Score beta,
     seajay::SearchInfo& searchInfo,
     SearchData& data,
+    const SearchLimits& limits,
     seajay::TranspositionTable& tt,
     int checkPly = 0,
     bool inPanicMode = false

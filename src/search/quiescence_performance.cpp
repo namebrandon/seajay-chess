@@ -116,11 +116,16 @@ QuiescencePerformanceData QuiescencePerformanceBenchmark::benchmarkPosition(
         uint64_t initialNodes = searchData.nodes;
         uint64_t initialQNodes = searchData.qsearchNodes;
         
+        // Create search limits for testing
+        SearchLimits limits;
+        limits.maxDepth = depth;
+        limits.infinite = false;
+        
         // Run negamax search (which will call quiescence if enabled)
         [[maybe_unused]] eval::Score result = negamax(board, depth, 0, 
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, searchData, &tt);
+                                   searchInfo, searchData, limits, &tt);
         
         // Calculate node counts
         data.totalNodes = searchData.nodes - initialNodes;

@@ -129,6 +129,7 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
     eval::Score beta,
     SearchInfo& searchInfo,
     SearchData& data,
+    const SearchLimits& limits,
     TranspositionTable& tt) {
     
     // Record entry node count for per-position limit enforcement
@@ -140,7 +141,8 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
         return eval::evaluate(board);
     }
     
-    if (data.qsearchNodes - entryNodes > NODE_LIMIT_PER_POSITION) {
+    if (limits.qsearchNodeLimit > 0 && 
+        data.qsearchNodes - entryNodes > limits.qsearchNodeLimit) {
         data.qsearchNodesLimited++;
         return eval::evaluate(board);
     }
@@ -162,7 +164,7 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
     
     if (isInCheck) {
         // Delegate to specialized check evasion function
-        return quiescenceInCheckOptimized(board, ply, alpha, beta, searchInfo, data, tt);
+        return quiescenceInCheckOptimized(board, ply, alpha, beta, searchInfo, data, limits, tt);
     }
     
     // Stand-pat evaluation
@@ -172,13 +174,13 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
         return staticEval;
     }
     
-    // Delta pruning
+    // Delta pruning pre-check - only if position is completely hopeless
     bool isEndgame = (board.material().value(WHITE).value() < 1300) && 
                      (board.material().value(BLACK).value() < 1300);
     int deltaMargin = isEndgame ? DELTA_MARGIN_ENDGAME : DELTA_MARGIN;
     
-    eval::Score futilityBase = staticEval + eval::Score(deltaMargin);
-    if (futilityBase < alpha) {
+    // Only prune if even capturing a queen wouldn't help
+    if (staticEval + eval::Score(900 + deltaMargin) < alpha) {
         data.deltasPruned++;
         return staticEval;
     }
@@ -201,7 +203,7 @@ eval::Score OptimizedQuiescence::quiescenceOptimized(
     
     // Search moves with minimal stack frame overhead
     return searchMovesOptimized(board, scores, moveCount, ply, alpha, beta, 
-                              searchInfo, data, tt);
+                              searchInfo, data, limits, tt);
 }
 
 // Specialized optimized function for positions in check
@@ -212,6 +214,7 @@ eval::Score OptimizedQuiescence::quiescenceInCheckOptimized(
     eval::Score beta,
     SearchInfo& searchInfo,
     SearchData& data,
+    const SearchLimits& limits,
     TranspositionTable& tt) {
     
     // Use optimized check evasion generation
@@ -238,7 +241,7 @@ eval::Score OptimizedQuiescence::quiescenceInCheckOptimized(
         board.makeMove(move, undo);
         
         eval::Score score = -quiescenceOptimized(board, ply + 1, -beta, -alpha,
-                                               searchInfo, data, tt);
+                                               searchInfo, data, limits, tt);
         
         board.unmakeMove(move, undo);
         
@@ -323,6 +326,7 @@ eval::Score OptimizedQuiescence::searchMovesOptimized(
     eval::Score beta,
     SearchInfo& searchInfo,
     SearchData& data,
+    const SearchLimits& limits,
     TranspositionTable& tt) {
     
     eval::Score bestScore = alpha;
@@ -333,10 +337,10 @@ eval::Score OptimizedQuiescence::searchMovesOptimized(
         
         // Delta pruning using cached move type
         if (!moveScore.isPromotion()) {
-            // Use estimated capture value for delta pruning
-            int estimatedGain = moveScore.isCapture() ? 100 : 0;  // Simplified
-            eval::Score staticEval = eval::evaluate(board);  // Could be cached
-            if (staticEval + eval::Score(estimatedGain + DELTA_MARGIN) < alpha) {
+            // Proper delta pruning: static_eval + capture_value + margin < alpha
+            // For now use conservative estimate for capture value
+            int captureValue = moveScore.isCapture() ? 300 : 0;  // Conservative estimate
+            if (staticEval + eval::Score(captureValue + deltaMargin) < alpha) {
                 data.deltasPruned++;
                 continue;
             }
@@ -348,7 +352,7 @@ eval::Score OptimizedQuiescence::searchMovesOptimized(
         board.makeMove(move, undo);
         
         eval::Score score = -quiescenceOptimized(board, ply + 1, -beta, -alpha,
-                                               searchInfo, data, tt);
+                                               searchInfo, data, limits, tt);
         
         board.unmakeMove(move, undo);
         
