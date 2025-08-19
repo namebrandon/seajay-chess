@@ -874,38 +874,49 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=x86-64 -mpopcnt -msse
 
 **Date:** August 15, 2025  
 **Status:** STAGE 14 COMPLETE ✅ (Basic quiescence with captures and check evasions)  
+**Updated:** August 19, 2025 - Confirmed Q-search is ACTIVE and working  
 **Source Documents:**
 - Regression Analysis: `/workspace/project_docs/stage_investigations/stage14_regression_analysis.md`
 - Candidates Summary: `/workspace/project_docs/stage_implementations/stage14_candidates_summary.md`
 - Decision Document: `/workspace/project_docs/stage_implementations/stage14_quiet_checks_decision.md`
 
 ### Core Achievement:
-✅ **Successfully Implemented:**
-- Basic quiescence search with captures and check evasions
+✅ **Successfully Implemented and ACTIVE:**
+- Basic quiescence search with captures and check evasions **[VERIFIED ACTIVE - August 19, 2025]**
 - Delta pruning with conservative margins (900cp/600cp)
 - MVV-LVA move ordering in quiescence
 - Transposition table integration
 - Time pressure panic mode
 - **Performance:** +300 ELO over Stage 13
-- **Status:** Production-ready after fixing missing ENABLE_QUIESCENCE flag
+- **Status:** Production-ready, ENABLE_QUIESCENCE flag properly set in CMakeLists.txt
+- **Binary Size:** 455KB (confirms all features compiled in)
+- **UCI Control:** UseQuiescence option defaults to true
+- **Verification:** seldepth reaches 25+ while depth at 6 (clear sign of active quiescence)
 
 ### To Stage 16+ (After Prerequisites):
 
-#### 1. Quiet Checks in Quiescence (DEFERRED)
+#### 1. Quiet Checks in Quiescence (DEFERRED to Stage 16)
 
 **Description:** Include quiet (non-capture) checking moves at depth 0 of quiescence
 
 **Why Deferred:**
-- **Missing Prerequisites:** No SEE to filter bad checks
+- **Missing Prerequisites:** ~~No SEE to filter bad checks~~ SEE NOW AVAILABLE (Stage 15 complete)
 - **Recent C9 Catastrophe:** Need stability after aggressive pruning failure
 - **High Risk:** Could cause search explosion without proper filtering
 - **Complexity:** Requires efficient `givesCheck()` function
 
-**Prerequisites Required:**
-1. **SEE (Static Exchange Evaluation)** - Critical for filtering hanging piece checks
-2. **Efficient Check Detection** - Fast `givesCheck()` implementation
-3. **Stable Quiescence** - Current implementation fully validated
-4. **Better Time Management** - Fix current 1-2% time losses
+**⚠️ CRITICAL NOTE FOR STAGE 16 IMPLEMENTATION:**
+- **SEE is COMPLETE (Stage 15)** but currently **DISABLED BY DEFAULT**
+- **UCI Settings:** SEEMode defaults to "off", SEEPruning defaults to "off"
+- **Reason:** OpenBench testing showed SEE overhead exceeds benefit at ~2200 ELO
+- **Action Required:** When implementing Stage 16, must enable SEE in UCI options
+- **Testing:** Will need to test quiet checks with SEE enabled vs disabled
+
+**Prerequisites Status:**
+1. **SEE (Static Exchange Evaluation)** - ✅ COMPLETE but disabled by default
+2. **Efficient Check Detection** - Fast `givesCheck()` implementation needed
+3. **Stable Quiescence** - ✅ Current implementation fully validated  
+4. **Better Time Management** - Minor 1-2% time losses acceptable
 
 **Implementation When Ready:**
 ```cpp
