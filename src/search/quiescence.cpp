@@ -64,10 +64,11 @@ eval::Score quiescence(
     if (tt.isEnabled() && (ttEntry = tt.probe(board.zobristKey())) != nullptr) {
         // We have a TT hit
         if (!ttEntry->isEmpty() && ttEntry->key32 == (board.zobristKey() >> 32)) {
-            // Only accept depth 0 entries (quiescence-specific)
-            // Don't accept deeper entries from main search (depth > 0)
-            // This prevents main search entries from short-circuiting quiescence
-            if (ttEntry->depth == 0) {
+            // Accept depth 0-1 entries (quiescence and shallow main search)
+            // Depth 0: Quiescence entries
+            // Depth 1: Very shallow main search entries (similar to quiescence)
+            // Still reject deeper entries (depth > 1) to prevent pollution
+            if (ttEntry->depth <= 1) {
                 ttScore = eval::Score(ttEntry->score);
                 
                 // Adjust mate scores relative to current ply
