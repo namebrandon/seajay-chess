@@ -292,7 +292,7 @@ From chess-engine-expert review:
 ## Success Criteria
 
 - ✅ UCI options functional and parsed correctly
-- ⬜ Unit tests pass for reduction formula
+- ✅ Unit tests pass for reduction formula
 - ⬜ Node reduction of 40-60% achieved
 - ⬜ SPRT shows +50 ELO or better
 - ⬜ No tactical strength regression
@@ -302,7 +302,7 @@ From chess-engine-expert review:
 ## Timeline Estimate
 
 - Phase 1: ✅ COMPLETED
-- Phase 2: 30 minutes
+- Phase 2: ✅ COMPLETED
 - Phase 3: 1 hour
 - Phase 4: 45 minutes
 - Phase 5: 30 minutes
@@ -312,16 +312,21 @@ From chess-engine-expert review:
 ## Current Status
 
 **Phase 1:** ✅ TESTED via OpenBench - Result: Negligible (expected for UCI infrastructure)
-**Phase 2:** PARTIALLY STARTED (lmr.h created) - Ready to complete
-**Current State:** Holding as requested
+**Phase 2:** ✅ COMPLETED - Commit 79f465b, bench 19191913 - Ready for OpenBench testing
+**Current State:** 🛑 AWAITING OPENBENCH TEST before proceeding to Phase 3
 
 ## Next Steps
 
-**When ready to proceed:**
-1. Complete Phase 2 implementation (lmr.cpp and test_lmr.cpp)
-2. Commit Phase 2 with bench count
-3. Push to feature/20250819-lmr branch
-4. Run OpenBench test before proceeding to Phase 3
+**Immediate Actions Required:**
+1. ✅ Phase 2 implementation complete
+2. ✅ Committed with bench 19191913
+3. ✅ Pushed to feature/20250819-lmr branch
+4. 🛑 **AWAITING:** Human must run OpenBench test on Phase 2 commit
+
+**After OpenBench test confirms no regression:**
+1. Proceed with Phase 3: Integrate LMR into negamax search
+2. Follow granular commit strategy per phase
+3. Test after each phase before proceeding
 
 ---
 
