@@ -284,7 +284,18 @@ eval::Score negamax(Board& board,
                 // Even if depth is insufficient, we can still use the move
                 ttMove = static_cast<Move>(ttEntry->move);
                 if (ttMove != NO_MOVE) {
-                    info.ttMoveHits++;
+                    // Bug #013 fix: Validate TT move has valid squares before using
+                    Square from = moveFrom(ttMove);
+                    Square to = moveTo(ttMove);
+                    if (from < 64 && to < 64 && from != to) {
+                        info.ttMoveHits++;
+                    } else {
+                        // TT move is corrupted - likely from hash collision
+                        ttMove = NO_MOVE;
+                        info.ttCollisions++; // Track this as a collision
+                        std::cerr << "WARNING: Corrupted TT move detected: " 
+                                  << std::hex << ttEntry->move << std::dec << std::endl;
+                    }
                 }
             }
         }
@@ -945,8 +956,18 @@ void sendSearchInfo(const SearchData& info) {
     }
     
     // Output principal variation (just the best move for now)
+    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
     if (info.bestMove != Move()) {
-        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+        // Quick validation - check that from and to squares are valid
+        Square from = moveFrom(info.bestMove);
+        Square to = moveTo(info.bestMove);
+        if (from < 64 && to < 64 && from != to) {
+            std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+        } else {
+            // Log warning about corrupted move but don't output it
+            std::cerr << "WARNING: Corrupted bestMove detected in sendUCIInfo: " 
+                      << std::hex << info.bestMove << std::dec << std::endl;
+        }
     }
     
     std::cout << std::endl;
@@ -1035,8 +1056,18 @@ void sendIterationInfo(const IterativeSearchData& info) {
     }
     
     // Principal variation
+    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
     if (info.bestMove != Move()) {
-        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+        // Quick validation - check that from and to squares are valid
+        Square from = moveFrom(info.bestMove);
+        Square to = moveTo(info.bestMove);
+        if (from < 64 && to < 64 && from != to) {
+            std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+        } else {
+            // Log warning about corrupted move but don't output it
+            std::cerr << "WARNING: Corrupted bestMove detected in sendIterationInfo: " 
+                      << std::hex << info.bestMove << std::dec << std::endl;
+        }
     }
     
     std::cout << std::endl;

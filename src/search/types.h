@@ -79,6 +79,7 @@ struct SearchData {
     uint64_t ttCutoffs = 0;        // TT cutoffs (immediate returns)
     uint64_t ttMoveHits = 0;       // TT move found for ordering
     uint64_t ttStores = 0;         // Total TT stores
+    uint64_t ttCollisions = 0;     // TT corrupted moves detected (Bug #013)
     
     // Quiescence search statistics
     uint64_t qsearchNodes = 0;     // Nodes searched in quiescence
@@ -197,6 +198,7 @@ struct SearchData {
         ttCutoffs = 0;
         ttMoveHits = 0;
         ttStores = 0;
+        ttCollisions = 0;
         qsearchNodes = 0;
         qsearchCutoffs = 0;
         standPatCutoffs = 0;
