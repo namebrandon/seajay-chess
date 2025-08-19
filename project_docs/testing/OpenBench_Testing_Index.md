@@ -31,7 +31,7 @@ Each remediation needs to be testable against the previous remediation to measur
 | **11** | MVV-LVA (Always On) | `openbench/remediated-stage11` | `4d8d796` | `4d8d7965656502ff1e3f507a02392ff13e20d79c` | 19191913 | ✅ Complete |
 | **12** | TT (UCI Hash/Enable) | `openbench/remediated-stage12` | `a0f514c` | `a0f514c70dc4f113b5f02e5962cf4e6f634c8493` | 19191913 | ✅ Complete |
 | **13** | Iterative Deepening (Enhanced) | `openbench/remediated-stage13` | `b949c42` | `b949c427e811bfb85a7318ca8a228494a47e1d38` | 19191913 | ✅ Complete |
-| **14** | Quiescence Search (UCI) | - | - | - | 🔄 Pending |
+| **14** | Quiescence Search (Fixed) | `openbench/remediated-stage14` | `e8fe7cf` | `e8fe7cfc9ce5943ae9a826bbb30e85f52f28afce` | 19191913 | ✅ Complete |
 | **15** | SEE | - | - | - | 🔄 Pending |
 
 ## Historical Build Table
