@@ -5,13 +5,13 @@ This document tracks identified but unresolved bugs in the SeaJay chess engine, 
 ## 📊 Current Priority Status (Updated 2025-08-19)
 
 ### HIGHEST PRIORITY OPEN BUG:
-**Bug #013: Illegal PV Move Reported in UCI Output** - This is now the highest priority issue as it affects tournament credibility and may indicate TT corruption.
+**Bug #011: Test Script Initialization Hangs** - This is now the only remaining open bug, affecting test automation only (not gameplay).
 
 ### Open Bugs Summary:
-1. **Bug #013** (HIGH): Illegal PV moves in UCI output
-2. **Bug #011** (MEDIUM): Test script initialization hangs  
+1. **Bug #011** (MEDIUM): Test script initialization hangs - Does not affect actual gameplay
 
 ### Recently Resolved:
+- **Bug #013** (RESOLVED 2025-08-19): Illegal PV moves - Fixed with move validation, no strength loss
 - **Bug #012** (RESOLVED 2025-08-19): PST sign error - Verified fixed through 1,000 game test showing balanced play
 
 ## ⚠️ CRITICAL NOTICE: Stage 14 SEE Refactoring (2025-08-17)
@@ -1189,14 +1189,29 @@ Marked as Medium priority because:
 
 ## Bug #013: Illegal PV Move Reported in UCI Output
 
-**Status:** OPEN - Under Investigation  
-**Priority:** HIGH  
+**Status:** RESOLVED - Fixed and Validated  
+**Priority:** Was HIGH (now resolved)  
 **Discovery Date:** 2025-08-15 (During Stage 15 SPRT Testing)  
-**Impact:** Engine reports illegal moves in PV output, though bestmove is correct
+**Resolution Date:** 2025-08-19  
+**Impact:** Engine was reporting illegal moves in PV output, though bestmove was correct
 
 ### Summary
 
-The Stage 15 tuned binary is reporting illegal moves in its Principal Variation (PV) output during SPRT testing. The engine reports moves like "c2d2" in the PV at depths 1-3, but then correctly plays a different legal move as bestmove. This suggests corruption in PV extraction from the transposition table.
+The engine was reporting illegal moves in its Principal Variation (PV) output during testing. The engine would report moves like "c2d2" in the PV at depths 1-3, but then correctly play a different legal move as bestmove. This was caused by corrupted moves from transposition table hash collisions being displayed without validation.
+
+### Resolution
+
+**Fix Applied:** Added validation of moves before outputting to PV and when extracting from TT
+- Branch: `bugfix/20250819-illegal-pv-move`
+- Commits: d8ef830, a76bbc0
+
+**Validation Results:**
+1. **Regression Test:** -0.69 ± 5.56 ELO (2006 games) - No strength loss ✅
+   - Games: W:495 L:499 D:1012
+   - Pentanomial: [12, 90, 801, 90, 10]
+   - OpenBench: https://openbench.seajay-chess.dev/test/8/
+2. **Self-Play Test:** 2500 games with NO illegal moves reported ✅
+3. **Fix Effectiveness:** 100% - No illegal PV moves observed
 
 ### Symptoms
 
