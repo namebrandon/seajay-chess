@@ -123,6 +123,8 @@ set(SEARCH_SOURCES
     src/search/quiescence.h
     src/search/quiescence_performance.cpp
     src/search/quiescence_performance.h
+    src/search/lmr.cpp
+    src/search/lmr.h
     # src/search/quiescence_optimized.cpp  # Disabled: needs refactoring for thread-local SEE stats
     # src/search/quiescence_optimized.h
 )
@@ -321,6 +323,11 @@ if(NOT SKIP_ALPHABETA_TEST)
     # Stage 14: Delta pruning tests
     add_executable(test_delta_pruning_simple tests/search/test_delta_pruning_simple.cpp)
     target_link_libraries(test_delta_pruning_simple seajay_core)
+    
+    # Stage 18: LMR tests
+    add_executable(test_lmr tests/test_lmr.cpp)
+    target_include_directories(test_lmr PRIVATE ${GTEST_INCLUDE_DIR})
+    target_link_libraries(test_lmr seajay_core ${GTEST_LIBRARIES} pthread)
 endif()
 
 # Add test cases

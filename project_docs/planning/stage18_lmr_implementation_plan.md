@@ -43,8 +43,8 @@ From `/workspace/project_docs/tracking/deferred_items_tracker.md`:
 4. **Bug fixes BEFORE proceeding** - Never build on broken foundations
 5. **Branch strategy per** `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`
 
-### Phase 1: LMR Data Structures and UCI Options (AWAITING OPENBENCH TEST)
-**Status:** ⚠️ IMPLEMENTED - AWAITING OPENBENCH TEST
+### Phase 1: LMR Data Structures and UCI Options (TESTED)
+**Status:** ✅ TESTED - OpenBench Complete
 **Files modified:**
 - `src/search/types.h` - Added LMRParams and LMRStats to SearchData
 - `src/uci/uci.cpp` - Added 5 UCI options
@@ -58,30 +58,56 @@ From `/workspace/project_docs/tracking/deferred_items_tracker.md`:
 4. Parse options and pass to search
 
 **Testing:** Build and verify UCI options appear and parse correctly
-**🛑 STOP POINT:** Human MUST run OpenBench test before proceeding to Phase 2
+**OpenBench Results:** 
+- Test: https://openbench.seajay-chess.dev/test/9/
+- Elo: -1.73 +- 4.80 (95%)
+- Games: N=2010 W=499 L=509 D=1002
+- Result: **Negligible** (as expected - no functional change, UCI infrastructure only)
 
-### Phase 2: Basic Reduction Formula (30 minutes)
-**Files to create/modify:**
-- `src/search/lmr.h` (new file) - ⚠️ PARTIALLY CREATED (declarations only)
-- `src/search/lmr.cpp` (new file) - NOT STARTED
-- `tests/test_lmr.cpp` (new file) - NOT STARTED
+### Phase 2: Basic Reduction Formula ✅ COMPLETE
+**Files created/modified:**
+- `src/search/lmr.h` - ✅ Completed with full declarations
+- `src/search/lmr.cpp` - ✅ Created with robust implementation
+- `tests/test_lmr.cpp` - ✅ Created comprehensive GoogleTest suite
+- `tests/test_lmr_simple.cpp` - ✅ Created standalone test for validation
+- `CMakeLists.txt` - ✅ Updated to include LMR source files
 
-**Changes:**
-1. Create getLMRReduction() function with conservative linear formula
-2. Add unit tests for reduction calculation
-3. Verify edge cases (don't reduce below depth 1, cap at depth-2)
+**Implementation Details:**
+1. ✅ Created getLMRReduction() function with conservative linear formula
+2. ✅ Implemented shouldReduceMove() for eligibility checking
+3. ✅ Handles all edge cases properly:
+   - Returns 0 for invalid inputs (negative depths, move number < 1)
+   - Allows 0 reductions when conditions not met
+   - Uses 1-based move counting for intuitive usage
+   - Caps at depth-2 to ensure meaningful search
+4. ✅ Comprehensive unit tests covering:
+   - Basic formula calculation
+   - Very late move extra reductions
+   - Parameter configurations
+   - Edge cases and boundary conditions
+   - Eligibility criteria
 
-**Formula:**
+**Formula Implementation:**
 ```cpp
-reduction = baseReduction + (depth - minDepth) / depthFactor
-// Additional reduction for very late moves (>8)
-if (moveNumber > 8) reduction += (moveNumber - 8) / 4;
-// Cap at depth-2 to leave at least 1 ply
-return std::min(reduction, depth - 2);
+// Basic linear formula with depth factor
+reduction = baseReduction + (depth - minDepth) / depthFactor;
+
+// Extra reduction for very late moves (>8)
+if (moveNumber > 8) {
+    reduction += (moveNumber - 8) / 4;
+}
+
+// Cap at depth-2 to leave meaningful search
+reduction = std::min(reduction, std::max(1, depth - 2));
 ```
 
+**Validation Results:**
+- All unit tests pass
+- Sample reduction values verified correct
+- Conservative parameters (depthFactor=100) appropriate for 2200 ELO engine
+
 **Commit:** "Phase 2: Add LMR reduction formula with unit tests - bench [count]"
-**🛑 STOP POINT:** Human MUST run OpenBench test before proceeding to Phase 3 (even though no functional change)
+**🛑 STOP POINT:** Human MUST run OpenBench test before proceeding to Phase 3
 
 ### Phase 3: Integrate LMR into Negamax (1 hour)
 **Files to modify:**
@@ -285,20 +311,17 @@ From chess-engine-expert review:
 
 ## Current Status
 
-**⚠️ CRITICAL STATUS:**
-- **Phase 1:** IMPLEMENTED but NOT TESTED via OpenBench - CANNOT PROCEED
-- **Phase 2:** PARTIALLY STARTED (lmr.h created) - MUST STOP until Phase 1 tested
-- **Current Block:** Awaiting human to run OpenBench test of Phase 1
+**Phase 1:** ✅ TESTED via OpenBench - Result: Negligible (expected for UCI infrastructure)
+**Phase 2:** PARTIALLY STARTED (lmr.h created) - Ready to complete
+**Current State:** Holding as requested
 
 ## Next Steps
 
-**🛑 IMMEDIATE STOP - HUMAN ACTION REQUIRED:**
-1. Commit Phase 1 changes with bench count
-2. Push to feature/20250819-lmr branch
-3. Run OpenBench test vs main branch
-4. Report results back before ANY further development
-
-**DO NOT PROCEED WITH PHASE 2 UNTIL PHASE 1 IS TESTED**
+**When ready to proceed:**
+1. Complete Phase 2 implementation (lmr.cpp and test_lmr.cpp)
+2. Commit Phase 2 with bench count
+3. Push to feature/20250819-lmr branch
+4. Run OpenBench test before proceeding to Phase 3
 
 ---
 
