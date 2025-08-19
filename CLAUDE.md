@@ -225,16 +225,36 @@ This project uses a structured branch naming convention for OpenBench testing:
 - `tune/YYYYMMDD-name` - SPSA tuning
 - `ob/YYYYMMDD-name` - Historical references
 
-Use Git aliases to create branches:
+### Setup Git Aliases
+
+Install the Git aliases using the automated script:
+```bash
+chmod +x /workspace/setup_git_aliases.sh
+./setup_git_aliases.sh
+```
+
+### Branch Creation
 - `git feature <name>` - Create feature branch
 - `git bugfix <name>` - Create bugfix branch
 - `git test <name>` - Create test branch
 - `git tune <name>` - Create tuning branch
 - `git ob <name>` - Create historical reference
 
-List branches with:
+### Branch Management
 - `git list-all-branches` - Show all organized branches
+- `git list-features` - Show feature branches
+- `git list-bugfix` - Show bugfix branches
+- `git list-tests` - Show test branches
+- `git list-tune` - Show tuning branches
+- `git list-ob` - Show historical references
 - `git show-branch-age` - Show branch ages
+
+### Branch Cleanup (use with caution!)
+- `git clean-tests` - Delete ALL test branches
+- `git clean-old-tests` - Delete test branches older than 7 days
+- `git clean-bugfix` - Delete ALL bugfix branches
+- `git clean-features` - Delete ALL feature branches
+- `git clean-tune` - Delete ALL tune branches
 
 **CRITICAL for OpenBench:** Every commit MUST include "bench <node-count>" in the message. Get node count with:
 ```bash

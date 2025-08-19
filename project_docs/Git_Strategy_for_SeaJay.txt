@@ -34,9 +34,19 @@ Git Branch Management for SeaJay Development / OpenBench Testing
 
   Git Alias Setup
 
-  1. Install All Aliases
+  1. Automated Installation (Recommended)
 
-  Run these commands to set up your Git environment:
+  A setup script is available for easy installation:
+
+  # Run the automated setup script
+  chmod +x /workspace/setup_git_aliases.sh
+  ./setup_git_aliases.sh
+
+  This script will install all aliases and provide verification that they're working correctly.
+
+  2. Manual Installation
+
+  Alternatively, you can run these commands individually to set up your Git environment:
 
   # Branch creation aliases
   git config --global alias.feature '!f() { git checkout -b feature/$(date +%Y%m%d)-$1 && git push -u origin feature/$(date 
@@ -72,10 +82,13 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   refs/remotes/origin/test/ | while read branch date; do if [ $(($(date +%s) - date)) -gt 604800 ]; then echo "Deleting $branch"; git 
   push origin --delete ${branch#origin/}; fi; done'
 
-  2. Verify Installation
+  3. Verify Installation
 
   # Check that aliases were created
   git config --global --list | grep alias
+  
+  # Or run the setup script with verification
+  ./setup_git_aliases.sh  # Includes automatic verification
 
   Usage Examples
 
@@ -217,6 +230,14 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   - Create the branch BEFORE starting the OpenBench test
   - Push the branch immediately after creation (the aliases do this automatically)
   - Use meaningful descriptions after the date
+
+  Installation Status
+
+  After successful installation, you will have 17 Git aliases configured:
+  - 5 branch creation aliases (feature, bugfix, test, tune, ob)
+  - 6 branch listing aliases (list-features, list-bugfix, list-tests, list-tune, list-ob, list-all-branches)
+  - 4 branch cleanup aliases (clean-tests, clean-bugfix, clean-features, clean-tune)
+  - 2 utility aliases (show-branch-age, clean-old-tests)
 
   Troubleshooting
 

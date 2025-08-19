@@ -1,9 +1,9 @@
 # SeaJay Chess Engine - Project Status
 
-**Last Updated:** August 15, 2025  
+**Last Updated:** August 19, 2025  
 **Author:** Brandon Harris  
 **Current Phase:** 3 - Essential Optimizations  
-**Current Stage:** Stage 14 COMPLETE - Quiescence Search  
+**Current Stage:** Stage 15 COMPLETE - Static Exchange Evaluation (SEE)  
 
 ## Overview
 
@@ -366,6 +366,30 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - **Total Deliverables:** 43 (all completed)
 - **Key Achievement:** Methodical implementation with commit-per-deliverable
 
+#### Stage 15 - Static Exchange Evaluation (SEE)
+**Status:** COMPLETE ✅ (August 19, 2025) - REMEDIATED
+- [x] Pre-stage planning and comprehensive audit
+- [x] Critical bug fix: Swap list evaluation (min→max correction)
+- [x] Removed compile-time flags (USE_MAGIC_BITBOARDS, ENABLE_QUIESCENCE)
+- [x] Full UCI runtime control implementation
+- [x] Multiple SEE modes: off, testing, shadow, production
+- [x] SEE pruning options: off, conservative, aggressive
+- **Critical Bug Fixed:**
+  - Swap list evaluation using std::min instead of std::max
+  - This caused incorrect SEE values for all exchanges
+- **OpenBench Testing Results:**
+  - 10+0.1: -0.25 ± 7.14 ELO (no measurable benefit)
+  - 60+0.6: -7.13 ± 7.07 ELO (slightly harmful at longer TC)
+  - Conclusion: SEE overhead exceeds benefit at current strength
+- **Configuration:**
+  - Default SEEMode: "off" (based on empirical testing)
+  - Default SEEPruning: "off"
+  - Infrastructure remains for future use when engine stronger
+- **Branch:** bugfix/20250819-stage15-see-remediation
+- **Tag:** v0.15.1-remediated
+- **Bench:** 19191913
+- **Key Learning:** At ~2200 ELO, simple MVV-LVA sufficient
+
 ## Next Steps
 
 ### Short Term (Phase 3: Essential Optimizations)
@@ -374,11 +398,11 @@ This document tracks the current development status of the SeaJay Chess Engine p
 3. **Stage 12: Transposition tables** (COMPLETE - August 14, 2025)
 4. **Stage 13: Iterative Deepening** (COMPLETE - August 14, 2025)  
 5. **Stage 14: Quiescence Search** (COMPLETE - August 15, 2025)
-6. **Stage 15: Static Exchange Evaluation (SEE)** (next - ready to plan)
+6. **Stage 15: Static Exchange Evaluation (SEE)** (COMPLETE - August 19, 2025)
 7. Stage 16: Enhanced Quiescence (quiet checks after SEE)
 8. Stage 17: Null move pruning  
 9. Stage 18: Late move reductions
-8. Target: >1M NPS performance (achieved with TT)
+10. Target: >1M NPS performance (achieved with TT)
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces

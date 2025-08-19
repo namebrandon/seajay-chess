@@ -25,6 +25,65 @@ See `/workspace/project_docs/remediation/stage14_see_refactoring_warning.md` for
 
 ---
 
+## Performance Note #001: Stage 15 SEE Shows No Measurable Benefit
+
+**Status:** DOCUMENTED - Feature Disabled  
+**Priority:** Low (informational)  
+**Discovery Date:** 2025-08-19 (During Stage 15 Remediation)  
+**Impact:** No ELO gain from SEE at current engine strength
+
+### Summary
+
+After completing Stage 15 SEE remediation, extensive testing showed that Static Exchange Evaluation provides no measurable ELO benefit at the current engine strength (~2200 ELO) and tested time controls.
+
+### Testing Results
+
+**Test Configurations:**
+- Engine strength: ~2200 ELO
+- Testing platform: OpenBench with 1000+ games per test
+
+**Results:**
+1. **10+0.1 time control:**
+   - SEEMode=off vs SEEMode=production: -0.25 ± 7.14 ELO
+   - Essentially no difference
+
+2. **60+0.6 time control:**
+   - SEEMode=off vs SEEMode=production: -7.13 ± 7.07 ELO
+   - SEEMode=off vs SEEMode=shadow: -3.88 ± 7.35 ELO
+   - SEE slightly harmful due to calculation overhead
+
+### Technical Details
+
+**Implementation Status:**
+- SEE algorithm correctly implemented (swap list bug fixed)
+- Full UCI runtime control (no compile flags)
+- Multiple modes available: off, testing, shadow, production
+- Default set to "off" based on testing results
+
+**Why No Benefit:**
+1. **Time Control Impact:** SEE overhead exceeds benefit at fast time controls
+2. **Engine Strength:** At ~2200 ELO, simple MVV-LVA ordering is sufficient
+3. **Position Complexity:** Most exchanges are simple; complex multi-piece exchanges where SEE helps are rare
+4. **Search Depth:** Limited depth at tested time controls doesn't fully utilize better move ordering
+
+### Future Considerations
+
+SEE infrastructure remains in place for future use when:
+- Engine reaches higher strength (2500+ ELO)
+- Longer time controls are used (classical games)
+- Stage 16 (Enhanced Quiescence) requires SEE for quiet check filtering
+- NNUE evaluation makes tactical accuracy more critical
+
+### Configuration
+
+**Current UCI Options:**
+- `SEEMode`: default "off" (options: off, testing, shadow, production)
+- `SEEPruning`: default "off" (options: off, conservative, aggressive)
+
+Users can enable SEE via UCI if desired for experimentation.
+
+---
+
 ## Bug #012: PST Value Sign Error for Black Pieces - CRITICAL
 
 **Status:** OPEN - Root cause identified  
