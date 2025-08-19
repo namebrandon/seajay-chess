@@ -4,9 +4,18 @@
 **Purpose:** Mandatory planning process to be completed BEFORE any stage development begins  
 **Status:** REQUIRED - No stage development may begin without completing this process  
 
-## CRITICAL REQUIREMENT
+## CRITICAL REQUIREMENTS
 
 **⚠️ THIS PROCESS MUST BE COMPLETED BEFORE STARTING ANY NEW STAGE ⚠️**
+
+### 🔴 MANDATORY GIT & IMPLEMENTATION REQUIREMENTS:
+1. **Git Strategy:** MUST follow `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`
+2. **Bench in Commits:** EVERY commit MUST include "bench <node-count>" 
+3. **Granular Phases:** Maximum 2-3 changes per phase for easy bug isolation
+4. **Test After Each Phase:** Human MUST run OpenBench tests after EACH phase
+5. **Fix Before Proceeding:** NEVER build on broken code - fix bugs immediately
+
+**Get bench count:** `echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'`
 
 Failure to complete this planning process risks:
 - Introduction of subtle bugs that propagate to future stages
@@ -20,9 +29,11 @@ Failure to complete this planning process risks:
 ### Phase 1: Current State Analysis
 - [ ] Review project_status.md for overall project state
 - [ ] Review the Master Project Plan for the target stage requirements
+- [ ] **CRITICAL: Review `/workspace/project_docs/Git_Strategy_for_SeaJay.txt` for branch management**
 - [ ] Examine all existing code from previous stages
 - [ ] Check git history for recent changes and context
 - [ ] Document current capabilities and limitations
+- [ ] Verify Git aliases are installed for proper branch management
 
 ### Phase 2: Deferred Items Review
 - [ ] Review `/workspace/project_docs/tracking/deferred_items_tracker.md` for items coming INTO this stage
@@ -63,9 +74,13 @@ Failure to complete this planning process risks:
 ### Phase 7: Final Plan Documentation
 - [ ] Create stage-specific implementation plan document in `/workspace/project_docs/planning/`
 - [ ] Include all feedback from technical and domain reviews
+- [ ] **⚠️ CRITICAL: Define GRANULAR implementation phases (2-3 changes max per phase)**
+- [ ] **⚠️ CRITICAL: Include Git branch strategy per `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
+- [ ] **⚠️ CRITICAL: Document that EVERY commit MUST include "bench <node-count>" line**
 - [ ] Document items being deferred FROM this stage
 - [ ] Update `/workspace/project_docs/tracking/deferred_items_tracker.md` with new deferrals
 - [ ] Define clear success criteria and exit conditions
+- [ ] Plan for OpenBench testing after EACH implementation phase
 
 ### Phase 8: Pre-Implementation Setup
 - [ ] Create TODO list for stage implementation
@@ -96,6 +111,43 @@ Failure to complete this planning process risks:
 
 ## Implementation Plan
 [Detailed implementation approach with phases]
+
+### ⚠️ CRITICAL: Implementation Phase Structure
+**MANDATORY REQUIREMENTS:**
+1. **Phases must be GRANULAR** - Maximum 2-3 small changes per phase
+2. **Each phase gets its own commit** with "bench <node-count>" in message
+3. **OpenBench testing after EACH phase** - Human must perform tests
+4. **Bug fixes BEFORE proceeding** - Never build on broken foundations
+5. **Branch strategy per `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
+
+**Example Phase Breakdown:**
+```
+Phase 1: Add data structure (1-2 files)
+- Implement core structure
+- Add basic tests
+- Commit: "Add [feature] data structure - bench 12345678"
+- OpenBench test vs main
+
+Phase 2: Integrate with existing code (2-3 changes)
+- Hook into search/eval
+- Update related functions
+- Commit: "Integrate [feature] with search - bench 12345679"
+- OpenBench test vs Phase 1
+
+Phase 3: Optimize and tune (1-2 changes)
+- Apply optimizations
+- Tune parameters
+- Commit: "Optimize [feature] performance - bench 12345680"
+- OpenBench test vs Phase 2
+```
+
+## Git Branch Management
+**MUST follow `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`:**
+- Create feature branch: `git feature stage-X-name`
+- Each commit MUST include: `bench <node-count>`
+- Get bench count: `echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'`
+- Push after EVERY commit for OpenBench testing
+- Create `ob/` reference branches before major changes
 
 ## Technical Considerations
 [C++ specific details from cpp-pro review]
@@ -163,6 +215,10 @@ After each stage completion:
 3. Ensure all reviews are conducted
 4. Verify deferred items are tracked
 5. Confirm success criteria are defined
+6. **⚠️ ENFORCE: Git branch strategy from `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`**
+7. **⚠️ ENFORCE: Granular phases (2-3 changes max) for bug isolation**
+8. **⚠️ ENFORCE: "bench <node-count>" in EVERY commit message**
+9. **⚠️ ENFORCE: Remind human to test with OpenBench after each phase**
 
 ## Example Usage
 
@@ -180,6 +236,11 @@ AI: Before we begin Stage 3 implementation, we need to complete the mandatory Pr
 ## Version History
 
 - v1.0 (December 2024): Initial template based on Stage 2 planning experience
+- v1.1 (August 2025): Added critical Git strategy requirements and granular phase enforcement
+  - Added references to `/workspace/project_docs/Git_Strategy_for_SeaJay.txt`
+  - Emphasized "bench <node-count>" requirement for every commit
+  - Added mandatory granular phase structure (2-3 changes max)
+  - Emphasized OpenBench testing after each phase
 
 ---
 
