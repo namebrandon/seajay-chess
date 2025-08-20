@@ -64,9 +64,10 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 }
 
 // Move ordering function for alpha-beta pruning efficiency
-// Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then quiet moves
+// Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then killers, then quiet moves
 template<typename MoveContainer>
-inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE) noexcept {
+inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
+                      const SearchData* searchData = nullptr, int ply = 0) noexcept {
     // Sub-phase 4E: TT Move Ordering
     // If we have a TT move, put it first
     if (ttMove != NO_MOVE) {
@@ -80,8 +81,15 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     }
     
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
+    // Stage 19, Phase A2: Use killer moves if available
     static MvvLvaOrdering mvvLva;
-    mvvLva.orderMoves(board, moves);
+    if (searchData != nullptr) {
+        // Use killer-aware ordering
+        mvvLva.orderMovesWithKillers(board, moves, searchData->killers, ply);
+    } else {
+        // Fallback to standard MVV-LVA
+        mvvLva.orderMoves(board, moves);
+    }
     
     // After ordering, ensure TT move is still first if it was valid
     if (ttMove != NO_MOVE) {
@@ -319,8 +327,8 @@ eval::Score negamax(Board& board,
     }
     
     // Order moves for better alpha-beta pruning
-    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then quiet moves
-    orderMoves(board, moves, ttMove);
+    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
+    orderMoves(board, moves, ttMove, &info, ply);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {

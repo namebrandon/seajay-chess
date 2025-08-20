@@ -132,6 +132,44 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     // Quiet moves remain at the end in their original order (castling first, etc.)
 }
 
+// Order moves with killer move integration (Stage 19, Phase A2)
+void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves, 
+                                           const KillerMoves& killers, int ply) const {
+    // Nothing to order if empty or single move
+    if (moves.size() <= 1) {
+        return;
+    }
+    
+    // First do standard MVV-LVA ordering for captures
+    orderMoves(board, moves);
+    
+    // Now insert killer moves after captures but before other quiet moves
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
+        [](const Move& move) {
+            return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+        });
+    
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
+    }
+    
+    // Try to move killer moves to the front of quiet moves
+    for (int slot = 0; slot < 2; ++slot) {
+        Move killer = killers.getKiller(ply, slot);
+        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Find this killer in the quiet moves section
+            auto it = std::find(quietStart, moves.end(), killer);
+            if (it != moves.end() && it != quietStart) {
+                // Move killer to front of quiet moves
+                std::rotate(quietStart, it, it + 1);
+                ++quietStart;  // Next killer goes after this one
+            }
+        }
+    }
+}
+
 // Template implementation for integrating with existing code
 // OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>

@@ -4,6 +4,7 @@
 #include "../core/board.h"
 #include "../core/move_list.h"
 #include "../core/see.h"  // Stage 15: SEE integration
+#include "killer_moves.h"  // Stage 19: Killer moves integration
 #include <algorithm>
 #include <cassert>
 #include <array>
@@ -101,6 +102,10 @@ class MvvLvaOrdering final : public IMoveOrderingPolicy {
 public:
     // Order moves using MVV-LVA scoring
     void orderMoves(const Board& board, MoveList& moves) const override;
+    
+    // Order moves with killer move integration (Stage 19, Phase A2)
+    void orderMovesWithKillers(const Board& board, MoveList& moves, 
+                              const KillerMoves& killers, int ply) const;
     
     // Score a single move (exposed for testing)
     static int scoreMove(const Board& board, Move move) noexcept;

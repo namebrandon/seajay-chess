@@ -3,6 +3,7 @@
 #include "../core/types.h"
 #include "../core/transposition_table.h"
 #include "../evaluation/types.h"
+#include "killer_moves.h"
 #include <chrono>
 #include <cstdint>
 
@@ -133,6 +134,9 @@ struct SearchData {
         }
     } seeStats;
     
+    // Stage 19: Killer moves for move ordering
+    KillerMoves killers;
+    
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
     mutable std::chrono::milliseconds m_cachedElapsed{0};
@@ -206,6 +210,7 @@ struct SearchData {
         qsearchNodesLimited = 0;
         qsearchTTHits = 0;
         seeStats.reset();
+        killers.clear();  // Stage 19: Clear killer moves
         depth = 0;
         seldepth = 0;
         bestMove = Move();
