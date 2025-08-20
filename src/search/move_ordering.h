@@ -5,6 +5,7 @@
 #include "../core/move_list.h"
 #include "../core/see.h"  // Stage 15: SEE integration
 #include "killer_moves.h"  // Stage 19: Killer moves integration
+#include "history_heuristic.h"  // Stage 20: History heuristic integration
 #include <algorithm>
 #include <cassert>
 #include <array>
@@ -106,6 +107,11 @@ public:
     // Order moves with killer move integration (Stage 19, Phase A2)
     void orderMovesWithKillers(const Board& board, MoveList& moves, 
                               const KillerMoves& killers, int ply) const;
+    
+    // Order moves with both killers and history (Stage 20, Phase B2)
+    void orderMovesWithHistory(const Board& board, MoveList& moves,
+                              const KillerMoves& killers, 
+                              const HistoryHeuristic& history, int ply) const;
     
     // Score a single move (exposed for testing)
     static int scoreMove(const Board& board, Move move) noexcept;

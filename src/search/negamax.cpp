@@ -82,10 +82,11 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
+    // Stage 20, Phase B2: Use history heuristic for quiet moves
     static MvvLvaOrdering mvvLva;
     if (searchData != nullptr) {
-        // Use killer-aware ordering
-        mvvLva.orderMovesWithKillers(board, moves, searchData->killers, ply);
+        // Use killer and history aware ordering
+        mvvLva.orderMovesWithHistory(board, moves, searchData->killers, searchData->history, ply);
     } else {
         // Fallback to standard MVV-LVA
         mvvLva.orderMoves(board, moves);

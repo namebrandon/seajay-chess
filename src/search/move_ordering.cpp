@@ -170,6 +170,58 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     }
 }
 
+// Order moves with both killers and history (Stage 20, Phase B2)
+void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
+                                          const KillerMoves& killers, 
+                                          const HistoryHeuristic& history, int ply) const {
+    // Nothing to order if empty or single move
+    if (moves.size() <= 1) {
+        return;
+    }
+    
+    // First do standard MVV-LVA ordering for captures
+    orderMoves(board, moves);
+    
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
+        [](const Move& move) {
+            return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+        });
+    
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
+    }
+    
+    // First, move killer moves to the front of quiet moves
+    auto killerEnd = quietStart;
+    for (int slot = 0; slot < 2; ++slot) {
+        Move killer = killers.getKiller(ply, slot);
+        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Find this killer in the quiet moves section
+            auto it = std::find(killerEnd, moves.end(), killer);
+            if (it != moves.end() && it != killerEnd) {
+                // Move killer to front of quiet moves
+                std::rotate(killerEnd, it, it + 1);
+                ++killerEnd;  // Next killer goes after this one
+            }
+        }
+    }
+    
+    // Now sort the remaining quiet moves by history score
+    // (moves after killerEnd are non-killer quiet moves)
+    if (killerEnd != moves.end()) {
+        Color side = board.sideToMove();
+        std::stable_sort(killerEnd, moves.end(),
+            [&history, side](const Move& a, const Move& b) {
+                // Get history scores for both moves
+                int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
+                int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
+                return scoreA > scoreB;  // Higher scores first
+            });
+    }
+}
+
 // Template implementation for integrating with existing code
 // OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>

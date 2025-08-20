@@ -4,6 +4,7 @@
 #include "../core/transposition_table.h"
 #include "../evaluation/types.h"
 #include "killer_moves.h"
+#include "history_heuristic.h"
 #include <chrono>
 #include <cstdint>
 
@@ -137,6 +138,9 @@ struct SearchData {
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     
+    // Stage 20: History heuristic for move ordering
+    HistoryHeuristic history;
+    
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
     mutable std::chrono::milliseconds m_cachedElapsed{0};
@@ -211,6 +215,7 @@ struct SearchData {
         qsearchTTHits = 0;
         seeStats.reset();
         killers.clear();  // Stage 19: Clear killer moves
+        history.clear();  // Stage 20: Clear history heuristic
         depth = 0;
         seldepth = 0;
         bestMove = Move();
