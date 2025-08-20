@@ -46,8 +46,9 @@ void HistoryHeuristic::updateFailed(Color side, Square from, Square to, int dept
     }
     
     // Calculate penalty based on depth squared
-    // Use smaller penalty than bonus to avoid over-penalizing moves
-    int penalty = std::min(depth * depth / 2, 200);  // Half the bonus amount
+    // Use much smaller penalty than bonus to avoid over-penalizing moves
+    // B4.3: Reduced from /2 to /4 to be less aggressive
+    int penalty = std::min(depth * depth / 4, 100);  // Quarter the bonus amount
     
     // Reduce the history score
     m_history[side][from][to] -= penalty;
