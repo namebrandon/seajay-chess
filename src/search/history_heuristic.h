@@ -43,6 +43,16 @@ public:
     void update(Color side, Square from, Square to, int depth);
     
     /**
+     * Reduce history score for a move that was tried but didn't cause cutoff
+     * This implements the "butterfly" or "gravity" history update
+     * @param side Color of the moving side
+     * @param from Source square of the move
+     * @param to Destination square of the move
+     * @param depth Current search depth (used for penalty calculation)
+     */
+    void updateFailed(Color side, Square from, Square to, int depth);
+    
+    /**
      * Get the history score for a move
      * @param side Color of the moving side
      * @param from Source square of the move

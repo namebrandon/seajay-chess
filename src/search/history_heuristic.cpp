@@ -39,6 +39,25 @@ int HistoryHeuristic::getScore(Color side, Square from, Square to) const {
     return m_history[side][from][to];
 }
 
+void HistoryHeuristic::updateFailed(Color side, Square from, Square to, int depth) {
+    // Validate inputs
+    if (side >= NUM_COLORS || from >= 64 || to >= 64) {
+        return;  // Invalid parameters
+    }
+    
+    // Calculate penalty based on depth squared
+    // Use smaller penalty than bonus to avoid over-penalizing moves
+    int penalty = std::min(depth * depth / 2, 200);  // Half the bonus amount
+    
+    // Reduce the history score
+    m_history[side][from][to] -= penalty;
+    
+    // Check if aging is needed (for negative values too)
+    if (std::abs(m_history[side][from][to]) >= HISTORY_MAX) {
+        ageHistory();
+    }
+}
+
 void HistoryHeuristic::ageHistory() {
     // Divide all history values by 2 to prevent overflow
     // This maintains relative ordering while keeping values manageable

@@ -354,9 +354,18 @@ eval::Score negamax(Board& board,
     // Search all moves
     int moveCount = 0;
     
+    // Stage 20 Phase B3 Fix: Track quiet moves for butterfly history update
+    std::vector<Move> quietMoves;
+    quietMoves.reserve(moves.size());
+    
     for (const Move& move : moves) {
         moveCount++;
         info.totalMoves++;  // Track total moves examined
+        
+        // Track quiet moves for history update
+        if (!isCapture(move) && !isPromotion(move)) {
+            quietMoves.push_back(move);
+        }
         
         // Push position to search stack BEFORE making the move
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
@@ -421,9 +430,16 @@ eval::Score negamax(Board& board,
                     if (!isCapture(move) && !isPromotion(move)) {
                         info.killers.update(ply, move);
                         
-                        // Update history with depth-based bonus
+                        // Update history with depth-based bonus for cutoff move
                         Color side = board.sideToMove();
                         info.history.update(side, moveFrom(move), moveTo(move), depth);
+                        
+                        // Butterfly update: penalize quiet moves tried before the cutoff
+                        for (const Move& quietMove : quietMoves) {
+                            if (quietMove != move) {  // Don't penalize the cutoff move itself
+                                info.history.updateFailed(side, moveFrom(quietMove), moveTo(quietMove), depth);
+                            }
+                        }
                     }
                     
                     break;  // Beta cutoff - no need to search more moves
@@ -805,6 +821,10 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
     
     SearchData info;  // For search statistics
+    
+    // Stage 20, Phase B3 Fix: Clear history only at search start,
+    // not between iterative deepening iterations
+    // History accumulates across ID iterations for better move ordering
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;

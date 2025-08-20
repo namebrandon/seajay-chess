@@ -1015,3 +1015,134 @@ User requested reconsideration of quiet checks given increased stability and cod
 Despite temptation to add quiet checks, expert consensus and historical engine experience (Fruit, Glaurung) confirms that SEE is a hard prerequisite.
 
 **Next Stage:** Stage 15 - Static Exchange Evaluation (SEE) - Foundation for Stage 16 enhanced quiescence
+
+## Items DEFERRED FROM Stage 20 (History Heuristic) TO Future Stages
+
+**Date:** August 20, 2025  
+**Status:** STAGE 20 IN PROGRESS (Phase B3 testing)  
+**Source:** Discussion during history heuristic implementation
+
+### Additional Move Ordering Improvements for LMR Support
+
+With killer moves (+31 ELO) and history heuristic (+15-25 ELO expected) complete, the following additional move ordering techniques could further improve LMR effectiveness:
+
+#### 1. Countermove Heuristic (Stage 21+)
+**Expected Gain:** +5-10 ELO
+
+**Description:** Store the best response to each opponent move
+- "If opponent plays e2-e4, we usually respond well with e7-e5"
+- Indexed by [piece][to_square] of opponent's last move
+- Complements killers (ply-based) and history (global)
+
+**Implementation Approach:**
+```cpp
+class CountermoveTable {
+    Move countermoves[NUM_PIECE_TYPES][64];  // [piece_type][to_square]
+    
+    void update(PieceType piece, Square to, Move response) {
+        countermoves[piece][to] = response;
+    }
+    
+    Move getCountermove(PieceType piece, Square to) const {
+        return countermoves[piece][to];
+    }
+};
+```
+
+**Priority:** Medium - Good complement to existing ordering
+
+#### 2. Continuation History (Stage 22+)
+**Expected Gain:** +10-15 ELO
+
+**Description:** Track move pair sequences
+- "After I play Nf3, Bg5 is often good"
+- More context-aware than simple history
+- Used extensively in Stockfish
+
+**Implementation Approach:**
+```cpp
+class ContinuationHistory {
+    // History indexed by [prev_piece][prev_to][curr_piece][curr_to]
+    int16_t history[NUM_PIECE_TYPES][64][NUM_PIECE_TYPES][64];
+    
+    void update(Move prevMove, Move currMove, int bonus) {
+        // Update based on move sequence
+    }
+};
+```
+
+**Priority:** Medium-Low - More complex but proven effective
+
+#### 3. Capture History (Stage 23+)
+**Expected Gain:** +3-5 ELO
+
+**Description:** Separate history table for captures
+- Helps order captures beyond MVV-LVA
+- Useful when SEE values are equal
+- Tracks which specific captures work well
+
+**Implementation Approach:**
+```cpp
+class CaptureHistory {
+    // Indexed by [attacker_type][victim_type][to_square]
+    int16_t history[NUM_PIECE_TYPES][NUM_PIECE_TYPES][64];
+};
+```
+
+**Priority:** Low - Minor improvement over existing MVV-LVA
+
+#### 4. Threat Detection for LMR (Stage 24+)
+**Expected Gain:** Variable (prevents tactical oversights)
+
+**Description:** Identify tactical moves that should resist reduction
+- Checks, forks, pins, discovered attacks
+- These moves marked as "non-reducible" in LMR
+- Prevents LMR from missing critical tactics
+
+**Implementation Approach:**
+- Add threat detection during move generation
+- Mark threatening moves with special flag
+- LMR checks flag before reducing
+
+**Priority:** High (when implementing LMR) - Critical for LMR safety
+
+### LMR Implementation Readiness
+
+**Current State:**
+✅ TT move ordering (highest priority)
+✅ MVV-LVA for captures  
+✅ Killer moves (+31 ELO)
+✅ History heuristic (+15-25 ELO expected)
+✅ SEE available (but disabled by default)
+
+**Sufficient for LMR:** YES
+- Current ordering distinguishes good/bad moves well enough
+- LMR can now reduce late moves with confidence
+- Expected +20-30 ELO from LMR with current ordering
+
+**Recommended Implementation Order:**
+1. Complete history heuristic testing (Stage 20)
+2. Implement basic LMR (Stage 21)
+3. Add countermove heuristic if needed (Stage 22)
+4. Consider continuation history later (Stage 23+)
+5. Capture history only if profiling shows need
+
+### Notes on Implementation
+
+**Key Insights:**
+- Killer + History provides ~80% of move ordering benefit
+- Additional techniques have diminishing returns
+- LMR effectiveness depends more on reduction formula than perfect ordering
+- Better to implement LMR sooner with good-enough ordering
+
+**Testing Approach:**
+- Each addition should be tested independently
+- Use SPRT to verify ELO gains
+- Monitor time-to-depth impact
+- Check for tactical blindness
+
+**Memory Considerations:**
+- Countermove: ~2KB (6×64×4 bytes)
+- Continuation History: ~1MB (6×64×6×64×2 bytes)
+- Capture History: ~24KB (6×6×64×2 bytes)
+- All are cache-friendly access patterns

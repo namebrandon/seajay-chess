@@ -116,31 +116,67 @@ Git Branch Management for SeaJay Development / OpenBench Testing
 
   OpenBench Workflow
 
-  1. Feature Development
+  1. Phased Feature Development (RECOMMENDED APPROACH)
 
+  SeaJay follows a strict phased development model with frequent testing, even for 
+  phases with no expected impact. This approach has proven highly successful for 
+  catching bugs early and understanding performance impacts.
+
+  Example: Implementing Killer Moves (Stage 19)
+  
+  Phase A1: Infrastructure Only (0 ELO expected)
+  ================================================
   # Create feature branch
-  git feature multi-pv
+  git feature killer-moves
 
-  # Make your changes
-  vim src/search.cpp
+  # Implement just the data structures, no integration
+  vim src/search/killer_moves.h src/search/killer_moves.cpp
   git add -A
-  git commit -m "Implement multi-PV search"
+  git commit -m "feat: Add killer moves infrastructure (Phase A1) - bench 19191913"
+  git push
+
+  # Test in OpenBench (expect 0 ELO change)
+  # Dev Branch: feature/20250820-killer-moves
+  # Base Branch: main
+  # Result: Confirms no regression, infrastructure stable
+
+  Phase A2: Integration Without Updates (+20-30 ELO expected)
+  ===========================================================
+  # Continue on same branch
+  # Integrate into move ordering, but don't update the table yet
+  vim src/search/move_ordering.cpp
+  git add -A
+  git commit -m "feat: Integrate killers in move ordering (Phase A2) - bench 19191913"
+  git push
 
   # Test in OpenBench
-  # Dev Branch: feature/20250819-multi-pv
-  # Base Branch: main
-  # Test shows: "feature/20250819-multi-pv vs main"
+  # Result: May show small change or regression due to overhead
 
-  # If successful, merge to main
+  Phase A3: Full Implementation (+10 ELO additional expected)
+  ===========================================================
+  # Add the update logic
+  vim src/search/negamax.cpp
+  git add -A
+  git commit -m "feat: Update killers on beta cutoffs (Phase A3) - bench 19191913"
+  git push
+
+  # Test in OpenBench
+  # Result: Full ELO gain realized
+
+  # After all phases pass, merge to main
   git checkout main
-  git merge feature/20250819-multi-pv
+  git merge feature/20250820-killer-moves
   git push origin main
 
-  # Create historical reference
-  git ob post-multi-pv
+  CRITICAL: Why This Works
+  ========================
+  - Phase with "no impact" catch integration bugs early
+  - Overhead phases (like B2: -9 ELO) are expected and documented
+  - Each phase is independently testable
+  - Bugs are isolated to specific commits
+  - Performance regressions are immediately visible
 
-  # Clean up feature branch
-  git push origin --delete feature/20250819-multi-pv
+  2. Standard Feature Development (Simple Features Only)
 
   2. Bug Fix
 
@@ -199,7 +235,57 @@ Git Branch Management for SeaJay Development / OpenBench Testing
 
   Best Practices
 
-  1. Branch Lifecycle
+  1. Phased Development Strategy (MANDATORY for complex features)
+
+  Complex features MUST be broken into phases:
+  
+  Phase Structure:
+  ================
+  - Phase 1: Infrastructure (data structures, no integration)
+    Expected: 0 ELO, validates compilation and basic structure
+    
+  - Phase 2: Integration (hook into engine, but minimal functionality)
+    Expected: 0 to small negative ELO (overhead without benefit)
+    
+  - Phase 3: Activation (turn on the feature)
+    Expected: Main ELO gain
+    
+  - Phase 4+: Refinements (tuning, optimizations)
+    Expected: Incremental gains
+
+  Commit Message Format:
+  ======================
+  ALWAYS include:
+  - Phase identifier (Phase A1, B2, etc.)
+  - Bench count for OpenBench
+  - Expected impact
+  
+  Example:
+  "feat: Add history heuristic infrastructure (Phase B1) - bench 19191913"
+
+  Testing Requirements:
+  =====================
+  - EVERY phase gets OpenBench tested
+  - Even 0 ELO phases (they catch bugs!)
+  - Document expected regressions (like Phase B2: -9 ELO from overhead)
+  - Wait for test completion before next phase
+  - Use SPRT for statistical significance
+
+  When to Use Phased Approach:
+  =============================
+  ALWAYS for:
+  - Move ordering improvements (killers, history, countermoves)
+  - Search enhancements (LMR, null move, extensions)
+  - Evaluation features (complex positional terms)
+  - Pruning techniques (futility, delta, razoring)
+  
+  OPTIONAL for:
+  - Bug fixes (unless complex)
+  - Simple parameter changes
+  - UCI additions
+  - Display improvements
+
+  2. Branch Lifecycle
 
   - feature/ - Merge to main if successful, then delete
   - bugfix/ - Merge to main when fixed, then delete
@@ -230,6 +316,28 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   - Create the branch BEFORE starting the OpenBench test
   - Push the branch immediately after creation (the aliases do this automatically)
   - Use meaningful descriptions after the date
+  - ALWAYS include bench count in commit messages for OpenBench compatibility
+
+  5. Success Metrics for Phased Development
+
+  Phase Success Criteria:
+  =======================
+  - Infrastructure phases: No regression (0 ELO ± confidence interval)
+  - Integration phases: Expected regression documented and observed
+  - Activation phases: Positive ELO gain within expected range
+  - All phases: Clean compilation, no warnings, tests pass
+
+  Real Examples from SeaJay:
+  ==========================
+  Killer Moves (Stage 19):
+  - Phase A1 (infrastructure): 0.00 ± 10.33 ELO ✓ (as expected)
+  - Phase A2 (integration): Minimal change ✓
+  - Phase A3 (activation): +31.42 ± 10.49 ELO ✓ (expected 30-40)
+  
+  History Heuristic (Stage 20):
+  - Phase B1 (infrastructure): 0 ELO ✓ (as expected)
+  - Phase B2 (integration): -9.14 ± 7.51 ELO ✓ (expected -5 to -10)
+  - Phase B3 (activation): Testing in progress (expect +25-35 to recover)
 
   Installation Status
 
