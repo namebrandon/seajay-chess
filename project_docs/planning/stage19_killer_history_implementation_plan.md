@@ -438,11 +438,25 @@ git push
 
 ## Expected Results Summary
 
-| Component | Phases | Expected ELO | Cumulative |
-|-----------|--------|--------------|------------|
-| Killer Moves | A1-A3 | +30-40 | +30-40 |
-| History Heuristic | B1-B3 | +15-25 | +45-65 |
-| LMR Re-integration | C1 | +20-30 | +65-95 |
+| Component | Phases | Expected ELO | Cumulative | Actual |
+|-----------|--------|--------------|------------|--------|
+| Killer Moves | A1-A3 | +30-40 | +30-40 | **+31.42 ± 10.49** ✓ |
+| History Heuristic | B1-B3 | +15-25 | +45-65 | TBD |
+| LMR Re-integration | C1 | +20-30 | +65-95 | TBD |
+
+### OpenBench Test Results - Killer Moves
+
+**Test #20:** https://openbench.seajay-chess.dev/test/20/
+- **ELO:** +31.42 ± 10.49 (95% confidence)
+- **Games:** 1874 (545W / 376L / 953D)
+- **Pentanomial:** [33, 176, 379, 287, 62]
+
+**⚠️ OBSERVATION:** Unbalanced pentanomial distribution noted - significantly more 2-0 wins (287) than 0-2 losses (176). This could indicate:
+1. Better endgame conversion with improved move ordering
+2. Statistical variance (needs monitoring)
+3. Potential asymmetric strength improvement
+
+**Action:** Monitor pentanomial balance in future tests to determine if this is a pattern or anomaly.
 
 ## Files to Modify Checklist
 
