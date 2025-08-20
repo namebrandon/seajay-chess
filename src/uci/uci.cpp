@@ -706,12 +706,19 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     // Stage 18: Handle LMR options
     else if (optionName == "LMREnabled") {
-        if (value == "true") {
+        // Make boolean parsing case-insensitive and accept common variations
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
             m_lmrEnabled = true;
             std::cerr << "info string LMR enabled" << std::endl;
-        } else if (value == "false") {
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
             m_lmrEnabled = false;
             std::cerr << "info string LMR disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid LMREnabled value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
     else if (optionName == "LMRMinDepth") {
