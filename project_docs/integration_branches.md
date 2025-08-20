@@ -63,17 +63,18 @@ Integration branches are used when a feature is discovered to have unmet depende
 - **Stage:** Should be Stage 19 (was deferred to Stage 22)
 
 #### Current Performance:
-- **With Dependencies Missing:** -10.65 ± 10.25 ELO (loses ELO despite node reduction)
+- **LMREnabled=true:** -11.62 ± 10.36 ELO (✅ TESTED - loses ELO without move ordering)
+- **LMREnabled=false:** -0.97 ± 5.52 ELO (✅ TESTED - clean baseline)
 - **Expected With Dependencies:** +50-100 ELO (standard LMR benefit)
-- **Node Reduction:** 91% (verified working)
-- **Re-search Rate:** Unknown (needs Phase 4 statistics output)
+- **Node Reduction:** Expected 60-80% with conservative parameters
+- **Test Results:** https://openbench.seajay-chess.dev/test/16/ (LMR=true), https://openbench.seajay-chess.dev/test/17/ (baseline)
 
 #### Testing Strategy:
-1. **Phase 1 (Current):** Test with LMREnabled=false (baseline, should be neutral)
-2. **Phase 2 (Current):** Test with LMREnabled=true, fixed re-search condition
-3. **Phase 3 (After history):** Test with history heuristic implemented
-4. **Phase 4 (After killers):** Test with both history and killer moves
-5. **Phase 5 (Final):** Enable by default and validate +50-100 ELO gain
+1. **Phase 1 (✅ COMPLETE):** Test with LMREnabled=false → -0.97 ± 5.52 ELO (neutral baseline confirmed)
+2. **Phase 2 (✅ COMPLETE):** Test with LMREnabled=true → -11.62 ± 10.36 ELO (needs move ordering)
+3. **Phase 3 (NEXT):** Test with history heuristic implemented
+4. **Phase 4 (PLANNED):** Test with both history and killer moves
+5. **Phase 5 (FINAL):** Enable by default and validate +50-100 ELO gain
 
 #### Integration Plan:
 
