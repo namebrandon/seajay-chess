@@ -354,9 +354,18 @@ eval::Score negamax(Board& board,
     // Search all moves
     int moveCount = 0;
     
+    // Stage 20 B4.2: Track quiet moves for butterfly history update
+    std::vector<Move> quietMoves;
+    quietMoves.reserve(moves.size());
+    
     for (const Move& move : moves) {
         moveCount++;
         info.totalMoves++;  // Track total moves examined
+        
+        // Track quiet moves for butterfly update
+        if (!isCapture(move) && !isPromotion(move)) {
+            quietMoves.push_back(move);
+        }
         
         // Push position to search stack BEFORE making the move
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
@@ -417,13 +426,20 @@ eval::Score negamax(Board& board,
                     }
                     
                     // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
-                    // Stage 20, Phase B3: Update history for quiet moves that cause cutoffs
+                    // Stage 20, Phase B3/B4.2: Update history for quiet moves that cause cutoffs
                     if (!isCapture(move) && !isPromotion(move)) {
                         info.killers.update(ply, move);
                         
-                        // Update history with depth-based bonus
+                        // Update history with depth-based bonus for cutoff move
                         Color side = board.sideToMove();
                         info.history.update(side, moveFrom(move), moveTo(move), depth);
+                        
+                        // Stage 20 B4.2: Butterfly update - penalize quiet moves tried before cutoff
+                        for (const Move& quietMove : quietMoves) {
+                            if (quietMove != move) {  // Don't penalize the cutoff move itself
+                                info.history.updateFailed(side, moveFrom(quietMove), moveTo(quietMove), depth);
+                            }
+                        }
                     }
                     
                     break;  // Beta cutoff - no need to search more moves

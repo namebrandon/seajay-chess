@@ -52,6 +52,15 @@ public:
     int getScore(Color side, Square from, Square to) const;
     
     /**
+     * Update history for a move that failed to cause a cutoff (butterfly update)
+     * @param side Color of the moving side
+     * @param from Source square of the move
+     * @param to Destination square of the move
+     * @param depth Current search depth (used for penalty calculation)
+     */
+    void updateFailed(Color side, Square from, Square to, int depth);
+    
+    /**
      * Age all history values by dividing by 2
      * Called automatically when any value reaches HISTORY_MAX
      */
