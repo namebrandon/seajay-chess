@@ -109,15 +109,23 @@ reduction = std::min(reduction, std::max(1, depth - 2));
 **Commit:** "Phase 2: Add LMR reduction formula with unit tests - bench [count]"
 **🛑 STOP POINT:** Human MUST run OpenBench test before proceeding to Phase 3
 
-### Phase 3: Integrate LMR into Negamax (1 hour)
-**Files to modify:**
-- `src/search/negamax.cpp` - Add reduction logic in move loop
-- `CMakeLists.txt` - Add new LMR files
+### Phase 3: Integrate LMR into Negamax ✅ COMPLETE
+**Status:** ✅ TESTED - Regression test passed, awaiting LMREnabled=true results
+**Files modified:**
+- `src/search/negamax.cpp` - ✅ Added reduction logic in move loop
+- `src/uci/uci.cpp` - ✅ Fixed default to false
+- `src/uci/uci.h` - ✅ Fixed default to false
 
 **Changes:**
-1. Calculate reduction for each move based on conditions
-2. Implement reduced search with null window
-3. Add re-search logic when score > alpha
+1. ✅ Calculate reduction for each move based on conditions
+2. ✅ Implement reduced search with null window (-(alpha+1), -alpha)
+3. ✅ Add re-search logic when score > alpha
+
+**Implementation Notes:**
+- Correctly checks if in check BEFORE making move (saves state)
+- Uses proper negamax perspective (side-to-move scoring)
+- Skips LMR at root (ply == 0) for stability
+- 91% node reduction achieved in testing!
 
 **Integration point (around line 361):**
 ```cpp
@@ -153,8 +161,12 @@ if (reduction > 0) {
 }
 ```
 
-**Commit:** "Phase 3: Integrate LMR into negamax search - bench [count]"
-**🛑 STOP POINT:** Human MUST run OpenBench test vs Phase 2 build before proceeding to Phase 4
+**Commit:** ✅ "Phase 3: Integrate LMR into negamax search - bench 19191913"
+**Testing Results:**
+- Commit: 8a51f88
+- Regression test (LMREnabled=false): -1.25 ± 5.11 ELO ✅
+- Performance test (LMREnabled=true): ⏳ IN PROGRESS
+- Node reduction achieved: 91% at depth 6
 
 ### Phase 4: Add Statistics and Check Detection (45 minutes)
 **Files to modify:**
@@ -312,8 +324,9 @@ From chess-engine-expert review:
 ## Current Status
 
 **Phase 1:** ✅ TESTED via OpenBench - Result: Negligible (expected for UCI infrastructure)
-**Phase 2:** ✅ COMPLETED - Commit 79f465b, bench 19191913 - Ready for OpenBench testing
-**Current State:** 🛑 AWAITING OPENBENCH TEST before proceeding to Phase 3
+**Phase 2:** ✅ TESTED via OpenBench - Result: +3.04 ± 5.14 (negligible, as expected)
+**Phase 3:** ✅ TESTED (regression) - Result: -1.25 ± 5.11 (negligible with LMREnabled=false)
+**Current State:** ⏳ TESTING LMREnabled=true for actual performance gain
 
 ## Next Steps
 
