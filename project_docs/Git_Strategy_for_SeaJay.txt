@@ -19,18 +19,21 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   │   └── YYYYMMDD-description
   ├── tune/                       # Parameter tuning (SPSA)
   │   └── YYYYMMDD-description
+  ├── integration/                # Features with unmet dependencies
+  │   └── description            # Long-lived branches awaiting prerequisites
   └── ob/                         # Historical reference builds
       └── YYYYMMDD-description
 
   Branch Categories
 
-  | Prefix   | Purpose               | Example                      | Lifecycle                   |
-  |----------|-----------------------|------------------------------|-----------------------------|
-  | feature/ | New functionality     | feature/20250819-pondering   | Merge to main if successful |
-  | bugfix/  | Bug fixes             | bugfix/20250819-illegal-move | Merge to main when fixed    |
-  | test/    | Experimental ideas    | test/20250819-eval-tweak     | Delete after testing        |
-  | tune/    | SPSA parameter tuning | tune/20250819-piece-values   | Delete after tuning         |
-  | ob/      | Historical references | ob/20250819-v1.0-release     | Keep long-term              |
+  | Prefix       | Purpose                    | Example                        | Lifecycle                        |
+  |--------------|----------------------------|--------------------------------|----------------------------------|
+  | feature/     | New functionality          | feature/20250819-pondering     | Merge to main if successful      |
+  | bugfix/      | Bug fixes                  | bugfix/20250819-illegal-move   | Merge to main when fixed         |
+  | test/        | Experimental ideas         | test/20250819-eval-tweak       | Delete after testing             |
+  | tune/        | SPSA parameter tuning      | tune/20250819-piece-values     | Delete after tuning              |
+  | integration/ | Features needing prereqs   | integration/lmr-with-ordering  | Long-lived, merge when ready     |
+  | ob/          | Historical references      | ob/20250819-v1.0-release       | Keep long-term                   |
 
   Git Alias Setup
 
@@ -394,5 +397,127 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   - `git show-branch-age` - Show branch ages
 
   When creating OpenBench tests, use branch names (not commit SHAs) for readable test identification.
+
+  ## Integration Branches - Advanced Feature Management
+
+  Integration branches handle the common scenario where a feature is discovered to have unmet dependencies during implementation.
+
+  ### When to Use Integration Branches
+
+  Use integration/ branches when:
+  - A feature is partially implemented but needs other features to work properly
+  - Dependencies are discovered mid-implementation
+  - You want to preserve work while building prerequisites
+  - The feature is correct but cannot be fully tested/enabled yet
+
+  ### Integration Branch Workflow
+
+  #### Scenario: Feature with Discovered Dependencies
+
+  ```bash
+  # You're working on feature/20250820-lmr when you realize it needs move ordering
+  git checkout feature/20250820-lmr
+
+  # Step 1: Get the feature to a "correct but disabled" state
+  # - Fix any bugs you've discovered
+  # - Ensure it compiles and would work if dependencies existed
+  # - Set feature to disabled by default
+  git add -A
+  git commit -m "fix: Correct LMR implementation for future use - bench 19191913"
+
+  # Step 2: Create integration branch to preserve the work
+  git checkout -b integration/lmr-with-move-ordering
+  git push -u origin integration/lmr-with-move-ordering
+
+  # Step 3: Document the branch (CRITICAL - see integration_branches.md)
+  # Create documentation explaining:
+  # - What's implemented
+  # - What dependencies are needed
+  # - The plan for completion
+
+  # Step 4: Return to main and implement prerequisites
+  git checkout main
+  git feature history-heuristic  # Implement first dependency
+  # ... implement and merge history heuristic
+
+  git checkout main
+  git feature killer-moves       # Implement second dependency
+  # ... implement and merge killer moves
+
+  # Step 5: Resume work on integration branch
+  git checkout integration/lmr-with-move-ordering
+  git rebase main  # Or merge main if there are conflicts
+
+  # Step 6: Complete and enable the feature
+  # Now LMR has access to move ordering
+  # Enable the feature, test it, should work properly
+
+  # Step 7: Merge to main when complete
+  git checkout main
+  git merge integration/lmr-with-move-ordering
+  git push origin main
+
+  # Step 8: Clean up
+  git push origin --delete integration/lmr-with-move-ordering
+  ```
+
+  ### Integration Branch Management
+
+  **Naming Convention:**
+  - Use descriptive names: integration/lmr-with-move-ordering
+  - Include the key dependency: integration/feature-with-prerequisite
+  - No date prefix (these are long-lived)
+
+  **Documentation Requirements:**
+  - MUST create entry in project_docs/integration_branches.md
+  - Document what's implemented and what's needed
+  - Include completion plan and testing strategy
+  - Update when dependencies are resolved
+
+  **Lifecycle:**
+  - Long-lived (weeks to months)
+  - Periodically rebase/merge from main
+  - Delete only after successful merge to main
+  - Keep comprehensive documentation
+
+  ### Professional Benefits
+
+  1. **No Lost Work**: Implementation preserved and ready
+  2. **Clean Main History**: Prerequisites merge in logical order
+  3. **Clear Communication**: Anyone can understand the plan
+  4. **Testable Components**: Each prerequisite tested independently
+  5. **Industry Standard**: Used by major software companies
+
+  ### Integration Branch Aliases
+
+  Add these to your Git configuration:
+
+  ```bash
+  # Create integration branch (manual naming for clarity)
+  git config --global alias.integration '!f() { git checkout -b integration/$1 && git push -u origin integration/$1; }; f'
+
+  # List integration branches
+  git config --global alias.list-integrations '!git branch -r | grep "origin/integration/"'
+
+  # Show integration branch status
+  git config --global alias.integration-status '!git for-each-ref --format="%(refname:short) %(committerdate:relative) %(subject)" refs/remotes/origin/integration/'
+  ```
+
+  ### Common Integration Scenarios
+
+  **Feature Dependencies:**
+  - LMR needs move ordering (history heuristic, killer moves)
+  - Advanced evaluation needs endgame tables
+  - Multi-threading needs thread-safe data structures
+
+  **API Changes:**
+  - New search feature needs UCI protocol updates
+  - Evaluation changes need test suite updates
+  - Performance optimization needs benchmarking infrastructure
+
+  **Platform Support:**
+  - SIMD optimizations need fallback implementations
+  - GPU acceleration needs OpenCL infrastructure
+  - Mobile support needs memory optimization
 
   This system will make your OpenBench testing much more organized and professional, with clear test names and easy branch management!

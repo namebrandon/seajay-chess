@@ -390,7 +390,34 @@ This document tracks the current development status of the SeaJay Chess Engine p
 - **Bench:** 19191913
 - **Key Learning:** At ~2200 ELO, simple MVV-LVA sufficient
 
+#### Stage 18 - Late Move Reductions (LMR)
+**Status:** IN PROGRESS - CRITICAL ISSUE IDENTIFIED (August 20, 2025)
+**Branch:** feature/20250819-lmr
+- [x] Phase 1: UCI options and data structures (tested, negligible impact as expected)
+- [x] Phase 2: LMR reduction formula with unit tests (complete)
+- [x] Phase 3: Integration into negamax search (complete with bug fixes)
+- [x] Critical bug fixes applied:
+  - Fixed depth factor from 100 to 3 (integer division bug)
+  - Made boolean parsing case-insensitive
+- **Critical Issue Discovered:** 
+  - Despite 91% node reduction, losing 10 ELO with LMR enabled
+  - Root cause: **No quiet move ordering exists** (only captures ordered with MVV-LVA)
+  - LMR reducing essentially random quiet moves (good moves reduced, bad moves searched)
+  - **Sequencing Error:** LMR implemented before history/killer heuristics
+- **Chess-Engine-Expert Analysis:**
+  - Re-search condition bug: Using `score > alpha` instead of proper null window check
+  - Without quiet move ordering, LMR cannot be effective
+  - History heuristic should have been Stage 18, LMR should be Stage 20+
+- **Current Bench:** 19191913
+- **OpenBench Results:** -10.65 ± 10.25 ELO (unexpected loss)
+
 ## Next Steps
+
+### Immediate Priority - Stage 18 LMR Fix Options:
+1. **Option 1 (Recommended):** Fix re-search condition bug + increase minMoveNumber to 6-8
+2. **Option 2:** Disable LMR, implement history heuristic first (new stage)
+3. **Option 3:** Full Phase 4 - Add history heuristic + fix bugs
+4. **Option 4:** Ultra-conservative LMR with minMoveNumber=10
 
 ### Short Term (Phase 3: Essential Optimizations)
 1. **Stage 10: Magic bitboards** (COMPLETE - August 12, 2025)
@@ -401,8 +428,10 @@ This document tracks the current development status of the SeaJay Chess Engine p
 6. **Stage 15: Static Exchange Evaluation (SEE)** (COMPLETE - August 19, 2025)
 7. Stage 16: Enhanced Quiescence (quiet checks after SEE)
 8. Stage 17: Null move pruning  
-9. Stage 18: Late move reductions
-10. Target: >1M NPS performance (achieved with TT)
+9. **Stage 18: Late move reductions** (IN PROGRESS - critical issue)
+10. Stage 19: History heuristic (should have come before LMR)
+11. Stage 20: Killer moves
+12. Target: >1M NPS performance (achieved with TT)
 
 ### Medium Term (Phase 3)
 1. Implement magic bitboards for sliding pieces

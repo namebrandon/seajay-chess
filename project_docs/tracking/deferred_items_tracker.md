@@ -265,6 +265,20 @@ This tracker should be reviewed:
 **Status:** STAGE 11 COMPLETE ✅  
 **Source:** stage11_mvv_lva_plan.md
 
+### CRITICAL NOTE (August 20, 2025): 
+**⚠️ SEQUENCING ERROR DISCOVERED IN STAGE 18 ⚠️**
+- Stage 11 correctly implemented MVV-LVA for **capture ordering only**
+- **Quiet moves were left unordered** (return score 0) - this was CORRECT for Stage 11
+- However, **LMR (Stage 18) was implemented before quiet move ordering**
+- This causes LMR to reduce essentially random quiet moves
+- **Correct sequence should have been:**
+  - Stage 11: MVV-LVA (captures) ✅
+  - Stages 12-17: Various optimizations ✅
+  - **Stage 18: History Heuristic** (quiet move ordering) ❌ MISSING
+  - **Stage 19: Killer Moves** (additional quiet ordering) ❌ MISSING
+  - **Stage 20: LMR** (requires ordered quiet moves) ❌ TOO EARLY
+- **Impact:** LMR achieving 91% node reduction but losing 10 ELO
+
 ### To Stage 14b (SEE):
 1. **Static Exchange Evaluation**
    - Better capture ordering using exchange sequences
@@ -274,14 +288,16 @@ This tracker should be reviewed:
    - **Impact:** Will filter out bad captures that MVV-LVA ranks highly
 
 ### To Future Phases (Phase 3+):
-1. **Killer Move Heuristic** (Stage 22)
+1. **Killer Move Heuristic** (~~Stage 22~~ Should be Stage 19)
    - Track moves that cause beta cutoffs
    - Order killer moves after good captures
    - **Reason:** Requires statistics tracking infrastructure
+   - **CRITICAL:** Should be implemented BEFORE LMR
 
-2. **History Heuristic** (Stage 23)
+2. **History Heuristic** (~~Stage 23~~ Should be Stage 18)
    - Statistical move ordering based on past success
    - **Reason:** Requires history tables and aging mechanism
+   - **CRITICAL:** MUST be implemented BEFORE LMR for it to work
 
 3. **Counter-Move History**
    - Track good responses to specific moves
@@ -1190,3 +1206,90 @@ class CaptureHistory {
 - Continuation History: ~1MB (6×64×6×64×2 bytes)
 - Capture History: ~24KB (6×6×64×2 bytes)
 - All are cache-friendly access patterns
+
+## Items FROM Stage 18 (LMR) - CRITICAL ISSUES
+
+**Date:** August 20, 2025  
+**Status:** IN PROGRESS - CRITICAL ISSUES IDENTIFIED  
+**Branch:** feature/20250819-lmr  
+
+### Critical Issues Discovered:
+
+1. **No Quiet Move Ordering** (ROOT CAUSE)
+   - **Issue:** Quiet moves have NO ordering (score = 0 in MVV-LVA)
+   - **Impact:** LMR reduces essentially random quiet moves
+   - **Solution:** MUST implement history heuristic before LMR can work
+   - **Severity:** CRITICAL - makes LMR ineffective
+
+2. **Wrong Re-search Condition** (BUG)
+   - **Current:** `if (score > alpha)` - INCORRECT!
+   - **Correct:** `if (score > alpha && score < beta)`
+   - **Impact:** Re-searching at wrong times
+   - **Solution:** Fix the condition in negamax.cpp
+
+3. **Sequencing Error** (PLANNING MISTAKE)
+   - **What happened:** LMR implemented before quiet move ordering
+   - **Should have been:** History → Killers → LMR
+   - **Was actually:** LMR → (nothing for quiet moves)
+   - **Impact:** -10 ELO despite 91% node reduction
+
+### Option 1 - Immediate Critical Fix (RECOMMENDED):
+
+**Step 1: Fix re-search condition bug**
+```cpp
+// In negamax.cpp around line 388-398
+if (reduction > 0) {
+    eval::Score nullBeta = alpha + eval::Score(1);
+    score = -negamax(board, depth - 1 - reduction, ply + 1,
+                    -nullBeta, -alpha, searchInfo, info, limits, tt);
+    
+    // FIXED: Check both bounds!
+    if (score > alpha && score < beta) {
+        info.lmrStats.reSearches++;
+        score = -negamax(board, depth - 1, ply + 1,
+                        -beta, -alpha, searchInfo, info, limits, tt);
+    } else {
+        info.lmrStats.successfulReductions++;
+    }
+}
+```
+
+**Step 2: Make LMR less aggressive**
+- Change minMoveNumber from 4 to 6 or 8
+- Only reduce very late moves until history heuristic exists
+
+**Step 3: Test and validate**
+- Commit fixes with bench
+- Run OpenBench test
+- Expected: Should at least not lose ELO
+
+### Options for Moving Forward:
+
+1. **Option 1:** Immediate fix + retest (5 minutes work, might salvage some ELO)
+2. **Option 2:** Disable LMR, implement history heuristic first (correct sequence)
+3. **Option 3:** Full Phase 4 - Add history heuristic + fix bugs (most thorough)
+4. **Option 4:** Ultra-conservative LMR with minMoveNumber=10 (minimal risk)
+
+### Lessons Learned:
+
+1. **Move ordering is CRITICAL for LMR** - cannot work with random quiet moves
+2. **Sequencing matters** - features have dependencies
+3. **Stage 11 was correct** - MVV-LVA properly scoped to captures only
+4. **Planning error** - didn't recognize LMR dependency on quiet move ordering
+5. **Binary size is a clue** - 27KB difference revealed missing features
+
+### What Should Have Been:
+
+**Correct Stage Sequence:**
+- Stage 11: MVV-LVA (captures) ✅
+- Stage 12: Transposition Tables ✅
+- Stage 13: Iterative Deepening ✅
+- Stage 14: Quiescence Search ✅
+- Stage 15: SEE ✅
+- Stage 16: Enhanced Quiescence
+- Stage 17: Null Move Pruning
+- **Stage 18: History Heuristic** ← Should be here
+- **Stage 19: Killer Moves** ← Then this
+- **Stage 20: LMR** ← THEN LMR
+- Stage 21: Aspiration Windows
+- Stage 22: Other optimizations

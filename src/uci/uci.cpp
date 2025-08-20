@@ -84,7 +84,7 @@ void UCIEngine::handleUCI() {
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default false" << std::endl;
     std::cout << "option name LMRMinDepth type spin default 3 min 0 max 10" << std::endl;
-    std::cout << "option name LMRMinMoveNumber type spin default 4 min 0 max 20" << std::endl;
+    std::cout << "option name LMRMinMoveNumber type spin default 8 min 0 max 20" << std::endl;
     std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     

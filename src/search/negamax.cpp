@@ -407,8 +407,9 @@ eval::Score negamax(Board& board,
             score = -negamax(board, depth - 1 - reduction, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt);
             
-            // Re-search if score beats alpha
-            if (score > alpha) {
+            // Re-search if reduced search suggests move might be good
+            // (score > alpha means it failed high on null window)
+            if (score > alpha && score < beta) {
                 info.lmrStats.reSearches++;
                 // Full-depth re-search with original window
                 score = -negamax(board, depth - 1, ply + 1,
