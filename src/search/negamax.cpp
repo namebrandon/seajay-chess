@@ -417,8 +417,13 @@ eval::Score negamax(Board& board,
                     }
                     
                     // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
+                    // Stage 20, Phase B3: Update history for quiet moves that cause cutoffs
                     if (!isCapture(move) && !isPromotion(move)) {
                         info.killers.update(ply, move);
+                        
+                        // Update history with depth-based bonus
+                        Color side = board.sideToMove();
+                        info.history.update(side, moveFrom(move), moveTo(move), depth);
                     }
                     
                     break;  // Beta cutoff - no need to search more moves

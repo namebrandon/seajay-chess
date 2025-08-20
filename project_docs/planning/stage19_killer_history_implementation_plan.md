@@ -441,8 +441,13 @@ git push
 | Component | Phases | Expected ELO | Cumulative | Actual |
 |-----------|--------|--------------|------------|--------|
 | Killer Moves | A1-A3 | +30-40 | +30-40 | **+31.42 ± 10.49** ✓ |
-| History Heuristic | B1-B3 | +15-25 | +45-65 | TBD |
+| History Heuristic | B1 | 0 | +30-40 | **0** ✓ |
+| History Heuristic | B2 | -5 to -10* | +20-30 | **-9.14 ± 7.51** ✓ |
+| History Heuristic | B3 | +25-35** | +45-65 | TBD |
 | LMR Re-integration | C1 | +20-30 | +65-95 | TBD |
+
+*Phase B2 regression expected due to sorting overhead with empty history table
+**Phase B3 expected to recover B2 loss and add net +15-25 ELO
 
 ### OpenBench Test Results - Killer Moves
 
@@ -457,6 +462,15 @@ git push
 3. Potential asymmetric strength improvement
 
 **Action:** Monitor pentanomial balance in future tests to determine if this is a pattern or anomaly.
+
+### OpenBench Test Results - History Heuristic Phase B2
+
+**Test #22:** https://openbench.seajay-chess.dev/test/22/
+- **ELO:** -9.14 ± 7.51 (95% confidence)  
+- **Games:** 2016 (489W / 542L / 985D)
+- **Pentanomial:** [29, 173, 642, 150, 14]
+
+**⚠️ EXPECTED REGRESSION:** Phase B2 introduces sorting overhead for quiet moves using an empty history table. All history values are 0, so we pay the cost of sorting with no benefit. This overhead will be recovered in Phase B3 when history values are actually populated.
 
 ## Files to Modify Checklist
 
