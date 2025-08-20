@@ -104,28 +104,39 @@ reduction = std::min(reduction, std::max(1, depth - 2));
 **Validation Results:**
 - All unit tests pass
 - Sample reduction values verified correct
-- Conservative parameters (depthFactor=100) appropriate for 2200 ELO engine
+- Conservative parameters (depthFactor=3 after fix, was incorrectly 100)
 
 **Commit:** "Phase 2: Add LMR reduction formula with unit tests - bench [count]"
 **🛑 STOP POINT:** Human MUST run OpenBench test before proceeding to Phase 3
 
-### Phase 3: Integrate LMR into Negamax ✅ COMPLETE
-**Status:** ✅ TESTED - Regression test passed, awaiting LMREnabled=true results
+### Phase 3: Integrate LMR into Negamax ✅ COMPLETE (WITH CRITICAL FIXES)
+**Status:** ✅ FULLY TESTED - Multiple iterations and bug fixes applied
 **Files modified:**
 - `src/search/negamax.cpp` - ✅ Added reduction logic in move loop
-- `src/uci/uci.cpp` - ✅ Fixed default to false
-- `src/uci/uci.h` - ✅ Fixed default to false
+- `src/uci/uci.cpp` - ✅ Fixed default to false, made parsing case-insensitive, corrected depth factor
+- `src/uci/uci.h` - ✅ Fixed default to false, corrected depth factor
+- `src/search/lmr.cpp` - ✅ Formula verified working
 
 **Changes:**
 1. ✅ Calculate reduction for each move based on conditions
 2. ✅ Implement reduced search with null window (-(alpha+1), -alpha)
 3. ✅ Add re-search logic when score > alpha
 
+**Critical Bugs Found and Fixed:**
+1. **Depth Factor Bug (CRITICAL)**: Default was 100 instead of 3
+   - With integer division: (6-3)/100 = 0 (no reduction!)
+   - Fixed to 3: (6-3)/3 = 1 (proper reduction)
+   - Commit: aed24ad
+2. **Boolean Parsing**: Made case-insensitive to accept "True", "TRUE", etc.
+   - Now accepts: true/false, True/False, 1/0, yes/no, on/off
+   - Commit: 3c631a9
+
 **Implementation Notes:**
 - Correctly checks if in check BEFORE making move (saves state)
 - Uses proper negamax perspective (side-to-move scoring)
 - Skips LMR at root (ply == 0) for stability
-- 91% node reduction achieved in testing!
+- 91% node reduction achieved in local testing
+- Verified LMR is actually being called and reducing moves
 
 **Integration point (around line 361):**
 ```cpp
@@ -161,12 +172,23 @@ if (reduction > 0) {
 }
 ```
 
-**Commit:** ✅ "Phase 3: Integrate LMR into negamax search - bench 19191913"
-**Testing Results:**
-- Commit: 8a51f88
-- Regression test (LMREnabled=false): -1.25 ± 5.11 ELO ✅
-- Performance test (LMREnabled=true): ⏳ IN PROGRESS
-- Node reduction achieved: 91% at depth 6
+**Testing History:**
+1. **Initial Commit (8a51f88):** "Phase 3: Integrate LMR into negamax search"
+   - Regression test (LMREnabled=false): -1.25 ± 5.11 ELO ✅
+   - Performance test (LMREnabled=true): -2.21 ± 10.17 ELO ❌ (negligible, bug suspected)
+   
+2. **Fix Commit (3c631a9):** "Make LMR boolean parsing case-insensitive"
+   - Addressed potential parsing issue with "True" vs "true"
+   
+3. **Critical Fix (aed24ad):** "Correct LMR depth factor from 100 to 3"
+   - Fixed integer division bug that prevented any reduction
+   - Performance test (LMREnabled=true): -10.65 ± 10.25 ELO ❌ (UNEXPECTED!)
+   - Test: https://openbench.seajay-chess.dev/test/15/
+   
+**Local Testing Verification:**
+- Node reduction: 91% at depth 6 (1,076,826 → 95,957 nodes)
+- Debug output confirms LMR is being called and applying reductions
+- Formula produces expected reduction values
 
 ### Phase 4: Add Statistics and Check Detection (45 minutes)
 **Files to modify:**
@@ -227,6 +249,15 @@ if (board.totalMaterial() < 2000) {  // ~2 rooks per side
 - Get bench count: `echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'`
 - Push after EVERY commit for OpenBench testing
 - Create `ob/` reference branch if needed before major changes
+
+### Commit History:
+1. **aa9166e:** "docs: Enforce OpenBench testing after EVERY phase + Phase 1 LMR UCI options"
+2. **79f465b:** "Phase 2: Add LMR reduction formula with unit tests - bench 19191913"
+3. **8a51f88:** "Phase 3: Integrate LMR into negamax search - bench 19191913"
+4. **3c631a9:** "fix: Make LMR boolean parsing case-insensitive - bench 19191913"
+5. **aed24ad:** "fix: CRITICAL - Correct LMR depth factor from 100 to 3 - bench 19191913"
+6. **6d3777c:** "docs: Update Stage 18 - Phase 3 complete, awaiting LMREnabled=true test results"
+7. **9bda88f:** "docs: Add Bug #014 - Critical illegal moves during gameplay"
 
 ## Build System Requirements
 
@@ -305,11 +336,11 @@ From chess-engine-expert review:
 
 - ✅ UCI options functional and parsed correctly
 - ✅ Unit tests pass for reduction formula
-- ⬜ Node reduction of 40-60% achieved
-- ⬜ SPRT shows +50 ELO or better
-- ⬜ No tactical strength regression
-- ⬜ 15-30% re-search rate
-- ⬜ Clean, maintainable code
+- ✅ Node reduction of 40-60% achieved (91% reduction observed!)
+- ❌ SPRT shows +50 ELO or better (Currently -10 ELO)
+- ❓ No tactical strength regression (Unclear, needs investigation)
+- ❓ 15-30% re-search rate (Not measured yet - needs Phase 4)
+- ✅ Clean, maintainable code
 
 ## Timeline Estimate
 
@@ -323,23 +354,52 @@ From chess-engine-expert review:
 
 ## Current Status
 
-**Phase 1:** ✅ TESTED via OpenBench - Result: Negligible (expected for UCI infrastructure)
+**Phase 1:** ✅ TESTED via OpenBench - Result: -1.73 ± 4.80 (negligible, expected for UCI infrastructure)
 **Phase 2:** ✅ TESTED via OpenBench - Result: +3.04 ± 5.14 (negligible, as expected)
-**Phase 3:** ✅ TESTED (regression) - Result: -1.25 ± 5.11 (negligible with LMREnabled=false)
-**Current State:** ⏳ TESTING LMREnabled=true for actual performance gain
+**Phase 3:** ✅ COMPLETE but showing unexpected results:
+- Regression test (LMREnabled=false): -1.25 ± 5.11 ✅ (negligible, correct)
+- Performance test (LMREnabled=true): -10.65 ± 10.25 ❌ (UNEXPECTED LOSS!)
+- All critical bugs fixed, LMR verified working locally
+**Current State:** 🔍 INVESTIGATION NEEDED - LMR is reducing nodes but losing ELO
+
+## Investigation Summary
+
+### What We Know Works:
+1. **LMR is functioning:** Debug output confirms reductions are being applied
+2. **Node reduction is massive:** 91% fewer nodes searched (verified locally)
+3. **Formula is correct:** Unit tests pass, manual calculations verified
+4. **No crashes or errors:** Engine runs stably with LMR enabled
+
+### What's Going Wrong:
+Despite massive node reduction, we're LOSING 10 ELO with LMR enabled. This suggests:
+1. **Over-reduction:** We may be reducing important moves that shouldn't be reduced
+2. **Move ordering issues:** If good moves aren't ordered first, LMR reduces them incorrectly
+3. **Re-search overhead:** Too many re-searches could negate the benefit
+4. **Search instability:** Reduced searches may miss critical tactics
+
+### Key Observations:
+- OpenBench testing at 10+0.1 time control
+- 8MB hash (sufficient for this time control)
+- MVV-LVA move ordering is active (but only for captures)
+- **Quiet moves are NOT ordered** - they remain in generation order
+- TT move ordering is implemented
+
+### Critical Issue Identified:
+**Quiet moves have NO ordering!** This means LMR is reducing moves essentially randomly after captures. Good quiet moves (like developing pieces, improving king safety) are being reduced just because they happen to come late in the move list.
 
 ## Next Steps
 
-**Immediate Actions Required:**
-1. ✅ Phase 2 implementation complete
-2. ✅ Committed with bench 19191913
-3. ✅ Pushed to feature/20250819-lmr branch
-4. 🛑 **AWAITING:** Human must run OpenBench test on Phase 2 commit
+**Immediate Investigation Required:**
+1. **Check re-search rate:** Add statistics output to see if we're re-searching too much
+2. **Verify move ordering:** Confirm quiet moves are truly unordered
+3. **Consider reducing parameters:** Make LMR less aggressive (higher minMoveNumber)
+4. **Test at longer time control:** 10+0.1 may be too fast to see benefits
 
-**After OpenBench test confirms no regression:**
-1. Proceed with Phase 3: Integrate LMR into negamax search
-2. Follow granular commit strategy per phase
-3. Test after each phase before proceeding
+**Potential Solutions:**
+1. **Phase 4:** Add history heuristic for quiet move ordering (critical!)
+2. **Phase 5:** Tune parameters to be less aggressive
+3. **Alternative:** Implement killer moves for better ordering
+4. **Emergency:** Reduce minMoveNumber to 6 or 8 (only reduce very late moves)
 
 ---
 
