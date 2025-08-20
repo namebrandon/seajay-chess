@@ -214,8 +214,9 @@ struct SearchData {
         qsearchNodesLimited = 0;
         qsearchTTHits = 0;
         seeStats.reset();
-        killers.clear();  // Stage 19: Clear killer moves
-        history.clear();  // Stage 20: Clear history heuristic
+        killers.clear();  // Stage 19: Clear killer moves (position-specific)
+        // Stage 20 B4.1: DON'T clear history - preserve across iterations
+        // history.clear();  // REMOVED to fix history persistence
         depth = 0;
         seldepth = 0;
         bestMove = Move();
