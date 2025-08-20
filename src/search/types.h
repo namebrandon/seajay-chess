@@ -176,7 +176,7 @@ struct SearchData {
     KillerMoves killers;
     
     // Stage 20: History heuristic for move ordering
-    HistoryHeuristic history
+    HistoryHeuristic history;
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
