@@ -6,6 +6,7 @@
 #include "window_growth_mode.h"      // Stage 13 Remediation Phase 4
 #include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
+#include "lmr.h"            // Stage 18: Late Move Reductions
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -351,6 +352,9 @@ eval::Score negamax(Board& board,
     eval::Score bestScore = eval::Score::minus_infinity();
     Move bestMove = NO_MOVE;  // Track best move for all plies (needed for TT storage later)
     
+    // Check if we're in check BEFORE entering move loop (for LMR)
+    bool weAreInCheck = inCheck(board);
+    
     // Search all moves
     int moveCount = 0;
     
@@ -374,10 +378,50 @@ eval::Score negamax(Board& board,
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
-        // Recursive search with negation and swapped window
-        // Note: When negating, we swap alpha and beta
-        eval::Score score = -negamax(board, depth - 1, ply + 1, 
-                                    -beta, -alpha, searchInfo, info, limits, tt);
+        // Phase 3: Late Move Reductions (LMR)
+        int reduction = 0;
+        eval::Score score;
+        
+        // Calculate LMR reduction (don't reduce at root)
+        if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
+            // Determine move properties for LMR
+            bool captureMove = isCapture(move);
+            bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
+            bool isPVNode = false;     // Phase 3: Don't special-case PV nodes yet
+            
+            // Check if we should reduce this move
+            if (shouldReduceMove(depth, moveCount, captureMove, 
+                                weAreInCheck, givesCheck, isPVNode, 
+                                info.lmrParams)) {
+                // Calculate reduction amount
+                reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+                
+                // Track LMR statistics
+                info.lmrStats.totalReductions++;
+            }
+        }
+        
+        // Perform the search with or without reduction
+        if (reduction > 0) {
+            // Reduced search with null window
+            score = -negamax(board, depth - 1 - reduction, ply + 1,
+                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt);
+            
+            // Re-search if score beats alpha
+            if (score > alpha) {
+                info.lmrStats.reSearches++;
+                // Full-depth re-search with original window
+                score = -negamax(board, depth - 1, ply + 1,
+                                -beta, -alpha, searchInfo, info, limits, tt);
+            } else {
+                // Reduction was successful (move was bad as expected)
+                info.lmrStats.successfulReductions++;
+            }
+        } else {
+            // Normal search (no reduction)
+            score = -negamax(board, depth - 1, ply + 1,
+                            -beta, -alpha, searchInfo, info, limits, tt);
+        }
         
         // Unmake the move
         board.unmakeMove(move, undo);
