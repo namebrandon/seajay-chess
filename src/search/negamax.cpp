@@ -414,6 +414,12 @@ eval::Score negamax(Board& board,
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
                     }
+                    
+                    // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
+                    if (!isCapture(move) && !isPromotion(move)) {
+                        info.killers.update(ply, move);
+                    }
+                    
                     break;  // Beta cutoff - no need to search more moves
                 }
             }
