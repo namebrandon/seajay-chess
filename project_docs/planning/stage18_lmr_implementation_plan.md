@@ -356,11 +356,18 @@ From chess-engine-expert review:
 
 **Phase 1:** ✅ TESTED via OpenBench - Result: -1.73 ± 4.80 (negligible, expected for UCI infrastructure)
 **Phase 2:** ✅ TESTED via OpenBench - Result: +3.04 ± 5.14 (negligible, as expected)
-**Phase 3:** ✅ COMPLETE but showing unexpected results:
-- Regression test (LMREnabled=false): -1.25 ± 5.11 ✅ (negligible, correct)
-- Performance test (LMREnabled=true): -10.65 ± 10.25 ❌ (UNEXPECTED LOSS!)
-- All critical bugs fixed, LMR verified working locally
-**Current State:** 🔍 INVESTIGATION NEEDED - LMR is reducing nodes but losing ELO
+**Phase 3:** ✅ COMPLETE - Initially showed -10 ELO loss due to lack of move ordering
+
+### LMR Integration with Move Ordering (SUCCESS!)
+**Branch:** `integration/lmr-with-move-ordering`
+**Date:** August 20, 2025
+
+After implementing Stages 19-20 (Killer Moves + History Heuristic):
+- **Regression test (LMREnabled=false):** -2.08 ± 6.22 ELO ✅ (negligible overhead)
+- **Performance test (LMREnabled=true):** +36.98 ± 9.67 ELO ✅ (SIGNIFICANT GAIN!)
+- **Test results:** https://openbench.seajay-chess.dev/test/30/
+
+**Current State:** ✅ LMR WORKING SUCCESSFULLY with proper move ordering
 
 ## Investigation Summary
 
@@ -384,8 +391,53 @@ Despite massive node reduction, we're LOSING 10 ELO with LMR enabled. This sugge
 - **Quiet moves are NOT ordered** - they remain in generation order
 - TT move ordering is implemented
 
-### Critical Issue Identified:
-**Quiet moves have NO ordering!** This means LMR is reducing moves essentially randomly after captures. Good quiet moves (like developing pieces, improving king safety) are being reduced just because they happen to come late in the move list.
+### Critical Issue RESOLVED:
+**Move ordering was the key!** With Killer Moves and History Heuristic implemented, quiet moves are now properly ordered, allowing LMR to reduce genuinely unpromising moves rather than randomly ordered ones.
+
+## LMR Tuning Opportunities
+
+### Current Conservative Parameters:
+```
+LMREnabled = false (default)
+LMRMinDepth = 3
+LMRMinMoveNumber = 8    // Very conservative
+LMRBaseReduction = 1
+LMRDepthFactor = 3
+```
+
+### Proposed Tuning Tests:
+
+#### Test 1: More Aggressive Move Count Threshold
+```
+LMRMinMoveNumber = 6  // Reduce after 6th move instead of 8th
+```
+Expected: +5-10 ELO by reducing more moves
+
+#### Test 2: Even More Aggressive  
+```
+LMRMinMoveNumber = 4  // Standard for many engines
+```
+Expected: +10-15 ELO if move ordering is good enough
+
+#### Test 3: Increased Base Reduction
+```
+LMRBaseReduction = 2  // Reduce by 2 plies minimum
+LMRMinMoveNumber = 6
+```
+Expected: Higher risk/reward, could be +15 or -10 ELO
+
+#### Test 4: Adjust Depth Factor
+```
+LMRDepthFactor = 2    // More aggressive scaling with depth
+LMRMinMoveNumber = 6
+```
+Expected: Better at higher depths, +5-10 ELO
+
+### Advanced Tuning (Future):
+1. **Reduce bad captures:** With SEE integration, reduce captures with SEE < 0
+2. **History-based LMR:** Less reduction for moves with good history scores
+3. **Threat-based LMR:** Less reduction when opponent has threats
+4. **PV node consideration:** Less aggressive LMR in PV nodes
 
 ## Next Steps
 

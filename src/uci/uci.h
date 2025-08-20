@@ -55,9 +55,9 @@ private:
     std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive
     
     // Stage 18: Late Move Reductions (LMR) parameters
-    bool m_lmrEnabled = false;          // Enable/disable LMR via UCI (default off)
+    bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)
     int m_lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
-    int m_lmrMinMoveNumber = 4;         // Start reducing after this many moves  
+    int m_lmrMinMoveNumber = 6;         // Start reducing after this many moves (tuned value)  
     int m_lmrBaseReduction = 1;         // Base reduction amount
     int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
     

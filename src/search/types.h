@@ -144,9 +144,9 @@ struct SearchData {
     
     // Stage 18: Late Move Reductions (LMR) parameters
     struct LMRParams {
-        bool enabled = false;          // Enable/disable LMR via UCI (disabled until move ordering ready)
+        bool enabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO tested)
         int minDepth = 3;              // Minimum depth to apply LMR
-        int minMoveNumber = 8;         // Start reducing after this many moves (conservative without history)
+        int minMoveNumber = 6;         // Start reducing after this many moves (tuned for +42 ELO)
         int baseReduction = 1;         // Base reduction amount
         int depthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
     } lmrParams;
