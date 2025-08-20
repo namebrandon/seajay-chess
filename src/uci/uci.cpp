@@ -86,7 +86,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRMinDepth type spin default 3 min 0 max 10" << std::endl;
     std::cout << "option name LMRMinMoveNumber type spin default 4 min 0 max 20" << std::endl;
     std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
-    std::cout << "option name LMRDepthFactor type spin default 100 min 10 max 200" << std::endl;
+    std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
@@ -706,12 +706,19 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     // Stage 18: Handle LMR options
     else if (optionName == "LMREnabled") {
-        if (value == "true") {
+        // Make boolean parsing case-insensitive and accept common variations
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
             m_lmrEnabled = true;
             std::cerr << "info string LMR enabled" << std::endl;
-        } else if (value == "false") {
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
             m_lmrEnabled = false;
             std::cerr << "info string LMR disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid LMREnabled value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
     else if (optionName == "LMRMinDepth") {
@@ -750,7 +757,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     else if (optionName == "LMRDepthFactor") {
         try {
             int factor = std::stoi(value);
-            if (factor >= 10 && factor <= 200) {
+            if (factor >= 1 && factor <= 10) {
                 m_lmrDepthFactor = factor;
                 std::cerr << "info string LMR depth factor set to: " << factor << std::endl;
             }

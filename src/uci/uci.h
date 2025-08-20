@@ -59,7 +59,7 @@ private:
     int m_lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
     int m_lmrMinMoveNumber = 4;         // Start reducing after this many moves  
     int m_lmrBaseReduction = 1;         // Base reduction amount
-    int m_lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
+    int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
     
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
