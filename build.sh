@@ -43,16 +43,11 @@ if [ -f CMakeCache.txt ]; then
     fi
 fi
 
-# Try to use ninja if available, otherwise fall back to make
-if command -v ninja >/dev/null 2>&1; then
-    echo "Using Ninja build system..."
-    cmake -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-    ninja
-else
-    echo "Using Make build system..."
-    cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-    make -j
-fi
+# CRITICAL: Always use Make for OpenBench compatibility
+# Never use ninja even if available
+echo "Using Make build system (OpenBench compatible)..."
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+make -j seajay
 
 echo ""
 echo "=========================================="

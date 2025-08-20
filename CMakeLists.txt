@@ -111,6 +111,8 @@ set(SEARCH_SOURCES
     src/search/types.h
     src/search/move_ordering.cpp
     src/search/move_ordering.h
+    src/search/killer_moves.cpp
+    src/search/killer_moves.h
     src/search/time_management.cpp
     src/search/time_management.h
     src/search/aspiration_window.cpp
