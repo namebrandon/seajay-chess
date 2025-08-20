@@ -1016,11 +1016,55 @@ Despite temptation to add quiet checks, expert consensus and historical engine e
 
 **Next Stage:** Stage 15 - Static Exchange Evaluation (SEE) - Foundation for Stage 16 enhanced quiescence
 
-## Items DEFERRED FROM Stage 20 (History Heuristic) TO Future Stages
+## Items DEFERRED FROM Stages 19-20 (Killer Moves & History Heuristic) TO Future Stages
 
 **Date:** August 20, 2025  
-**Status:** STAGE 20 IN PROGRESS (Phase B3 testing)  
-**Source:** Discussion during history heuristic implementation
+**Status:** STAGES 19-20 COMPLETE ✅  
+**Source:** Implementation and testing of move ordering improvements
+
+### Stage 19-20 Completion Summary
+
+✅ **Successfully Implemented:**
+- **Killer Moves (Stage 19):** +31.42 ± 10.49 ELO
+- **History Heuristic (Stage 20):** +6.78 ± 8.96 ELO
+- **Combined Improvement:** ~38 ELO in move ordering
+- **Move Ordering Efficiency:** Sufficient for LMR implementation
+
+### Critical Lessons Learned from History Heuristic Implementation
+
+#### The Complexity Trap (Phase B4 Investigation)
+After B3 underperformed (only +6.78 vs expected +25-35 ELO), we tested several "improvements":
+
+1. **History Persistence (B4.1):** -0.55 ELO (neutral)
+   - Preserving history across iterations didn't help
+   - History is position-dependent, not generally useful across searches
+
+2. **Aggressive Butterfly Updates (B4.2):** -5.25 ELO (regression)
+   - Penalty of depth²/2 was too harsh
+   - Over-penalized moves that were good in other contexts
+
+3. **Gentle Butterfly Updates (B4.3):** -0.97 ELO (neutral)
+   - Reduced penalty to depth²/4
+   - Still no improvement over simple implementation
+
+**Key Insight:** Simple history (reward cutoffs only) works best for SeaJay's current strength level. Complex techniques that work in 3000+ ELO engines may actually hurt at 2200 ELO.
+
+### Implementation Best Practices Discovered
+
+1. **Phased Development Works**
+   - Infrastructure → Integration → Activation pattern catches bugs early
+   - Expected regressions (like B2's -9 ELO) are normal and documented
+   - Test EVERY phase, even "no impact" ones
+
+2. **Simple > Complex at Lower ELO**
+   - Advanced techniques require strong foundation
+   - Butterfly updates need better evaluation to differentiate moves
+   - Keep it simple until engine reaches higher strength
+
+3. **Trust Original Implementation**
+   - B3's simple approach was actually optimal
+   - Remediation attempts made things worse
+   - Sometimes "underperformance" is actually correct performance
 
 ### Additional Move Ordering Improvements for LMR Support
 

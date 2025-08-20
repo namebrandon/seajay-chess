@@ -443,11 +443,11 @@ git push
 | Killer Moves | A1-A3 | +30-40 | +30-40 | **+31.42 ± 10.49** ✓ |
 | History Heuristic | B1 | 0 | +30-40 | **0** ✓ |
 | History Heuristic | B2 | -5 to -10* | +20-30 | **-9.14 ± 7.51** ✓ |
-| History Heuristic | B3 | +25-35** | +45-65 | TBD |
-| LMR Re-integration | C1 | +20-30 | +65-95 | TBD |
+| History Heuristic | B3 | +25-35** | +45-65 | **+6.78 ± 8.96** ⚠️ |
+| LMR Re-integration | C1 | +20-30 | +52-82 | TBD |
 
 *Phase B2 regression expected due to sorting overhead with empty history table
-**Phase B3 expected to recover B2 loss and add net +15-25 ELO
+**Phase B3 expected to recover B2 loss and add net +15-25 ELO (actual: +6.78)
 
 ### OpenBench Test Results - Killer Moves
 
@@ -471,6 +471,56 @@ git push
 - **Pentanomial:** [29, 173, 642, 150, 14]
 
 **⚠️ EXPECTED REGRESSION:** Phase B2 introduces sorting overhead for quiet moves using an empty history table. All history values are 0, so we pay the cost of sorting with no benefit. This overhead will be recovered in Phase B3 when history values are actually populated.
+
+### OpenBench Test Results - History Heuristic Phase B3
+
+**Test #23:** https://openbench.seajay-chess.dev/test/23/
+- **ELO:** +6.78 ± 8.96 (95% confidence)
+- **Games:** 2512 (634W / 585L / 1293D)
+- **Pentanomial:** [48, 302, 534, 297, 75]
+
+**⚠️ UNDERPERFORMANCE:** Phase B3 only achieved +6.78 ELO vs expected +25-35 ELO. This prompted investigation into remediation strategies.
+
+## Phase B4: Remediation Attempts and Final Decision
+
+### Investigation and Remediation (August 20, 2025)
+
+After B3's underperformance, we investigated and tested several remediation strategies:
+
+#### B4.1: History Persistence Fix
+**Test #24:** https://openbench.seajay-chess.dev/test/24/
+- **Change:** Preserve history table across iterative deepening iterations
+- **Result:** -0.55 ± 5.48 ELO (effectively neutral)
+- **Conclusion:** Persistence alone doesn't help without better differentiation
+
+#### B4.2: Butterfly Updates (Aggressive)
+**Test #25:** https://openbench.seajay-chess.dev/test/25/
+- **Change:** Added butterfly updates with penalty = depth²/2
+- **Result:** -5.25 ± 8.31 ELO (minor regression)
+- **Conclusion:** Penalty too aggressive, over-penalizing good moves
+
+#### B4.3: Butterfly Updates (Gentle)
+**Test #26:** https://openbench.seajay-chess.dev/test/26/
+- **Change:** Reduced penalty to depth²/4
+- **Result:** -0.97 ± 8.22 ELO (neutral)
+- **Conclusion:** Better than aggressive, but still no improvement
+
+### Final Decision
+
+**Accept Phase B3 Implementation (+6.78 ELO)**
+
+After extensive testing of remediation strategies, we concluded:
+1. The original B3 implementation provides the best results
+2. Complex butterfly updates don't benefit SeaJay at current strength
+3. History persistence across iterations doesn't improve performance
+4. Simple implementation is more maintainable and performs better
+
+**Total Move Ordering Improvements:**
+- Killer Moves: +31.42 ELO
+- History Heuristic: +6.78 ELO
+- **Combined: ~38 ELO**
+
+This provides sufficient move ordering quality for LMR implementation.
 
 ## Files to Modify Checklist
 
@@ -517,6 +567,6 @@ Each phase must:
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.2  
 **Last Updated:** August 20, 2025  
-**Status:** Ready for implementation
+**Status:** Stage 20 COMPLETE - B3 implementation accepted after B4 testing
