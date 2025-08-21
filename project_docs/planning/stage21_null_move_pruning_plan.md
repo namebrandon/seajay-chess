@@ -12,6 +12,27 @@ Null move pruning is a powerful forward pruning technique where we give the oppo
 
 ## Critical Process Requirements
 
+### ⚠️ CRITICAL: ALL Commits Must Have Bench String
+
+**OPENBENCH REQUIREMENT**: Every single commit on the feature branch MUST include "bench [node-count]" in the commit message. OpenBench reads the LAST commit on the branch to extract the bench count.
+
+**This means:**
+- Implementation commits need bench string ✓
+- Documentation commits need bench string ✓  
+- Fix commits need bench string ✓
+- Refactoring commits need bench string ✓
+- ANY commit pushed to the branch needs bench string ✓
+
+**Examples:**
+```
+feat: Add null move infrastructure (Phase A1) - bench 19191913
+docs: Update planning document - bench 19191913
+fix: Correct compilation error - bench 19191913
+refactor: Clean up code style - bench 19191913
+```
+
+**If you forget:** You must amend the commit and force push before OpenBench testing!
+
 ### ⚠️ MANDATORY: OpenBench Testing Gate
 
 **AFTER EACH PHASE:**
