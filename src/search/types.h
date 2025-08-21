@@ -5,6 +5,7 @@
 #include "../evaluation/types.h"
 #include "killer_moves.h"
 #include "history_heuristic.h"
+#include "countermoves.h"
 #include <chrono>
 #include <cstdint>
 
@@ -222,6 +223,9 @@ struct SearchData {
     
     // Stage 20: History heuristic for move ordering
     HistoryHeuristic history;
+    
+    // Stage 23: Countermove heuristic for move ordering
+    CounterMoves counterMoves;
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;

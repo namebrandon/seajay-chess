@@ -115,6 +115,8 @@ set(SEARCH_SOURCES
     src/search/killer_moves.h
     src/search/history_heuristic.cpp
     src/search/history_heuristic.h
+    src/search/countermoves.cpp
+    src/search/countermoves.h
     src/search/time_management.cpp
     src/search/time_management.h
     src/search/aspiration_window.cpp
