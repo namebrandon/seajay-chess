@@ -66,7 +66,7 @@ private:
     int m_nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
     
     // Stage 23: Countermove heuristic parameters
-    int m_countermoveBonus = 1000;      // Bonus for countermoves in move ordering (Phase CM3: minimal)
+    int m_countermoveBonus = 12000;     // Bonus for countermoves in move ordering (between killers and history)
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth

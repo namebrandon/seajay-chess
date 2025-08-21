@@ -89,7 +89,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     
     // Stage 23: Countermove heuristic options
-    std::cout << "option name CountermoveBonus type spin default 1000 min 0 max 20000" << std::endl;  // Phase CM3: minimal bonus
+    std::cout << "option name CountermoveBonus type spin default 12000 min 0 max 20000" << std::endl;  // Fixed: between killers and history
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2

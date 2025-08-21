@@ -505,7 +505,7 @@ eval::Score negamax(Board& board,
     
     // Stage 23, Phase CM3: Get countermove for hit tracking
     Move counterMove = (ply > 0 && prevMove != NO_MOVE) ? 
-                      info.counterMoves.getCounterMove(prevMove) : NO_MOVE;
+                      info.counterMoves.getCounterMove(board, prevMove) : NO_MOVE;
     
     for (const Move& move : moves) {
         moveCount++;
@@ -660,7 +660,7 @@ eval::Score negamax(Board& board,
                         if (ply > 0) {
                             Move prevMove = searchInfo.getStackEntry(ply - 1).move;
                             if (prevMove != NO_MOVE) {
-                                info.counterMoves.update(prevMove, move);
+                                info.counterMoves.update(board, prevMove, move);
                                 info.counterMoveStats.updates++;  // Track shadow mode updates
                             }
                         }

@@ -73,7 +73,7 @@ struct SearchLimits {
     int nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
     
     // Stage 23: Countermove heuristic parameters
-    int countermoveBonus = 1000;      // Bonus for countermoves in move ordering (Phase CM3: minimal)
+    int countermoveBonus = 12000;     // Bonus for countermoves in move ordering (between killers and history)
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive

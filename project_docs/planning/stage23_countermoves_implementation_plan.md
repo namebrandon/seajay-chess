@@ -255,8 +255,8 @@ Move m_counters[6][64];  // [piece_type][to_square]
 | Phase | Status | Commit Hash | Bench Count | ELO Result | Date |
 |-------|--------|-------------|-------------|------------|------|
 | CM1   | Complete | 442a09a | 19191913 | +2.61 ± 10.16 | 2025-08-21 |
-| CM2   | Testing | 40490c6 | 19191913 | Pending | 2025-08-21 |
-| CM3   | - | - | - | - | - |
+| CM2   | Complete | 40490c6 | 19191913 | -0.74 ± 13.16 | 2025-08-21 |
+| CM3   | Testing | fd5a7dc | 19191913 | Pending | 2025-08-21 |
 | CM4   | - | - | - | - | - |
 | CM5   | - | - | - | - | - |
 

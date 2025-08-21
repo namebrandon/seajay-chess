@@ -236,7 +236,7 @@ void MvvLvaOrdering::orderMovesWithCountermoves(const Board& board, MoveList& mo
     }
     
     // Get the countermove for the previous move
-    Move counterMove = (prevMove != NO_MOVE) ? counterMoves.getCounterMove(prevMove) : NO_MOVE;
+    Move counterMove = (prevMove != NO_MOVE) ? counterMoves.getCounterMove(board, prevMove) : NO_MOVE;
     
     // Score all moves and create move-score pairs
     std::vector<MoveScore> scored_moves;
@@ -254,13 +254,19 @@ void MvvLvaOrdering::orderMovesWithCountermoves(const Board& board, MoveList& mo
         } else {
             // Quiet moves: apply killer, countermove, and history bonuses
             
+            // Priority ordering (following Stockfish/Ethereal pattern):
+            // 1. Killers: 16000 (highest priority quiet moves)
+            // 2. Countermove: 12000 (between killers and good history)
+            // 3. History: 0-8192 (based on past performance)
+            
             // Stage 19: Killer move bonus (16K)
             if (killers.isKiller(ply, move)) {
                 score = 16000;
             }
-            // Stage 23: Countermove bonus (Phase CM3: minimal 1000)
+            // Stage 23: Countermove bonus - positioned between killers and history
+            // Default 12000 puts it above most history but below killers
             else if (move == counterMove) {
-                score = countermoveBonus;  // UCI configurable
+                score = countermoveBonus;  // UCI configurable, recommend 12000
             }
             // Stage 20: History heuristic (0-8192)
             else {
