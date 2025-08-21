@@ -222,6 +222,36 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
 }
 
+// Order moves with killers, history, and countermoves (Stage 23, CM3.2)
+void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
+                                          const KillerMoves& killers, 
+                                          const HistoryHeuristic& history,
+                                          const CounterMoves& counterMoves,
+                                          Move prevMove, int ply, int countermoveBonus) const {
+    // For CM3.2: Just lookup countermove but don't apply bonus
+    // This tests the lookup logic without affecting move ordering
+    
+    // First call the regular version that handles killers and history
+    orderMovesWithHistory(board, moves, killers, history, ply);
+    
+    // CM3.2: Lookup the countermove (but don't use it yet)
+    if (prevMove != NO_MOVE) {
+        Move counterMove = counterMoves.getCounterMove(prevMove);
+        
+        // For CM3.2: Just verify the lookup works, don't apply any bonus
+        // The countermoveBonus parameter will be 0 for this phase
+        // This exercises the code path without affecting ordering
+        if (counterMove != NO_MOVE) {
+            // Find the countermove in the list (if it exists)
+            auto it = std::find(moves.begin(), moves.end(), counterMove);
+            if (it != moves.end()) {
+                // CM3.2: Just count that we found it (no ordering change)
+                // In CM3.3+ we'll actually move it or apply bonus
+            }
+        }
+    }
+}
+
 // Template implementation for integrating with existing code
 // OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>

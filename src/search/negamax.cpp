@@ -68,7 +68,8 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 // Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then killers, then quiet moves
 template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
-                      const SearchData* searchData = nullptr, int ply = 0) noexcept {
+                      const SearchData* searchData = nullptr, int ply = 0,
+                      Move prevMove = NO_MOVE, int countermoveBonus = 0) noexcept {
     // Sub-phase 4E: TT Move Ordering
     // If we have a TT move, put it first
     if (ttMove != NO_MOVE) {
@@ -84,10 +85,12 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
+    // Stage 23, CM3.2: Countermove lookup (no bonus yet)
     static MvvLvaOrdering mvvLva;
     if (searchData != nullptr) {
-        // Use killer and history aware ordering
-        mvvLva.orderMovesWithHistory(board, moves, searchData->killers, searchData->history, ply);
+        // CM3.2: Use new overload with countermoves (bonus=0 for this phase)
+        mvvLva.orderMovesWithHistory(board, moves, searchData->killers, searchData->history,
+                                    searchData->counterMoves, prevMove, ply, countermoveBonus);
     } else {
         // Fallback to standard MVV-LVA
         mvvLva.orderMoves(board, moves);
@@ -433,9 +436,16 @@ eval::Score negamax(Board& board,
         }
     }
     
+    // Get previous move for countermove lookup (CM3.2)
+    Move prevMove = NO_MOVE;
+    if (ply > 0) {
+        prevMove = searchInfo.getStackEntry(ply - 1).move;
+    }
+    
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
-    orderMoves(board, moves, ttMove, &info, ply);
+    // CM3.2: Pass prevMove for countermove lookup (bonus=0 for this phase)
+    orderMoves(board, moves, ttMove, &info, ply, prevMove, 0);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {

@@ -109,3 +109,12 @@ feat: Countermoves micro-phase CM3.X - [description] - bench [count]
 Micro-phase testing to isolate regression cause.
 Expected: [0 ELO / minimal overhead / etc]
 ```
+
+## Micro-Phase Testing Results
+
+| Phase | Status | Commit Hash | Bench Count | ELO Result | Notes |
+|-------|--------|-------------|-------------|------------|-------|
+| CM3.1 | Complete | 97984d3 | 19191913 | +11.11 ± 12.04 | UCI only, within noise |
+| CM3.2 | In Progress | - | - | - | Lookup without bonus |
+| CM3.3 | Pending | - | - | - | Minimal bonus (100) |
+| CM3.4 | Pending | - | - | - | Gradual increases |
