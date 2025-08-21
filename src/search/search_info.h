@@ -18,6 +18,8 @@ struct SearchStack {
     bool wasNullMove = false;  // Track if this was a null move
     int staticEval = 0;        // Static evaluation at this node
     int moveCount = 0;         // Number of moves searched at this node
+    bool isPvNode = false;      // Track if this is a PV node (Phase P1)
+    int searchedMoves = 0;      // Count of moves already searched (Phase P1)
 };
 
 // Search-specific information tracking
@@ -110,6 +112,39 @@ public:
     
     Hash getZobristAt(int index) const {
         if (index >= 0 && index < MAX_PLY) return m_searchStack[index].zobristKey;
+        return 0;
+    }
+    
+    // Phase P1: PV node tracking helper methods
+    void setPvNode(int ply, bool isPv) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].isPvNode = isPv;
+        }
+    }
+    
+    bool isPvNode(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].isPvNode;
+        }
+        return false;
+    }
+    
+    void incrementSearchedMoves(int ply) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].searchedMoves++;
+        }
+    }
+    
+    void resetSearchedMoves(int ply) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].searchedMoves = 0;
+        }
+    }
+    
+    int getSearchedMoves(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].searchedMoves;
+        }
         return 0;
     }
     
