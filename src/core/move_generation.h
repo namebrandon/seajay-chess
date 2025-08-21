@@ -178,6 +178,7 @@ private:
     static void generateCapturesOf(const Board& board, MoveList& moves, Square target);
     static void generateBlockingMoves(const Board& board, MoveList& moves, Bitboard blockSquares);
     static Bitboard getCheckers(const Board& board, Square kingSquare, Color attackingColor);
+    static bool isKingMoveSafe(const Board& board, Square from, Square to, Color enemyColor);
     
 public:
     // Pin detection and legal move helpers (made public for testing)

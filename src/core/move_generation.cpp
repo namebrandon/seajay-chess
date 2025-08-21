@@ -998,8 +998,9 @@ void MoveGenerator::generateKingEvasions(const Board& board, MoveList& moves, Sq
     while (kingMoves) {
         Square to = popLsb(kingMoves);
         
-        // Check if this square is safe
-        if (!isSquareAttacked(board, to, them)) {
+        // Check if this square is safe using the specialized function
+        // that removes the king from occupancy for slider attacks
+        if (isKingMoveSafe(board, kingSquare, to, them)) {
             if (board.pieceAt(to) != NO_PIECE) {
                 moves.addMove(kingSquare, to, CAPTURE);
             } else {
@@ -1007,6 +1008,50 @@ void MoveGenerator::generateKingEvasions(const Board& board, MoveList& moves, Sq
             }
         }
     }
+}
+
+bool MoveGenerator::isKingMoveSafe(const Board& board, Square from, Square to, Color enemyColor) {
+    // Remove king from occupancy to properly detect slider attacks
+    Bitboard occupancyNoKing = board.occupied() ^ squareBB(from);
+    
+    // Check non-slider attacks normally (these don't depend on king blocking)
+    // Pawn attacks - check if enemy pawns can attack the destination square
+    Bitboard enemyPawns = board.pieces(enemyColor, PAWN);
+    if (enemyPawns & getPawnAttacks(to, ~enemyColor)) {
+        return false;
+    }
+    
+    // Knight attacks - check if enemy knights can attack the destination square
+    Bitboard enemyKnights = board.pieces(enemyColor, KNIGHT);
+    if (enemyKnights & getKnightAttacks(to)) {
+        return false;
+    }
+    
+    // King attacks - check if enemy king can attack the destination square
+    Bitboard enemyKing = board.pieces(enemyColor, KING);
+    if (enemyKing & getKingAttacks(to)) {
+        return false;
+    }
+    
+    // Check slider attacks with modified occupancy
+    // For sliders, we need to check if attacks FROM the destination square
+    // can reach enemy pieces, using the modified occupancy
+    
+    // Bishop and diagonal queen attacks
+    Bitboard bishopAttacks = getBishopAttacks(to, occupancyNoKing);
+    Bitboard bishopsQueens = board.pieces(enemyColor, BISHOP) | board.pieces(enemyColor, QUEEN);
+    if (bishopAttacks & bishopsQueens) {
+        return false;
+    }
+    
+    // Rook and orthogonal queen attacks
+    Bitboard rookAttacks = getRookAttacks(to, occupancyNoKing);
+    Bitboard rooksQueens = board.pieces(enemyColor, ROOK) | board.pieces(enemyColor, QUEEN);
+    if (rookAttacks & rooksQueens) {
+        return false;
+    }
+    
+    return true;
 }
 
 void MoveGenerator::generateCapturesOf(const Board& board, MoveList& moves, Square target) {
