@@ -74,6 +74,9 @@ struct SearchLimits {
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
     
+    // Stage 22 Phase P3.5: PVS statistics output control
+    bool showPVSStats = false;  // Show PVS statistics after each depth
+    
     // Default constructor
     SearchLimits() = default;
 };

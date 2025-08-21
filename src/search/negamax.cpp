@@ -680,6 +680,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.lmrParams.depthFactor = limits.lmrDepthFactor;
     info.lmrStats.reset();
     
+    // Stage 22 Phase P3.5: Reset PVS statistics at search start
+    info.pvsStats.reset();
+    
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
     if (limits.usePhaseStability) {
@@ -848,6 +851,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
             previousBestMove = info.bestMove;  // Update for next iteration
             previousScore = score;  // Save score for next iteration's aspiration window
+            
+            // Stage 22 Phase P3.5: Output PVS statistics if requested
+            if (limits.showPVSStats && info.pvsStats.scoutSearches > 0) {
+                std::cout << "info string PVS scout searches: " << info.pvsStats.scoutSearches << std::endl;
+                std::cout << "info string PVS re-searches: " << info.pvsStats.reSearches << std::endl;
+                std::cout << "info string PVS re-search rate: " 
+                          << std::fixed << std::setprecision(1)
+                          << info.pvsStats.reSearchRate() << "%" << std::endl;
+            }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management
             // Recalculate time limits based on current stability

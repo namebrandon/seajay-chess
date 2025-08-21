@@ -84,11 +84,11 @@ void resetSearchedMoves(int ply) {
 - **Validation:** Compiles, no behavior change
 
 ### Phase P1 Status
-- [ ] Implementation complete
-- [ ] Bench node count: _______
-- [ ] Committed with bench
-- [ ] Manual testing complete
-- [ ] Ready for Phase P2
+- [x] Implementation complete
+- [x] Bench node count: 19191913
+- [x] Committed with bench
+- [x] Manual testing complete (OpenBench: +4.25 ± 10.21 ELO, negligible as expected)
+- [x] Ready for Phase P2
 
 ---
 
@@ -146,11 +146,11 @@ bool canDoNull = !isPvNode                              // NEW: No null in PV no
 - **Validation:** PV nodes correctly identified in debug output
 
 ### Phase P2 Status
-- [ ] Implementation complete
-- [ ] Bench node count: _______
-- [ ] Committed with bench
-- [ ] Manual testing complete
-- [ ] Ready for Phase P3
+- [x] Implementation complete
+- [x] Bench node count: 19191913
+- [x] Committed with bench
+- [x] Manual testing complete (OpenBench: +1.06 ± 10.13 ELO, negligible as expected)
+- [x] Ready for Phase P3
 
 ---
 
@@ -256,12 +256,66 @@ searchInfo.popMove(ply + 1);
 - **Re-search rate:** Should be < 10%
 
 ### Phase P3 Status
+- [x] Implementation complete
+- [x] Bench node count: 19191913 (Note: benchmark uses perft, not search)
+- [x] Committed with bench
+- [x] Manual testing complete
+- [x] OpenBench test: **+19.55 ± 10.42 ELO** (2508 games)
+- [x] Ready for Phase P4 (recommended to proceed for optimization)
+
+---
+
+## Phase P3.5: Add PVS Statistics Output (Diagnostic Phase)
+
+### Objectives
+- Add statistics output to understand re-search behavior
+- Measure actual re-search rate to diagnose lower-than-expected gains
+- Make data-driven decision about proceeding to P4/P5
+
+### Implementation Tasks
+
+1. **Add statistics output to search** (`src/search/negamax.cpp`):
+```cpp
+// At the end of iterative deepening loop, after best move is found:
+if (info.pvsStats.scoutSearches > 0) {
+    std::cout << "info string PVS scout searches: " << info.pvsStats.scoutSearches << std::endl;
+    std::cout << "info string PVS re-searches: " << info.pvsStats.reSearches << std::endl;
+    std::cout << "info string PVS re-search rate: " 
+              << std::fixed << std::setprecision(1)
+              << info.pvsStats.reSearchRate() << "%" << std::endl;
+}
+```
+
+2. **Reset statistics at search start**:
+```cpp
+// In iterative deepening, before each iteration:
+info.pvsStats.reset();
+```
+
+### How to Interpret Results
+
+**Re-search Rate Analysis:**
+- **< 5%**: Excellent move ordering, PVS very efficient
+- **5-10%**: Good, expected range for strong engines
+- **10-15%**: Acceptable but could be improved
+- **15-20%**: Move ordering needs work, PVS efficiency compromised
+- **> 20%**: Poor move ordering, PVS may be hurting more than helping
+
+**What the Rate Tells Us:**
+- Low rate = first move is usually best (good ordering)
+- High rate = often finding better moves later (poor ordering)
+- Tactical positions naturally have higher rates
+- Quiet positions should have very low rates
+
+### Expected Outcome
+- **ELO Change:** 0 (diagnostic only)
+- **Information Gained:** Critical data for next steps
+
+### Phase P3.5 Status
 - [ ] Implementation complete
 - [ ] Bench node count: _______
-- [ ] Committed with bench
-- [ ] Manual testing complete
-- [ ] OpenBench test: _______
-- [ ] Ready for Phase P4
+- [ ] Statistics collected from test positions
+- [ ] Decision made on P4/P5
 
 ---
 
@@ -482,18 +536,46 @@ position fen rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2
 
 ---
 
+## Phase P3 Results Analysis
+
+### Actual vs Expected
+- **Expected:** +30-40 ELO
+- **Actual:** +19.55 ± 10.42 ELO
+- **Conclusion:** Positive gain but ~50% of expected
+
+### Likely Causes
+1. **Move Ordering Efficiency**: Our move ordering may not be optimal for PVS
+   - Current first-move cutoff rate unknown
+   - Re-search rate unknown (no stats output yet)
+   
+2. **LMR Interaction**: Complex three-step re-search pattern may be suboptimal
+   - Scout → LMR re-search → PV re-search
+   - May benefit from simplification
+   
+3. **Early Implementation**: PVS typically gives larger gains in stronger engines
+   - Our engine is still developing
+   - Move ordering will improve with future enhancements
+
+### Recommendations
+1. **Proceed to Phase P4**: Depth optimization may help
+2. **Add Statistics Output**: Measure re-search rate in next phase
+3. **Consider Phase P5**: PVS-LMR integration refinements
+4. **Future Revisit**: After move ordering improvements (Stage 23+)
+
 ## Current Status
 
-**Phase:** Planning  
+**Phase:** P3 Complete, Ready for P4  
 **Branch:** feature/20250820-pvs  
 **Last Updated:** August 21, 2025
+**Current Gain:** +19.55 ± 10.42 ELO
 
 ### Progress Tracking
-- [ ] Phase P1: Infrastructure
-- [ ] Phase P2: PV Detection
-- [ ] Phase P3: Basic PVS
-- [ ] Phase P4: Optimization
-- [ ] Phase P5: Refinements (optional)
+- [x] Phase P1: Infrastructure ✅
+- [x] Phase P2: PV Detection ✅
+- [x] Phase P3: Basic PVS ✅ (+19.55 ELO)
+- [ ] Phase P3.5: Statistics Output (NEXT - diagnostic)
+- [ ] Phase P4: Optimization (pending P3.5 results)
+- [ ] Phase P5: Refinements (if needed)
 
 ### Expected Total Gain
 - Target: +35-50 ELO
