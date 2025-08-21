@@ -369,9 +369,9 @@ feat: Add adaptive null move reduction and verification (Phase A3) - bench [NODE
 ```
 
 ### Phase A3 Status
-- [ ] Implementation complete
-- [ ] Bench node count: _______
-- [ ] Committed with bench
+- [x] Implementation complete
+- [x] Bench node count: 19191913
+- [x] Committed with bench (commit 629bc0c)
 - [ ] OpenBench test submitted
 - [ ] Test results: _______
 - [ ] Human approval to proceed
@@ -524,16 +524,16 @@ Based on analysis of Stockfish, Ethereal, and other engines:
 
 ## Current Status
 
-**Phase:** A2 COMPLETE - AWAITING OPENBENCH TEST  
+**Phase:** A3 COMPLETE - AWAITING OPENBENCH TEST  
 **Branch:** feature/20250820-null-move-pruning  
 **Last Updated:** August 21, 2025  
-**Commit:** 7117f47 (bench 19191913)
+**Commit:** 629bc0c (bench 19191913)
 
 ### Progress Tracking
 
 - [x] Phase A1: Infrastructure (COMPLETE - neutral result confirmed)
-- [x] Phase A2: Basic Implementation (COMPLETE - awaiting test)
-- [ ] Phase A3: Adaptive Reduction
+- [x] Phase A2: Basic Implementation (COMPLETE - +56.92 ± 11.34 ELO!)
+- [x] Phase A3: Adaptive Reduction (COMPLETE - awaiting test)
 - [ ] Phase A4: Tuning & Static
 
 ### Notes
