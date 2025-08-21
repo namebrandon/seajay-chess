@@ -314,7 +314,7 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Stage 21 Phase A3.1: Null Move Pruning with Simple Adaptive Reduction and Verification
+    // Stage 21 Phase A3.2a: Null Move Pruning with Simple Adaptive Reduction (No Verification)
     // Constants for null move pruning
     constexpr eval::Score ROOK_VALUE = eval::Score(500);
     
@@ -370,29 +370,9 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Phase A3: Verification search for deep searches to avoid zugzwang
-            if (depth >= 12 && std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
-                // Do a reduced depth verification search
-                eval::Score verifyScore = negamax(
-                    board,
-                    depth - nullMoveReduction - 1,
-                    ply,
-                    beta - eval::Score(1),
-                    beta,
-                    searchInfo,
-                    info,
-                    limits,
-                    tt
-                );
-                
-                if (verifyScore >= beta) {
-                    // Verification passed, return the null move score
-                    return nullScore;
-                }
-                // Verification failed, continue with normal search
-                info.nullMoveStats.verificationFails++;
-            } else if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
-                // Not deep enough for verification or not a mate score
+            // Phase A3.2a: No verification search - rely on good zugzwang detection
+            // Don't return mate scores from null search
+            if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                 return nullScore;
             } else {
                 // Mate score, return beta instead
