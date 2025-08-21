@@ -25,6 +25,7 @@ namespace seajay::search {
 //   info  - Search statistics and control information
 //   limits - Search limits for quiescence node control
 //   tt    - Transposition table (can be nullptr)
+//   isPvNode - Whether this is a principal variation node (Phase P2)
 eval::Score negamax(Board& board, 
                    int depth, 
                    int ply,
@@ -33,7 +34,8 @@ eval::Score negamax(Board& board,
                    SearchInfo& searchInfo,
                    SearchData& info,
                    const SearchLimits& limits,
-                   TranspositionTable* tt = nullptr);
+                   TranspositionTable* tt = nullptr,
+                   bool isPvNode = true);
 
 // Iterative deepening search controller
 // Returns the best move found within the given limits

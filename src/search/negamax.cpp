@@ -118,7 +118,8 @@ eval::Score negamax(Board& board,
                    SearchInfo& searchInfo,
                    SearchData& info,
                    const SearchLimits& limits,
-                   TranspositionTable* tt) {
+                   TranspositionTable* tt,
+                   bool isPvNode) {
     
     // Debug output at root
     if (ply == 0 && depth >= 4) {
@@ -147,6 +148,9 @@ eval::Score negamax(Board& board,
     
     // Increment node counter
     info.nodes++;
+    
+    // Phase P2: Store PV status in search stack
+    searchInfo.setPvNode(ply, isPvNode);
     
     // Update selective depth (maximum depth reached)
     if (ply > info.seldepth) {
@@ -320,7 +324,7 @@ eval::Score negamax(Board& board,
     
     // Phase A4: Static null move pruning (reverse futility) for shallow depths
     // This is a lightweight check before the more expensive null move search
-    if (depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    if (!isPvNode && depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
         // Only evaluate if we haven't already
         eval::Score staticEval = eval::Score::zero();
         
@@ -353,7 +357,8 @@ eval::Score negamax(Board& board,
     
     // Regular null move pruning
     // Check if we can do null move
-    bool canDoNull = !weAreInCheck                              // Not in check
+    bool canDoNull = !isPvNode                                  // Phase P2: No null in PV nodes!
+                    && !weAreInCheck                              // Not in check
                     && depth >= 3                                // Minimum depth
                     && ply > 0                                   // Not at root
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
@@ -385,7 +390,8 @@ eval::Score negamax(Board& board,
             searchInfo,
             info,
             limits,
-            tt
+            tt,
+            false  // Phase P2: Null move searches are never PV nodes
         );
         
         // Unmake null move
@@ -501,7 +507,8 @@ eval::Score negamax(Board& board,
         if (reduction > 0) {
             // Reduced search with null window
             score = -negamax(board, depth - 1 - reduction, ply + 1,
-                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt);
+                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                            false);  // Phase P2: Reduced searches are not PV
             
             // Re-search if reduced search suggests move might be good
             // (score > alpha means it failed high on null window)
@@ -509,7 +516,8 @@ eval::Score negamax(Board& board,
                 info.lmrStats.reSearches++;
                 // Full-depth re-search with original window
                 score = -negamax(board, depth - 1, ply + 1,
-                                -beta, -alpha, searchInfo, info, limits, tt);
+                                -beta, -alpha, searchInfo, info, limits, tt,
+                                false);  // Phase P2: Will be updated to true in Phase P3
             } else {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
@@ -517,7 +525,8 @@ eval::Score negamax(Board& board,
         } else {
             // Normal search (no reduction)
             score = -negamax(board, depth - 1, ply + 1,
-                            -beta, -alpha, searchInfo, info, limits, tt);
+                            -beta, -alpha, searchInfo, info, limits, tt,
+                            false);  // Phase P2: Will be updated based on move count in Phase P3
         }
         
         // Unmake the move
