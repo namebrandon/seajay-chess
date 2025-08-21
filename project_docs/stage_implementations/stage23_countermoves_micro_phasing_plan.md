@@ -119,3 +119,5 @@ Expected: [0 ELO / minimal overhead / etc]
 | CM3.3 | Complete | 8532051 | 19191913 | -8.04 ± 10.08 | Minimal bonus (100) - stable |
 | CM3.4 | Complete | 8532051 | 19191913 | -0.96 ± 10.33 | bonus=1000 - SUCCESS! |
 | CM3.5 | Complete | 8532051 | 19191913 | +4.71 ± 10.16 | bonus=8000 - POSITIVE! |
+| CM4.1 | Complete | 1bfe319 | 19191913 | +1.53 ± 10.32 | bonus=12501 - declining |
+| CM4.2 | Complete | 1bfe319 | 19191913 | -5.66 ± 10.00 | bonus=16000 - too high! |
