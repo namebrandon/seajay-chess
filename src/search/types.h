@@ -69,6 +69,7 @@ struct SearchLimits {
     
     // Stage 21: Null Move Pruning parameters
     bool useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
+    int nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive

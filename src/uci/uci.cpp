@@ -90,6 +90,7 @@ void UCIEngine::handleUCI() {
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
+    std::cout << "option name NullMoveStaticMargin type spin default 120 min 50 max 300" << std::endl;  // Phase A4
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
@@ -409,8 +410,9 @@ void UCIEngine::search(const SearchParams& params) {
     limits.lmrBaseReduction = m_lmrBaseReduction;
     limits.lmrDepthFactor = m_lmrDepthFactor;
     
-    // Stage 21: Pass null move pruning option
+    // Stage 21: Pass null move pruning options
     limits.useNullMove = m_useNullMove;
+    limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
     
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
@@ -786,6 +788,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    // Stage 21 Phase A4: Handle NullMoveStaticMargin option
+    else if (optionName == "NullMoveStaticMargin") {
+        try {
+            int margin = std::stoi(value);
+            if (margin >= 50 && margin <= 300) {
+                m_nullMoveStaticMargin = margin;
+                std::cerr << "info string Null move static margin set to " << margin << std::endl;
+            } else {
+                std::cerr << "info string NullMoveStaticMargin must be between 50 and 300" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "info string Invalid NullMoveStaticMargin value: " << value << std::endl;
         }
     }
     // Stage 13 Remediation: Handle aspiration window options

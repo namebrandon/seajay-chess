@@ -63,6 +63,7 @@ private:
     
     // Stage 21: Null Move Pruning parameters  
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
+    int m_nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
     
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns

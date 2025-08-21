@@ -314,11 +314,44 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Stage 21 Phase A3.3: Null Move Pruning with Simple Adaptive Reduction and Original Zugzwang
+    // Stage 21 Phase A4: Null Move Pruning with Static Null Move and Tuning
     // Constants for null move pruning
     constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value (original)
     
-    // Phase A3.3: Back to original Phase A2 zugzwang detection (simpler and more permissive)
+    // Phase A4: Static null move pruning (reverse futility) for shallow depths
+    // This is a lightweight check before the more expensive null move search
+    if (depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+        // Only evaluate if we haven't already
+        eval::Score staticEval = eval::Score::zero();
+        
+        // Try to get cached eval first
+        if (ply > 0) {
+            int cachedEval = searchInfo.getStackEntry(ply).staticEval;
+            if (cachedEval != 0) {
+                staticEval = eval::Score(cachedEval);
+            }
+        }
+        
+        // If no cached eval and we're likely to benefit, compute it
+        if (staticEval == eval::Score::zero()) {
+            // Only evaluate if we think we might get a cutoff
+            // Quick material balance check first
+            if (board.material().balance(board.sideToMove()).value() - beta.value() > -200) {
+                staticEval = board.evaluate();
+                searchInfo.setStaticEval(ply, staticEval);
+                
+                // Margin based on depth (tunable)
+                eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+                
+                if (staticEval - margin >= beta) {
+                    info.nullMoveStats.staticCutoffs++;
+                    return staticEval - margin;  // Return reduced score for safety
+                }
+            }
+        }
+    }
+    
+    // Regular null move pruning
     // Check if we can do null move
     bool canDoNull = !weAreInCheck                              // Not in check
                     && depth >= 3                                // Minimum depth
