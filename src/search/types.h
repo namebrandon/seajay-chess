@@ -197,6 +197,23 @@ struct SearchData {
         }
     } nullMoveStats;
     
+    // Stage 22 Phase P3: Principal Variation Search (PVS) statistics
+    struct PVSStats {
+        uint64_t scoutSearches = 0;     // Total scout searches
+        uint64_t reSearches = 0;         // Times we had to re-search
+        uint64_t scoutCutoffs = 0;       // Scout searches that caused cutoff
+        
+        void reset() {
+            scoutSearches = 0;
+            reSearches = 0;
+            scoutCutoffs = 0;
+        }
+        
+        double reSearchRate() const {
+            return scoutSearches > 0 ? (100.0 * reSearches / scoutSearches) : 0.0;
+        }
+    } pvsStats;
+    
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     

@@ -480,53 +480,63 @@ eval::Score negamax(Board& board,
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
-        // Phase 3: Late Move Reductions (LMR)
-        int reduction = 0;
+        // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
-        // Calculate LMR reduction (don't reduce at root)
-        if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
-            // Determine move properties for LMR
-            bool captureMove = isCapture(move);
-            bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
-            bool isPVNode = false;     // Phase 3: Don't special-case PV nodes yet
+        if (moveCount == 1) {
+            // First move: search with full window as PV node
+            score = -negamax(board, depth - 1, ply + 1,
+                            -beta, -alpha, searchInfo, info, limits, tt,
+                            isPvNode);  // Phase P3: First move inherits PV status
+        } else {
+            // Later moves: use PVS with LMR
             
-            // Check if we should reduce this move
-            if (shouldReduceMove(depth, moveCount, captureMove, 
-                                weAreInCheck, givesCheck, isPVNode, 
-                                info.lmrParams)) {
-                // Calculate reduction amount
-                reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+            // Phase 3: Late Move Reductions (LMR)
+            int reduction = 0;
+            
+            // Calculate LMR reduction (don't reduce at root)
+            if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
+                // Determine move properties for LMR
+                bool captureMove = isCapture(move);
+                bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
+                bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
-                // Track LMR statistics
-                info.lmrStats.totalReductions++;
+                // Check if we should reduce this move
+                if (shouldReduceMove(depth, moveCount, captureMove, 
+                                    weAreInCheck, givesCheck, pvNode, 
+                                    info.lmrParams)) {
+                    // Calculate reduction amount
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+                    
+                    // Track LMR statistics
+                    info.lmrStats.totalReductions++;
+                }
             }
-        }
-        
-        // Perform the search with or without reduction
-        if (reduction > 0) {
-            // Reduced search with null window
+            
+            // Scout search (possibly reduced)
+            info.pvsStats.scoutSearches++;
             score = -negamax(board, depth - 1 - reduction, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            false);  // Phase P2: Reduced searches are not PV
+                            false);  // Scout searches are not PV
             
-            // Re-search if reduced search suggests move might be good
-            // (score > alpha means it failed high on null window)
-            if (score > alpha && score < beta) {
+            // If reduced scout fails high, re-search without reduction
+            if (score > alpha && reduction > 0) {
                 info.lmrStats.reSearches++;
-                // Full-depth re-search with original window
+                score = -negamax(board, depth - 1, ply + 1,
+                                -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                false);  // Still a scout search
+            }
+            
+            // If scout search fails high, do full PV re-search
+            if (score > alpha && score < beta) {
+                info.pvsStats.reSearches++;
                 score = -negamax(board, depth - 1, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                false);  // Phase P2: Will be updated to true in Phase P3
-            } else {
+                                isPvNode);  // CRITICAL: Re-search as PV node!
+            } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
             }
-        } else {
-            // Normal search (no reduction)
-            score = -negamax(board, depth - 1, ply + 1,
-                            -beta, -alpha, searchInfo, info, limits, tt,
-                            false);  // Phase P2: Will be updated based on move count in Phase P3
         }
         
         // Unmake the move
