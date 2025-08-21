@@ -182,6 +182,9 @@ eval::Score negamax(Board& board,
     // Initialize TT move (used for move ordering later)
     Move ttMove = NO_MOVE;
     
+    // Check if we're in check (needed for null move and other decisions)
+    bool weAreInCheck = inCheck(board);
+    
     // Generate all legal moves (needed for checkmate/stalemate check)
     MoveList moves = generateLegalMoves(board);
     
@@ -311,6 +314,59 @@ eval::Score negamax(Board& board,
         }
     }
     
+    // Stage 21 Phase A2: Null Move Pruning (after TT probe, before expensive move generation)
+    // Constants for null move pruning
+    constexpr int NULL_MOVE_REDUCTION = 2;
+    constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value
+    
+    // Check if we can do null move
+    bool canDoNull = !weAreInCheck                              // Not in check
+                    && depth >= 3                                // Minimum depth
+                    && ply > 0                                   // Not at root
+                    && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
+                    && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD  // Zugzwang detection
+                    && std::abs(beta.value()) < MATE_BOUND - MAX_PLY;  // Not near mate
+    
+    if (canDoNull && limits.useNullMove) {
+        info.nullMoveStats.attempts++;
+        
+        // Make null move
+        Board::UndoInfo nullUndo;
+        board.makeNullMove(nullUndo);
+        searchInfo.setNullMove(ply, true);
+        
+        // Search with reduction (null window around beta)
+        eval::Score nullScore = -negamax(
+            board,
+            depth - 1 - NULL_MOVE_REDUCTION,
+            ply + 1,
+            -beta,
+            -beta + eval::Score(1),
+            searchInfo,
+            info,
+            limits,
+            tt
+        );
+        
+        // Unmake null move
+        board.unmakeNullMove(nullUndo);
+        searchInfo.setNullMove(ply, false);
+        
+        // Check for cutoff
+        if (nullScore >= beta) {
+            info.nullMoveStats.cutoffs++;
+            
+            // Don't return mate scores from null search
+            if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                return nullScore;
+            }
+            return beta;
+        }
+    } else if (!canDoNull && ply > 0 && board.nonPawnMaterial(board.sideToMove()) <= ZUGZWANG_THRESHOLD) {
+        // Track when we avoid null move due to zugzwang
+        info.nullMoveStats.zugzwangAvoids++;
+    }
+    
     // In quiescence search (depth <= 0), handle differently
     if (depth <= 0) {
         // Get info about last move
@@ -351,9 +407,6 @@ eval::Score negamax(Board& board,
     // Initialize best score
     eval::Score bestScore = eval::Score::minus_infinity();
     Move bestMove = NO_MOVE;  // Track best move for all plies (needed for TT storage later)
-    
-    // Check if we're in check BEFORE entering move loop (for LMR)
-    bool weAreInCheck = inCheck(board);
     
     // Search all moves
     int moveCount = 0;

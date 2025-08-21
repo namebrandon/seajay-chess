@@ -89,7 +89,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     
     // Stage 21: Null Move Pruning options
-    std::cout << "option name UseNullMove type check default false" << std::endl;  // Disabled for Phase A1
+    std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB

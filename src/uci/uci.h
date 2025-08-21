@@ -62,7 +62,7 @@ private:
     int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
     
     // Stage 21: Null Move Pruning parameters  
-    bool m_useNullMove = false;         // Enable/disable null move pruning (disabled for Phase A1)
+    bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns

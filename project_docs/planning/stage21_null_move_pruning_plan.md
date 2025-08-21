@@ -150,9 +150,9 @@ feat: Add null move infrastructure and search stack (Phase A1) - bench [NODE_COU
 - [x] Implementation complete
 - [x] Bench node count: 19191913
 - [x] Committed with bench (commit f91a0f5)
-- [ ] OpenBench test submitted
-- [ ] Test results: _______
-- [ ] Human approval to proceed
+- [x] OpenBench test submitted
+- [x] Test results: +4.08 ± 12.35 ELO (neutral as expected)
+- [x] Human approval to proceed ✓
 
 ---
 

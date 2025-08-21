@@ -68,7 +68,7 @@ struct SearchLimits {
     int lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
     
     // Stage 21: Null Move Pruning parameters
-    bool useNullMove = false;         // Enable/disable null move pruning (disabled for Phase A1)
+    bool useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
