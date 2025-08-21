@@ -84,9 +84,15 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
+    // Stage 23, Phase CM3: Use countermoves with minimal bonus
     static MvvLvaOrdering mvvLva;
     if (searchData != nullptr) {
-        // Use killer and history aware ordering
+        // Check if we have a previous move for countermoves (Stage 23)
+        Move prevMove = NO_MOVE;
+        int countermoveBonus = 1000;  // Default minimal bonus for Phase CM3
+        // Note: prevMove and countermoveBonus would need to be passed as parameters
+        // For now, using orderMovesWithHistory as the countermove integration
+        // happens inside negamax where we have access to SearchInfo
         mvvLva.orderMovesWithHistory(board, moves, searchData->killers, searchData->history, ply);
     } else {
         // Fallback to standard MVV-LVA
@@ -434,8 +440,41 @@ eval::Score negamax(Board& board,
     }
     
     // Order moves for better alpha-beta pruning
-    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
-    orderMoves(board, moves, ttMove, &info, ply);
+    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, countermoves, then quiet moves
+    // Stage 23, Phase CM3: Get previous move for countermove ordering
+    Move prevMove = (ply > 0) ? searchInfo.getStackEntry(ply - 1).move : NO_MOVE;
+    
+    // Use advanced ordering with countermoves if we have the components
+    if (ply > 0 && prevMove != NO_MOVE && limits.countermoveBonus > 0) {
+        // First ensure TT move is at front if valid
+        if (ttMove != NO_MOVE) {
+            auto it = std::find(moves.begin(), moves.end(), ttMove);
+            if (it != moves.end() && it != moves.begin()) {
+                Move temp = *it;
+                std::move_backward(moves.begin(), it, it + 1);
+                *moves.begin() = temp;
+            }
+        }
+        
+        // Then apply countermove-aware ordering
+        static MvvLvaOrdering mvvLva;
+        mvvLva.orderMovesWithCountermoves(board, moves, info.killers, info.history, 
+                                         info.counterMoves, prevMove, 
+                                         limits.countermoveBonus, ply);
+        
+        // Ensure TT move stays first after ordering
+        if (ttMove != NO_MOVE) {
+            auto it = std::find(moves.begin(), moves.end(), ttMove);
+            if (it != moves.end() && it != moves.begin()) {
+                Move temp = *it;
+                std::move_backward(moves.begin(), it, it + 1);
+                *moves.begin() = temp;
+            }
+        }
+    } else {
+        // Fallback to standard ordering without countermoves
+        orderMoves(board, moves, ttMove, &info, ply);
+    }
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
@@ -464,9 +503,18 @@ eval::Score negamax(Board& board,
     std::vector<Move> quietMoves;
     quietMoves.reserve(moves.size());
     
+    // Stage 23, Phase CM3: Get countermove for hit tracking
+    Move counterMove = (ply > 0 && prevMove != NO_MOVE) ? 
+                      info.counterMoves.getCounterMove(prevMove) : NO_MOVE;
+    
     for (const Move& move : moves) {
         moveCount++;
         info.totalMoves++;  // Track total moves examined
+        
+        // Stage 23, Phase CM3: Track countermove hits
+        if (move == counterMove && counterMove != NO_MOVE) {
+            info.counterMoveStats.hits++;
+        }
         
         // Track quiet moves for history update
         if (!isCapture(move) && !isPromotion(move)) {
@@ -583,6 +631,11 @@ eval::Score negamax(Board& board,
                     info.betaCutoffs++;  // Track beta cutoffs
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
+                    }
+                    
+                    // Stage 23, Phase CM3: Track countermove cutoffs
+                    if (move == counterMove && counterMove != NO_MOVE) {
+                        info.counterMoveStats.cutoffs++;
                     }
                     
                     // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
@@ -876,11 +929,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                           << info.pvsStats.reSearchRate() << "%" << std::endl;
             }
             
-            // Stage 23, Phase CM2: Output countermove statistics (shadow mode)
-            // Always output in debug/shadow mode to verify updates are working
+            // Stage 23, Phase CM3: Output countermove statistics
             if (info.counterMoveStats.updates > 0) {
-                std::cout << "info string Countermoves shadow mode - updates: " 
-                          << info.counterMoveStats.updates << std::endl;
+                std::cout << "info string Countermoves - updates: " 
+                          << info.counterMoveStats.updates
+                          << ", hits: " << info.counterMoveStats.hits
+                          << ", hit rate: " << std::fixed << std::setprecision(1) 
+                          << info.counterMoveStats.hitRate() << "%" << std::endl;
             }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management

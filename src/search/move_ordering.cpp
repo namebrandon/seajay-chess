@@ -222,6 +222,64 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
 }
 
+// Order moves with killers, history, and countermoves (Stage 23, Phase CM3)
+void MvvLvaOrdering::orderMovesWithCountermoves(const Board& board, MoveList& moves,
+                                               const KillerMoves& killers,
+                                               const HistoryHeuristic& history,
+                                               const CounterMoves& counterMoves,
+                                               Move prevMove,
+                                               int countermoveBonus,
+                                               int ply) const {
+    // Nothing to order if empty or single move
+    if (moves.size() <= 1) {
+        return;
+    }
+    
+    // Get the countermove for the previous move
+    Move counterMove = (prevMove != NO_MOVE) ? counterMoves.getCounterMove(prevMove) : NO_MOVE;
+    
+    // Score all moves and create move-score pairs
+    std::vector<MoveScore> scored_moves;
+    scored_moves.reserve(moves.size());
+    
+    Color side = board.sideToMove();
+    
+    for (size_t i = 0; i < moves.size(); ++i) {
+        Move move = moves[i];
+        int score = 0;
+        
+        // Base MVV-LVA scoring for captures and promotions
+        if (isCapture(move) || isPromotion(move)) {
+            score = scoreMove(board, move);
+        } else {
+            // Quiet moves: apply killer, countermove, and history bonuses
+            
+            // Stage 19: Killer move bonus (16K)
+            if (killers.isKiller(ply, move)) {
+                score = 16000;
+            }
+            // Stage 23: Countermove bonus (Phase CM3: minimal 1000)
+            else if (move == counterMove) {
+                score = countermoveBonus;  // UCI configurable
+            }
+            // Stage 20: History heuristic (0-8192)
+            else {
+                score = history.getScore(side, moveFrom(move), moveTo(move));
+            }
+        }
+        
+        scored_moves.push_back({move, score});
+    }
+    
+    // Sort by score (highest first)
+    std::stable_sort(scored_moves.begin(), scored_moves.end());
+    
+    // Copy sorted moves back to MoveList
+    for (size_t i = 0; i < scored_moves.size(); ++i) {
+        moves[i] = scored_moves[i].move;
+    }
+}
+
 // Template implementation for integrating with existing code
 // OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>

@@ -88,6 +88,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     
+    // Stage 23: Countermove heuristic options
+    std::cout << "option name CountermoveBonus type spin default 1000 min 0 max 20000" << std::endl;  // Phase CM3: minimal bonus
+    
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
     std::cout << "option name NullMoveStaticMargin type spin default 120 min 50 max 300" << std::endl;  // Phase A4
@@ -416,6 +419,9 @@ void UCIEngine::search(const SearchParams& params) {
     // Stage 21: Pass null move pruning options
     limits.useNullMove = m_useNullMove;
     limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
+    
+    // Stage 23: Pass countermove bonus
+    limits.countermoveBonus = m_countermoveBonus;
     
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
@@ -777,6 +783,18 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid LMRDepthFactor value: " << value << std::endl;
+        }
+    }
+    // Stage 23: Handle CountermoveBonus option
+    else if (optionName == "CountermoveBonus") {
+        try {
+            int bonus = std::stoi(value);
+            if (bonus >= 0 && bonus <= 20000) {
+                m_countermoveBonus = bonus;
+                std::cerr << "info string Countermove bonus set to: " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid CountermoveBonus value: " << value << std::endl;
         }
     }
     // Stage 21: Handle UseNullMove option
