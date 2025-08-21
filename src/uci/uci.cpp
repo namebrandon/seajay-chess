@@ -103,7 +103,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowPVSStats type check default false" << std::endl;
     
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
-    std::cout << "option name CountermoveBonus type spin default 0 min 0 max 20000" << std::endl;
+    std::cout << "option name CountermoveBonus type spin default 8000 min 0 max 20000" << std::endl;
     
     std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
     std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;

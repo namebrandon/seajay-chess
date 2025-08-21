@@ -69,7 +69,7 @@ private:
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
-    int m_countermoveBonus = 0;         // Bonus score for countermoves (0 = disabled)
+    int m_countermoveBonus = 8000;      // Optimal bonus score for countermoves (CM3.5 testing)
     
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
