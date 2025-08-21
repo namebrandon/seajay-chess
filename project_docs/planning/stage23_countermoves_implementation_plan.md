@@ -256,9 +256,41 @@ Move m_counters[6][64];  // [piece_type][to_square]
 |-------|--------|-------------|-------------|------------|------|
 | CM1   | Complete | 442a09a | 19191913 | +2.61 ± 10.16 | 2025-08-21 |
 | CM2   | Complete | 40490c6 | 19191913 | -0.74 ± 13.16 | 2025-08-21 |
-| CM3   | Testing | fd5a7dc | 19191913 | Pending | 2025-08-21 |
-| CM4   | - | - | - | - | - |
-| CM5   | - | - | - | - | - |
+| CM3   | FAILED | fd5a7dc | 19191913 | -72.69 ± 21.52 (bonus=1000) | 2025-08-21 |
+| CM3.5 | FAILED | d05fca9 | 19191913 | -78.68 ± 22.99 (bonus=12000) | 2025-08-21 |
+| CM4   | Blocked | - | - | - | - |
+| CM5   | Blocked | - | - | - | - |
+
+## Critical Issues Found
+
+### Test Results Summary
+1. **Phase CM3 (original implementation)**:
+   - CountermoveBonus=1000: **-72.69 ± 21.52 ELO** (massive regression)
+   - CountermoveBonus=0: **+5.92 ± 17.06 ELO** (normal performance)
+
+2. **Phase CM3.5 (after "fixes")**:
+   - CountermoveBonus=12000: **-78.68 ± 22.99 ELO** (WORSE regression!)
+   - CountermoveBonus=0: **-2.52 ± 16.05 ELO** (now also slightly negative)
+
+### Bug Fix Attempts That Failed
+
+#### Attempt 1: Changed indexing from [from][to] to [piece_type][to_square]
+- **Rationale**: Prevent collisions between different pieces
+- **Result**: Made regression WORSE (-72 → -78 ELO)
+- **Conclusion**: This "fix" was incorrect or introduced new problems
+
+#### Attempt 2: Changed bonus from 1000 to 12000
+- **Rationale**: Position between killers (16000) and history (8192)
+- **Result**: No improvement, still massive regression
+- **Conclusion**: The bonus value isn't the core problem
+
+### Current Understanding
+
+The countermove implementation is fundamentally broken. Key observations:
+1. **Infrastructure works**: Phase CM1/CM2 with no ordering impact showed no regression
+2. **Any ordering bonus causes regression**: Both 1000 and 12000 fail badly
+3. **The "fixes" made it worse**: Suggesting the original indexing might have been correct
+4. **Even bonus=0 now shows slight regression**: The new code path may have overhead
 
 ## Notes
 - Each phase requires OpenBench test completion before proceeding
