@@ -314,7 +314,7 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Stage 21 Phase A3: Null Move Pruning with Adaptive Reduction and Verification
+    // Stage 21 Phase A3.1: Null Move Pruning with Simple Adaptive Reduction and Verification
     // Constants for null move pruning
     constexpr eval::Score ROOK_VALUE = eval::Score(500);
     
@@ -337,22 +337,9 @@ eval::Score negamax(Board& board,
     if (canDoNull && limits.useNullMove) {
         info.nullMoveStats.attempts++;
         
-        // Phase A3: Adaptive reduction based on depth
-        int nullMoveReduction = 2;  // Base reduction
-        if (depth >= 8) nullMoveReduction++;
-        if (depth >= 15) nullMoveReduction++;
-        
-        // Optional: More aggressive when static eval is well above beta
-        // (we'll need to get static eval first)
-        eval::Score staticEval = eval::Score::zero();
-        if (!weAreInCheck) {
-            staticEval = board.evaluate();
-            searchInfo.setStaticEval(ply, staticEval);
-            
-            if (staticEval.value() - beta.value() >= 200) {
-                nullMoveReduction++;
-            }
-        }
+        // Phase A3.1: Simple depth-based adaptive reduction (no expensive eval call)
+        // R=2 for depth<6, R=3 for depth 6-11, R=4 for depth 12+
+        int nullMoveReduction = 2 + (depth >= 6) + (depth >= 12);
         
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
