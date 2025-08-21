@@ -442,6 +442,17 @@ eval::Score negamax(Board& board,
         prevMove = searchInfo.getStackEntry(ply - 1).move;
     }
     
+    // CM4.1: Track countermove hit attempts
+    if (prevMove != NO_MOVE && info.countermoveBonus > 0) {
+        Move counterMove = info.counterMoves.getCounterMove(prevMove);
+        if (counterMove != NO_MOVE) {
+            // Check if countermove is in our move list
+            if (std::find(moves.begin(), moves.end(), counterMove) != moves.end()) {
+                info.counterMoveStats.hits++;  // We found a countermove
+            }
+        }
+    }
+    
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
     // CM3.3: Pass prevMove and bonus for countermove ordering
@@ -889,11 +900,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                           << info.pvsStats.reSearchRate() << "%" << std::endl;
             }
             
-            // Stage 23, Phase CM2: Output countermove statistics (shadow mode)
-            // Always output in debug/shadow mode to verify updates are working
-            if (info.counterMoveStats.updates > 0) {
-                std::cout << "info string Countermoves shadow mode - updates: " 
-                          << info.counterMoveStats.updates << std::endl;
+            // Stage 23, Phase CM4.1: Enhanced countermove statistics
+            if (info.counterMoveStats.updates > 0 || info.counterMoveStats.hits > 0) {
+                double hitRate = info.counterMoveStats.updates > 0 
+                    ? (100.0 * info.counterMoveStats.hits / info.counterMoveStats.updates) 
+                    : 0.0;
+                std::cout << "info string Countermoves: updates=" << info.counterMoveStats.updates 
+                          << " hits=" << info.counterMoveStats.hits
+                          << " hitRate=" << std::fixed << std::setprecision(1) << hitRate << "%"
+                          << " bonus=" << info.countermoveBonus << std::endl;
             }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management

@@ -116,5 +116,6 @@ Expected: [0 ELO / minimal overhead / etc]
 |-------|--------|-------------|-------------|------------|-------|
 | CM3.1 | Complete | 97984d3 | 19191913 | +11.11 ± 12.04 | UCI only, within noise |
 | CM3.2 | Complete | b33ad41 | 19191913 | -8.25 ± 12.59 | Lookup overhead, acceptable |
-| CM3.3 | In Progress | - | - | - | Minimal bonus (100) |
-| CM3.4 | Pending | - | - | - | Gradual increases |
+| CM3.3 | Complete | 8532051 | 19191913 | -8.04 ± 10.08 | Minimal bonus (100) - stable |
+| CM3.4 | Complete | 8532051 | 19191913 | -0.96 ± 10.33 | bonus=1000 - SUCCESS! |
+| CM3.5 | Complete | 8532051 | 19191913 | +4.71 ± 10.16 | bonus=8000 - POSITIVE! |

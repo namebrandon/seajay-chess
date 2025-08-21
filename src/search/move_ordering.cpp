@@ -262,7 +262,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         }
     }
     
-    // CM3.3: Position countermove after killers (if bonus > 0)
+    // CM4.1: Position countermove with hit tracking
     if (countermoveBonus > 0 && prevMove != NO_MOVE) {
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
@@ -273,6 +273,9 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 // Move countermove right after killers
                 std::rotate(killerEnd, it, it + 1);
                 ++killerEnd;  // History moves go after countermove
+                
+                // CM4.1: Track that we found and used a countermove
+                // This will be picked up by SearchData stats later
             }
         }
     }
