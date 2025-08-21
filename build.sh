@@ -46,6 +46,12 @@ fi
 # CRITICAL: Always use Make for OpenBench compatibility
 # Never use ninja even if available
 echo "Using Make build system (OpenBench compatible)..."
+
+# Clear potentially problematic environment variables that could cause
+# illegal instruction errors on some systems
+unset CXXFLAGS
+unset CFLAGS
+
 cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 make -j seajay
 

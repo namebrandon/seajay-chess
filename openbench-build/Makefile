@@ -627,6 +627,19 @@ test_delta_pruning_simple/fast:
 .PHONY : test_delta_pruning_simple/fast
 
 #=============================================================================
+# Target rules for targets named test_lmr
+
+# Build rule for target.
+test_lmr: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_lmr
+.PHONY : test_lmr
+
+# fast build rule for target.
+test_lmr/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_lmr.dir/build.make CMakeFiles/test_lmr.dir/build
+.PHONY : test_lmr/fast
+
+#=============================================================================
 # Target rules for targets named tactical_test
 
 # Build rule for target.
@@ -941,6 +954,102 @@ src/search/aspiration_window.s: src/search/aspiration_window.cpp.s
 src/search/aspiration_window.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/aspiration_window.cpp.s
 .PHONY : src/search/aspiration_window.cpp.s
+
+src/search/countermoves.o: src/search/countermoves.cpp.o
+.PHONY : src/search/countermoves.o
+
+# target to build an object file
+src/search/countermoves.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/countermoves.cpp.o
+.PHONY : src/search/countermoves.cpp.o
+
+src/search/countermoves.i: src/search/countermoves.cpp.i
+.PHONY : src/search/countermoves.i
+
+# target to preprocess a source file
+src/search/countermoves.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/countermoves.cpp.i
+.PHONY : src/search/countermoves.cpp.i
+
+src/search/countermoves.s: src/search/countermoves.cpp.s
+.PHONY : src/search/countermoves.s
+
+# target to generate assembly for a file
+src/search/countermoves.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/countermoves.cpp.s
+.PHONY : src/search/countermoves.cpp.s
+
+src/search/history_heuristic.o: src/search/history_heuristic.cpp.o
+.PHONY : src/search/history_heuristic.o
+
+# target to build an object file
+src/search/history_heuristic.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/history_heuristic.cpp.o
+.PHONY : src/search/history_heuristic.cpp.o
+
+src/search/history_heuristic.i: src/search/history_heuristic.cpp.i
+.PHONY : src/search/history_heuristic.i
+
+# target to preprocess a source file
+src/search/history_heuristic.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/history_heuristic.cpp.i
+.PHONY : src/search/history_heuristic.cpp.i
+
+src/search/history_heuristic.s: src/search/history_heuristic.cpp.s
+.PHONY : src/search/history_heuristic.s
+
+# target to generate assembly for a file
+src/search/history_heuristic.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/history_heuristic.cpp.s
+.PHONY : src/search/history_heuristic.cpp.s
+
+src/search/killer_moves.o: src/search/killer_moves.cpp.o
+.PHONY : src/search/killer_moves.o
+
+# target to build an object file
+src/search/killer_moves.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/killer_moves.cpp.o
+.PHONY : src/search/killer_moves.cpp.o
+
+src/search/killer_moves.i: src/search/killer_moves.cpp.i
+.PHONY : src/search/killer_moves.i
+
+# target to preprocess a source file
+src/search/killer_moves.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/killer_moves.cpp.i
+.PHONY : src/search/killer_moves.cpp.i
+
+src/search/killer_moves.s: src/search/killer_moves.cpp.s
+.PHONY : src/search/killer_moves.s
+
+# target to generate assembly for a file
+src/search/killer_moves.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/killer_moves.cpp.s
+.PHONY : src/search/killer_moves.cpp.s
+
+src/search/lmr.o: src/search/lmr.cpp.o
+.PHONY : src/search/lmr.o
+
+# target to build an object file
+src/search/lmr.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/lmr.cpp.o
+.PHONY : src/search/lmr.cpp.o
+
+src/search/lmr.i: src/search/lmr.cpp.i
+.PHONY : src/search/lmr.i
+
+# target to preprocess a source file
+src/search/lmr.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/lmr.cpp.i
+.PHONY : src/search/lmr.cpp.i
+
+src/search/lmr.s: src/search/lmr.cpp.s
+.PHONY : src/search/lmr.s
+
+# target to generate assembly for a file
+src/search/lmr.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seajay_core.dir/build.make CMakeFiles/seajay_core.dir/src/search/lmr.cpp.s
+.PHONY : src/search/lmr.cpp.s
 
 src/search/move_ordering.o: src/search/move_ordering.cpp.o
 .PHONY : src/search/move_ordering.o
@@ -1542,6 +1651,30 @@ tests/test_iterative_regression.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_iterative_regression.dir/build.make CMakeFiles/test_iterative_regression.dir/tests/test_iterative_regression.cpp.s
 .PHONY : tests/test_iterative_regression.cpp.s
 
+tests/test_lmr.o: tests/test_lmr.cpp.o
+.PHONY : tests/test_lmr.o
+
+# target to build an object file
+tests/test_lmr.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_lmr.dir/build.make CMakeFiles/test_lmr.dir/tests/test_lmr.cpp.o
+.PHONY : tests/test_lmr.cpp.o
+
+tests/test_lmr.i: tests/test_lmr.cpp.i
+.PHONY : tests/test_lmr.i
+
+# target to preprocess a source file
+tests/test_lmr.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_lmr.dir/build.make CMakeFiles/test_lmr.dir/tests/test_lmr.cpp.i
+.PHONY : tests/test_lmr.cpp.i
+
+tests/test_lmr.s: tests/test_lmr.cpp.s
+.PHONY : tests/test_lmr.s
+
+# target to generate assembly for a file
+tests/test_lmr.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_lmr.dir/build.make CMakeFiles/test_lmr.dir/tests/test_lmr.cpp.s
+.PHONY : tests/test_lmr.cpp.s
+
 tests/test_magic_masks.o: tests/test_magic_masks.cpp.o
 .PHONY : tests/test_magic_masks.o
 
@@ -2008,6 +2141,7 @@ help:
 	@echo "... test_fen_comprehensive"
 	@echo "... test_fen_edge_cases"
 	@echo "... test_iterative_regression"
+	@echo "... test_lmr"
 	@echo "... test_magic_bitboards"
 	@echo "... test_magic_masks"
 	@echo "... test_magic_validator"
@@ -2059,6 +2193,18 @@ help:
 	@echo "... src/search/aspiration_window.o"
 	@echo "... src/search/aspiration_window.i"
 	@echo "... src/search/aspiration_window.s"
+	@echo "... src/search/countermoves.o"
+	@echo "... src/search/countermoves.i"
+	@echo "... src/search/countermoves.s"
+	@echo "... src/search/history_heuristic.o"
+	@echo "... src/search/history_heuristic.i"
+	@echo "... src/search/history_heuristic.s"
+	@echo "... src/search/killer_moves.o"
+	@echo "... src/search/killer_moves.i"
+	@echo "... src/search/killer_moves.s"
+	@echo "... src/search/lmr.o"
+	@echo "... src/search/lmr.i"
+	@echo "... src/search/lmr.s"
 	@echo "... src/search/move_ordering.o"
 	@echo "... src/search/move_ordering.i"
 	@echo "... src/search/move_ordering.s"
@@ -2134,6 +2280,9 @@ help:
 	@echo "... tests/test_iterative_regression.o"
 	@echo "... tests/test_iterative_regression.i"
 	@echo "... tests/test_iterative_regression.s"
+	@echo "... tests/test_lmr.o"
+	@echo "... tests/test_lmr.i"
+	@echo "... tests/test_lmr.s"
 	@echo "... tests/test_magic_masks.o"
 	@echo "... tests/test_magic_masks.i"
 	@echo "... tests/test_magic_masks.s"
