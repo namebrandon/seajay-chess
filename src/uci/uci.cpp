@@ -96,6 +96,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
     
+    // Multi-threading option (stub for OpenBench compatibility)
+    std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
+    
     // Stage 13 Remediation: Aspiration window and time management options
     std::cout << "option name AspirationWindow type spin default 16 min 5 max 50" << std::endl;
     
@@ -673,6 +676,26 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_tt.setEnabled(false);
             std::cerr << "info string Transposition table disabled" << std::endl;
+        }
+    }
+    // Handle Threads option (multi-threading stub for OpenBench compatibility)
+    else if (optionName == "Threads") {
+        try {
+            int threads = std::stoi(value);
+            if (threads >= 1 && threads <= 1024) {
+                m_threads = threads;
+                if (threads == 1) {
+                    std::cerr << "info string Threads set to 1" << std::endl;
+                } else {
+                    std::cerr << "info string Threads set to " << threads 
+                              << " (multi-threading not yet implemented, using 1 thread)" << std::endl;
+                }
+            } else {
+                std::cerr << "info string Invalid Threads value: " << value 
+                          << " (must be between 1 and 1024)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid Threads value: " << value << std::endl;
         }
     }
     // Stage 15 Day 5: Handle SEEMode option

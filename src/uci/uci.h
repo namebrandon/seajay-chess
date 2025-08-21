@@ -71,6 +71,9 @@ private:
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
     int m_countermoveBonus = 8000;      // Optimal bonus score for countermoves (CM3.5 testing)
     
+    // Multi-threading support (stub for OpenBench compatibility)
+    int m_threads = 1;                  // Number of threads requested (currently always uses 1)
+    
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
     int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window
