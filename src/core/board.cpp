@@ -1791,6 +1791,77 @@ void Board::recalculatePSTScore() {
     }
 }
 
+// Null move implementation for null move pruning
+void Board::makeNullMove(UndoInfo& undo) {
+    // Save state for undo
+    undo.castlingRights = m_castlingRights;
+    undo.enPassantSquare = m_enPassantSquare;
+    undo.halfmoveClock = m_halfmoveClock;
+    undo.fullmoveNumber = m_fullmoveNumber;
+    undo.zobristKey = m_zobristKey;
+    undo.pstScore = m_pstScore;
+    undo.capturedPiece = NO_PIECE;  // No capture in null move
+    
+    // Clear en passant if it exists
+    if (m_enPassantSquare != NO_SQUARE) {
+        m_zobristKey ^= s_zobristEnPassant[fileOf(m_enPassantSquare)];
+        m_enPassantSquare = NO_SQUARE;
+    }
+    
+    // Switch side to move
+    m_sideToMove = (m_sideToMove == WHITE) ? BLACK : WHITE;
+    m_zobristKey ^= s_zobristSideToMove;
+    
+    // Increment fifty-move counter (no piece moved, no capture)
+    m_halfmoveClock++;
+    
+    // Update zobrist for fifty-move counter
+    if (undo.halfmoveClock < 100) {
+        m_zobristKey ^= s_zobristFiftyMove[undo.halfmoveClock];
+    }
+    if (m_halfmoveClock < 100) {
+        m_zobristKey ^= s_zobristFiftyMove[m_halfmoveClock];
+    }
+    
+    // Increment fullmove number if it was Black's turn
+    if (m_sideToMove == WHITE) {  // Was BLACK before switch
+        m_fullmoveNumber++;
+    }
+    
+    // Invalidate eval cache
+    m_evalCacheValid = false;
+}
+
+void Board::unmakeNullMove(const UndoInfo& undo) {
+    // Restore side to move
+    m_sideToMove = (m_sideToMove == WHITE) ? BLACK : WHITE;
+    
+    // Restore state
+    m_castlingRights = undo.castlingRights;
+    m_enPassantSquare = undo.enPassantSquare;
+    m_halfmoveClock = undo.halfmoveClock;
+    m_fullmoveNumber = undo.fullmoveNumber;
+    m_zobristKey = undo.zobristKey;
+    m_pstScore = undo.pstScore;
+    
+    // Invalidate eval cache
+    m_evalCacheValid = false;
+}
+
+// Calculate non-pawn material for zugzwang detection
+eval::Score Board::nonPawnMaterial(Color c) const {
+    eval::Score value = eval::Score::zero();
+    
+    // Count material for the given color (excluding pawns)
+    // Using standard piece values from evaluation constants
+    value += std::popcount(pieces(c, KNIGHT)) * eval::Score(320);  // Knight value
+    value += std::popcount(pieces(c, BISHOP)) * eval::Score(330);  // Bishop value
+    value += std::popcount(pieces(c, ROOK)) * eval::Score(500);    // Rook value
+    value += std::popcount(pieces(c, QUEEN)) * eval::Score(900);   // Queen value
+    
+    return value;
+}
+
 // Direct FEN parsing helpers (atomic approach)
 FenResult Board::parseBoardPositionDirect(std::string_view boardStr, std::array<Piece, 64>& mailbox) {
     // Clear the mailbox first

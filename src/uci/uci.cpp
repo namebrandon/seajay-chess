@@ -88,6 +88,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
     
+    // Stage 21: Null Move Pruning options
+    std::cout << "option name UseNullMove type check default false" << std::endl;  // Disabled for Phase A1
+    
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
@@ -405,6 +408,9 @@ void UCIEngine::search(const SearchParams& params) {
     limits.lmrMinMoveNumber = m_lmrMinMoveNumber;
     limits.lmrBaseReduction = m_lmrBaseReduction;
     limits.lmrDepthFactor = m_lmrDepthFactor;
+    
+    // Stage 21: Pass null move pruning option
+    limits.useNullMove = m_useNullMove;
     
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
@@ -763,6 +769,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid LMRDepthFactor value: " << value << std::endl;
+        }
+    }
+    // Stage 21: Handle UseNullMove option
+    else if (optionName == "UseNullMove") {
+        // Make boolean parsing case-insensitive and accept common variations
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_useNullMove = true;
+            std::cerr << "info string Null move pruning enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_useNullMove = false;
+            std::cerr << "info string Null move pruning disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
     // Stage 13 Remediation: Handle aspiration window options

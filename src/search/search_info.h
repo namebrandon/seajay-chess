@@ -14,6 +14,9 @@ struct SearchStack {
     Hash zobristKey = 0;
     Move move = NO_MOVE;
     int ply = 0;
+    bool wasNullMove = false;  // Track if this was a null move
+    int staticEval = 0;        // Static evaluation at this node
+    int moveCount = 0;         // Number of moves searched at this node
 };
 
 // Search-specific information tracking
@@ -70,6 +73,21 @@ public:
     
     // Get root game history size
     size_t getRootGameHistorySize() const { return m_rootGameHistorySize; }
+    
+    // Check if move at given ply was a null move
+    bool wasNullMove(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].wasNullMove;
+        }
+        return false;
+    }
+    
+    // Set null move flag at given ply
+    void setNullMove(int ply, bool wasNull) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].wasNullMove = wasNull;
+        }
+    }
     
     // Additional helper methods for performance optimization
     Hash getCurrentZobrist(int ply) const {

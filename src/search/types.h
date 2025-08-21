@@ -67,6 +67,9 @@ struct SearchLimits {
     int lmrBaseReduction = 1;         // Base reduction amount
     int lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
     
+    // Stage 21: Null Move Pruning parameters
+    bool useNullMove = false;         // Enable/disable null move pruning (disabled for Phase A1)
+    
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
     
@@ -172,6 +175,27 @@ struct SearchData {
         }
     } lmrStats;
     
+    // Stage 21: Null Move Pruning statistics
+    struct NullMoveStats {
+        uint64_t attempts = 0;            // Total null move attempts
+        uint64_t cutoffs = 0;             // Successful null move cutoffs
+        uint64_t zugzwangAvoids = 0;      // Times avoided due to zugzwang detection
+        uint64_t verificationFails = 0;   // Verification search failures (for Phase A3)
+        uint64_t staticCutoffs = 0;       // Static null move cutoffs (for Phase A4)
+        
+        void reset() {
+            attempts = 0;
+            cutoffs = 0;
+            zugzwangAvoids = 0;
+            verificationFails = 0;
+            staticCutoffs = 0;
+        }
+        
+        double cutoffRate() const {
+            return attempts > 0 ? (100.0 * cutoffs / attempts) : 0.0;
+        }
+    } nullMoveStats;
+    
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     
@@ -252,6 +276,7 @@ struct SearchData {
         qsearchTTHits = 0;
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
+        nullMoveStats.reset();  // Stage 21: Reset null move statistics
         killers.clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations

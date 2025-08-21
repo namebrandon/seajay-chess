@@ -192,6 +192,13 @@ public:
     void makeMove(Move move, CompleteUndoInfo& undo);
     void unmakeMove(Move move, const CompleteUndoInfo& undo);
     
+    // Null move methods for null move pruning
+    void makeNullMove(UndoInfo& undo);
+    void unmakeNullMove(const UndoInfo& undo);
+    
+    // Calculate non-pawn material for zugzwang detection
+    eval::Score nonPawnMaterial(Color c) const;
+    
     // Internal implementation (called by safe wrappers)
     void makeMoveInternal(Move move, UndoInfo& undo);
     void unmakeMoveInternal(Move move, const UndoInfo& undo);
