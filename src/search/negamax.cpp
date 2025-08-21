@@ -314,24 +314,17 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Stage 21 Phase A3.2a: Null Move Pruning with Simple Adaptive Reduction (No Verification)
+    // Stage 21 Phase A3.3: Null Move Pruning with Simple Adaptive Reduction and Original Zugzwang
     // Constants for null move pruning
-    constexpr eval::Score ROOK_VALUE = eval::Score(500);
+    constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value (original)
     
-    // Phase A3: Improved zugzwang detection
-    // We're in potential zugzwang if:
-    // 1. Non-pawn material is very low (less than or equal to a rook)
-    // 2. OR we have no minor pieces (knights/bishops) at all
-    Color us = board.sideToMove();
-    bool inZugzwang = board.nonPawnMaterial(us) <= ROOK_VALUE
-                     || (board.pieceCount(us, KNIGHT) + board.pieceCount(us, BISHOP) == 0);
-    
+    // Phase A3.3: Back to original Phase A2 zugzwang detection (simpler and more permissive)
     // Check if we can do null move
     bool canDoNull = !weAreInCheck                              // Not in check
                     && depth >= 3                                // Minimum depth
                     && ply > 0                                   // Not at root
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
-                    && !inZugzwang                               // Improved zugzwang detection
+                    && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD  // Original detection
                     && std::abs(beta.value()) < MATE_BOUND - MAX_PLY;  // Not near mate
     
     if (canDoNull && limits.useNullMove) {
@@ -379,7 +372,7 @@ eval::Score negamax(Board& board,
                 return beta;
             }
         }
-    } else if (!canDoNull && ply > 0 && inZugzwang) {
+    } else if (!canDoNull && ply > 0 && board.nonPawnMaterial(board.sideToMove()) <= ZUGZWANG_THRESHOLD) {
         // Track when we avoid null move due to zugzwang
         info.nullMoveStats.zugzwangAvoids++;
     }
