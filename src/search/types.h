@@ -78,6 +78,9 @@ struct SearchLimits {
     // Stage 22 Phase P3.5: PVS statistics output control
     bool showPVSStats = false;  // Show PVS statistics after each depth
     
+    // Stage 23 CM3.3: Countermove heuristic bonus
+    int countermoveBonus = 0;  // Bonus score for countermoves (0 = disabled)
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -243,6 +246,7 @@ struct SearchData {
     
     // Stage 23: Countermove heuristic for move ordering
     CounterMoves counterMoves;
+    int countermoveBonus = 0;  // CM3.3: Bonus value from UCI
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;

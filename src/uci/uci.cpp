@@ -440,6 +440,9 @@ void UCIEngine::search(const SearchParams& params) {
     // Stage 22 Phase P3.5: Pass PVS statistics output flag
     limits.showPVSStats = m_showPVSStats;
     
+    // Stage 23 CM3.3: Pass countermove bonus to search
+    limits.countermoveBonus = m_countermoveBonus;
+    
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
     

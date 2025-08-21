@@ -444,8 +444,8 @@ eval::Score negamax(Board& board,
     
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
-    // CM3.2: Pass prevMove for countermove lookup (bonus=0 for this phase)
-    orderMoves(board, moves, ttMove, &info, ply, prevMove, 0);
+    // CM3.3: Pass prevMove and bonus for countermove ordering
+    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
@@ -706,6 +706,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     // Stage 23, Phase CM2: Reset countermove statistics at search start
     info.counterMoveStats.reset();
+    
+    // Stage 23, Phase CM3.3: Initialize countermove bonus from limits
+    info.countermoveBonus = limits.countermoveBonus;
     info.counterMoves.clear();  // Clear countermove table for fresh search
     
     // Stage 13 Remediation: Set configurable stability threshold

@@ -115,6 +115,6 @@ Expected: [0 ELO / minimal overhead / etc]
 | Phase | Status | Commit Hash | Bench Count | ELO Result | Notes |
 |-------|--------|-------------|-------------|------------|-------|
 | CM3.1 | Complete | 97984d3 | 19191913 | +11.11 ± 12.04 | UCI only, within noise |
-| CM3.2 | In Progress | - | - | - | Lookup without bonus |
-| CM3.3 | Pending | - | - | - | Minimal bonus (100) |
+| CM3.2 | Complete | b33ad41 | 19191913 | -8.25 ± 12.59 | Lookup overhead, acceptable |
+| CM3.3 | In Progress | - | - | - | Minimal bonus (100) |
 | CM3.4 | Pending | - | - | - | Gradual increases |
