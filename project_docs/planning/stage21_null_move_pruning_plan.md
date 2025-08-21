@@ -126,9 +126,9 @@ feat: Add null move infrastructure and search stack (Phase A1) - bench [NODE_COU
 ```
 
 ### Phase A1 Status
-- [ ] Implementation complete
-- [ ] Bench node count: _______
-- [ ] Committed with bench
+- [x] Implementation complete
+- [x] Bench node count: 19191913
+- [x] Committed with bench (commit f91a0f5)
 - [ ] OpenBench test submitted
 - [ ] Test results: _______
 - [ ] Human approval to proceed
@@ -503,13 +503,14 @@ Based on analysis of Stockfish, Ethereal, and other engines:
 
 ## Current Status
 
-**Phase:** PLANNING  
+**Phase:** A1 COMPLETE - AWAITING OPENBENCH TEST  
 **Branch:** feature/20250820-null-move-pruning  
-**Last Updated:** August 21, 2025
+**Last Updated:** August 21, 2025  
+**Commit:** f91a0f5 (bench 19191913)
 
 ### Progress Tracking
 
-- [ ] Phase A1: Infrastructure
+- [x] Phase A1: Infrastructure (COMPLETE - awaiting test)
 - [ ] Phase A2: Basic Implementation  
 - [ ] Phase A3: Adaptive Reduction
 - [ ] Phase A4: Tuning & Static
