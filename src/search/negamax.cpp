@@ -587,6 +587,7 @@ eval::Score negamax(Board& board,
                     
                     // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
                     // Stage 20, Phase B3: Update history for quiet moves that cause cutoffs
+                    // Stage 23, Phase CM2: Update countermoves (shadow mode - no ordering yet)
                     if (!isCapture(move) && !isPromotion(move)) {
                         info.killers.update(ply, move);
                         
@@ -598,6 +599,16 @@ eval::Score negamax(Board& board,
                         for (const Move& quietMove : quietMoves) {
                             if (quietMove != move) {  // Don't penalize the cutoff move itself
                                 info.history.updateFailed(side, moveFrom(quietMove), moveTo(quietMove), depth);
+                            }
+                        }
+                        
+                        // Stage 23, Phase CM2: Update countermove table
+                        // Shadow mode: update the table but don't use for ordering yet
+                        if (ply > 0) {
+                            Move prevMove = searchInfo.getStackEntry(ply - 1).move;
+                            if (prevMove != NO_MOVE) {
+                                info.counterMoves.update(prevMove, move);
+                                info.counterMoveStats.updates++;  // Track shadow mode updates
                             }
                         }
                     }
@@ -682,6 +693,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     // Stage 22 Phase P3.5: Reset PVS statistics at search start
     info.pvsStats.reset();
+    
+    // Stage 23, Phase CM2: Reset countermove statistics at search start
+    info.counterMoveStats.reset();
+    info.counterMoves.clear();  // Clear countermove table for fresh search
     
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
@@ -859,6 +874,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 std::cout << "info string PVS re-search rate: " 
                           << std::fixed << std::setprecision(1)
                           << info.pvsStats.reSearchRate() << "%" << std::endl;
+            }
+            
+            // Stage 23, Phase CM2: Output countermove statistics (shadow mode)
+            // Always output in debug/shadow mode to verify updates are working
+            if (info.counterMoveStats.updates > 0) {
+                std::cout << "info string Countermoves shadow mode - updates: " 
+                          << info.counterMoveStats.updates << std::endl;
             }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management

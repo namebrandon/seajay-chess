@@ -218,6 +218,23 @@ struct SearchData {
         }
     } pvsStats;
     
+    // Stage 23, Phase CM2: Countermove statistics (shadow mode)
+    struct CounterMoveStats {
+        uint64_t updates = 0;           // Total countermove updates
+        uint64_t hits = 0;               // Times countermove was found (Phase CM3+)
+        uint64_t cutoffs = 0;            // Times countermove caused cutoff (Phase CM3+)
+        
+        void reset() {
+            updates = 0;
+            hits = 0;
+            cutoffs = 0;
+        }
+        
+        double hitRate() const {
+            return updates > 0 ? (100.0 * hits / updates) : 0.0;
+        }
+    } counterMoveStats;
+    
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     
