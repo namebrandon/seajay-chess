@@ -65,6 +65,9 @@ private:
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     int m_nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
     
+    // Stage 22 Phase P3.5: PVS statistics output control
+    bool m_showPVSStats = false;        // Show PVS statistics after each depth
+    
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
     int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window

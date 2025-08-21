@@ -74,6 +74,9 @@ struct SearchLimits {
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
     
+    // Stage 22 Phase P3.5: PVS statistics output control
+    bool showPVSStats = false;  // Show PVS statistics after each depth
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -196,6 +199,23 @@ struct SearchData {
             return attempts > 0 ? (100.0 * cutoffs / attempts) : 0.0;
         }
     } nullMoveStats;
+    
+    // Stage 22 Phase P3: Principal Variation Search (PVS) statistics
+    struct PVSStats {
+        uint64_t scoutSearches = 0;     // Total scout searches
+        uint64_t reSearches = 0;         // Times we had to re-search
+        uint64_t scoutCutoffs = 0;       // Scout searches that caused cutoff
+        
+        void reset() {
+            scoutSearches = 0;
+            reSearches = 0;
+            scoutCutoffs = 0;
+        }
+        
+        double reSearchRate() const {
+            return scoutSearches > 0 ? (100.0 * reSearches / scoutSearches) : 0.0;
+        }
+    } pvsStats;
     
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;

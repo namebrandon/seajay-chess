@@ -98,6 +98,9 @@ void UCIEngine::handleUCI() {
     
     // Stage 13 Remediation: Aspiration window and time management options
     std::cout << "option name AspirationWindow type spin default 16 min 5 max 50" << std::endl;
+    
+    // Stage 22 Phase P3.5: PVS statistics output option
+    std::cout << "option name ShowPVSStats type check default false" << std::endl;
     std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
     std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
     std::cout << "option name UseAspirationWindows type check default true" << std::endl;
@@ -429,6 +432,9 @@ void UCIEngine::search(const SearchParams& params) {
     
     // Stage 15: Pass SEE pruning mode
     limits.seePruningMode = m_seePruning;
+    
+    // Stage 22 Phase P3.5: Pass PVS statistics output flag
+    limits.showPVSStats = m_showPVSStats;
     
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
@@ -802,6 +808,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (const std::exception& e) {
             std::cerr << "info string Invalid NullMoveStaticMargin value: " << value << std::endl;
+        }
+    }
+    // Stage 22 Phase P3.5: Handle ShowPVSStats option
+    else if (optionName == "ShowPVSStats") {
+        // Make boolean parsing case-insensitive and accept common variations
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_showPVSStats = true;
+            std::cerr << "info string PVS statistics output enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_showPVSStats = false;
+            std::cerr << "info string PVS statistics output disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid ShowPVSStats value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
     // Stage 13 Remediation: Handle aspiration window options

@@ -118,7 +118,8 @@ eval::Score negamax(Board& board,
                    SearchInfo& searchInfo,
                    SearchData& info,
                    const SearchLimits& limits,
-                   TranspositionTable* tt) {
+                   TranspositionTable* tt,
+                   bool isPvNode) {
     
     // Debug output at root
     if (ply == 0 && depth >= 4) {
@@ -147,6 +148,9 @@ eval::Score negamax(Board& board,
     
     // Increment node counter
     info.nodes++;
+    
+    // Phase P2: Store PV status in search stack
+    searchInfo.setPvNode(ply, isPvNode);
     
     // Update selective depth (maximum depth reached)
     if (ply > info.seldepth) {
@@ -320,7 +324,7 @@ eval::Score negamax(Board& board,
     
     // Phase A4: Static null move pruning (reverse futility) for shallow depths
     // This is a lightweight check before the more expensive null move search
-    if (depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    if (!isPvNode && depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
         // Only evaluate if we haven't already
         eval::Score staticEval = eval::Score::zero();
         
@@ -353,7 +357,8 @@ eval::Score negamax(Board& board,
     
     // Regular null move pruning
     // Check if we can do null move
-    bool canDoNull = !weAreInCheck                              // Not in check
+    bool canDoNull = !isPvNode                                  // Phase P2: No null in PV nodes!
+                    && !weAreInCheck                              // Not in check
                     && depth >= 3                                // Minimum depth
                     && ply > 0                                   // Not at root
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
@@ -385,7 +390,8 @@ eval::Score negamax(Board& board,
             searchInfo,
             info,
             limits,
-            tt
+            tt,
+            false  // Phase P2: Null move searches are never PV nodes
         );
         
         // Unmake null move
@@ -474,50 +480,63 @@ eval::Score negamax(Board& board,
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
-        // Phase 3: Late Move Reductions (LMR)
-        int reduction = 0;
+        // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
-        // Calculate LMR reduction (don't reduce at root)
-        if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
-            // Determine move properties for LMR
-            bool captureMove = isCapture(move);
-            bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
-            bool isPVNode = false;     // Phase 3: Don't special-case PV nodes yet
+        if (moveCount == 1) {
+            // First move: search with full window as PV node
+            score = -negamax(board, depth - 1, ply + 1,
+                            -beta, -alpha, searchInfo, info, limits, tt,
+                            isPvNode);  // Phase P3: First move inherits PV status
+        } else {
+            // Later moves: use PVS with LMR
             
-            // Check if we should reduce this move
-            if (shouldReduceMove(depth, moveCount, captureMove, 
-                                weAreInCheck, givesCheck, isPVNode, 
-                                info.lmrParams)) {
-                // Calculate reduction amount
-                reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+            // Phase 3: Late Move Reductions (LMR)
+            int reduction = 0;
+            
+            // Calculate LMR reduction (don't reduce at root)
+            if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
+                // Determine move properties for LMR
+                bool captureMove = isCapture(move);
+                bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
+                bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
-                // Track LMR statistics
-                info.lmrStats.totalReductions++;
+                // Check if we should reduce this move
+                if (shouldReduceMove(depth, moveCount, captureMove, 
+                                    weAreInCheck, givesCheck, pvNode, 
+                                    info.lmrParams)) {
+                    // Calculate reduction amount
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+                    
+                    // Track LMR statistics
+                    info.lmrStats.totalReductions++;
+                }
             }
-        }
-        
-        // Perform the search with or without reduction
-        if (reduction > 0) {
-            // Reduced search with null window
-            score = -negamax(board, depth - 1 - reduction, ply + 1,
-                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt);
             
-            // Re-search if reduced search suggests move might be good
-            // (score > alpha means it failed high on null window)
-            if (score > alpha && score < beta) {
+            // Scout search (possibly reduced)
+            info.pvsStats.scoutSearches++;
+            score = -negamax(board, depth - 1 - reduction, ply + 1,
+                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                            false);  // Scout searches are not PV
+            
+            // If reduced scout fails high, re-search without reduction
+            if (score > alpha && reduction > 0) {
                 info.lmrStats.reSearches++;
-                // Full-depth re-search with original window
                 score = -negamax(board, depth - 1, ply + 1,
-                                -beta, -alpha, searchInfo, info, limits, tt);
-            } else {
+                                -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                false);  // Still a scout search
+            }
+            
+            // If scout search fails high, do full PV re-search
+            if (score > alpha) {
+                info.pvsStats.reSearches++;
+                score = -negamax(board, depth - 1, ply + 1,
+                                -beta, -alpha, searchInfo, info, limits, tt,
+                                isPvNode);  // CRITICAL: Re-search as PV node!
+            } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
             }
-        } else {
-            // Normal search (no reduction)
-            score = -negamax(board, depth - 1, ply + 1,
-                            -beta, -alpha, searchInfo, info, limits, tt);
         }
         
         // Unmake the move
@@ -660,6 +679,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.lmrParams.baseReduction = limits.lmrBaseReduction;
     info.lmrParams.depthFactor = limits.lmrDepthFactor;
     info.lmrStats.reset();
+    
+    // Stage 22 Phase P3.5: Reset PVS statistics at search start
+    info.pvsStats.reset();
     
     // Stage 13 Remediation: Set configurable stability threshold
     // Phase 4: Adjust for game phase if enabled
@@ -829,6 +851,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
             previousBestMove = info.bestMove;  // Update for next iteration
             previousScore = score;  // Save score for next iteration's aspiration window
+            
+            // Stage 22 Phase P3.5: Output PVS statistics if requested
+            if (limits.showPVSStats && info.pvsStats.scoutSearches > 0) {
+                std::cout << "info string PVS scout searches: " << info.pvsStats.scoutSearches << std::endl;
+                std::cout << "info string PVS re-searches: " << info.pvsStats.reSearches << std::endl;
+                std::cout << "info string PVS re-search rate: " 
+                          << std::fixed << std::setprecision(1)
+                          << info.pvsStats.reSearchRate() << "%" << std::endl;
+            }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management
             // Recalculate time limits based on current stability
