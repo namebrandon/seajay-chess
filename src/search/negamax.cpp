@@ -528,7 +528,7 @@ eval::Score negamax(Board& board,
             }
             
             // If scout search fails high, do full PV re-search
-            if (score > alpha && score < beta) {
+            if (score > alpha) {
                 info.pvsStats.reSearches++;
                 score = -negamax(board, depth - 1, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
