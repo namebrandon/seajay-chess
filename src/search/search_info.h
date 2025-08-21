@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.h"
+#include "../evaluation/types.h"  // For eval::Score (Phase A3)
 #include <array>
 #include <cstdint>
 
@@ -86,6 +87,13 @@ public:
     void setNullMove(int ply, bool wasNull) {
         if (ply >= 0 && ply < MAX_PLY) {
             m_searchStack[ply].wasNullMove = wasNull;
+        }
+    }
+    
+    // Phase A3: Set static evaluation at given ply
+    void setStaticEval(int ply, eval::Score eval) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].staticEval = eval.value();
         }
     }
     

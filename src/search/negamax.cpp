@@ -314,31 +314,58 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Stage 21 Phase A2: Null Move Pruning (after TT probe, before expensive move generation)
+    // Stage 21 Phase A3: Null Move Pruning with Adaptive Reduction and Verification
     // Constants for null move pruning
-    constexpr int NULL_MOVE_REDUCTION = 2;
-    constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value
+    constexpr eval::Score ROOK_VALUE = eval::Score(500);
+    
+    // Phase A3: Improved zugzwang detection
+    // We're in potential zugzwang if:
+    // 1. Non-pawn material is very low (less than or equal to a rook)
+    // 2. OR we have no minor pieces (knights/bishops) at all
+    Color us = board.sideToMove();
+    bool inZugzwang = board.nonPawnMaterial(us) <= ROOK_VALUE
+                     || (board.pieceCount(us, KNIGHT) + board.pieceCount(us, BISHOP) == 0);
     
     // Check if we can do null move
     bool canDoNull = !weAreInCheck                              // Not in check
                     && depth >= 3                                // Minimum depth
                     && ply > 0                                   // Not at root
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
-                    && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD  // Zugzwang detection
+                    && !inZugzwang                               // Improved zugzwang detection
                     && std::abs(beta.value()) < MATE_BOUND - MAX_PLY;  // Not near mate
     
     if (canDoNull && limits.useNullMove) {
         info.nullMoveStats.attempts++;
+        
+        // Phase A3: Adaptive reduction based on depth
+        int nullMoveReduction = 2;  // Base reduction
+        if (depth >= 8) nullMoveReduction++;
+        if (depth >= 15) nullMoveReduction++;
+        
+        // Optional: More aggressive when static eval is well above beta
+        // (we'll need to get static eval first)
+        eval::Score staticEval = eval::Score::zero();
+        if (!weAreInCheck) {
+            staticEval = board.evaluate();
+            searchInfo.setStaticEval(ply, staticEval);
+            
+            if (staticEval.value() - beta.value() >= 200) {
+                nullMoveReduction++;
+            }
+        }
+        
+        // Ensure we don't reduce too much
+        nullMoveReduction = std::min(nullMoveReduction, depth - 1);
         
         // Make null move
         Board::UndoInfo nullUndo;
         board.makeNullMove(nullUndo);
         searchInfo.setNullMove(ply, true);
         
-        // Search with reduction (null window around beta)
+        // Search with adaptive reduction (null window around beta)
         eval::Score nullScore = -negamax(
             board,
-            depth - 1 - NULL_MOVE_REDUCTION,
+            depth - 1 - nullMoveReduction,
             ply + 1,
             -beta,
             -beta + eval::Score(1),
@@ -356,13 +383,36 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Don't return mate scores from null search
-            if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+            // Phase A3: Verification search for deep searches to avoid zugzwang
+            if (depth >= 12 && std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                // Do a reduced depth verification search
+                eval::Score verifyScore = negamax(
+                    board,
+                    depth - nullMoveReduction - 1,
+                    ply,
+                    beta - eval::Score(1),
+                    beta,
+                    searchInfo,
+                    info,
+                    limits,
+                    tt
+                );
+                
+                if (verifyScore >= beta) {
+                    // Verification passed, return the null move score
+                    return nullScore;
+                }
+                // Verification failed, continue with normal search
+                info.nullMoveStats.verificationFails++;
+            } else if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                // Not deep enough for verification or not a mate score
                 return nullScore;
+            } else {
+                // Mate score, return beta instead
+                return beta;
             }
-            return beta;
         }
-    } else if (!canDoNull && ply > 0 && board.nonPawnMaterial(board.sideToMove()) <= ZUGZWANG_THRESHOLD) {
+    } else if (!canDoNull && ply > 0 && inZugzwang) {
         // Track when we avoid null move due to zugzwang
         info.nullMoveStats.zugzwangAvoids++;
     }

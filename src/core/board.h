@@ -9,6 +9,7 @@
 #include <string_view>
 #include <array>
 #include <vector>
+#include <bit>  // For std::popcount (Phase A3)
 
 namespace seajay {
 
@@ -43,6 +44,11 @@ public:
     Bitboard pieces(PieceType pt) const noexcept { return m_pieceTypeBB[pt]; }
     Bitboard pieces(Color c, PieceType pt) const noexcept { return m_pieceBB[makePiece(c, pt)]; }
     Bitboard pieces(Piece p) const noexcept { return m_pieceBB[p]; }
+    
+    // Phase A3: Add pieceCount method for improved zugzwang detection
+    int pieceCount(Color c, PieceType pt) const noexcept { 
+        return std::popcount(pieces(c, pt)); 
+    }
     
     Bitboard occupied() const noexcept { return m_occupied; }
     Bitboard empty() const noexcept { return ~m_occupied; }
