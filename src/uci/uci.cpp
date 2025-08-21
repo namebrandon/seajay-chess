@@ -101,6 +101,10 @@ void UCIEngine::handleUCI() {
     
     // Stage 22 Phase P3.5: PVS statistics output option
     std::cout << "option name ShowPVSStats type check default false" << std::endl;
+    
+    // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
+    std::cout << "option name CountermoveBonus type spin default 0 min 0 max 20000" << std::endl;
+    
     std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
     std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
     std::cout << "option name UseAspirationWindows type check default true" << std::endl;
@@ -825,6 +829,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid ShowPVSStats value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    // Stage 23 CM3.1: Handle CountermoveBonus option (micro-phase testing)
+    else if (optionName == "CountermoveBonus") {
+        try {
+            int bonus = std::stoi(value);
+            if (bonus >= 0 && bonus <= 20000) {
+                m_countermoveBonus = bonus;
+                std::cerr << "info string CountermoveBonus set to " << bonus << std::endl;
+            } else {
+                std::cerr << "info string CountermoveBonus value out of range: " << value << std::endl;
+            }
+        } catch (const std::exception&) {
+            std::cerr << "info string Invalid CountermoveBonus value: " << value << std::endl;
         }
     }
     // Stage 13 Remediation: Handle aspiration window options

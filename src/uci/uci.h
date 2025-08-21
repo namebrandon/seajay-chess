@@ -68,6 +68,9 @@ private:
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     
+    // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
+    int m_countermoveBonus = 0;         // Bonus score for countermoves (0 = disabled)
+    
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
     int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window
