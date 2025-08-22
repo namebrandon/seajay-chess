@@ -111,30 +111,6 @@ Score evaluate(const Board& board) {
                 }
             }
             
-            // PP3d: Rook behind passed pawn bonus (WHITE)
-            // Check for friendly rook behind the pawn (same file, lower rank)
-            Bitboard fileMask = FILE_A_BB << fileOf(sq);
-            Bitboard rooksOnFile = board.pieces(WHITE, ROOK) & fileMask;
-            while (rooksOnFile) {
-                Square rookSq = popLsb(rooksOnFile);
-                if (rankOf(rookSq) < rankOf(sq)) {
-                    // Friendly rook behind the pawn - good!
-                    bonus = (bonus * 115) / 100;  // +15% bonus
-                    break;  // Only count once
-                }
-            }
-            
-            // Also check for enemy rook behind (which is bad for us)
-            Bitboard enemyRooksOnFile = board.pieces(BLACK, ROOK) & fileMask;
-            while (enemyRooksOnFile) {
-                Square rookSq = popLsb(enemyRooksOnFile);
-                if (rankOf(rookSq) < rankOf(sq)) {
-                    // Enemy rook behind our pawn - bad!
-                    bonus = (bonus * 9) / 10;  // -10% penalty
-                    break;  // Only count once
-                }
-            }
-            
             // PP3b: Connected passer bonus - passed pawns on adjacent files
             // More conservative approach: small fixed bonus, stricter rank requirement
             int file = fileOf(sq);
@@ -196,30 +172,6 @@ Score evaluate(const Board& board) {
                         default: break;
                     }
                     bonus -= blockPenalty;
-                }
-            }
-            
-            // PP3d: Rook behind passed pawn bonus (BLACK)
-            // Check for friendly rook behind the pawn (same file, higher rank for black)
-            Bitboard fileMask = FILE_A_BB << fileOf(sq);
-            Bitboard rooksOnFile = board.pieces(BLACK, ROOK) & fileMask;
-            while (rooksOnFile) {
-                Square rookSq = popLsb(rooksOnFile);
-                if (rankOf(rookSq) > rankOf(sq)) {
-                    // Friendly rook behind the pawn - good!
-                    bonus = (bonus * 115) / 100;  // +15% bonus
-                    break;  // Only count once
-                }
-            }
-            
-            // Also check for enemy rook behind (which is bad for us)
-            Bitboard enemyRooksOnFile = board.pieces(WHITE, ROOK) & fileMask;
-            while (enemyRooksOnFile) {
-                Square rookSq = popLsb(enemyRooksOnFile);
-                if (rankOf(rookSq) > rankOf(sq)) {
-                    // Enemy rook behind our pawn - bad!
-                    bonus = (bonus * 9) / 10;  // -10% penalty
-                    break;  // Only count once
                 }
             }
             

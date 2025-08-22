@@ -105,13 +105,14 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **OpenBench:** https://openbench.seajay-chess.dev/test/92/
 - **Notes:** Blockader penalties working well (+2.3 ELO over PP3b-v4)
 
-#### Phase PP3d: Rook Behind Passed Pawn
+#### Phase PP3d: Rook Behind Passed Pawn (FAILED)
 - **Commit:** `8d7115c`
 - **Bench:** 19191913
 - **Test Result:** **+51.75 ± 10.93 ELO** ❌
 - **Status:** ❌ REGRESSION - Lost 11 ELO from PP3c
 - **OpenBench:** https://openbench.seajay-chess.dev/test/93/
 - **Notes:** Rook behind pawn evaluation not working as expected
+- **REVERTED:** Returning to PP3c due to regression
 
 ### Planned Phases (Incremental Approach)
 
@@ -120,8 +121,8 @@ To be added one at a time, testing each:
 - ✅ PP3a: Protected passers (COMPLETE: +56.27 ELO)
 - ✅ PP3b: Connected passers (COMPLETE: +60.77 ELO with 20%)
 - ✅ PP3c: Blockader evaluation (COMPLETE: +63.10 ELO)
-- 🔄 PP3d: Rook behind passed pawn (TESTING)
-- PP3e: King proximity (endgame only) (PENDING)
+- ❌ PP3d: Rook behind passed pawn (FAILED - REVERTED)
+- PP3e: King proximity (endgame only) (NEXT)
 - PP3f: Unstoppable passer detection (PENDING)
 
 #### Phase PP4: Tuning & Refinement
@@ -197,7 +198,21 @@ To be added one at a time, testing each:
    - Give both pawns smaller bonus (10% each)
    - Use fixed bonus instead of percentage for same-rank
 
-6. **Current Strategy:** 
+6. **PP3d Rook Behind Pawn Analysis (Chess-Engine-Expert):**
+   
+   **Problems Identified:**
+   - Applied to ALL passed pawns (should be rank 5+ only)
+   - Enemy rook behind isn't always bad (often good defense!)
+   - Percentage bonuses compound unexpectedly
+   - No check for clear path between rook and pawn
+   
+   **How Top Engines Handle:**
+   - Only for advanced pawns (rank 5+)
+   - Scaling with rank (bigger bonus as pawn advances)
+   - Enemy rook behind only penalized for rank 6+ pawns
+   - Use fixed additive bonuses, not percentages
+
+7. **Current Strategy:** 
    - Incremental feature addition from PP2 base
    - Test each feature individually before combining
    - Identify specific feature causing regression
@@ -213,13 +228,13 @@ To be added one at a time, testing each:
   - Blockader penalties (PP3c)
 
 ### Next Steps
-1. Test PP3a (protected passer only)
-2. If successful, continue incremental approach
-3. If unsuccessful, debug protected passer logic
-4. Once all features validated individually, combine for full PP3
+1. Continue with PP3e (King proximity in endgame only)
+2. If successful, try PP3f (Unstoppable passer detection)
+3. Consider PP4 (SPSA tuning) if gains plateau
+4. Merge when satisfied with results
 
 ### Risk Mitigation
 - All commits pushed to remote for OpenBench access
-- Reverting to PP2 as stable baseline if needed
+- Reverting to PP3c as stable baseline after PP3d failure
 - Incremental testing approach to isolate problems
 - Full documentation of each attempt for learning
