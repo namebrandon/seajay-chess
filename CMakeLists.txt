@@ -100,6 +100,8 @@ set(EVAL_SOURCES
     src/evaluation/evaluate.h
     src/evaluation/material.h
     src/evaluation/types.h
+    src/evaluation/pawn_structure.cpp
+    src/evaluation/pawn_structure.h
 )
 
 # Search sources  
