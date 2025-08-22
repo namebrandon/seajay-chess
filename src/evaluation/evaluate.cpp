@@ -111,6 +111,31 @@ Score evaluate(const Board& board) {
                 }
             }
             
+            // PP3e: King proximity in endgame only (WHITE)
+            // In endgame, passed pawns are stronger if friendly king is close
+            // and weaker if enemy king is close  
+            search::GamePhase currentPhase = search::detectGamePhase(board);
+            if (currentPhase == search::GamePhase::ENDGAME) {
+                // Calculate king distances (Manhattan distance)
+                Square whiteKing = board.kingSquare(WHITE);
+                Square blackKing = board.kingSquare(BLACK);
+                
+                int friendlyKingDist = std::abs(rankOf(sq) - rankOf(whiteKing)) + 
+                                       std::abs(fileOf(sq) - fileOf(whiteKing));
+                int enemyKingDist = std::abs(rankOf(sq) - rankOf(blackKing)) + 
+                                    std::abs(fileOf(sq) - fileOf(blackKing));
+                
+                // Bonus for friendly king close (max 8 distance on board)
+                // Closer king = bigger bonus
+                int kingProximityBonus = (8 - friendlyKingDist) * 2;  // 0-16 cp
+                
+                // Penalty for enemy king close
+                int kingProximityPenalty = (8 - enemyKingDist) * 3;  // 0-24 cp (enemy king more important)
+                
+                bonus += kingProximityBonus;
+                bonus -= kingProximityPenalty;
+            }
+            
             // PP3b: Connected passer bonus - passed pawns on adjacent files
             // More conservative approach: small fixed bonus, stricter rank requirement
             int file = fileOf(sq);
@@ -173,6 +198,31 @@ Score evaluate(const Board& board) {
                     }
                     bonus -= blockPenalty;
                 }
+            }
+            
+            // PP3e: King proximity in endgame only (BLACK)
+            // In endgame, passed pawns are stronger if friendly king is close
+            // and weaker if enemy king is close
+            search::GamePhase currentPhaseBlack = search::detectGamePhase(board);
+            if (currentPhaseBlack == search::GamePhase::ENDGAME) {
+                // Calculate king distances (Manhattan distance)
+                Square whiteKing = board.kingSquare(WHITE);
+                Square blackKing = board.kingSquare(BLACK);
+                
+                int friendlyKingDist = std::abs(rankOf(sq) - rankOf(blackKing)) + 
+                                       std::abs(fileOf(sq) - fileOf(blackKing));
+                int enemyKingDist = std::abs(rankOf(sq) - rankOf(whiteKing)) + 
+                                    std::abs(fileOf(sq) - fileOf(whiteKing));
+                
+                // Bonus for friendly king close (max 8 distance on board)
+                // Closer king = bigger bonus
+                int kingProximityBonus = (8 - friendlyKingDist) * 2;  // 0-16 cp
+                
+                // Penalty for enemy king close
+                int kingProximityPenalty = (8 - enemyKingDist) * 3;  // 0-24 cp (enemy king more important)
+                
+                bonus += kingProximityBonus;
+                bonus -= kingProximityPenalty;
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
