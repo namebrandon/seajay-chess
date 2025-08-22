@@ -302,6 +302,14 @@ echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'
   - **Why This Matters:** We've resolved 4+ "bugs" (#004, #005, #006, #007) that were actually incorrect test data
   - This prevents wasting hours debugging correct engine behavior against incorrect test expectations
   - If Stockfish and SeaJay agree but differ from test expectations, update the test data, not the engine
+  
+  - **⚠️ EVALUATION & POSITION VALIDATION:** Use Stockfish to validate sample positions and evaluations
+  - **VALIDATION PROCESS FOR EVAL TESTING:**
+    1. When testing new evaluation features with sample positions, validate FEN positions with Stockfish
+    2. Use: `echo -e "position fen [FEN]\neval\nquit" | ./external/engines/stockfish/stockfish` to see Stockfish's evaluation
+    3. For move testing: `echo -e "position fen [FEN]\ngo depth 10\nquit" | ./external/engines/stockfish/stockfish`
+    4. This helps verify that positions are valid and provides baseline evaluation comparison
+  - **Added Phase PP2:** This validation step ensures test positions are valid before debugging evaluation differences
 
 - **External Tools**: Run setup if needed
   ```bash
