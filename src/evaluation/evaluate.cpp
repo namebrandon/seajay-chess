@@ -5,6 +5,7 @@
 #include "../core/board.h"
 #include "../core/bitboard.h"
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
+#include <cstdlib>  // PP3b: For std::abs
 
 namespace seajay::eval {
 
@@ -90,6 +91,28 @@ Score evaluate(const Board& board) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
             }
             
+            // PP3b: Connected passer bonus - passed pawns on adjacent files
+            // Check for other passed pawns on adjacent files (regardless of rank)
+            int file = fileOf(sq);
+            Bitboard adjacentFiles = 0ULL;
+            if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
+            if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
+            
+            // Check if there's another white passed pawn on adjacent files
+            Bitboard adjacentPawns = whitePawns & adjacentFiles;
+            bool hasConnectedPasser = false;
+            while (adjacentPawns && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPawns);
+                if (PawnStructure::isPassed(WHITE, adjSq, blackPawns)) {
+                    // Only count as connected if ranks are similar (within 2 ranks)
+                    int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
+                    if (rankDiff <= 2) {
+                        hasConnectedPasser = true;
+                        bonus = (bonus * 13) / 10;  // +30% for connected passers
+                    }
+                }
+            }
+            
             passedPawnValue += bonus;
         }
     }
@@ -106,6 +129,28 @@ Score evaluate(const Board& board) {
             Bitboard pawnSupport = pawnAttacks(WHITE, sq) & blackPawns;  // Squares that protect this pawn
             if (pawnSupport) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
+            }
+            
+            // PP3b: Connected passer bonus - passed pawns on adjacent files
+            // Check for other passed pawns on adjacent files (regardless of rank)
+            int file = fileOf(sq);
+            Bitboard adjacentFiles = 0ULL;
+            if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
+            if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
+            
+            // Check if there's another black passed pawn on adjacent files
+            Bitboard adjacentPawns = blackPawns & adjacentFiles;
+            bool hasConnectedPasser = false;
+            while (adjacentPawns && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPawns);
+                if (PawnStructure::isPassed(BLACK, adjSq, whitePawns)) {
+                    // Only count as connected if ranks are similar (within 2 ranks)
+                    int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
+                    if (rankDiff <= 2) {
+                        hasConnectedPasser = true;
+                        bonus = (bonus * 13) / 10;  // +30% for connected passers
+                    }
+                }
             }
             
             passedPawnValue -= bonus;
