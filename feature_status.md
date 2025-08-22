@@ -38,11 +38,17 @@ Target: +11-19 ELO gain (revised based on expert engine analysis).
 
 ### Testing Summary Table
 
-| Phase | Feature | ELO vs Main | Delta from Previous | Status |
-|-------|---------|-------------|-------------------|---------|
-| IP1 | Infrastructure | TBD | N/A | Not Started |
-| IP2 | Basic penalties | TBD | TBD | Not Started |
-| IP3 | Refinements | TBD | TBD | Not Started |
+| Phase | Feature | ELO vs Main | Status |
+|-------|---------|-------------|---------|
+| IP1 | Infrastructure | +2.88 ± 10.43 | PASSED ✓ |
+| IP2 | Basic penalties | +14.84 ± 10.92 | PASSED ✓ |
+| IP3a | File adjustments | +25.08 ± 11.02 | PASSED ✓ **BEST** |
+| IP3b | Opposition detection | +7.43 ± 11.19 | Regression (reverted) |
+
+### Final Decision
+**Selected Version:** IP3a (commit c41a595)
+- **Total ELO Gain:** +25.08 ± 11.02 vs main
+- **Reason:** Best performing version. IP3b's opposition detection caused regression.
 
 ### Key Design Decisions
 
