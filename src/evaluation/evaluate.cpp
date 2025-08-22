@@ -111,12 +111,7 @@ Score evaluate(const Board& board) {
                         // Upper range bonus: +20% (max per expert analysis)
                         // And only if this pawn is more advanced (to avoid double counting)
                         if (rankOf(sq) >= rankOf(adjSq)) {
-                            // Same-rank connected passers get extra bonus (PP3b-v5)
-                            if (rankDiff == 0) {
-                                bonus = (bonus * 125) / 100;  // +25% for same-rank connected
-                            } else {
-                                bonus = (bonus * 12) / 10;  // +20% for adjacent-rank connected
-                            }
+                            bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }
                 }
@@ -161,12 +156,7 @@ Score evaluate(const Board& board) {
                         // And only if this pawn is more advanced (to avoid double counting)
                         // For black, "more advanced" means lower rank number
                         if (rankOf(sq) <= rankOf(adjSq)) {
-                            // Same-rank connected passers get extra bonus (PP3b-v5)
-                            if (rankDiff == 0) {
-                                bonus = (bonus * 125) / 100;  // +25% for same-rank connected
-                            } else {
-                                bonus = (bonus * 12) / 10;  // +20% for adjacent-rank connected
-                            }
+                            bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }
                 }

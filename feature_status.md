@@ -83,12 +83,13 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **OpenBench:** https://openbench.seajay-chess.dev/test/90/
 - **Notes:** 20% is optimal! Even better than PP3a alone
 
-#### Phase PP3b-v5: Same-Rank Connected Passers Bonus
-- **Commit:** TBD
+#### Phase PP3b-v5: Same-Rank Connected Passers Bonus (FLAWED)
+- **Commit:** `712f0df`
 - **Bench:** 19191913
-- **Test Result:** AWAITING TEST
-- **Status:** 🔄 IN DEVELOPMENT
-- **Notes:** Adding +5% extra bonus when connected passers are on same rank
+- **Test Result:** **+45.99 ± 10.94 ELO** ❌
+- **Status:** ❌ REGRESSION - Lost 15 ELO from v4
+- **OpenBench:** https://openbench.seajay-chess.dev/test/91/
+- **Notes:** CRITICAL BUG: Only one pawn of same-rank pair gets bonus (asymmetric)
 
 ### Planned Phases (Incremental Approach)
 
@@ -151,7 +152,30 @@ To be added one at a time, testing each:
    - Unstoppable passer detection (6th/7th rank connected = huge bonus)
    - Better endgame scaling for connected passers
 
-5. **Current Strategy:** 
+5. **PP3b-v5 Same-Rank Bug Analysis (Chess-Engine-Expert):**
+   
+   **The Asymmetry Problem:**
+   - Our code: `if (rankOf(sq) >= rankOf(adjSq))` breaks for same-rank
+   - Only right-file pawn gets 25%, left-file pawn gets 0%
+   - Creates position-dependent evaluation (e5+f5 ≠ d5+e5)
+   
+   **How Top Engines Handle Same-Rank:**
+   - **Stockfish:** Both pawns get smaller bonus (~10% each)
+   - **Ethereal:** Distance-based approach, symmetric evaluation
+   - **Key Principle:** BOTH pawns must get bonus or evaluation becomes inconsistent
+   
+   **Why Same-Rank Often Weaker Than Adjacent:**
+   - No lever creation possible
+   - Easier to blockade (single piece blocks both)
+   - Must advance together (less flexible)
+   - Enemy king can control both from one square
+   
+   **Fix Options:**
+   - Revert to v4 (simplest, proven to work)
+   - Give both pawns smaller bonus (10% each)
+   - Use fixed bonus instead of percentage for same-rank
+
+6. **Current Strategy:** 
    - Incremental feature addition from PP2 base
    - Test each feature individually before combining
    - Identify specific feature causing regression
