@@ -91,6 +91,26 @@ Score evaluate(const Board& board) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
             }
             
+            // PP3c: Blockader evaluation - penalty if enemy piece blocks the pawn
+            Square blockSquare = Square(sq + 8);  // Square in front of pawn
+            if (blockSquare <= SQ_H8) {
+                Piece blocker = board.pieceAt(blockSquare);
+                if (blocker != NO_PIECE && colorOf(blocker) == BLACK) {
+                    // Apply penalty based on piece type blocking
+                    // Knights are best blockers, bishops worst
+                    int blockPenalty = 0;
+                    switch (typeOf(blocker)) {
+                        case KNIGHT: blockPenalty = bonus / 8; break;   // -12.5% (knights are good blockers)
+                        case BISHOP: blockPenalty = bonus / 4; break;   // -25% (bishops are poor blockers)
+                        case ROOK:   blockPenalty = bonus / 6; break;   // -16.7%
+                        case QUEEN:  blockPenalty = bonus / 5; break;   // -20%
+                        case KING:   blockPenalty = bonus / 6; break;   // -16.7%
+                        default: break;
+                    }
+                    bonus -= blockPenalty;
+                }
+            }
+            
             // PP3b: Connected passer bonus - passed pawns on adjacent files
             // More conservative approach: small fixed bonus, stricter rank requirement
             int file = fileOf(sq);
@@ -133,6 +153,26 @@ Score evaluate(const Board& board) {
             Bitboard pawnSupport = pawnAttacks(WHITE, sq) & blackPawns;  // Squares that protect this pawn
             if (pawnSupport) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
+            }
+            
+            // PP3c: Blockader evaluation - penalty if enemy piece blocks the pawn
+            Square blockSquare = Square(sq - 8);  // Square in front of pawn (for black)
+            if (blockSquare >= SQ_A1) {
+                Piece blocker = board.pieceAt(blockSquare);
+                if (blocker != NO_PIECE && colorOf(blocker) == WHITE) {
+                    // Apply penalty based on piece type blocking
+                    // Knights are best blockers, bishops worst
+                    int blockPenalty = 0;
+                    switch (typeOf(blocker)) {
+                        case KNIGHT: blockPenalty = bonus / 8; break;   // -12.5% (knights are good blockers)
+                        case BISHOP: blockPenalty = bonus / 4; break;   // -25% (bishops are poor blockers)
+                        case ROOK:   blockPenalty = bonus / 6; break;   // -16.7%
+                        case QUEEN:  blockPenalty = bonus / 5; break;   // -20%
+                        case KING:   blockPenalty = bonus / 6; break;   // -16.7%
+                        default: break;
+                    }
+                    bonus -= blockPenalty;
+                }
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
