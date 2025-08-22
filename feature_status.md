@@ -29,12 +29,19 @@ Target: +11-19 ELO gain (revised based on expert engine analysis).
 - **Status:** PASSED ✓
 - **Expected:** +8-12 ELO (revised)
 
-#### Phase IP3: Refinements
+#### Phase IP3a: File-based adjustments
+- **Commit:** c41a595
+- **Bench:** 19191913
+- **Test Result:** +25.08 ± 11.02 ELO vs main (2512 games) 🚀
+- **Status:** PASSED ✓
+- **Expected:** +2-4 ELO (exceeded!)
+
+#### Phase IP3b: Opposition detection
 - **Commit:** TBD
 - **Bench:** TBD
 - **Test Result:** TBD
-- **Status:** NOT STARTED
-- **Expected:** +3-7 ELO additional (revised)
+- **Status:** IN PROGRESS
+- **Expected:** +1-3 ELO additional
 
 ### Testing Summary Table
 
