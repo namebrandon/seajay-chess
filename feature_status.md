@@ -51,12 +51,28 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **OpenBench:** https://openbench.seajay-chess.dev/test/86/
 - **Notes:** Incremental approach successful - protected passer bonus working
 
-#### Phase PP3b: Minimal - Connected Passers Only
-- **Commit:** `6923fb1` (full: check git log)
+#### Phase PP3b: Connected Passers (Original)
+- **Commit:** `6923fb1`
+- **Bench:** 19191913
+- **Test Result:** **+36.20 ± 11.09 ELO** ⚠️
+- **Status:** ⚠️ REGRESSION - Lost 20 ELO from PP3a
+- **OpenBench:** https://openbench.seajay-chess.dev/test/87/
+- **Notes:** 30% bonus too high, double-counting issue identified
+
+#### Phase PP3b-fixed: Connected Passers (10% bonus)
+- **Commit:** `ec38ae1`
+- **Bench:** 19191913
+- **Test Result:** **+48.87 ± 10.89 ELO** ✅
+- **Status:** ✅ WORKS but suboptimal (~7 ELO below PP3a)
+- **OpenBench:** https://openbench.seajay-chess.dev/test/88/
+- **Notes:** 10% bonus works but leaves ELO on the table
+
+#### Phase PP3b-v3: Connected Passers (15% bonus)
+- **Commit:** TBD
 - **Bench:** 19191913
 - **Test Result:** AWAITING TEST
-- **Status:** 🔄 READY FOR TESTING
-- **Notes:** Adds connected passer bonus (30%) to PP3a. Connected if on adjacent files and within 2 ranks
+- **Status:** 🔄 IN DEVELOPMENT
+- **Notes:** Testing 15% bonus (middle of expert's 10-20% range)
 
 ### Planned Phases (Incremental Approach)
 
@@ -84,7 +100,42 @@ To be added one at a time, testing each:
    - Phase scaling applied to all bonuses (not just base) may be incorrect
    - Connected pawn logic needs rank similarity check
 
-3. **Current Strategy:** 
+3. **PP3b Issues Identified:**
+   - 30% bonus for connected passers is too high (causes 20 ELO regression)
+   - Double-counting problem: both connected pawns get bonus
+   - Rank difference of 2 is too lenient (should be ±1 max)
+   - Solution: Reduce to 10%, only bonus more advanced pawn
+
+4. **Expert Analysis on Connected Passers (Chess-Engine-Expert Consultation):**
+   
+   **How Top Engines Handle Connected Passers:**
+   - **Stockfish:** Evaluates as a pair, 15-25% bonus, uses minimum rank of pair
+   - **Ethereal:** Only more advanced pawn gets bonus, 12-20% range, strict adjacency
+   - **Consensus:** 10-20% bonus range is optimal, applied once per pair
+   
+   **Key Implementation Patterns:**
+   - **Leader-Follower Pattern (Recommended):** Only more advanced pawn gets bonus
+   - **Pair Evaluation Pattern:** Detect pairs in pawn hash, apply once
+   - **Rank Tolerance:** 0 or 1 rank difference is optimal (not 2)
+   
+   **Typical Bonus Ranges in Strong Engines:**
+   - Base passed pawn: 100%
+   - Connected bonus: +10-20%
+   - Protected passer: +15-25%
+   - Same-rank connected: +20-25% (especially strong)
+   
+   **Why Our PP3b Failed:**
+   - 30% too high + double counting = 60% overvaluation
+   - Connected passers are about mutual support, not doubling value
+   - Conservative correctly-applied beats aggressive incorrectly-applied
+   
+   **Missing Features for Future Phases:**
+   - Enemy king distance factor (more bonus if king far away)
+   - Same-rank special case (extra 5% for pawns on same rank)
+   - Unstoppable passer detection (6th/7th rank connected = huge bonus)
+   - Better endgame scaling for connected passers
+
+5. **Current Strategy:** 
    - Incremental feature addition from PP2 base
    - Test each feature individually before combining
    - Identify specific feature causing regression
