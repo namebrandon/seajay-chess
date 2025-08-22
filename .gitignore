@@ -51,6 +51,8 @@ CLAUDE.md         # AI context file (may contain sensitive information)
 container-config.sh  # Container configuration script
 yolo.sh           # Claude permission bypass script
 config.json       # Configuration file
+.claude/          # Claude-specific directory
+.devcontainer/    # Dev container configuration
 
 # Test outputs
 *.log
