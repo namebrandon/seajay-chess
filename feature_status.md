@@ -46,19 +46,28 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 #### Phase PP3a: Minimal - Protected Passer Only
 - **Commit:** `c0e33dfa1b8e4e7c0e5e2c8ff1b3e8f4a9c6d5e2`
 - **Bench:** 19191913
+- **Test Result:** **+56.27 ± 11.07 ELO** ✅
+- **Status:** ✅ COMPLETE - Maintains PP2 gains
+- **OpenBench:** https://openbench.seajay-chess.dev/test/86/
+- **Notes:** Incremental approach successful - protected passer bonus working
+
+#### Phase PP3b: Minimal - Connected Passers Only
+- **Commit:** `6923fb1` (full: check git log)
+- **Bench:** 19191913
 - **Test Result:** AWAITING TEST
-- **Status:** 🔄 TESTING
-- **Notes:** Incremental approach - only adds protected passer bonus to PP2
+- **Status:** 🔄 READY FOR TESTING
+- **Notes:** Adds connected passer bonus (30%) to PP3a. Connected if on adjacent files and within 2 ranks
 
-### Planned Phases (Pending PP3 Resolution)
+### Planned Phases (Incremental Approach)
 
-#### Phase PP3b-f: Incremental Features
-To be added one at a time once PP3a is validated:
-- PP3b: Connected passers
-- PP3c: Blockader evaluation
-- PP3d: Rook behind passed pawn
-- PP3e: King proximity (endgame only)
-- PP3f: Unstoppable passer detection
+#### Remaining PP3 Features
+To be added one at a time, testing each:
+- ✅ PP3a: Protected passers (COMPLETE: +56.27 ELO)
+- 🔄 PP3b: Connected passers (TESTING)
+- PP3c: Blockader evaluation (PENDING)
+- PP3d: Rook behind passed pawn (PENDING)
+- PP3e: King proximity (endgame only) (PENDING)
+- PP3f: Unstoppable passer detection (PENDING)
 
 #### Phase PP4: Tuning & Refinement
 - SPSA tuning of all parameters

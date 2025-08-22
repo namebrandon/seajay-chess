@@ -92,7 +92,7 @@ Score evaluate(const Board& board) {
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
-            // Check for other passed pawns on adjacent files (regardless of rank)
+            // More conservative approach: small fixed bonus, stricter rank requirement
             int file = fileOf(sq);
             Bitboard adjacentFiles = 0ULL;
             if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
@@ -104,11 +104,15 @@ Score evaluate(const Board& board) {
             while (adjacentPawns && !hasConnectedPasser) {
                 Square adjSq = popLsb(adjacentPawns);
                 if (PawnStructure::isPassed(WHITE, adjSq, blackPawns)) {
-                    // Only count as connected if ranks are similar (within 2 ranks)
+                    // Only count as connected if on same or adjacent ranks (strict)
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
-                    if (rankDiff <= 2) {
+                    if (rankDiff <= 1) {
                         hasConnectedPasser = true;
-                        bonus = (bonus * 13) / 10;  // +30% for connected passers
+                        // Much smaller bonus: only +10% instead of +30%
+                        // And only if this pawn is more advanced (to avoid double counting)
+                        if (rankOf(sq) >= rankOf(adjSq)) {
+                            bonus = (bonus * 11) / 10;  // +10% for connected passers
+                        }
                     }
                 }
             }
@@ -132,7 +136,7 @@ Score evaluate(const Board& board) {
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
-            // Check for other passed pawns on adjacent files (regardless of rank)
+            // More conservative approach: small fixed bonus, stricter rank requirement
             int file = fileOf(sq);
             Bitboard adjacentFiles = 0ULL;
             if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
@@ -144,11 +148,16 @@ Score evaluate(const Board& board) {
             while (adjacentPawns && !hasConnectedPasser) {
                 Square adjSq = popLsb(adjacentPawns);
                 if (PawnStructure::isPassed(BLACK, adjSq, whitePawns)) {
-                    // Only count as connected if ranks are similar (within 2 ranks)
+                    // Only count as connected if on same or adjacent ranks (strict)
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
-                    if (rankDiff <= 2) {
+                    if (rankDiff <= 1) {
                         hasConnectedPasser = true;
-                        bonus = (bonus * 13) / 10;  // +30% for connected passers
+                        // Much smaller bonus: only +10% instead of +30%
+                        // And only if this pawn is more advanced (to avoid double counting)
+                        // For black, "more advanced" means lower rank number
+                        if (rankOf(sq) <= rankOf(adjSq)) {
+                            bonus = (bonus * 11) / 10;  // +10% for connected passers
+                        }
                     }
                 }
             }
