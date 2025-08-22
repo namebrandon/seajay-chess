@@ -108,10 +108,10 @@ Score evaluate(const Board& board) {
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
                     if (rankDiff <= 1) {
                         hasConnectedPasser = true;
-                        // Moderate bonus: +15% (sweet spot per expert analysis)
+                        // Upper range bonus: +20% (max per expert analysis)
                         // And only if this pawn is more advanced (to avoid double counting)
                         if (rankOf(sq) >= rankOf(adjSq)) {
-                            bonus = (bonus * 115) / 100;  // +15% for connected passers
+                            bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }
                 }
@@ -152,11 +152,11 @@ Score evaluate(const Board& board) {
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
                     if (rankDiff <= 1) {
                         hasConnectedPasser = true;
-                        // Moderate bonus: +15% (sweet spot per expert analysis)
+                        // Upper range bonus: +20% (max per expert analysis)
                         // And only if this pawn is more advanced (to avoid double counting)
                         // For black, "more advanced" means lower rank number
                         if (rankOf(sq) <= rankOf(adjSq)) {
-                            bonus = (bonus * 115) / 100;  // +15% for connected passers
+                            bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }
                 }

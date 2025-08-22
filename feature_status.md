@@ -68,11 +68,19 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **Notes:** 10% bonus works but leaves ELO on the table
 
 #### Phase PP3b-v3: Connected Passers (15% bonus)
+- **Commit:** `8859955`
+- **Bench:** 19191913
+- **Test Result:** **+49.61 ± 10.72 ELO** ✅
+- **Status:** ✅ Marginal improvement over 10%
+- **OpenBench:** https://openbench.seajay-chess.dev/test/89/
+- **Notes:** Only 0.74 ELO better than 10%, still ~7 ELO below PP3a
+
+#### Phase PP3b-v4: Connected Passers (20% bonus)
 - **Commit:** TBD
 - **Bench:** 19191913
 - **Test Result:** AWAITING TEST
 - **Status:** 🔄 IN DEVELOPMENT
-- **Notes:** Testing 15% bonus (middle of expert's 10-20% range)
+- **Notes:** Testing 20% bonus (upper end of expert's 10-20% range)
 
 ### Planned Phases (Incremental Approach)
 
