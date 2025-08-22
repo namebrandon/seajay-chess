@@ -37,11 +37,11 @@ Target: +11-19 ELO gain (revised based on expert engine analysis).
 - **Expected:** +2-4 ELO (exceeded!)
 
 #### Phase IP3b: Opposition detection
-- **Commit:** TBD
-- **Bench:** TBD
-- **Test Result:** TBD
-- **Status:** IN PROGRESS
-- **Expected:** +1-3 ELO additional
+- **Commit:** 042b582
+- **Bench:** 19191913
+- **Test Result:** +7.43 ± 11.19 ELO vs main (should have tested vs IP3a)
+- **Status:** REGRESSION ⚠️ (lost ~18 ELO from IP3a)
+- **Expected:** +1-3 ELO additional over IP3a
 
 ### Testing Summary Table
 
