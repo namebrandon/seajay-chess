@@ -214,14 +214,46 @@ If you lose >100 ELO:
 4. Create minimal reproducible case
 5. Test each component in isolation
 
-### 12. Final Checklist
+### 12. Feature Tracking Documentation
+
+#### MANDATORY: Create feature_status.md for Each Feature
+
+Every feature implementation MUST have a corresponding **temporary** tracking document:
+
+**Location**: `/workspace/feature_status.md` (workspace root)
+**Lifecycle**: Created on feature branch, deleted when merging to main
+**Purpose**: Working document to track feature progress during development
+
+The document should include:
+- **Overview**: Feature description and expected ELO gain
+- **Timeline**: Start date, branch name, base commit
+- **Phase Status**: Each phase with commit SHA, bench count, test results
+- **Testing Summary Table**: Clear view of all phases and results
+- **Key Learnings**: What worked, what failed, and why
+- **Implementation Details**: Technical details of successful approaches
+
+This is a **TEMPORARY WORKING DOCUMENT** that:
+- Lives only on the feature branch
+- Gets removed before merging to main
+- Serves as real-time tracking during development
+- Helps organize multi-phase implementations
+- Documents failures and successes for learning
+
+The documentation is CRITICAL for:
+- Learning from failures during development
+- Tracking incremental progress in real-time
+- Understanding which combinations work
+- Debugging when phases fail
+- Organizing complex multi-phase features
+
+### 13. Final Checklist
 
 Before marking any phase complete:
 - [ ] Code compiles without warnings
 - [ ] Bench count recorded
 - [ ] Commit message includes bench
 - [ ] Pushed to remote
-- [ ] Status documented
+- [ ] Status documented in feature_status.md
 - [ ] Ready for OpenBench
 - [ ] Completion message posted
 
