@@ -23,10 +23,10 @@ Target: +11-19 ELO gain (revised based on expert engine analysis).
 - **Expected:** 0 ELO (infrastructure only)
 
 #### Phase IP2: Basic Integration
-- **Commit:** TBD
-- **Bench:** TBD
-- **Test Result:** TBD
-- **Status:** NOT STARTED
+- **Commit:** 17ab5f8
+- **Bench:** 19191913
+- **Test Result:** +14.84 ± 10.92 ELO (2554 games) 🎉
+- **Status:** PASSED ✓
 - **Expected:** +8-12 ELO (revised)
 
 #### Phase IP3: Refinements

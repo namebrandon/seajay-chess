@@ -374,6 +374,18 @@ Score evaluate(const Board& board) {
         0    // Rank 8 - promoted
     };
     
+    // Phase IP3a: File-based adjustments (percentage multipliers)
+    static constexpr int FILE_ADJUSTMENT[8] = {
+        120,  // a-file (edge pawn penalty)
+        105,  // b-file
+        100,  // c-file (standard)
+        80,   // d-file (central bonus - controls center)
+        80,   // e-file (central bonus - controls center)
+        100,  // f-file (standard)
+        105,  // g-file
+        120   // h-file (edge pawn penalty)
+    };
+    
     // Calculate isolated pawn penalties
     int isolatedPawnPenalty = 0;
     
@@ -386,7 +398,13 @@ Score evaluate(const Board& board) {
     while (whiteIsolani) {
         Square sq = popLsb(whiteIsolani);
         int rank = rankOf(sq);
-        isolatedPawnPenalty -= ISOLATED_PAWN_PENALTY[rank];
+        int file = fileOf(sq);
+        int penalty = ISOLATED_PAWN_PENALTY[rank];
+        
+        // IP3a: Apply file adjustment
+        penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
+        
+        isolatedPawnPenalty -= penalty;
     }
     
     // Evaluate black isolated pawns (bonus for white)
@@ -394,7 +412,13 @@ Score evaluate(const Board& board) {
     while (blackIsolani) {
         Square sq = popLsb(blackIsolani);
         int rank = 7 - rankOf(sq);  // Convert to black's perspective
-        isolatedPawnPenalty += ISOLATED_PAWN_PENALTY[rank];
+        int file = fileOf(sq);
+        int penalty = ISOLATED_PAWN_PENALTY[rank];
+        
+        // IP3a: Apply file adjustment
+        penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
+        
+        isolatedPawnPenalty += penalty;
     }
     
     // Phase scaling for isolated pawns - less penalty in endgame
