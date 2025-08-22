@@ -72,9 +72,16 @@ Score evaluate(const Board& board) {
     // Calculate passed pawn score
     int passedPawnValue = 0;
     
-    // Get pawn bitboards
+    // Get piece bitboards for PP3 features
     Bitboard whitePawns = board.pieces(WHITE, PAWN);
     Bitboard blackPawns = board.pieces(BLACK, PAWN);
+    Bitboard whiteKing = board.pieces(WHITE, KING);
+    Bitboard blackKing = board.pieces(BLACK, KING);
+    Bitboard whiteRooks = board.pieces(WHITE, ROOK);
+    Bitboard blackRooks = board.pieces(BLACK, ROOK);
+    
+    Square whiteKingSq = whiteKing ? lsb(whiteKing) : SQ_A1;
+    Square blackKingSq = blackKing ? lsb(blackKing) : SQ_A1;
     
     // Evaluate white passed pawns
     Bitboard whitePassers = whitePawns;
@@ -82,7 +89,70 @@ Score evaluate(const Board& board) {
         Square sq = popLsb(whitePassers);
         if (PawnStructure::isPassed(WHITE, sq, blackPawns)) {
             int relRank = PawnStructure::relativeRank(WHITE, sq);
-            passedPawnValue += PASSED_PAWN_BONUS[relRank];
+            int baseBonus = PASSED_PAWN_BONUS[relRank];
+            int bonus = baseBonus;
+            
+            // Phase PP3: King proximity factors
+            // Friendly king proximity - closer is better in endgame
+            int friendlyKingDist = distance(whiteKingSq, sq);
+            bonus += (7 - friendlyKingDist) * 2;  // 0-14 bonus
+            
+            // Enemy king proximity - further is better
+            int enemyKingDist = distance(blackKingSq, sq);
+            bonus += enemyKingDist * 3;  // 0-21 bonus
+            
+            // Phase PP3: Rook behind passed pawn
+            // Check if white rook is behind the pawn (same file, lower rank)
+            if (whiteRooks) {
+                int pawnFile = fileOf(sq);
+                Bitboard fileRooks = whiteRooks & fileBB(pawnFile);
+                if (fileRooks) {
+                    Square rookSq = lsb(fileRooks);
+                    if (rankOf(rookSq) < rankOf(sq)) {
+                        bonus += 20;  // Rook behind passer
+                    }
+                }
+            }
+            
+            // Phase PP3: Blockader evaluation
+            Square blockSq = Square(sq + 8);  // Square in front
+            if (blockSq <= SQ_H8) {
+                Piece blocker = board.pieceAt(blockSq);
+                if (blocker != NO_PIECE && colorOf(blocker) == BLACK) {
+                    // Penalty based on piece type blocking
+                    switch (typeOf(blocker)) {
+                        case KNIGHT: bonus -= 5; break;   // Knights are good blockers
+                        case BISHOP: bonus -= 15; break;  // Bishops are poor blockers
+                        case ROOK:   bonus -= 10; break;  // Rooks are mediocre blockers
+                        case QUEEN:  bonus -= 10; break;  // Queens are mediocre blockers
+                        default: break;
+                    }
+                }
+            }
+            
+            // Phase PP3: Protected passed pawns
+            Bitboard pawnSupport = pawnAttacks(WHITE, sq) & whitePawns;
+            if (pawnSupport) {
+                bonus = (bonus * 13) / 10;  // +30% for protected
+            }
+            
+            // Phase PP3: Connected passed pawns
+            // Check if adjacent file has another passed pawn
+            int file = fileOf(sq);
+            Bitboard adjacentFiles = 0;
+            if (file > 0) adjacentFiles |= fileBB(file - 1);
+            if (file < 7) adjacentFiles |= fileBB(file + 1);
+            Bitboard adjacentPassers = adjacentFiles & whitePawns;
+            bool hasConnectedPasser = false;
+            while (adjacentPassers && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPassers);
+                if (PawnStructure::isPassed(WHITE, adjSq, blackPawns)) {
+                    hasConnectedPasser = true;
+                    bonus = (bonus * 15) / 10;  // +50% for connected
+                }
+            }
+            
+            passedPawnValue += bonus;
         }
     }
     
@@ -92,7 +162,116 @@ Score evaluate(const Board& board) {
         Square sq = popLsb(blackPassers);
         if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
             int relRank = PawnStructure::relativeRank(BLACK, sq);
-            passedPawnValue -= PASSED_PAWN_BONUS[relRank];
+            int baseBonus = PASSED_PAWN_BONUS[relRank];
+            int bonus = baseBonus;
+            
+            // Phase PP3: King proximity factors
+            int friendlyKingDist = distance(blackKingSq, sq);
+            bonus += (7 - friendlyKingDist) * 2;
+            
+            int enemyKingDist = distance(whiteKingSq, sq);
+            bonus += enemyKingDist * 3;
+            
+            // Phase PP3: Rook behind passed pawn
+            if (blackRooks) {
+                int pawnFile = fileOf(sq);
+                Bitboard fileRooks = blackRooks & fileBB(pawnFile);
+                if (fileRooks) {
+                    Square rookSq = lsb(fileRooks);
+                    if (rankOf(rookSq) > rankOf(sq)) {
+                        bonus += 20;  // Rook behind passer (black perspective)
+                    }
+                }
+            }
+            
+            // Phase PP3: Blockader evaluation
+            Square blockSq = Square(sq - 8);  // Square in front (black perspective)
+            if (blockSq >= SQ_A1) {
+                Piece blocker = board.pieceAt(blockSq);
+                if (blocker != NO_PIECE && colorOf(blocker) == WHITE) {
+                    switch (typeOf(blocker)) {
+                        case KNIGHT: bonus -= 5; break;
+                        case BISHOP: bonus -= 15; break;
+                        case ROOK:   bonus -= 10; break;
+                        case QUEEN:  bonus -= 10; break;
+                        default: break;
+                    }
+                }
+            }
+            
+            // Phase PP3: Protected passed pawns
+            Bitboard pawnSupport = pawnAttacks(BLACK, sq) & blackPawns;
+            if (pawnSupport) {
+                bonus = (bonus * 13) / 10;  // +30% for protected
+            }
+            
+            // Phase PP3: Connected passed pawns
+            int file = fileOf(sq);
+            Bitboard adjacentFiles = 0;
+            if (file > 0) adjacentFiles |= fileBB(file - 1);
+            if (file < 7) adjacentFiles |= fileBB(file + 1);
+            Bitboard adjacentPassers = adjacentFiles & blackPawns;
+            bool hasConnectedPasser = false;
+            while (adjacentPassers && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPassers);
+                if (PawnStructure::isPassed(BLACK, adjSq, whitePawns)) {
+                    hasConnectedPasser = true;
+                    bonus = (bonus * 15) / 10;  // +50% for connected
+                }
+            }
+            
+            passedPawnValue -= bonus;
+        }
+    }
+    
+    // Phase PP3: Unstoppable passer detection (huge bonus in endgame)
+    // Only check in endgame when no major pieces remain
+    bool inPureEndgame = board.pieces(WHITE, QUEEN) == 0 && board.pieces(BLACK, QUEEN) == 0 &&
+                         popCount(board.pieces(WHITE, ROOK)) <= 1 && popCount(board.pieces(BLACK, ROOK)) <= 1;
+    
+    if (inPureEndgame) {
+        // Check white unstoppable passers
+        Bitboard whitePassedPawns = whitePawns;
+        while (whitePassedPawns) {
+            Square sq = popLsb(whitePassedPawns);
+            if (PawnStructure::isPassed(WHITE, sq, blackPawns)) {
+                int relRank = PawnStructure::relativeRank(WHITE, sq);
+                if (relRank >= 5) {  // Only consider pawns on rank 6 or 7
+                    // Check if black king can catch the pawn
+                    int pawnDistToPromotion = 7 - rankOf(sq);
+                    int kingDistToPromotion = distance(blackKingSq, Square(fileOf(sq) + 56));  // Promotion square
+                    
+                    // Account for tempo (white to move gets 1 extra tempo)
+                    int tempoBonus = (board.sideToMove() == WHITE) ? 1 : 0;
+                    
+                    if (kingDistToPromotion - tempoBonus > pawnDistToPromotion) {
+                        // Unstoppable passer!
+                        passedPawnValue += 500;  // Huge bonus
+                    }
+                }
+            }
+        }
+        
+        // Check black unstoppable passers
+        Bitboard blackPassedPawns = blackPawns;
+        while (blackPassedPawns) {
+            Square sq = popLsb(blackPassedPawns);
+            if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
+                int relRank = PawnStructure::relativeRank(BLACK, sq);
+                if (relRank >= 5) {  // Only consider pawns on rank 6 or 7 (from black's perspective)
+                    // Check if white king can catch the pawn
+                    int pawnDistToPromotion = rankOf(sq);  // Distance to rank 0
+                    int kingDistToPromotion = distance(whiteKingSq, Square(fileOf(sq)));  // Promotion square
+                    
+                    // Account for tempo
+                    int tempoBonus = (board.sideToMove() == BLACK) ? 1 : 0;
+                    
+                    if (kingDistToPromotion - tempoBonus > pawnDistToPromotion) {
+                        // Unstoppable passer!
+                        passedPawnValue -= 500;  // Huge bonus for black
+                    }
+                }
+            }
         }
     }
     

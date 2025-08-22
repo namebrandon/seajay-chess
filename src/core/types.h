@@ -122,6 +122,28 @@ constexpr bool isValidSquare(Square s) {
     return s < NUM_SQUARES;
 }
 
+// Phase PP3: Distance helpers for passed pawn evaluation
+constexpr int distance(Square s1, Square s2) {
+    int file_dist = std::abs(fileOf(s1) - fileOf(s2));
+    int rank_dist = std::abs(rankOf(s1) - rankOf(s2));
+    return std::max(file_dist, rank_dist);  // Chebyshev distance
+}
+
+// Get bitboard for a specific file
+constexpr Bitboard fileBB(int file) {
+    return 0x0101010101010101ULL << file;
+}
+
+// Get pawn attacks for a square
+constexpr Bitboard pawnAttacks(Color c, Square s) {
+    Bitboard bb = 1ULL << s;
+    if (c == WHITE) {
+        return ((bb & ~fileBB(0)) << 7) | ((bb & ~fileBB(7)) << 9);
+    } else {
+        return ((bb & ~fileBB(0)) >> 9) | ((bb & ~fileBB(7)) >> 7);
+    }
+}
+
 constexpr const char* SQUARE_NAMES[64] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
