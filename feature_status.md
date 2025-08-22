@@ -91,6 +91,20 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **OpenBench:** https://openbench.seajay-chess.dev/test/91/
 - **Notes:** CRITICAL BUG: Only one pawn of same-rank pair gets bonus (asymmetric)
 
+#### Phase PP3b-final: Reverted to v4
+- **Commit:** `3b200d0`
+- **Bench:** 19191913
+- **Status:** ✅ Reverted to proven PP3b-v4 implementation
+- **Notes:** Keeping 20% uniform bonus, no same-rank special case
+
+#### Phase PP3c: Blockader Evaluation
+- **Commit:** `a4b7950`
+- **Bench:** 19191913
+- **Test Result:** **+63.10 ± 11.18 ELO** ✅
+- **Status:** ✅ SUCCESS - Small improvement over PP3b-v4
+- **OpenBench:** https://openbench.seajay-chess.dev/test/92/
+- **Notes:** Blockader penalties working well (+2.3 ELO over PP3b-v4)
+
 ### Planned Phases (Incremental Approach)
 
 #### Remaining PP3 Features
@@ -181,9 +195,14 @@ To be added one at a time, testing each:
    - Identify specific feature causing regression
 
 ### Summary Statistics
-- **Best Working Version:** PP2 with +58.50 ELO vs main
+- **Best Working Version:** PP3c with +63.10 ELO vs main
 - **Target Total Gain:** +50-75 ELO
-- **Current Progress:** 78% of minimum target achieved (58.50/75)
+- **Current Progress:** 126% of minimum target, 84% of maximum target achieved
+- **Features Successfully Added:**
+  - Basic rank bonuses with phase scaling (PP2)
+  - Protected passer bonus +20% (PP3a)
+  - Connected passer bonus +20% (PP3b-v4)
+  - Blockader penalties (PP3c)
 
 ### Next Steps
 1. Test PP3a (protected passer only)
