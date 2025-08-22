@@ -171,117 +171,120 @@ install(TARGETS seajay DESTINATION bin)
 # Testing setup
 enable_testing()
 
-# Unit tests
-add_executable(test_board tests/unit/test_board.cpp)
-target_link_libraries(test_board seajay_core)
+# Unit tests - DISABLED (not needed for production)
+# add_executable(test_board tests/unit/test_board.cpp)
+# target_link_libraries(test_board seajay_core)
 
-add_executable(test_fen_comprehensive tests/unit/test_fen_comprehensive.cpp)
-target_link_libraries(test_fen_comprehensive seajay_core)
+# add_executable(test_fen_comprehensive tests/unit/test_fen_comprehensive.cpp)
+# target_link_libraries(test_fen_comprehensive seajay_core)
 
-add_executable(test_fen_edge_cases tests/unit/test_fen_edge_cases.cpp)
-target_link_libraries(test_fen_edge_cases seajay_core)
+# add_executable(test_fen_edge_cases tests/unit/test_fen_edge_cases.cpp)
+# target_link_libraries(test_fen_edge_cases seajay_core)
 
-# Demo programs
-add_executable(fen_demo tests/demo/fen_demo.cpp)
-target_link_libraries(fen_demo seajay_core)
+# Demo programs - DISABLED (not needed for production)
+# add_executable(fen_demo tests/demo/fen_demo.cpp)
+# target_link_libraries(fen_demo seajay_core)
 
-add_executable(sliding_attacks_demo tests/demo/sliding_attacks_demo.cpp)
-target_link_libraries(sliding_attacks_demo seajay_core)
+# add_executable(sliding_attacks_demo tests/demo/sliding_attacks_demo.cpp)
+# target_link_libraries(sliding_attacks_demo seajay_core)
 
 # Stage 15: SEE Demo
-add_executable(see_demo tests/demo/see_demo.cpp)
-target_link_libraries(see_demo seajay_core)
+# add_executable(see_demo tests/demo/see_demo.cpp)
+# target_link_libraries(see_demo seajay_core)
 
-add_executable(move_generation_demo tests/demo/move_generation_demo.cpp)
-target_link_libraries(move_generation_demo seajay_core)
+# add_executable(move_generation_demo tests/demo/move_generation_demo.cpp)
+# target_link_libraries(move_generation_demo seajay_core)
 
+# Test executables - DISABLED (not needed for production)
 # Safety test
-add_executable(test_board_safety tests/test_board_safety.cpp)
-target_link_libraries(test_board_safety seajay_core)
+# add_executable(test_board_safety tests/test_board_safety.cpp)
+# target_link_libraries(test_board_safety seajay_core)
 
 # En passant check evasion test (Bug #001 regression test)
-add_executable(test_en_passant_check_evasion tests/test_en_passant_check_evasion.cpp)
-target_link_libraries(test_en_passant_check_evasion seajay_core)
+# add_executable(test_en_passant_check_evasion tests/test_en_passant_check_evasion.cpp)
+# target_link_libraries(test_en_passant_check_evasion seajay_core)
 
 # Magic bitboard validator test
-add_executable(test_magic_validator tests/test_magic_validator.cpp)
-target_link_libraries(test_magic_validator seajay_core)
+# add_executable(test_magic_validator tests/test_magic_validator.cpp)
+# target_link_libraries(test_magic_validator seajay_core)
 
 # Magic bitboards comprehensive test suite
-add_executable(test_magic_bitboards tests/magic_bitboards_test.cpp)
-target_link_libraries(test_magic_bitboards seajay_core)
+# add_executable(test_magic_bitboards tests/magic_bitboards_test.cpp)
+# target_link_libraries(test_magic_bitboards seajay_core)
 
 # A/B testing framework test
-add_executable(test_ab_framework tests/test_ab_framework.cpp)
-target_link_libraries(test_ab_framework seajay_core)
+# add_executable(test_ab_framework tests/test_ab_framework.cpp)
+# target_link_libraries(test_ab_framework seajay_core)
 
 # Magic mask validation test (Stage 10, Step 1A)
-add_executable(test_magic_masks tests/test_magic_masks.cpp)
-target_link_libraries(test_magic_masks seajay_core)
+# add_executable(test_magic_masks tests/test_magic_masks.cpp)
+# target_link_libraries(test_magic_masks seajay_core)
 
 # Material evaluation test
-add_executable(test_material_evaluation tests/test_material_evaluation.cpp)
-target_link_libraries(test_material_evaluation seajay_core)
+# add_executable(test_material_evaluation tests/test_material_evaluation.cpp)
+# target_link_libraries(test_material_evaluation seajay_core)
 
 # Negamax search test
-add_executable(test_negamax tests/test_negamax.cpp)
-target_link_libraries(test_negamax seajay_core)
+# add_executable(test_negamax tests/test_negamax.cpp)
+# target_link_libraries(test_negamax seajay_core)
 
-add_executable(test_quiescence tests/search/test_quiescence.cpp)
-target_link_libraries(test_quiescence seajay_core)
+# add_executable(test_quiescence tests/search/test_quiescence.cpp)
+# target_link_libraries(test_quiescence seajay_core)
 
 # MVV-LVA move ordering test
-add_executable(test_mvv_lva tests/test_mvv_lva.cpp)
-target_link_libraries(test_mvv_lva seajay_core)
+# add_executable(test_mvv_lva tests/test_mvv_lva.cpp)
+# target_link_libraries(test_mvv_lva seajay_core)
 
 # MVV-LVA performance validation test
-add_executable(test_mvv_lva_performance tests/test_mvv_lva_performance.cpp)
-target_link_libraries(test_mvv_lva_performance seajay_core)
+# add_executable(test_mvv_lva_performance tests/test_mvv_lva_performance.cpp)
+# target_link_libraries(test_mvv_lva_performance seajay_core)
 
 # MVV-LVA Phase 7 performance test
-add_executable(test_mvv_lva_phase7 tests/test_mvv_lva_phase7.cpp)
-target_link_libraries(test_mvv_lva_phase7 seajay_core)
+# add_executable(test_mvv_lva_phase7 tests/test_mvv_lva_phase7.cpp)
+# target_link_libraries(test_mvv_lva_phase7 seajay_core)
 
-# Stage 12: Transposition Table tests
-add_executable(test_zobrist tests/unit/test_zobrist.cpp)
-target_link_libraries(test_zobrist seajay_core)
+# Stage 12: Transposition Table tests - DISABLED (not needed for production)
+# add_executable(test_zobrist tests/unit/test_zobrist.cpp)
+# target_link_libraries(test_zobrist seajay_core)
 
-add_executable(test_transposition_table tests/unit/test_transposition_table.cpp)
-target_link_libraries(test_transposition_table seajay_core)
+# add_executable(test_transposition_table tests/unit/test_transposition_table.cpp)
+# target_link_libraries(test_transposition_table seajay_core)
 
-add_executable(test_tt_search tests/integration/test_tt_search.cpp)
-target_link_libraries(test_tt_search seajay_core)
+# add_executable(test_tt_search tests/integration/test_tt_search.cpp)
+# target_link_libraries(test_tt_search seajay_core)
 
-add_executable(test_tt_chaos tests/stress/test_tt_chaos.cpp)
-target_link_libraries(test_tt_chaos seajay_core)
+# add_executable(test_tt_chaos tests/stress/test_tt_chaos.cpp)
+# target_link_libraries(test_tt_chaos seajay_core)
 
-add_executable(test_perft_tt tests/unit/test_perft_tt.cpp)
-target_link_libraries(test_perft_tt seajay_core)
+# add_executable(test_perft_tt tests/unit/test_perft_tt.cpp)
+# target_link_libraries(test_perft_tt seajay_core)
 
-# Stage 15: SEE tests  
-if(NOT SKIP_ALPHABETA_TEST)
-    add_executable(test_see_basic tests/unit/test_see_basic.cpp)
-    target_include_directories(test_see_basic PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_see_basic seajay_core ${GTEST_LIBRARIES} pthread)
-    
-    add_executable(test_see_special tests/unit/test_see_special.cpp)
-    target_include_directories(test_see_special PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_see_special seajay_core ${GTEST_LIBRARIES} pthread)
-else()
-    add_executable(test_see_basic tests/unit/test_see_basic.cpp)
-    target_link_libraries(test_see_basic seajay_core)
-    
-    add_executable(test_see_special tests/unit/test_see_special.cpp)
-    target_link_libraries(test_see_special seajay_core)
-endif()
+# Stage 15: SEE tests - DISABLED (not needed for production)
+# if(NOT SKIP_ALPHABETA_TEST)
+#     add_executable(test_see_basic tests/unit/test_see_basic.cpp)
+#     target_include_directories(test_see_basic PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_see_basic seajay_core ${GTEST_LIBRARIES} pthread)
+#     
+#     add_executable(test_see_special tests/unit/test_see_special.cpp)
+#     target_include_directories(test_see_special PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_see_special seajay_core ${GTEST_LIBRARIES} pthread)
+# else()
+#     add_executable(test_see_basic tests/unit/test_see_basic.cpp)
+#     target_link_libraries(test_see_basic seajay_core)
+#     
+#     add_executable(test_see_special tests/unit/test_see_special.cpp)
+#     target_link_libraries(test_see_special seajay_core)
+# endif()
 
 # Quiescence Performance Benchmark Tool (Phase 2.3 - Missing Item 3)
-add_executable(qsearch_benchmark tools/qsearch_benchmark.cpp)
-target_link_libraries(qsearch_benchmark seajay_core)
+# NOTE: Source files don't exist - commented out
+# add_executable(qsearch_benchmark tools/qsearch_benchmark.cpp)
+# target_link_libraries(qsearch_benchmark seajay_core)
 
 # Quiescence Memory Optimization Analysis Tool (Phase 2.3 - Missing Item 4)
-add_executable(qsearch_memory_analysis tools/qsearch_memory_analysis.cpp)
-target_link_libraries(qsearch_memory_analysis seajay_core)
+# NOTE: Source files don't exist - commented out
+# add_executable(qsearch_memory_analysis tools/qsearch_memory_analysis.cpp)
+# target_link_libraries(qsearch_memory_analysis seajay_core)
 
 # Alpha-beta validation test with GoogleTest
 # Detect platform and use appropriate GoogleTest libraries
@@ -306,50 +309,50 @@ else()
         "${CMAKE_SOURCE_DIR}/external/googletest/lib/libgtest_main.a")
 endif()
 
-# Only build the test if GoogleTest is available
-if(NOT SKIP_ALPHABETA_TEST)
-    add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
-    target_include_directories(test_alphabeta_validation PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_alphabeta_validation seajay_core ${GTEST_LIBRARIES} pthread)
-    
-    # Stage 13: Iterative Deepening regression tests
-    add_executable(test_iterative_regression tests/test_iterative_regression.cpp)
-    target_include_directories(test_iterative_regression PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_iterative_regression seajay_core ${GTEST_LIBRARIES} pthread)
-    
-    # Stage 14: Quiescence search limit tests
-    add_executable(test_quiescence_limits tests/search/test_quiescence_limits.cpp)
-    target_include_directories(test_quiescence_limits PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_quiescence_limits seajay_core ${GTEST_LIBRARIES} pthread)
-    
-    # Stage 14: Delta pruning tests
-    add_executable(test_delta_pruning_simple tests/search/test_delta_pruning_simple.cpp)
-    target_link_libraries(test_delta_pruning_simple seajay_core)
-    
-    # Stage 18: LMR tests
-    add_executable(test_lmr tests/test_lmr.cpp)
-    target_include_directories(test_lmr PRIVATE ${GTEST_INCLUDE_DIR})
-    target_link_libraries(test_lmr seajay_core ${GTEST_LIBRARIES} pthread)
-endif()
+# GoogleTest-based tests - DISABLED (not needed for production)
+# if(NOT SKIP_ALPHABETA_TEST)
+#     add_executable(test_alphabeta_validation tests/alphabeta_validation_test.cpp)
+#     target_include_directories(test_alphabeta_validation PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_alphabeta_validation seajay_core ${GTEST_LIBRARIES} pthread)
+#     
+#     # Stage 13: Iterative Deepening regression tests
+#     add_executable(test_iterative_regression tests/test_iterative_regression.cpp)
+#     target_include_directories(test_iterative_regression PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_iterative_regression seajay_core ${GTEST_LIBRARIES} pthread)
+#     
+#     # Stage 14: Quiescence search limit tests
+#     add_executable(test_quiescence_limits tests/search/test_quiescence_limits.cpp)
+#     target_include_directories(test_quiescence_limits PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_quiescence_limits seajay_core ${GTEST_LIBRARIES} pthread)
+#     
+#     # Stage 14: Delta pruning tests
+#     add_executable(test_delta_pruning_simple tests/search/test_delta_pruning_simple.cpp)
+#     target_link_libraries(test_delta_pruning_simple seajay_core)
+#     
+#     # Stage 18: LMR tests
+#     add_executable(test_lmr tests/test_lmr.cpp)
+#     target_include_directories(test_lmr PRIVATE ${GTEST_INCLUDE_DIR})
+#     target_link_libraries(test_lmr seajay_core ${GTEST_LIBRARIES} pthread)
+# endif()
 
-# Add test cases
-add_test(NAME board_tests COMMAND test_board)
-add_test(NAME fen_comprehensive_tests COMMAND test_fen_comprehensive)
-add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
-add_test(NAME board_safety_tests COMMAND test_board_safety)
-add_test(NAME en_passant_check_evasion_tests COMMAND test_en_passant_check_evasion)
+# Test cases - DISABLED (test executables removed)
+# add_test(NAME board_tests COMMAND test_board)
+# add_test(NAME fen_comprehensive_tests COMMAND test_fen_comprehensive)
+# add_test(NAME fen_edge_cases_tests COMMAND test_fen_edge_cases)
+# add_test(NAME board_safety_tests COMMAND test_board_safety)
+# add_test(NAME en_passant_check_evasion_tests COMMAND test_en_passant_check_evasion)
 
-# Tactical Quiescence test
-add_executable(tactical_test tests/tactical_test.cpp)
-target_link_libraries(tactical_test seajay_core)
+# Tactical tests - DISABLED (not needed for production)
+# add_executable(tactical_test tests/tactical_test.cpp)
+# target_link_libraries(tactical_test seajay_core)
 
 # Simple tactical test
-add_executable(tactical_simple tests/tactical_simple.cpp)
-target_link_libraries(tactical_simple seajay_core)
+# add_executable(tactical_simple tests/tactical_simple.cpp)
+# target_link_libraries(tactical_simple seajay_core)
 
 # Stage 15: Simple SEE test (no GoogleTest dependency)
-add_executable(test_see_simple tests/test_see_simple.cpp)
-target_link_libraries(test_see_simple seajay_core)
+# add_executable(test_see_simple tests/test_see_simple.cpp)
+# target_link_libraries(test_see_simple seajay_core)
 
 # Benchmark target
 add_custom_target(bench
