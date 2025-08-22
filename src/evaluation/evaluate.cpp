@@ -1,8 +1,10 @@
 #include "evaluate.h"
 #include "material.h"
 #include "pst.h"  // Stage 9: Include PST header
+#include "pawn_structure.h"  // Phase PP2: Passed pawn evaluation
 #include "../core/board.h"
 #include "../core/bitboard.h"
+#include "../search/game_phase.h"  // Phase PP2: For phase scaling
 
 namespace seajay::eval {
 
@@ -54,10 +56,71 @@ Score evaluate(const Board& board) {
     // For Stage 9, we only use middlegame PST values (no tapering yet)
     Score pstValue = pstScore.mg;
     
+    // Phase PP2: Passed pawn evaluation
+    // Rank-based bonuses (indexed by relative rank)
+    static constexpr int PASSED_PAWN_BONUS[8] = {
+        0,    // Rank 1 (no bonus for pawns on first rank)
+        10,   // Rank 2
+        17,   // Rank 3
+        30,   // Rank 4
+        60,   // Rank 5
+        120,  // Rank 6
+        180,  // Rank 7
+        0     // Rank 8 (promoted, handled elsewhere)
+    };
+    
+    // Calculate passed pawn score
+    int passedPawnValue = 0;
+    
+    // Get pawn bitboards
+    Bitboard whitePawns = board.pieces(WHITE, PAWN);
+    Bitboard blackPawns = board.pieces(BLACK, PAWN);
+    
+    // Evaluate white passed pawns
+    Bitboard whitePassers = whitePawns;
+    while (whitePassers) {
+        Square sq = popLsb(whitePassers);
+        if (PawnStructure::isPassed(WHITE, sq, blackPawns)) {
+            int relRank = PawnStructure::relativeRank(WHITE, sq);
+            passedPawnValue += PASSED_PAWN_BONUS[relRank];
+        }
+    }
+    
+    // Evaluate black passed pawns
+    Bitboard blackPassers = blackPawns;
+    while (blackPassers) {
+        Square sq = popLsb(blackPassers);
+        if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
+            int relRank = PawnStructure::relativeRank(BLACK, sq);
+            passedPawnValue -= PASSED_PAWN_BONUS[relRank];
+        }
+    }
+    
+    // Phase scaling: passed pawns are more valuable in endgame
+    // Detect game phase using existing system
+    search::GamePhase phase = search::detectGamePhase(board);
+    
+    // Scale passed pawn bonus based on phase
+    // Opening: 50% value, Middlegame: 75% value, Endgame: 150% value
+    switch (phase) {
+        case search::GamePhase::OPENING:
+            passedPawnValue = passedPawnValue / 2;  // 50%
+            break;
+        case search::GamePhase::MIDDLEGAME:
+            passedPawnValue = (passedPawnValue * 3) / 4;  // 75%
+            break;
+        case search::GamePhase::ENDGAME:
+            passedPawnValue = (passedPawnValue * 3) / 2;  // 150%
+            break;
+    }
+    
+    // Convert passed pawn value to Score
+    Score passedPawnScore(passedPawnValue);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score
+    // Material difference + PST score + passed pawn score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {

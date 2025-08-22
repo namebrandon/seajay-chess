@@ -6,6 +6,7 @@
 #include "../search/move_ordering.h"  // Stage 15: For SEE integration
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
+#include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -15,6 +16,9 @@
 using namespace seajay;
 
 UCIEngine::UCIEngine() : m_quit(false), m_tt() {
+    // Initialize passed pawn masks (Phase PP2)
+    PawnStructure::initPassedPawnMasks();
+    
     // Initialize board to starting position
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     m_board.clearGameHistory();

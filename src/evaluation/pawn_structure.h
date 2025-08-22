@@ -31,7 +31,8 @@ public:
     }
     
     static inline int relativeRank(Color c, Square sq) {
-        return relativeRank(c, rankOf(sq));
+        int rank = rankOf(sq);
+        return c == WHITE ? rank : 7 - rank;
     }
     
     static bool isPassed(Color us, Square sq, Bitboard theirPawns);
