@@ -1,3 +1,0 @@
-PLEASE submit a bug report to https://github.com/Disservin/fastchess/issues/ and include command line parameters and possibly the stdout/log of fastchess.
-Error while reading option "-openings" with value "type=startpos"
-Reason: Unrecognized openings option "type" with value "startpos".

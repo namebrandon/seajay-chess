@@ -1,2 +1,0 @@
-Test completed at Sat Aug  9 07:07:07 PM CDT 2025
-Check /workspace/sprt_results/SPRT-2025-001/fastchess.log for detailed results

@@ -1,4 +1,0 @@
-Stage 12 Reference: a0f514c70dc4f113b5f02e5962cf4e6f634c8493
-Bench: 19191913
-ELO Gain: +6.89 ± 13.54 over Stage 11
----
