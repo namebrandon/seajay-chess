@@ -105,14 +105,22 @@ Implementing comprehensive passed pawn evaluation for SeaJay chess engine. Targe
 - **OpenBench:** https://openbench.seajay-chess.dev/test/92/
 - **Notes:** Blockader penalties working well (+2.3 ELO over PP3b-v4)
 
+#### Phase PP3d: Rook Behind Passed Pawn
+- **Commit:** `8d7115c`
+- **Bench:** 19191913
+- **Test Result:** **+51.75 ± 10.93 ELO** ❌
+- **Status:** ❌ REGRESSION - Lost 11 ELO from PP3c
+- **OpenBench:** https://openbench.seajay-chess.dev/test/93/
+- **Notes:** Rook behind pawn evaluation not working as expected
+
 ### Planned Phases (Incremental Approach)
 
 #### Remaining PP3 Features
 To be added one at a time, testing each:
 - ✅ PP3a: Protected passers (COMPLETE: +56.27 ELO)
-- 🔄 PP3b: Connected passers (TESTING)
-- PP3c: Blockader evaluation (PENDING)
-- PP3d: Rook behind passed pawn (PENDING)
+- ✅ PP3b: Connected passers (COMPLETE: +60.77 ELO with 20%)
+- ✅ PP3c: Blockader evaluation (COMPLETE: +63.10 ELO)
+- 🔄 PP3d: Rook behind passed pawn (TESTING)
 - PP3e: King proximity (endgame only) (PENDING)
 - PP3f: Unstoppable passer detection (PENDING)
 
