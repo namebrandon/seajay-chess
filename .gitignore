@@ -1,5 +1,6 @@
 # Build artifacts
 /build/
+/openbench-build/
 /bin/
 *.o
 *.a
