@@ -56,7 +56,7 @@ Score evaluate(const Board& board) {
     // For Stage 9, we only use middlegame PST values (no tapering yet)
     Score pstValue = pstScore.mg;
     
-    // Phase PP2: Passed pawn evaluation
+    // Phase PP3 FIXED: Passed pawn evaluation with all features
     // Rank-based bonuses (indexed by relative rank)
     static constexpr int PASSED_PAWN_BONUS[8] = {
         0,    // Rank 1 (no bonus for pawns on first rank)
@@ -71,6 +71,10 @@ Score evaluate(const Board& board) {
     
     // Calculate passed pawn score
     int passedPawnValue = 0;
+    
+    // Detect game phase EARLY for proper feature application
+    search::GamePhase phase = search::detectGamePhase(board);
+    bool isEndgame = (phase == search::GamePhase::ENDGAME);
     
     // Get piece bitboards for PP3 features
     Bitboard whitePawns = board.pieces(WHITE, PAWN);
@@ -90,19 +94,32 @@ Score evaluate(const Board& board) {
         if (PawnStructure::isPassed(WHITE, sq, blackPawns)) {
             int relRank = PawnStructure::relativeRank(WHITE, sq);
             int baseBonus = PASSED_PAWN_BONUS[relRank];
+            
+            // FIXED: Apply phase scaling to BASE bonus FIRST
+            switch (phase) {
+                case search::GamePhase::OPENING:
+                    baseBonus = baseBonus / 2;  // 50%
+                    break;
+                case search::GamePhase::MIDDLEGAME:
+                    baseBonus = (baseBonus * 3) / 4;  // 75%
+                    break;
+                case search::GamePhase::ENDGAME:
+                    baseBonus = (baseBonus * 3) / 2;  // 150%
+                    break;
+            }
+            
             int bonus = baseBonus;
             
-            // Phase PP3: King proximity factors
-            // Friendly king proximity - closer is better in endgame
-            int friendlyKingDist = distance(whiteKingSq, sq);
-            bonus += (7 - friendlyKingDist) * 2;  // 0-14 bonus
+            // FIXED: King proximity ONLY in endgame (reduced values)
+            if (isEndgame) {
+                int friendlyKingDist = distance(whiteKingSq, sq);
+                bonus += (7 - friendlyKingDist);  // 0-7 bonus (was *2)
+                
+                int enemyKingDist = distance(blackKingSq, sq);
+                bonus += enemyKingDist;  // 0-7 bonus (was *3)
+            }
             
-            // Enemy king proximity - further is better
-            int enemyKingDist = distance(blackKingSq, sq);
-            bonus += enemyKingDist * 3;  // 0-21 bonus
-            
-            // Phase PP3: Rook behind passed pawn
-            // Check if white rook is behind the pawn (same file, lower rank)
+            // Rook behind passed pawn (not phase-dependent)
             if (whiteRooks) {
                 int pawnFile = fileOf(sq);
                 Bitboard fileRooks = whiteRooks & fileBB(pawnFile);
@@ -114,41 +131,41 @@ Score evaluate(const Board& board) {
                 }
             }
             
-            // Phase PP3: Blockader evaluation
-            Square blockSq = Square(sq + 8);  // Square in front
+            // Blockader evaluation
+            Square blockSq = Square(sq + 8);
             if (blockSq <= SQ_H8) {
                 Piece blocker = board.pieceAt(blockSq);
                 if (blocker != NO_PIECE && colorOf(blocker) == BLACK) {
-                    // Penalty based on piece type blocking
                     switch (typeOf(blocker)) {
-                        case KNIGHT: bonus -= 5; break;   // Knights are good blockers
-                        case BISHOP: bonus -= 15; break;  // Bishops are poor blockers
-                        case ROOK:   bonus -= 10; break;  // Rooks are mediocre blockers
-                        case QUEEN:  bonus -= 10; break;  // Queens are mediocre blockers
+                        case KNIGHT: bonus -= 5; break;
+                        case BISHOP: bonus -= 15; break;
+                        case ROOK:   bonus -= 10; break;
+                        case QUEEN:  bonus -= 10; break;
                         default: break;
                     }
                 }
             }
             
-            // Phase PP3: Protected passed pawns
+            // Protected passed pawns
             Bitboard pawnSupport = pawnAttacks(WHITE, sq) & whitePawns;
             if (pawnSupport) {
-                bonus = (bonus * 13) / 10;  // +30% for protected
+                bonus = (bonus * 13) / 10;  // +30%
             }
             
-            // Phase PP3: Connected passed pawns
-            // Check if adjacent file has another passed pawn
+            // Connected passed pawns (FIXED: check rank similarity)
             int file = fileOf(sq);
+            int rank = rankOf(sq);
             Bitboard adjacentFiles = 0;
             if (file > 0) adjacentFiles |= fileBB(file - 1);
             if (file < 7) adjacentFiles |= fileBB(file + 1);
             Bitboard adjacentPassers = adjacentFiles & whitePawns;
-            bool hasConnectedPasser = false;
-            while (adjacentPassers && !hasConnectedPasser) {
+            while (adjacentPassers) {
                 Square adjSq = popLsb(adjacentPassers);
-                if (PawnStructure::isPassed(WHITE, adjSq, blackPawns)) {
-                    hasConnectedPasser = true;
-                    bonus = (bonus * 15) / 10;  // +50% for connected
+                // Must be passed AND on similar rank (within 1)
+                if (PawnStructure::isPassed(WHITE, adjSq, blackPawns) &&
+                    std::abs(rankOf(adjSq) - rank) <= 1) {
+                    bonus = (bonus * 14) / 10;  // +40% (reduced from 50%)
+                    break;
                 }
             }
             
@@ -163,29 +180,45 @@ Score evaluate(const Board& board) {
         if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
             int relRank = PawnStructure::relativeRank(BLACK, sq);
             int baseBonus = PASSED_PAWN_BONUS[relRank];
+            
+            // FIXED: Apply phase scaling to BASE bonus FIRST
+            switch (phase) {
+                case search::GamePhase::OPENING:
+                    baseBonus = baseBonus / 2;
+                    break;
+                case search::GamePhase::MIDDLEGAME:
+                    baseBonus = (baseBonus * 3) / 4;
+                    break;
+                case search::GamePhase::ENDGAME:
+                    baseBonus = (baseBonus * 3) / 2;
+                    break;
+            }
+            
             int bonus = baseBonus;
             
-            // Phase PP3: King proximity factors
-            int friendlyKingDist = distance(blackKingSq, sq);
-            bonus += (7 - friendlyKingDist) * 2;
+            // FIXED: King proximity ONLY in endgame
+            if (isEndgame) {
+                int friendlyKingDist = distance(blackKingSq, sq);
+                bonus += (7 - friendlyKingDist);
+                
+                int enemyKingDist = distance(whiteKingSq, sq);
+                bonus += enemyKingDist;
+            }
             
-            int enemyKingDist = distance(whiteKingSq, sq);
-            bonus += enemyKingDist * 3;
-            
-            // Phase PP3: Rook behind passed pawn
+            // Rook behind passed pawn
             if (blackRooks) {
                 int pawnFile = fileOf(sq);
                 Bitboard fileRooks = blackRooks & fileBB(pawnFile);
                 if (fileRooks) {
                     Square rookSq = lsb(fileRooks);
                     if (rankOf(rookSq) > rankOf(sq)) {
-                        bonus += 20;  // Rook behind passer (black perspective)
+                        bonus += 20;
                     }
                 }
             }
             
-            // Phase PP3: Blockader evaluation
-            Square blockSq = Square(sq - 8);  // Square in front (black perspective)
+            // Blockader evaluation
+            Square blockSq = Square(sq - 8);
             if (blockSq >= SQ_A1) {
                 Piece blocker = board.pieceAt(blockSq);
                 if (blocker != NO_PIECE && colorOf(blocker) == WHITE) {
@@ -199,24 +232,25 @@ Score evaluate(const Board& board) {
                 }
             }
             
-            // Phase PP3: Protected passed pawns
+            // Protected passed pawns
             Bitboard pawnSupport = pawnAttacks(BLACK, sq) & blackPawns;
             if (pawnSupport) {
-                bonus = (bonus * 13) / 10;  // +30% for protected
+                bonus = (bonus * 13) / 10;  // +30%
             }
             
-            // Phase PP3: Connected passed pawns
+            // Connected passed pawns (FIXED)
             int file = fileOf(sq);
+            int rank = rankOf(sq);
             Bitboard adjacentFiles = 0;
             if (file > 0) adjacentFiles |= fileBB(file - 1);
             if (file < 7) adjacentFiles |= fileBB(file + 1);
             Bitboard adjacentPassers = adjacentFiles & blackPawns;
-            bool hasConnectedPasser = false;
-            while (adjacentPassers && !hasConnectedPasser) {
+            while (adjacentPassers) {
                 Square adjSq = popLsb(adjacentPassers);
-                if (PawnStructure::isPassed(BLACK, adjSq, whitePawns)) {
-                    hasConnectedPasser = true;
-                    bonus = (bonus * 15) / 10;  // +50% for connected
+                if (PawnStructure::isPassed(BLACK, adjSq, whitePawns) &&
+                    std::abs(rankOf(adjSq) - rank) <= 1) {
+                    bonus = (bonus * 14) / 10;  // +40%
+                    break;
                 }
             }
             
@@ -224,8 +258,8 @@ Score evaluate(const Board& board) {
         }
     }
     
-    // Phase PP3: Unstoppable passer detection (huge bonus in endgame)
-    // Only check in endgame when no major pieces remain
+    // Unstoppable passer detection (huge bonus in endgame)
+    // Only check in PURE endgame when no major pieces remain
     bool inPureEndgame = board.pieces(WHITE, QUEEN) == 0 && board.pieces(BLACK, QUEEN) == 0 &&
                          popCount(board.pieces(WHITE, ROOK)) <= 1 && popCount(board.pieces(BLACK, ROOK)) <= 1;
     
@@ -239,14 +273,13 @@ Score evaluate(const Board& board) {
                 if (relRank >= 5) {  // Only consider pawns on rank 6 or 7
                     // Check if black king can catch the pawn
                     int pawnDistToPromotion = 7 - rankOf(sq);
-                    int kingDistToPromotion = distance(blackKingSq, Square(fileOf(sq) + 56));  // Promotion square
+                    int kingDistToPromotion = distance(blackKingSq, Square(fileOf(sq) + 56));
                     
-                    // Account for tempo (white to move gets 1 extra tempo)
+                    // Account for tempo
                     int tempoBonus = (board.sideToMove() == WHITE) ? 1 : 0;
                     
                     if (kingDistToPromotion - tempoBonus > pawnDistToPromotion) {
-                        // Unstoppable passer!
-                        passedPawnValue += 500;  // Huge bonus
+                        passedPawnValue += 500;  // Unstoppable!
                     }
                 }
             }
@@ -258,39 +291,18 @@ Score evaluate(const Board& board) {
             Square sq = popLsb(blackPassedPawns);
             if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
                 int relRank = PawnStructure::relativeRank(BLACK, sq);
-                if (relRank >= 5) {  // Only consider pawns on rank 6 or 7 (from black's perspective)
-                    // Check if white king can catch the pawn
-                    int pawnDistToPromotion = rankOf(sq);  // Distance to rank 0
-                    int kingDistToPromotion = distance(whiteKingSq, Square(fileOf(sq)));  // Promotion square
+                if (relRank >= 5) {
+                    int pawnDistToPromotion = rankOf(sq);
+                    int kingDistToPromotion = distance(whiteKingSq, Square(fileOf(sq)));
                     
-                    // Account for tempo
                     int tempoBonus = (board.sideToMove() == BLACK) ? 1 : 0;
                     
                     if (kingDistToPromotion - tempoBonus > pawnDistToPromotion) {
-                        // Unstoppable passer!
-                        passedPawnValue -= 500;  // Huge bonus for black
+                        passedPawnValue -= 500;
                     }
                 }
             }
         }
-    }
-    
-    // Phase scaling: passed pawns are more valuable in endgame
-    // Detect game phase using existing system
-    search::GamePhase phase = search::detectGamePhase(board);
-    
-    // Scale passed pawn bonus based on phase
-    // Opening: 50% value, Middlegame: 75% value, Endgame: 150% value
-    switch (phase) {
-        case search::GamePhase::OPENING:
-            passedPawnValue = passedPawnValue / 2;  // 50%
-            break;
-        case search::GamePhase::MIDDLEGAME:
-            passedPawnValue = (passedPawnValue * 3) / 4;  // 75%
-            break;
-        case search::GamePhase::ENDGAME:
-            passedPawnValue = (passedPawnValue * 3) / 2;  // 150%
-            break;
     }
     
     // Convert passed pawn value to Score
