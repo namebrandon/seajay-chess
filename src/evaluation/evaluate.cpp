@@ -404,6 +404,12 @@ Score evaluate(const Board& board) {
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
         
+        // IP3b-revised: REDUCE penalty if opposed (opposed isolanis are less weak!)
+        Bitboard fileMask = FILE_A_BB << file;
+        if (blackPawns & fileMask) {
+            penalty = (penalty * 80) / 100;  // -20% penalty if opposed (dynamic potential)
+        }
+        
         isolatedPawnPenalty -= penalty;
     }
     
@@ -417,6 +423,12 @@ Score evaluate(const Board& board) {
         
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
+        
+        // IP3b-revised: REDUCE penalty if opposed (opposed isolanis are less weak!)
+        Bitboard fileMask = FILE_A_BB << file;
+        if (whitePawns & fileMask) {
+            penalty = (penalty * 80) / 100;  // -20% penalty if opposed (dynamic potential)
+        }
         
         isolatedPawnPenalty += penalty;
     }
