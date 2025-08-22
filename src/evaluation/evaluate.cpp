@@ -86,7 +86,13 @@ Score evaluate(const Board& board) {
             int bonus = PASSED_PAWN_BONUS[relRank];
             
             // PP3a: Protected passer bonus ONLY
-            Bitboard pawnSupport = pawnAttacks(BLACK, sq) & whitePawns;  // Squares that protect this pawn
+            // Check if friendly pawns can protect this square (pawns diagonally behind)
+            Bitboard protectingSquares = 0ULL;
+            if (rankOf(sq) > 0) {  // Can't be protected if on rank 1
+                if (fileOf(sq) > 0) protectingSquares |= (1ULL << (sq - 9));  // Southwest
+                if (fileOf(sq) < 7) protectingSquares |= (1ULL << (sq - 7));  // Southeast
+            }
+            Bitboard pawnSupport = protectingSquares & whitePawns;
             if (pawnSupport) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
             }
@@ -134,6 +140,42 @@ Score evaluate(const Board& board) {
                 
                 bonus += kingProximityBonus;
                 bonus -= kingProximityPenalty;
+                
+                // PP3f: Unstoppable passer detection (WHITE)
+                // Check if the pawn is unstoppable in pure king and pawn endgame
+                // Rule: The pawn can promote if the enemy king cannot catch it
+                // This uses the "square rule" - if enemy king is outside the square, pawn promotes
+                if (relRank >= 4) {  // Only check for advanced pawns (rank 5+)
+                    // Check if it's a pure pawn endgame (no pieces other than kings and pawns)
+                    bool isPureEndgame = board.pieces(WHITE, KNIGHT) == 0 &&
+                                        board.pieces(WHITE, BISHOP) == 0 &&
+                                        board.pieces(WHITE, ROOK) == 0 &&
+                                        board.pieces(WHITE, QUEEN) == 0 &&
+                                        board.pieces(BLACK, KNIGHT) == 0 &&
+                                        board.pieces(BLACK, BISHOP) == 0 &&
+                                        board.pieces(BLACK, ROOK) == 0 &&
+                                        board.pieces(BLACK, QUEEN) == 0;
+                    
+                    if (isPureEndgame) {
+                        // Calculate if enemy king can catch the pawn using square rule
+                        // Distance to promotion square
+                        int pawnDistToPromotion = 7 - rankOf(sq);
+                        
+                        // Enemy king distance to promotion square
+                        Square promotionSquare = Square(fileOf(sq) + 56);  // Rank 8, same file
+                        int kingDistToPromotion = std::max(std::abs(rankOf(blackKing) - rankOf(promotionSquare)),
+                                                          std::abs(fileOf(blackKing) - fileOf(promotionSquare)));
+                        
+                        // Account for who moves first (if it's white's turn, pawn gets head start)
+                        int moveAdvantage = (board.sideToMove() == WHITE) ? 1 : 0;
+                        
+                        // If king can't catch the pawn, it's unstoppable
+                        if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage) {
+                            // Huge bonus for unstoppable pawn (equivalent to a minor piece)
+                            bonus += 300;
+                        }
+                    }
+                }
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
@@ -155,7 +197,7 @@ Score evaluate(const Board& board) {
                         hasConnectedPasser = true;
                         // Upper range bonus: +20% (max per expert analysis)
                         // And only if this pawn is more advanced (to avoid double counting)
-                        if (rankOf(sq) >= rankOf(adjSq)) {
+                        if (rankOf(sq) > rankOf(adjSq)) {  // Strict > to avoid double counting on same rank
                             bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }
@@ -175,7 +217,13 @@ Score evaluate(const Board& board) {
             int bonus = PASSED_PAWN_BONUS[relRank];
             
             // PP3a: Protected passer bonus ONLY
-            Bitboard pawnSupport = pawnAttacks(WHITE, sq) & blackPawns;  // Squares that protect this pawn
+            // Check if friendly pawns can protect this square (pawns diagonally behind)
+            Bitboard protectingSquares = 0ULL;
+            if (rankOf(sq) < 7) {  // Can't be protected if on rank 8
+                if (fileOf(sq) > 0) protectingSquares |= (1ULL << (sq + 7));  // Northwest
+                if (fileOf(sq) < 7) protectingSquares |= (1ULL << (sq + 9));  // Northeast
+            }
+            Bitboard pawnSupport = protectingSquares & blackPawns;
             if (pawnSupport) {
                 bonus = (bonus * 12) / 10;  // +20% for protected (conservative)
             }
@@ -223,6 +271,42 @@ Score evaluate(const Board& board) {
                 
                 bonus += kingProximityBonus;
                 bonus -= kingProximityPenalty;
+                
+                // PP3f: Unstoppable passer detection (BLACK)
+                // Check if the pawn is unstoppable in pure king and pawn endgame
+                // Rule: The pawn can promote if the enemy king cannot catch it
+                // This uses the "square rule" - if enemy king is outside the square, pawn promotes
+                if (relRank >= 4) {  // Only check for advanced pawns (rank 5+ relative)
+                    // Check if it's a pure pawn endgame (no pieces other than kings and pawns)
+                    bool isPureEndgame = board.pieces(WHITE, KNIGHT) == 0 &&
+                                        board.pieces(WHITE, BISHOP) == 0 &&
+                                        board.pieces(WHITE, ROOK) == 0 &&
+                                        board.pieces(WHITE, QUEEN) == 0 &&
+                                        board.pieces(BLACK, KNIGHT) == 0 &&
+                                        board.pieces(BLACK, BISHOP) == 0 &&
+                                        board.pieces(BLACK, ROOK) == 0 &&
+                                        board.pieces(BLACK, QUEEN) == 0;
+                    
+                    if (isPureEndgame) {
+                        // Calculate if enemy king can catch the pawn using square rule
+                        // Distance to promotion square (for black, promotion is rank 1)
+                        int pawnDistToPromotion = rankOf(sq);  // Black promotes at rank 0
+                        
+                        // Enemy king distance to promotion square
+                        Square promotionSquare = Square(fileOf(sq));  // Rank 1, same file
+                        int kingDistToPromotion = std::max(std::abs(rankOf(whiteKing) - rankOf(promotionSquare)),
+                                                          std::abs(fileOf(whiteKing) - fileOf(promotionSquare)));
+                        
+                        // Account for who moves first (if it's black's turn, pawn gets head start)
+                        int moveAdvantage = (board.sideToMove() == BLACK) ? 1 : 0;
+                        
+                        // If king can't catch the pawn, it's unstoppable
+                        if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage) {
+                            // Huge bonus for unstoppable pawn (equivalent to a minor piece)
+                            bonus += 300;
+                        }
+                    }
+                }
             }
             
             // PP3b: Connected passer bonus - passed pawns on adjacent files
@@ -245,7 +329,7 @@ Score evaluate(const Board& board) {
                         // Upper range bonus: +20% (max per expert analysis)
                         // And only if this pawn is more advanced (to avoid double counting)
                         // For black, "more advanced" means lower rank number
-                        if (rankOf(sq) <= rankOf(adjSq)) {
+                        if (rankOf(sq) < rankOf(adjSq)) {  // Strict < to avoid double counting on same rank
                             bonus = (bonus * 12) / 10;  // +20% for connected passers
                         }
                     }

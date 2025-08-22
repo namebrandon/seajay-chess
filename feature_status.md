@@ -121,9 +121,9 @@ To be added one at a time, testing each:
 - ✅ PP3a: Protected passers (COMPLETE: +56.27 ELO)
 - ✅ PP3b: Connected passers (COMPLETE: +60.77 ELO with 20%)
 - ✅ PP3c: Blockader evaluation (COMPLETE: +63.10 ELO)
-- ❌ PP3d: Rook behind passed pawn (FAILED - REVERTED)
-- PP3e: King proximity (endgame only) (NEXT)
-- PP3f: Unstoppable passer detection (PENDING)
+- ❌ PP3d: Rook behind passed pawn (FAILED: -11 ELO regression - REVERTED)
+- ✅ PP3e: King proximity (endgame only) (COMPLETE: +68.46 ELO total)
+- PP3f: Unstoppable passer detection (OPTIONAL - already at 91% of target)
 
 #### Phase PP4: Tuning & Refinement
 - SPSA tuning of all parameters
@@ -218,23 +218,75 @@ To be added one at a time, testing each:
    - Identify specific feature causing regression
 
 ### Summary Statistics
-- **Best Working Version:** PP3c with +63.10 ELO vs main
+- **Best Working Version:** PP3e with +68.46 ELO vs main 🎉
 - **Target Total Gain:** +50-75 ELO
-- **Current Progress:** 126% of minimum target, 84% of maximum target achieved
+- **Current Progress:** 137% of minimum target, 91% of maximum target achieved
 - **Features Successfully Added:**
-  - Basic rank bonuses with phase scaling (PP2)
-  - Protected passer bonus +20% (PP3a)
-  - Connected passer bonus +20% (PP3b-v4)
-  - Blockader penalties (PP3c)
+  - Basic rank bonuses with phase scaling (PP2): +58.50 ELO
+  - Protected passer bonus +20% (PP3a): +56.27 ELO standalone
+  - Connected passer bonus +20% (PP3b-v4): +60.77 ELO with PP3a
+  - Blockader penalties (PP3c): +63.10 ELO cumulative
+  - King proximity in endgame (PP3e): +68.46 ELO cumulative (BEST)
+
+### Testing Summary Table
+
+| Phase | Feature | ELO vs Main | Delta from Previous | Status |
+|-------|---------|-------------|-------------------|---------|
+| PP1 | Infrastructure | -7.94 | N/A | ✅ Expected |
+| PP2 | Basic rank bonuses | +58.50 | +66.44 | ✅ Excellent |
+| PP3 (orig) | Everything at once | -100.07 | -158.57 | ❌ Failed |
+| PP3a | Protected only | +56.27 | N/A (from PP2) | ✅ Success |
+| PP3b (30%) | Connected (flawed) | +36.20 | -20.07 | ❌ Regression |
+| PP3b (10%) | Connected (fixed) | +48.87 | +12.67 | ✅ Better |
+| PP3b (15%) | Connected | +49.61 | +0.74 | ✅ Marginal |
+| PP3b (20%) | Connected | +60.77 | +11.16 | ✅ Optimal |
+| PP3b-v5 | Same-rank bonus | +45.99 | -14.78 | ❌ Bug |
+| PP3c | Blockader | +63.10 | +2.33 | ✅ Success |
+| PP3d | Rook behind | +51.75 | -11.35 | ❌ Reverted |
+| PP3e | King proximity | +68.46 | +5.36 | ✅ Best! |
+
+#### Phase PP3e: King Proximity in Endgame Only
+- **Commit:** `1d16a6a`
+- **Bench:** 19191913
+- **Test Result:** **+68.46 ± 11.19 ELO** 🎉
+- **Status:** ✅ SUCCESS - New best result!
+- **OpenBench:** https://openbench.seajay-chess.dev/test/94/
+- **Notes:** King distance eval only in endgame works perfectly (+5.36 ELO over PP3c)
 
 ### Next Steps
-1. Continue with PP3e (King proximity in endgame only)
+1. Test PP3e results
 2. If successful, try PP3f (Unstoppable passer detection)
 3. Consider PP4 (SPSA tuning) if gains plateau
 4. Merge when satisfied with results
+
+### Implementation Details of Successful Features
+
+#### PP2: Basic Rank Bonuses (Foundation)
+- Rank bonuses: {0, 10, 17, 30, 60, 120, 180, 0} centipawns
+- Phase scaling: Opening 50%, Middlegame 75%, Endgame 150%
+- Applied to all passed pawns unconditionally
+
+#### PP3a: Protected Passer Bonus
+- +20% bonus if pawn is protected by another pawn
+- Applied multiplicatively after base rank bonus
+- Simple and effective
+
+#### PP3b-v4: Connected Passer Bonus  
+- +20% bonus for connected passers (adjacent files, within 1 rank)
+- Leader-follower pattern: only more advanced pawn gets bonus
+- Avoids double-counting issue
+
+#### PP3c: Blockader Penalties
+- Knight blocking: -12.5% (good blockers)
+- Bishop blocking: -25% (poor blockers, tied to color)
+- Rook blocking: -16.7%
+- Queen blocking: -20%
+- King blocking: -16.7%
+- Applied as percentage reduction of bonus
 
 ### Risk Mitigation
 - All commits pushed to remote for OpenBench access
 - Reverting to PP3c as stable baseline after PP3d failure
 - Incremental testing approach to isolate problems
 - Full documentation of each attempt for learning
+- Expert consultations when features fail
