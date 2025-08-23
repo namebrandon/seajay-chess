@@ -35,7 +35,7 @@ std::array<Hash, NUM_SQUARES> Board::s_zobristEnPassant;
 std::array<Hash, 16> Board::s_zobristCastling;
 std::array<Hash, 100> Board::s_zobristFiftyMove;
 Hash Board::s_zobristSideToMove;
-std::array<std::array<Hash, 2>, NUM_SQUARES> Board::s_zobristPawns;  // Separate zobrist for pawns
+std::array<std::array<Hash, NUM_SQUARES>, 2> Board::s_zobristPawns;  // Separate zobrist for pawns
 bool Board::s_zobristInitialized = false;
 
 // Character-to-piece lookup table

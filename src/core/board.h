@@ -248,7 +248,7 @@ private:
     static std::array<Hash, 16> s_zobristCastling;
     static std::array<Hash, 100> s_zobristFiftyMove;  // Fifty-move counter keys
     static Hash s_zobristSideToMove;
-    static std::array<std::array<Hash, 2>, NUM_SQUARES> s_zobristPawns;  // Separate zobrist for pawns only [color][square]
+    static std::array<std::array<Hash, NUM_SQUARES>, 2> s_zobristPawns;  // Separate zobrist for pawns only [color][square]
     static bool s_zobristInitialized;
     
 #ifdef DEBUG
