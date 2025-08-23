@@ -74,27 +74,45 @@ Score evaluate(const Board& board) {
     Bitboard whitePawns = board.pieces(WHITE, PAWN);
     Bitboard blackPawns = board.pieces(BLACK, PAWN);
     
-    // PPH2-FIX: Lazy load passed pawns for better cache locality
-    // Get pawn hash key but defer loading until needed
+    // PPH2: Get cached pawn structure evaluation early
     uint64_t pawnKey = board.pawnZobristKey();
-    PawnEntry* pawnEntry = nullptr;
+    PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
     
-    // First, check if we have cached passed pawns (probe without loading all data)
-    pawnEntry = g_pawnStructure.probe(pawnKey);
-    
+    Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
     Bitboard whitePassedPawns, blackPassedPawns;
-    bool haveCachedPassedPawns = false;
     
-    if (pawnEntry) {
-        // Cache hit - we'll use passed pawns from cache
+    if (!pawnEntry) {
+        // Cache miss - compute pawn structure
+        PawnEntry newEntry;
+        newEntry.key = pawnKey;
+        newEntry.valid = true;
+        
+        // Compute all pawn structure features
+        newEntry.isolatedPawns[WHITE] = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
+        newEntry.isolatedPawns[BLACK] = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
+        newEntry.doubledPawns[WHITE] = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
+        newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
+        newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
+        newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
+        
+        // Store in cache
+        g_pawnStructure.store(pawnKey, newEntry);
+        
+        // Use computed values
+        whiteIsolated = newEntry.isolatedPawns[WHITE];
+        blackIsolated = newEntry.isolatedPawns[BLACK];
+        whiteDoubled = newEntry.doubledPawns[WHITE];
+        blackDoubled = newEntry.doubledPawns[BLACK];
+        whitePassedPawns = newEntry.passedPawns[WHITE];
+        blackPassedPawns = newEntry.passedPawns[BLACK];
+    } else {
+        // Cache hit - use stored values
+        whiteIsolated = pawnEntry->isolatedPawns[WHITE];
+        blackIsolated = pawnEntry->isolatedPawns[BLACK];
+        whiteDoubled = pawnEntry->doubledPawns[WHITE];
+        blackDoubled = pawnEntry->doubledPawns[BLACK];
         whitePassedPawns = pawnEntry->passedPawns[WHITE];
         blackPassedPawns = pawnEntry->passedPawns[BLACK];
-        haveCachedPassedPawns = true;
-    } else {
-        // Cache miss - compute passed pawns only (not other features yet)
-        whitePassedPawns = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
-        blackPassedPawns = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
-        // Don't store in cache yet - we'll do full computation later if needed
     }
     
     // Calculate passed pawn score
@@ -413,51 +431,8 @@ Score evaluate(const Board& board) {
         120   // h-file (edge pawn penalty)
     };
     
-    // Calculate isolated pawn penalties
+    // Calculate isolated pawn penalties (using cached values computed earlier)
     int isolatedPawnPenalty = 0;
-    
-    // PPH2-FIX: Load isolated and doubled pawns here for better cache locality
-    Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
-    
-    if (!haveCachedPassedPawns) {
-        // We haven't loaded from cache yet - do full computation now
-        pawnEntry = g_pawnStructure.probe(pawnKey);
-        if (!pawnEntry) {
-            // Cache miss - compute all pawn structure features
-            PawnEntry newEntry;
-            newEntry.key = pawnKey;
-            newEntry.valid = true;
-            
-            // Compute all features
-            newEntry.isolatedPawns[WHITE] = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
-            newEntry.isolatedPawns[BLACK] = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
-            newEntry.doubledPawns[WHITE] = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
-            newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
-            newEntry.passedPawns[WHITE] = whitePassedPawns;  // Use already computed values
-            newEntry.passedPawns[BLACK] = blackPassedPawns;
-            
-            // Store in cache
-            g_pawnStructure.store(pawnKey, newEntry);
-            
-            // Use computed values
-            whiteIsolated = newEntry.isolatedPawns[WHITE];
-            blackIsolated = newEntry.isolatedPawns[BLACK];
-            whiteDoubled = newEntry.doubledPawns[WHITE];
-            blackDoubled = newEntry.doubledPawns[BLACK];
-        } else {
-            // Shouldn't happen but handle gracefully
-            whiteIsolated = pawnEntry->isolatedPawns[WHITE];
-            blackIsolated = pawnEntry->isolatedPawns[BLACK];
-            whiteDoubled = pawnEntry->doubledPawns[WHITE];
-            blackDoubled = pawnEntry->doubledPawns[BLACK];
-        }
-    } else {
-        // Cache hit - use stored values for isolated and doubled
-        whiteIsolated = pawnEntry->isolatedPawns[WHITE];
-        blackIsolated = pawnEntry->isolatedPawns[BLACK];
-        whiteDoubled = pawnEntry->doubledPawns[WHITE];
-        blackDoubled = pawnEntry->doubledPawns[BLACK];
-    }
     
     // Evaluate white isolated pawns (penalty)
     Bitboard whiteIsolani = whiteIsolated;

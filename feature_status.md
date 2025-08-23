@@ -32,7 +32,7 @@ The Passed Pawns feature was implemented before the pawn hash caching mechanism.
 | Phase | Description | Commit | Bench | Test Result | Status |
 |-------|------------|--------|-------|-------------|--------|
 | PPH1 | Cache Infrastructure | a688725 | 19191913 | -0.38 ± 11.83 | COMPLETE |
-| PPH2 | Use Cached Values | 01c8348 | 19191913 | - | COMPLETE |
+| PPH2 | Use Cached Values | - | - | - | IN PROGRESS |
 
 ## Testing Notes
 - This is primarily a performance optimization
