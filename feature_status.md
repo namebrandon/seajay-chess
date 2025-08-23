@@ -62,6 +62,7 @@ Implementation tasks:
 - Connected doubled pawn bonus
 - Doubled passed pawn exception
 - SPSA tuning of all parameters
+- **Passed pawn caching optimization**: Add passedPawns to pawn hash cache (separate feature, est. +5-10 ELO from performance)
 
 ## Technical Design
 
@@ -127,7 +128,8 @@ SPRT Bounds: [10, 30] for DP3
 |-------|--------|-------|-------------|--------|
 | DP1 | 6f0c214 | 19191913 | -8.59 ± 10.03 | COMPLETE |
 | DP2 | 0aa69fe | 19191913 | -13.05 ± 10.43 (bug) | COMPLETE |
-| DP2-FIX | d859a3b | 19191913 | Awaiting test | COMPLETE |
+| DP2-FIX | d859a3b | 19191913 | -9.31 ± 10.43 (partial fix) | COMPLETE |
+| DP2-FINAL | 8468c4a | 19191913 | +2.94 ± 10.77 ✓ | COMPLETE |
 | DP3 | - | - | - | PENDING |
 | DP4 | - | - | - | PLANNED |
 

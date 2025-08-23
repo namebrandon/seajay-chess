@@ -468,10 +468,10 @@ Score evaluate(const Board& board) {
     // Convert isolated pawn penalty to Score
     Score isolatedPawnScore(isolatedPawnPenalty);
     
-    // DP2: Doubled pawn detection with 0 penalty (for testing)
-    // Base penalties - set to 0 for Phase DP2
-    static constexpr int DOUBLED_PAWN_PENALTY_MG = 0;  // Will be -15 in DP3
-    static constexpr int DOUBLED_PAWN_PENALTY_EG = 0;  // Will be -6 in DP3
+    // DP3: Doubled pawn penalties enabled
+    // Base penalties based on expert recommendations and testing
+    static constexpr int DOUBLED_PAWN_PENALTY_MG = -15;  // Middlegame penalty
+    static constexpr int DOUBLED_PAWN_PENALTY_EG = -6;   // Endgame penalty (less severe)
     
     // Calculate doubled pawn penalties
     int doubledPawnPenalty = 0;
