@@ -45,11 +45,26 @@ Target: +11-19 ELO gain (revised based on expert engine analysis).
 
 ### Testing Summary Table
 
-| Phase | Feature | ELO vs Main | Delta from Previous | Status |
-|-------|---------|-------------|-------------------|---------|
-| IP1 | Infrastructure | TBD | N/A | Not Started |
-| IP2 | Basic penalties | TBD | TBD | Not Started |
-| IP3 | Refinements | TBD | TBD | Not Started |
+| Phase | Feature | ELO vs Main | Status |
+|-------|---------|-------------|---------|
+| IP1 | Infrastructure | +2.88 ± 10.43 | PASSED ✓ |
+| IP2 | Basic penalties | +14.84 ± 10.92 | PASSED ✓ |
+| IP3a | File adjustments | +25.08 ± 11.02 | PASSED ✓ **BEST** |
+| IP3b | Opposition +20% penalty | +7.43 ± 11.19 | Regression (-18 ELO) |
+| IP3b-rev | Opposition -20% penalty | +4.98 ± 11.20 | Regression (-20 ELO) |
+
+### Key Learning: Opposition Detection Doesn't Work
+Both increasing AND decreasing penalties for opposed isolanis caused regression.
+This suggests opposition is either:
+1. Already implicitly evaluated elsewhere
+2. Too complex/conditional to model with a simple percentage
+3. Better left to tactical search
+
+### Current Best Version
+**IP3a (commit c41a595):** +25.08 ± 11.02 ELO
+- Rank-based penalties
+- File adjustments (central less weak, edge more weak)  
+- Phase scaling (50% in endgame)
 
 ### Key Design Decisions
 
