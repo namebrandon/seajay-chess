@@ -70,18 +70,60 @@ Score evaluate(const Board& board) {
         0     // Rank 8 (promoted, handled elsewhere)
     };
     
-    // Calculate passed pawn score
-    int passedPawnValue = 0;
-    
     // Get pawn bitboards
     Bitboard whitePawns = board.pieces(WHITE, PAWN);
     Bitboard blackPawns = board.pieces(BLACK, PAWN);
     
-    // Evaluate white passed pawns
-    Bitboard whitePassers = whitePawns;
+    // PPH2: Get cached pawn structure evaluation early
+    uint64_t pawnKey = board.pawnZobristKey();
+    PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
+    
+    Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
+    Bitboard whitePassedPawns, blackPassedPawns;
+    
+    if (!pawnEntry) {
+        // Cache miss - compute pawn structure
+        PawnEntry newEntry;
+        newEntry.key = pawnKey;
+        newEntry.valid = true;
+        
+        // Compute all pawn structure features
+        newEntry.isolatedPawns[WHITE] = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
+        newEntry.isolatedPawns[BLACK] = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
+        newEntry.doubledPawns[WHITE] = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
+        newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
+        newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
+        newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
+        
+        // Store in cache
+        g_pawnStructure.store(pawnKey, newEntry);
+        
+        // Use computed values
+        whiteIsolated = newEntry.isolatedPawns[WHITE];
+        blackIsolated = newEntry.isolatedPawns[BLACK];
+        whiteDoubled = newEntry.doubledPawns[WHITE];
+        blackDoubled = newEntry.doubledPawns[BLACK];
+        whitePassedPawns = newEntry.passedPawns[WHITE];
+        blackPassedPawns = newEntry.passedPawns[BLACK];
+    } else {
+        // Cache hit - use stored values
+        whiteIsolated = pawnEntry->isolatedPawns[WHITE];
+        blackIsolated = pawnEntry->isolatedPawns[BLACK];
+        whiteDoubled = pawnEntry->doubledPawns[WHITE];
+        blackDoubled = pawnEntry->doubledPawns[BLACK];
+        whitePassedPawns = pawnEntry->passedPawns[WHITE];
+        blackPassedPawns = pawnEntry->passedPawns[BLACK];
+    }
+    
+    // Calculate passed pawn score
+    int passedPawnValue = 0;
+    
+    // PPH2: Use cached white passed pawns instead of per-pawn detection
+    Bitboard whitePassers = whitePassedPawns;  // Use cached bitboard
     while (whitePassers) {
         Square sq = popLsb(whitePassers);
-        if (PawnStructure::isPassed(WHITE, sq, blackPawns)) {
+        // No need to check isPassed - we know it's passed from cache
+        {
             int relRank = PawnStructure::relativeRank(WHITE, sq);
             int bonus = PASSED_PAWN_BONUS[relRank];
             
@@ -185,12 +227,13 @@ Score evaluate(const Board& board) {
             if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
             if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
             
-            // Check if there's another white passed pawn on adjacent files
-            Bitboard adjacentPawns = whitePawns & adjacentFiles;
+            // PPH2: Check if there's another white passed pawn on adjacent files using cache
+            Bitboard adjacentPassedPawns = whitePassedPawns & adjacentFiles;  // Use cached passed pawns
             bool hasConnectedPasser = false;
-            while (adjacentPawns && !hasConnectedPasser) {
-                Square adjSq = popLsb(adjacentPawns);
-                if (PawnStructure::isPassed(WHITE, adjSq, blackPawns)) {
+            while (adjacentPassedPawns && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPassedPawns);
+                // We know it's passed since it's from the cached passed pawns bitboard
+                {
                     // Only count as connected if on same or adjacent ranks (strict)
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
                     if (rankDiff <= 1) {
@@ -208,11 +251,12 @@ Score evaluate(const Board& board) {
         }
     }
     
-    // Evaluate black passed pawns
-    Bitboard blackPassers = blackPawns;
+    // PPH2: Use cached black passed pawns instead of per-pawn detection
+    Bitboard blackPassers = blackPassedPawns;  // Use cached bitboard
     while (blackPassers) {
         Square sq = popLsb(blackPassers);
-        if (PawnStructure::isPassed(BLACK, sq, whitePawns)) {
+        // No need to check isPassed - we know it's passed from cache
+        {
             int relRank = PawnStructure::relativeRank(BLACK, sq);
             int bonus = PASSED_PAWN_BONUS[relRank];
             
@@ -316,12 +360,13 @@ Score evaluate(const Board& board) {
             if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
             if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
             
-            // Check if there's another black passed pawn on adjacent files
-            Bitboard adjacentPawns = blackPawns & adjacentFiles;
+            // PPH2: Check if there's another black passed pawn on adjacent files using cache
+            Bitboard adjacentPassedPawns = blackPassedPawns & adjacentFiles;  // Use cached passed pawns
             bool hasConnectedPasser = false;
-            while (adjacentPawns && !hasConnectedPasser) {
-                Square adjSq = popLsb(adjacentPawns);
-                if (PawnStructure::isPassed(BLACK, adjSq, whitePawns)) {
+            while (adjacentPassedPawns && !hasConnectedPasser) {
+                Square adjSq = popLsb(adjacentPassedPawns);
+                // We know it's passed since it's from the cached passed pawns bitboard
+                {
                     // Only count as connected if on same or adjacent ranks (strict)
                     int rankDiff = std::abs(rankOf(sq) - rankOf(adjSq));
                     if (rankDiff <= 1) {
@@ -386,54 +431,8 @@ Score evaluate(const Board& board) {
         120   // h-file (edge pawn penalty)
     };
     
-    // Calculate isolated pawn penalties
+    // Calculate isolated pawn penalties (using cached values computed earlier)
     int isolatedPawnPenalty = 0;
-    
-    // DP2-FIX: Use pawn-specific hash to cache pawn structure evaluation
-    // Now using dedicated pawn zobrist that only changes when pawns move/capture
-    uint64_t pawnKey = board.pawnZobristKey();  // Pawn-only hash for efficient caching
-    PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
-    
-    Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
-    Bitboard whitePassedPawns, blackPassedPawns;  // PPH1: Add passed pawn bitboards
-    
-    if (!pawnEntry) {
-        // Cache miss - compute pawn structure
-        PawnEntry newEntry;
-        newEntry.key = pawnKey;
-        newEntry.valid = true;
-        
-        // Compute isolated pawns
-        newEntry.isolatedPawns[WHITE] = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
-        newEntry.isolatedPawns[BLACK] = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
-        
-        // Compute doubled pawns
-        newEntry.doubledPawns[WHITE] = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
-        newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
-        
-        // PPH1: Compute passed pawns for caching
-        newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
-        newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
-        
-        // Store in cache
-        g_pawnStructure.store(pawnKey, newEntry);
-        
-        // Use computed values
-        whiteIsolated = newEntry.isolatedPawns[WHITE];
-        blackIsolated = newEntry.isolatedPawns[BLACK];
-        whiteDoubled = newEntry.doubledPawns[WHITE];
-        blackDoubled = newEntry.doubledPawns[BLACK];
-        whitePassedPawns = newEntry.passedPawns[WHITE];  // PPH1: Store passed pawns
-        blackPassedPawns = newEntry.passedPawns[BLACK];  // PPH1: Store passed pawns
-    } else {
-        // Cache hit - use stored values
-        whiteIsolated = pawnEntry->isolatedPawns[WHITE];
-        blackIsolated = pawnEntry->isolatedPawns[BLACK];
-        whiteDoubled = pawnEntry->doubledPawns[WHITE];
-        blackDoubled = pawnEntry->doubledPawns[BLACK];
-        whitePassedPawns = pawnEntry->passedPawns[WHITE];  // PPH1: Get cached passed pawns
-        blackPassedPawns = pawnEntry->passedPawns[BLACK];  // PPH1: Get cached passed pawns
-    }
     
     // Evaluate white isolated pawns (penalty)
     Bitboard whiteIsolani = whiteIsolated;
