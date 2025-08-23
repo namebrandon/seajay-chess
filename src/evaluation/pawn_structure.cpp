@@ -1,5 +1,6 @@
 #include "pawn_structure.h"
 #include <cstring>
+#include <bit>  // DP1: For std::popcount
 
 namespace seajay {
 
@@ -182,6 +183,65 @@ Bitboard PawnStructure::getIsolatedPawns(Color c, Bitboard ourPawns) {
     }
     
     return isolated;
+}
+
+// DP1: Doubled pawn detection implementation
+bool PawnStructure::isDoubled(Square sq, Bitboard ourPawns) {
+    int file = fileOf(sq);
+    Bitboard fileMask = FILE_A_BB << file;
+    Bitboard pawnsOnFile = ourPawns & fileMask;
+    
+    // Remove the pawn at sq from consideration
+    pawnsOnFile &= ~(1ULL << sq);
+    
+    // If there are any other pawns on this file, this pawn is doubled
+    return pawnsOnFile != 0;
+}
+
+int PawnStructure::countDoubledOnFile(int file, Bitboard ourPawns) {
+    Bitboard fileMask = FILE_A_BB << file;
+    Bitboard pawnsOnFile = ourPawns & fileMask;
+    
+    // Count pawns on this file
+    int count = std::popcount(pawnsOnFile);
+    
+    // Return doubled count (count - 1, since the base pawn doesn't count)
+    // If 0 or 1 pawns, return 0 (no doubled pawns)
+    return (count > 1) ? (count - 1) : 0;
+}
+
+Bitboard PawnStructure::getDoubledPawns(Color c, Bitboard ourPawns) {
+    Bitboard doubled = 0ULL;
+    
+    // Process each file
+    for (int file = 0; file < 8; file++) {
+        Bitboard fileMask = FILE_A_BB << file;
+        Bitboard pawnsOnFile = ourPawns & fileMask;
+        
+        int pawnCount = std::popcount(pawnsOnFile);
+        
+        // If more than one pawn on this file, mark all but the base pawn as doubled
+        if (pawnCount > 1) {
+            // Mark all pawns on this file as doubled except the rearmost one
+            // For white, the rearmost is the one with lowest rank
+            // For black, the rearmost is the one with highest rank
+            Bitboard doublePawns = pawnsOnFile;
+            
+            if (c == WHITE) {
+                // Remove the rearmost (lowest rank) pawn
+                Square rearmost = lsb(pawnsOnFile);
+                doublePawns &= ~(1ULL << rearmost);
+            } else {
+                // Remove the rearmost (highest rank) pawn
+                Square rearmost = msb(pawnsOnFile);
+                doublePawns &= ~(1ULL << rearmost);
+            }
+            
+            doubled |= doublePawns;
+        }
+    }
+    
+    return doubled;
 }
 
 }

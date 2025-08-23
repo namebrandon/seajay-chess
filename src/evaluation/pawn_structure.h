@@ -12,10 +12,11 @@ struct PawnEntry {
     Bitboard passedPawns[2];
     Bitboard candidatePassers[2];
     Bitboard isolatedPawns[2];  // Track isolated pawns for both colors
+    Bitboard doubledPawns[2];   // DP1: Track doubled pawns for both colors
     int16_t score;
     bool valid;
     
-    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, score(0), valid(false) {}
+    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, doubledPawns{0, 0}, score(0), valid(false) {}
 };
 
 class PawnStructure {
@@ -54,6 +55,17 @@ public:
     static bool isIsolated(Square sq, Bitboard ourPawns);
     
     Bitboard getIsolatedPawns(Color c, Bitboard ourPawns);
+    
+    // DP1: Doubled pawn detection infrastructure
+    // Check if a pawn at the given square is doubled (has another pawn on same file)
+    static bool isDoubled(Square sq, Bitboard ourPawns);
+    
+    // Get bitboard of all doubled pawns for a color
+    // Note: Returns ALL pawns on files with multiple pawns (except the base pawn)
+    Bitboard getDoubledPawns(Color c, Bitboard ourPawns);
+    
+    // Count doubled pawns on a file (returns count - 1, so 3 pawns = 2 doubled)
+    static int countDoubledOnFile(int file, Bitboard ourPawns);
 
 private:
     static Bitboard m_passedPawnMask[2][64];
