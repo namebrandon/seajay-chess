@@ -15,13 +15,13 @@ Implement evaluation penalties for doubled pawns - pawns of the same color on th
 ### Phase DP1: Infrastructure (0 ELO expected)
 **Purpose**: Add doubled pawn detection infrastructure without integration  
 **Expected Impact**: No performance change, validates compilation  
-**Status**: PENDING
+**Status**: COMPLETE
 
 Implementation tasks:
-- [ ] Add doubled pawn fields to PawnEntry structure
-- [ ] Create detection helper functions (not called yet)
-- [ ] Add unit tests for detection logic
-- [ ] Verify compilation and no performance regression
+- [x] Add doubled pawn fields to PawnEntry structure
+- [x] Create detection helper functions (not called yet)
+- [ ] Add unit tests for detection logic (deferred)
+- [x] Verify compilation and no performance regression
 
 ### Phase DP2: Detection Without Penalty (0 ELO expected)  
 **Purpose**: Integrate detection, verify accuracy with 0 penalty  
@@ -125,7 +125,7 @@ SPRT Bounds: [10, 30] for DP3
 
 | Phase | Commit | Bench | Test Result | Status |
 |-------|--------|-------|-------------|--------|
-| DP1 | - | - | - | PENDING |
+| DP1 | 6f0c214 | 19191913 | -8.59 ± 10.03 | COMPLETE |
 | DP2 | - | - | - | PENDING |
 | DP3 | - | - | - | PENDING |
 | DP4 | - | - | - | PLANNED |

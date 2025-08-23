@@ -435,10 +435,35 @@ Score evaluate(const Board& board) {
     // Convert isolated pawn penalty to Score
     Score isolatedPawnScore(isolatedPawnPenalty);
     
+    // DP2: Doubled pawn detection with 0 penalty (for testing)
+    // Base penalties - set to 0 for Phase DP2
+    static constexpr int DOUBLED_PAWN_PENALTY_MG = 0;  // Will be -15 in DP3
+    static constexpr int DOUBLED_PAWN_PENALTY_EG = 0;  // Will be -6 in DP3
+    
+    // Calculate doubled pawn penalties
+    int doubledPawnPenalty = 0;
+    
+    // Get doubled pawns for both sides
+    Bitboard whiteDoubled = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
+    Bitboard blackDoubled = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
+    
+    // Count doubled pawns (currently with 0 penalty)
+    int whiteDoubledCount = popCount(whiteDoubled);
+    int blackDoubledCount = popCount(blackDoubled);
+    
+    // Apply penalties (0 for now, will be activated in DP3)
+    int penalty = (phase == search::GamePhase::ENDGAME) ? 
+                  DOUBLED_PAWN_PENALTY_EG : DOUBLED_PAWN_PENALTY_MG;
+    
+    doubledPawnPenalty = (whiteDoubledCount - blackDoubledCount) * penalty;
+    
+    // Convert doubled pawn penalty to Score
+    Score doubledPawnScore(doubledPawnPenalty);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
