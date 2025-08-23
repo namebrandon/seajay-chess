@@ -389,9 +389,42 @@ Score evaluate(const Board& board) {
     // Calculate isolated pawn penalties
     int isolatedPawnPenalty = 0;
     
-    // Get isolated pawns for both sides
-    Bitboard whiteIsolated = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
-    Bitboard blackIsolated = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
+    // DP2-FIX: Use pawn hash to cache pawn structure evaluation
+    // For now, use position hash as pawn key (not ideal but better than no caching)
+    uint64_t pawnKey = board.zobristHash();  // TODO: Should be pawn-only hash
+    PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
+    
+    Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
+    
+    if (!pawnEntry) {
+        // Cache miss - compute pawn structure
+        PawnEntry newEntry;
+        newEntry.key = pawnKey;
+        newEntry.valid = true;
+        
+        // Compute isolated pawns
+        newEntry.isolatedPawns[WHITE] = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
+        newEntry.isolatedPawns[BLACK] = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
+        
+        // Compute doubled pawns
+        newEntry.doubledPawns[WHITE] = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
+        newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
+        
+        // Store in cache
+        g_pawnStructure.store(pawnKey, newEntry);
+        
+        // Use computed values
+        whiteIsolated = newEntry.isolatedPawns[WHITE];
+        blackIsolated = newEntry.isolatedPawns[BLACK];
+        whiteDoubled = newEntry.doubledPawns[WHITE];
+        blackDoubled = newEntry.doubledPawns[BLACK];
+    } else {
+        // Cache hit - use stored values
+        whiteIsolated = pawnEntry->isolatedPawns[WHITE];
+        blackIsolated = pawnEntry->isolatedPawns[BLACK];
+        whiteDoubled = pawnEntry->doubledPawns[WHITE];
+        blackDoubled = pawnEntry->doubledPawns[BLACK];
+    }
     
     // Evaluate white isolated pawns (penalty)
     Bitboard whiteIsolani = whiteIsolated;
@@ -443,11 +476,7 @@ Score evaluate(const Board& board) {
     // Calculate doubled pawn penalties
     int doubledPawnPenalty = 0;
     
-    // Get doubled pawns for both sides
-    Bitboard whiteDoubled = g_pawnStructure.getDoubledPawns(WHITE, whitePawns);
-    Bitboard blackDoubled = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
-    
-    // Count doubled pawns (currently with 0 penalty)
+    // Count doubled pawns (now using cached values from above)
     int whiteDoubledCount = popCount(whiteDoubled);
     int blackDoubledCount = popCount(blackDoubled);
     

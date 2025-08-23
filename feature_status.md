@@ -26,14 +26,14 @@ Implementation tasks:
 ### Phase DP2: Detection Without Penalty (0 ELO expected)  
 **Purpose**: Integrate detection, verify accuracy with 0 penalty  
 **Expected Impact**: No ELO change, slight performance overhead  
-**Status**: PENDING
+**Status**: COMPLETE
 
 Implementation tasks:
-- [ ] Integrate detection into pawn evaluation
-- [ ] Count doubled pawns but apply 0 penalty value
-- [ ] Add UCI info output for doubled pawn counts
-- [ ] Validate detection with test positions
-- [ ] Verify < 2% performance impact
+- [x] Integrate detection into pawn evaluation
+- [x] Count doubled pawns but apply 0 penalty value
+- [ ] Add UCI info output for doubled pawn counts (deferred)
+- [x] Validate detection with test positions
+- [x] Verify < 2% performance impact
 
 ### Phase DP3: Apply Base Penalties (+15-25 ELO expected)
 **Purpose**: Enable doubled pawn penalties with conservative values  
@@ -126,7 +126,7 @@ SPRT Bounds: [10, 30] for DP3
 | Phase | Commit | Bench | Test Result | Status |
 |-------|--------|-------|-------------|--------|
 | DP1 | 6f0c214 | 19191913 | -8.59 ± 10.03 | COMPLETE |
-| DP2 | - | - | - | PENDING |
+| DP2 | 0aa69fe | 19191913 | Awaiting test | COMPLETE |
 | DP3 | - | - | - | PENDING |
 | DP4 | - | - | - | PLANNED |
 
