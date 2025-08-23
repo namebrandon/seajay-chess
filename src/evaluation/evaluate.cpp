@@ -391,7 +391,7 @@ Score evaluate(const Board& board) {
     
     // DP2-FIX: Use pawn hash to cache pawn structure evaluation
     // For now, use position hash as pawn key (not ideal but better than no caching)
-    uint64_t pawnKey = board.zobristHash();  // TODO: Should be pawn-only hash
+    uint64_t pawnKey = board.zobristKey();  // TODO: Should be pawn-only hash
     PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;

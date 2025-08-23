@@ -126,7 +126,8 @@ SPRT Bounds: [10, 30] for DP3
 | Phase | Commit | Bench | Test Result | Status |
 |-------|--------|-------|-------------|--------|
 | DP1 | 6f0c214 | 19191913 | -8.59 ± 10.03 | COMPLETE |
-| DP2 | 0aa69fe | 19191913 | Awaiting test | COMPLETE |
+| DP2 | 0aa69fe | 19191913 | -13.05 ± 10.43 (bug) | COMPLETE |
+| DP2-FIX | b7535bd | 19191913 | Awaiting test | COMPLETE |
 | DP3 | - | - | - | PENDING |
 | DP4 | - | - | - | PLANNED |
 
