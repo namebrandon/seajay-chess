@@ -414,12 +414,6 @@ Score evaluate(const Board& board) {
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
         
-        // IP3b: Check if opposed (enemy pawn on same file)
-        Bitboard fileMask = FILE_A_BB << file;
-        if (blackPawns & fileMask) {
-            penalty = (penalty * 120) / 100;  // +20% if opposed
-        }
-        
         isolatedPawnPenalty -= penalty;
     }
     
@@ -443,12 +437,6 @@ Score evaluate(const Board& board) {
         
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
-        
-        // IP3b: Check if opposed (enemy pawn on same file)
-        Bitboard fileMask = FILE_A_BB << file;
-        if (whitePawns & fileMask) {
-            penalty = (penalty * 120) / 100;  // +20% if opposed
-        }
         
         isolatedPawnPenalty += penalty;
     }
