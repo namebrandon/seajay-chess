@@ -399,16 +399,20 @@ Score evaluate(const Board& board) {
         Square sq = popLsb(whiteIsolani);
         int rank = rankOf(sq);
         int file = fileOf(sq);
+        
+        // IP3c: Skip if pawn can capture (following Ethereal's approach)
+        // Pawns that can capture may deisolate or be traded away
+        Bitboard captures = 0ULL;
+        if (file > 0 && rank < 7) captures |= squareBB(Square(sq + 7));  // Left capture
+        if (file < 7 && rank < 7) captures |= squareBB(Square(sq + 9));  // Right capture
+        if (captures & blackPawns) {
+            continue;  // Skip this pawn - it can capture and potentially deisolate
+        }
+        
         int penalty = ISOLATED_PAWN_PENALTY[rank];
         
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
-        
-        // IP3b-revised: REDUCE penalty if opposed (opposed isolanis are less weak!)
-        Bitboard fileMask = FILE_A_BB << file;
-        if (blackPawns & fileMask) {
-            penalty = (penalty * 80) / 100;  // -20% penalty if opposed (dynamic potential)
-        }
         
         isolatedPawnPenalty -= penalty;
     }
@@ -419,16 +423,20 @@ Score evaluate(const Board& board) {
         Square sq = popLsb(blackIsolani);
         int rank = 7 - rankOf(sq);  // Convert to black's perspective
         int file = fileOf(sq);
+        
+        // IP3c: Skip if pawn can capture (following Ethereal's approach)
+        // Pawns that can capture may deisolate or be traded away
+        Bitboard captures = 0ULL;
+        if (file > 0 && rankOf(sq) > 0) captures |= squareBB(Square(sq - 9));  // Left capture
+        if (file < 7 && rankOf(sq) > 0) captures |= squareBB(Square(sq - 7));  // Right capture
+        if (captures & whitePawns) {
+            continue;  // Skip this pawn - it can capture and potentially deisolate
+        }
+        
         int penalty = ISOLATED_PAWN_PENALTY[rank];
         
         // IP3a: Apply file adjustment
         penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
-        
-        // IP3b-revised: REDUCE penalty if opposed (opposed isolanis are less weak!)
-        Bitboard fileMask = FILE_A_BB << file;
-        if (whitePawns & fileMask) {
-            penalty = (penalty * 80) / 100;  // -20% penalty if opposed (dynamic potential)
-        }
         
         isolatedPawnPenalty += penalty;
     }
