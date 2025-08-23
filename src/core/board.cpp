@@ -35,6 +35,7 @@ std::array<Hash, NUM_SQUARES> Board::s_zobristEnPassant;
 std::array<Hash, 16> Board::s_zobristCastling;
 std::array<Hash, 100> Board::s_zobristFiftyMove;
 Hash Board::s_zobristSideToMove;
+std::array<std::array<Hash, 2>, NUM_SQUARES> Board::s_zobristPawns;  // Separate zobrist for pawns
 bool Board::s_zobristInitialized = false;
 
 // Character-to-piece lookup table
@@ -270,14 +271,21 @@ void Board::initZobrist() {
         s_zobristFiftyMove[i] = generateUniqueKey();
     }
     
+    // Generate pawn-only zobrist keys (for pawn hash table)
+    for (Square s = 0; s < NUM_SQUARES; ++s) {
+        s_zobristPawns[WHITE][s] = generateUniqueKey();
+        s_zobristPawns[BLACK][s] = generateUniqueKey();
+    }
+    
     // Validate we generated the expected number of unique keys
     // 12 pieces * 64 squares = 768 (NUM_PIECES=12)
     // 64 en passant squares
     // 16 castling combinations
     // 1 side to move
     // 100 fifty-move values
-    // Total: 768 + 64 + 16 + 1 + 100 = 949
-    const size_t expectedKeys = 949;
+    // 128 pawn keys (2 colors * 64 squares)
+    // Total: 768 + 64 + 16 + 1 + 100 + 128 = 1077
+    const size_t expectedKeys = 1077;
     if (usedKeys.size() != expectedKeys) {
         std::cerr << "ERROR: Generated " << usedKeys.size() 
                   << " keys, expected " << expectedKeys << std::endl;
@@ -930,6 +938,7 @@ bool Board::fromFEN(const std::string& fen) {
 
 void Board::rebuildZobristKey() {
     m_zobristKey = 0;
+    m_pawnZobristKey = 0;  // Initialize pawn hash
     
     // Recalculate from scratch
     for (int i = 0; i < 64; ++i) {
@@ -937,6 +946,12 @@ void Board::rebuildZobristKey() {
         Piece p = m_mailbox[sq];
         if (p != NO_PIECE && p < NUM_PIECES) {  // Added bounds check
             m_zobristKey ^= s_zobristPieces[sq][p];
+            
+            // Update pawn hash if it's a pawn
+            if (typeOf(p) == PAWN) {
+                Color c = colorOf(p);
+                m_pawnZobristKey ^= s_zobristPawns[c][sq];
+            }
         }
     }
     
@@ -1250,6 +1265,7 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     undo.halfmoveClock = m_halfmoveClock;
     undo.fullmoveNumber = m_fullmoveNumber;  // FIXED: Save fullmove number!
     undo.zobristKey = m_zobristKey;
+    undo.pawnZobristKey = m_pawnZobristKey;  // Save pawn hash
     undo.pstScore = m_pstScore;  // Stage 9: Save PST score
     
     Square from = moveFrom(move);
@@ -1342,6 +1358,11 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_zobristKey ^= s_zobristPieces[to][movingPiece];
         m_zobristKey ^= s_zobristPieces[capturedSquare][capturedPawn];
         
+        // Update pawn zobrist (both pawns involved)
+        m_pawnZobristKey ^= s_zobristPawns[us][from];
+        m_pawnZobristKey ^= s_zobristPawns[us][to];
+        m_pawnZobristKey ^= s_zobristPawns[us ^ 1][capturedSquare];
+        
         // Update material for en passant capture
         m_material.remove(capturedPawn);  // Remove captured pawn
         m_insufficientMaterialCached = false;  // Invalidate cache after capture
@@ -1384,8 +1405,15 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_zobristKey ^= s_zobristPieces[from][movingPiece];  // Remove pawn
         if (capturedPiece != NO_PIECE) {
             m_zobristKey ^= s_zobristPieces[to][capturedPiece];  // Remove captured
+            // If captured piece is a pawn, update pawn zobrist
+            if (typeOf(capturedPiece) == PAWN) {
+                m_pawnZobristKey ^= s_zobristPawns[colorOf(capturedPiece)][to];
+            }
         }
         m_zobristKey ^= s_zobristPieces[to][promotedPiece];  // Add promoted
+        
+        // Update pawn zobrist (pawn is promoted and removed)
+        m_pawnZobristKey ^= s_zobristPawns[us][from];
         
         // Update material for promotion
         m_material.remove(movingPiece);  // Remove pawn
@@ -1433,6 +1461,16 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         
         // Update zobrist
         updateZobristForMove(move, movingPiece, capturedPiece);
+        
+        // Update pawn zobrist if pawns are involved
+        if (typeOf(movingPiece) == PAWN) {
+            Color us = colorOf(movingPiece);
+            m_pawnZobristKey ^= s_zobristPawns[us][from];
+            m_pawnZobristKey ^= s_zobristPawns[us][to];
+        }
+        if (capturedPiece != NO_PIECE && typeOf(capturedPiece) == PAWN) {
+            m_pawnZobristKey ^= s_zobristPawns[colorOf(capturedPiece)][to];
+        }
         
         // Update material for normal moves (only if capture)
         if (capturedPiece != NO_PIECE) {
@@ -1595,6 +1633,7 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
     m_halfmoveClock = undo.halfmoveClock;
     m_fullmoveNumber = undo.fullmoveNumber;  // FIXED: Restore fullmove number!
     m_zobristKey = undo.zobristKey;
+    m_pawnZobristKey = undo.pawnZobristKey;  // Restore pawn hash
     m_pstScore = undo.pstScore;  // Stage 9: Restore PST score
     
     // Invalidate insufficient material cache (safe approach)
@@ -1729,6 +1768,7 @@ void Board::makeMoveInternal(Move move, CompleteUndoInfo& undo) {
     undo.halfmoveClock = m_halfmoveClock;
     undo.fullmoveNumber = m_fullmoveNumber;
     undo.zobristKey = m_zobristKey;
+    undo.pawnZobristKey = m_pawnZobristKey;  // Save pawn hash
     undo.pstScore = m_pstScore;  // Stage 9: Save PST score
     undo.moveType = moveFlags(move);
     undo.movingPiece = pieceAt(moveFrom(move));
@@ -1754,6 +1794,8 @@ void Board::unmakeMoveInternal(Move move, const CompleteUndoInfo& undo) {
     basicUndo.halfmoveClock = undo.halfmoveClock;
     basicUndo.fullmoveNumber = undo.fullmoveNumber;
     basicUndo.zobristKey = undo.zobristKey;
+    basicUndo.pawnZobristKey = undo.pawnZobristKey;  // Include pawn hash
+    basicUndo.pstScore = undo.pstScore;  // Include PST score
     
     unmakeMoveInternal(move, basicUndo);
 }
@@ -1799,6 +1841,7 @@ void Board::makeNullMove(UndoInfo& undo) {
     undo.halfmoveClock = m_halfmoveClock;
     undo.fullmoveNumber = m_fullmoveNumber;
     undo.zobristKey = m_zobristKey;
+    undo.pawnZobristKey = m_pawnZobristKey;  // Pawn hash unchanged in null move
     undo.pstScore = m_pstScore;
     undo.capturedPiece = NO_PIECE;  // No capture in null move
     
@@ -1842,6 +1885,7 @@ void Board::unmakeNullMove(const UndoInfo& undo) {
     m_halfmoveClock = undo.halfmoveClock;
     m_fullmoveNumber = undo.fullmoveNumber;
     m_zobristKey = undo.zobristKey;
+    m_pawnZobristKey = undo.pawnZobristKey;  // Restore pawn hash
     m_pstScore = undo.pstScore;
     
     // Invalidate eval cache

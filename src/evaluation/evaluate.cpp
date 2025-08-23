@@ -389,9 +389,9 @@ Score evaluate(const Board& board) {
     // Calculate isolated pawn penalties
     int isolatedPawnPenalty = 0;
     
-    // DP2-FIX: Use pawn hash to cache pawn structure evaluation
-    // For now, use position hash as pawn key (not ideal but better than no caching)
-    uint64_t pawnKey = board.zobristKey();  // TODO: Should be pawn-only hash
+    // DP2-FIX: Use pawn-specific hash to cache pawn structure evaluation
+    // Now using dedicated pawn zobrist that only changes when pawns move/capture
+    uint64_t pawnKey = board.pawnZobristKey();  // Pawn-only hash for efficient caching
     PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;

@@ -113,9 +113,15 @@ PawnEntry* PawnStructure::probe(uint64_t pawnKey) {
     PawnEntry* entry = &m_table[index];
     
     if (entry->key == pawnKey && entry->valid) {
+#ifdef DEBUG
+        m_cacheHits++;
+#endif
         return entry;
     }
     
+#ifdef DEBUG
+    m_cacheMisses++;
+#endif
     return nullptr;
 }
 

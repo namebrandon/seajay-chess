@@ -23,6 +23,11 @@ class PawnStructure {
 public:
     static constexpr size_t PAWN_HASH_SIZE = 16384;
     
+#ifdef DEBUG
+    mutable size_t m_cacheHits = 0;
+    mutable size_t m_cacheMisses = 0;
+#endif
+    
     PawnStructure();
     ~PawnStructure();
     

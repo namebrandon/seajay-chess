@@ -76,6 +76,7 @@ public:
     void incrementFullmoveNumber() noexcept { m_fullmoveNumber++; }
     
     Hash zobristKey() const noexcept { return m_zobristKey; }
+    Hash pawnZobristKey() const noexcept { return m_pawnZobristKey; }  // For pawn hash table
     
     // Material evaluation
     const eval::Material& material() const noexcept { return m_material; }
@@ -187,6 +188,7 @@ public:
         uint16_t halfmoveClock;
         uint16_t fullmoveNumber;  // ADDED: Was missing!
         Hash zobristKey;
+        Hash pawnZobristKey;  // Pawn-only hash for pawn structure cache
         eval::MgEgScore pstScore;  // Stage 9: PST score backup
     };
     
@@ -227,6 +229,7 @@ private:
     uint16_t m_fullmoveNumber;
     
     Hash m_zobristKey;
+    Hash m_pawnZobristKey;  // Separate hash for pawns only (for pawn hash table)
     
     // Material tracking
     eval::Material m_material;
@@ -245,6 +248,7 @@ private:
     static std::array<Hash, 16> s_zobristCastling;
     static std::array<Hash, 100> s_zobristFiftyMove;  // Fifty-move counter keys
     static Hash s_zobristSideToMove;
+    static std::array<std::array<Hash, 2>, NUM_SQUARES> s_zobristPawns;  // Separate zobrist for pawns only [color][square]
     static bool s_zobristInitialized;
     
 #ifdef DEBUG
