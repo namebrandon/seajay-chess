@@ -361,10 +361,84 @@ Score evaluate(const Board& board) {
     // Convert passed pawn value to Score
     Score passedPawnScore(passedPawnValue);
     
+    // Phase IP2: Isolated pawn evaluation
+    // Base penalties by rank (white perspective) - conservative values
+    static constexpr int ISOLATED_PAWN_PENALTY[8] = {
+        0,   // Rank 1 - no pawns here
+        15,  // Rank 2 - most vulnerable
+        14,  // Rank 3
+        12,  // Rank 4 - standard
+        12,  // Rank 5
+        10,  // Rank 6
+        8,   // Rank 7 - less weak when advanced
+        0    // Rank 8 - promoted
+    };
+    
+    // Phase IP3a: File-based adjustments (percentage multipliers)
+    static constexpr int FILE_ADJUSTMENT[8] = {
+        120,  // a-file (edge pawn penalty)
+        105,  // b-file
+        100,  // c-file (standard)
+        80,   // d-file (central bonus - controls center)
+        80,   // e-file (central bonus - controls center)
+        100,  // f-file (standard)
+        105,  // g-file
+        120   // h-file (edge pawn penalty)
+    };
+    
+    // Calculate isolated pawn penalties
+    int isolatedPawnPenalty = 0;
+    
+    // Get isolated pawns for both sides
+    Bitboard whiteIsolated = g_pawnStructure.getIsolatedPawns(WHITE, whitePawns);
+    Bitboard blackIsolated = g_pawnStructure.getIsolatedPawns(BLACK, blackPawns);
+    
+    // Evaluate white isolated pawns (penalty)
+    Bitboard whiteIsolani = whiteIsolated;
+    while (whiteIsolani) {
+        Square sq = popLsb(whiteIsolani);
+        int rank = rankOf(sq);
+        int file = fileOf(sq);
+        int penalty = ISOLATED_PAWN_PENALTY[rank];
+        
+        // IP3a: Apply file adjustment
+        penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
+        
+        isolatedPawnPenalty -= penalty;
+    }
+    
+    // Evaluate black isolated pawns (bonus for white)
+    Bitboard blackIsolani = blackIsolated;
+    while (blackIsolani) {
+        Square sq = popLsb(blackIsolani);
+        int rank = 7 - rankOf(sq);  // Convert to black's perspective
+        int file = fileOf(sq);
+        int penalty = ISOLATED_PAWN_PENALTY[rank];
+        
+        // IP3a: Apply file adjustment
+        penalty = (penalty * FILE_ADJUSTMENT[file]) / 100;
+        
+        isolatedPawnPenalty += penalty;
+    }
+    
+    // Phase scaling for isolated pawns - less penalty in endgame
+    switch (phase) {
+        case search::GamePhase::OPENING:
+        case search::GamePhase::MIDDLEGAME:
+            // Full penalty in opening and middlegame
+            break;
+        case search::GamePhase::ENDGAME:
+            isolatedPawnPenalty = isolatedPawnPenalty / 2;  // 50% penalty in endgame
+            break;
+    }
+    
+    // Convert isolated pawn penalty to Score
+    Score isolatedPawnScore(isolatedPawnPenalty);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score
+    // Material difference + PST score + passed pawn score + isolated pawn score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {

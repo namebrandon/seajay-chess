@@ -11,10 +11,11 @@ struct PawnEntry {
     uint64_t key;
     Bitboard passedPawns[2];
     Bitboard candidatePassers[2];
+    Bitboard isolatedPawns[2];  // Track isolated pawns for both colors
     int16_t score;
     bool valid;
     
-    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, score(0), valid(false) {}
+    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, score(0), valid(false) {}
 };
 
 class PawnStructure {
@@ -48,6 +49,11 @@ public:
     Bitboard getPassedPawns(Color c, Bitboard ourPawns, Bitboard theirPawns);
     
     Bitboard getCandidatePassers(Color c, Bitboard ourPawns, Bitboard theirPawns);
+    
+    // Isolated pawn detection
+    static bool isIsolated(Square sq, Bitboard ourPawns);
+    
+    Bitboard getIsolatedPawns(Color c, Bitboard ourPawns);
 
 private:
     static Bitboard m_passedPawnMask[2][64];

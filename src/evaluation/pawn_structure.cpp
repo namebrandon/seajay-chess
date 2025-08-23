@@ -153,4 +153,35 @@ Bitboard PawnStructure::getCandidatePassers(Color c, Bitboard ourPawns, Bitboard
     return candidates;
 }
 
+bool PawnStructure::isIsolated(Square sq, Bitboard ourPawns) {
+    int file = fileOf(sq);
+    Bitboard adjacentFiles = 0ULL;
+    
+    // Check for friendly pawns on adjacent files
+    // CRITICAL: Always check file boundaries
+    if (file > 0) {
+        adjacentFiles |= FILE_A_BB << (file - 1);
+    }
+    if (file < 7) {
+        adjacentFiles |= FILE_A_BB << (file + 1);
+    }
+    
+    // If no friendly pawns on adjacent files, pawn is isolated
+    return !(ourPawns & adjacentFiles);
+}
+
+Bitboard PawnStructure::getIsolatedPawns(Color c, Bitboard ourPawns) {
+    Bitboard isolated = 0ULL;
+    Bitboard pawns = ourPawns;
+    
+    while (pawns) {
+        Square sq = popLsb(pawns);
+        if (isIsolated(sq, ourPawns)) {
+            isolated |= (1ULL << sq);
+        }
+    }
+    
+    return isolated;
+}
+
 }
