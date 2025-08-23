@@ -228,7 +228,9 @@ Score evaluate(const Board& board) {
             if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
             
             // PPH2: Check if there's another white passed pawn on adjacent files using cache
-            Bitboard adjacentPassedPawns = whitePassedPawns & adjacentFiles;  // Use cached passed pawns
+            // IMPORTANT: Exclude current pawn from the check
+            Bitboard otherPassedPawns = whitePassedPawns & ~(1ULL << sq);
+            Bitboard adjacentPassedPawns = otherPassedPawns & adjacentFiles;  // Use cached passed pawns
             bool hasConnectedPasser = false;
             while (adjacentPassedPawns && !hasConnectedPasser) {
                 Square adjSq = popLsb(adjacentPassedPawns);
@@ -361,7 +363,9 @@ Score evaluate(const Board& board) {
             if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
             
             // PPH2: Check if there's another black passed pawn on adjacent files using cache
-            Bitboard adjacentPassedPawns = blackPassedPawns & adjacentFiles;  // Use cached passed pawns
+            // IMPORTANT: Exclude current pawn from the check  
+            Bitboard otherPassedPawns = blackPassedPawns & ~(1ULL << sq);
+            Bitboard adjacentPassedPawns = otherPassedPawns & adjacentFiles;  // Use cached passed pawns
             bool hasConnectedPasser = false;
             while (adjacentPassedPawns && !hasConnectedPasser) {
                 Square adjSq = popLsb(adjacentPassedPawns);
