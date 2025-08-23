@@ -469,9 +469,9 @@ Score evaluate(const Board& board) {
     Score isolatedPawnScore(isolatedPawnPenalty);
     
     // DP3: Doubled pawn penalties enabled
-    // Base penalties based on expert recommendations and testing
-    static constexpr int DOUBLED_PAWN_PENALTY_MG = -15;  // Middlegame penalty
-    static constexpr int DOUBLED_PAWN_PENALTY_EG = -6;   // Endgame penalty (less severe)
+    // Reduced penalties after testing showed -15/-6 was too harsh
+    static constexpr int DOUBLED_PAWN_PENALTY_MG = -8;   // Middlegame penalty (reduced from -15)
+    static constexpr int DOUBLED_PAWN_PENALTY_EG = -3;   // Endgame penalty (reduced from -6)
     
     // Calculate doubled pawn penalties
     int doubledPawnPenalty = 0;

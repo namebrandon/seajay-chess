@@ -130,7 +130,8 @@ SPRT Bounds: [10, 30] for DP3
 | DP2 | 0aa69fe | 19191913 | -13.05 ± 10.43 (bug) | COMPLETE |
 | DP2-FIX | d859a3b | 19191913 | -9.31 ± 10.43 (partial fix) | COMPLETE |
 | DP2-FINAL | 8468c4a | 19191913 | +2.94 ± 10.77 ✓ | COMPLETE |
-| DP3 | 90c601c | 19191913 | Awaiting test | COMPLETE |
+| DP3 | 90c601c | 19191913 | -8.12 ± 10.56 (sign bug) | COMPLETE |
+| DP3-FIX | 1069c40 | 19191913 | Awaiting test | COMPLETE |
 | DP4 | - | - | - | PLANNED |
 
 ## Key Learnings from Expert Consultation
