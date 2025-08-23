@@ -66,6 +66,7 @@ struct SEEStatistics {
     std::atomic<uint64_t> earlyExits{0};
     std::atomic<uint64_t> lazyEvals{0};
     std::atomic<uint64_t> xrayChecks{0};
+    std::atomic<uint64_t> fallbackHashUsed{0};  // Track when expensive fallback is used
     
     void reset() noexcept {
         calls = 0;
@@ -74,6 +75,7 @@ struct SEEStatistics {
         earlyExits = 0;
         lazyEvals = 0;
         xrayChecks = 0;
+        fallbackHashUsed = 0;
     }
     
     double hitRate() const noexcept {

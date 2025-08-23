@@ -46,19 +46,35 @@ uint64_t SEECalculator::makeCacheKey(const Board& board, Move move) const noexce
     uint64_t boardKey = board.zobristKey();
     
     // If zobrist key is 0, board hasn't been initialized properly
-    // Create a simple hash from piece positions
+    // This should NEVER happen in normal operation
     if (boardKey == 0) {
-        // Simple fallback hash for testing
-        boardKey = 0;
+        // Track that we hit the fallback path
+        m_stats.fallbackHashUsed++;
+        
+#ifdef DEBUG
+        // In debug builds, warn about this unexpected situation
+        static bool warnedOnce = false;
+        if (!warnedOnce) {
+            std::cerr << "WARNING: SEE cache key generation hit fallback path (zobrist key = 0)\n";
+            std::cerr << "This indicates a board initialization problem and will hurt performance!\n";
+            warnedOnce = true;
+        }
+#endif
+        
+        // MUCH simpler fallback - just XOR piece values and squares
+        // No expensive modulo, multiplication, or rotation operations
+        boardKey = 0x8B1F6A2C4D3E5F70ULL;  // Start with non-zero constant
         for (Square sq = A1; sq <= H8; ++sq) {
             Piece p = board.pieceAt(sq);
             if (p != NO_PIECE) {
-                boardKey ^= (uint64_t(p) << (sq % 32)) * 0x9E3779B97F4A7C15ULL;
-                boardKey = (boardKey << 13) | (boardKey >> 51);  // Rotate
+                // Simple XOR with piece and square - no expensive operations
+                boardKey ^= (uint64_t(p) << sq) ^ (uint64_t(sq) << 16);
             }
         }
         // Add side to move
-        boardKey ^= board.sideToMove() ? 0x1234567890ABCDEFULL : 0;
+        if (board.sideToMove() == BLACK) {
+            boardKey ^= 0x1234567890ABCDEFULL;
+        }
     }
     
     uint64_t moveKey = (uint64_t(move) << 32) | (uint64_t(move) * 0x9E3779B97F4A7C15ULL);
@@ -283,6 +299,18 @@ Bitboard SEECalculator::getXrayAttackers(const Board& board, Square sq,
 SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
     // Day 4.4: Statistics tracking
     m_stats.calls.fetch_add(1, std::memory_order_relaxed);
+    
+#ifdef DEBUG
+    // In debug builds, assert that zobrist key is initialized
+    // This helps catch board initialization problems early
+    if (board.zobristKey() == 0) {
+        std::cerr << "ERROR: SEE called with uninitialized board (zobrist key = 0)\n";
+        std::cerr << "Board state: side=" << (board.sideToMove() == WHITE ? "white" : "black") 
+                  << " castling=" << int(board.castlingRights()) 
+                  << " ep=" << (board.enPassantSquare() == NO_SQUARE ? "none" : "set") << "\n";
+        assert(false && "SEE called with uninitialized board zobrist key");
+    }
+#endif
     
     // Day 4.3: Check cache first
     uint64_t cacheKey = makeCacheKey(board, move);
