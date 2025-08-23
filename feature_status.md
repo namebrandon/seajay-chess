@@ -38,13 +38,13 @@ Implementation tasks:
 ### Phase DP3: Apply Base Penalties (+15-25 ELO expected)
 **Purpose**: Enable doubled pawn penalties with conservative values  
 **Expected Impact**: +15-25 ELO improvement  
-**Status**: PENDING
+**Status**: COMPLETE
 
 Implementation tasks:
-- [ ] Set base penalty: -15 cp (midgame), -6 cp (endgame)  
-- [ ] Apply penalty to all doubled pawns (not the base pawn)
-- [ ] Handle multiple pawns per file (3 pawns = 2 penalties)
-- [ ] Test with SPRT bounds [10, 30]
+- [x] Set base penalty: -15 cp (midgame), -6 cp (endgame)  
+- [x] Apply penalty to all doubled pawns (not the base pawn)
+- [x] Handle multiple pawns per file (3 pawns = 2 penalties)
+- [x] Test with SPRT bounds [10, 30]
 
 ### Phase DP4: Isolated Interaction (Optional, +3-5 ELO expected)
 **Purpose**: Reduce doubled penalty when also isolated  
@@ -130,7 +130,7 @@ SPRT Bounds: [10, 30] for DP3
 | DP2 | 0aa69fe | 19191913 | -13.05 ± 10.43 (bug) | COMPLETE |
 | DP2-FIX | d859a3b | 19191913 | -9.31 ± 10.43 (partial fix) | COMPLETE |
 | DP2-FINAL | 8468c4a | 19191913 | +2.94 ± 10.77 ✓ | COMPLETE |
-| DP3 | - | - | - | PENDING |
+| DP3 | 90c601c | 19191913 | Awaiting test | COMPLETE |
 | DP4 | - | - | - | PLANNED |
 
 ## Key Learnings from Expert Consultation

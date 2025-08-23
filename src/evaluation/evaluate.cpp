@@ -480,11 +480,12 @@ Score evaluate(const Board& board) {
     int whiteDoubledCount = popCount(whiteDoubled);
     int blackDoubledCount = popCount(blackDoubled);
     
-    // Apply penalties (0 for now, will be activated in DP3)
+    // Apply penalties - positive values since we subtract black's penalty
     int penalty = (phase == search::GamePhase::ENDGAME) ? 
-                  DOUBLED_PAWN_PENALTY_EG : DOUBLED_PAWN_PENALTY_MG;
+                  std::abs(DOUBLED_PAWN_PENALTY_EG) : std::abs(DOUBLED_PAWN_PENALTY_MG);
     
-    doubledPawnPenalty = (whiteDoubledCount - blackDoubledCount) * penalty;
+    // White is penalized for its doubled pawns, black's doubled pawns help white
+    doubledPawnPenalty = (blackDoubledCount - whiteDoubledCount) * penalty;
     
     // Convert doubled pawn penalty to Score
     Score doubledPawnScore(doubledPawnPenalty);
