@@ -197,7 +197,7 @@ eval::Score negamax(Board& board,
     
     // Check for checkmate or stalemate first (has priority over draws)
     if (moves.empty()) {
-        if (inCheck(board)) {
+        if (weAreInCheck) {
             // Checkmate - return mate score (checkmate has priority over draws)
             return eval::Score(-32000 + ply);
         } else {
@@ -216,9 +216,6 @@ eval::Score negamax(Board& board,
         // PERFORMANCE OPTIMIZATION: Strategic draw checking
         bool shouldCheckDraw = false;
         
-        // Determine if we should check for draws based on position characteristics
-        bool inCheckPosition = inCheck(board);
-        
         // Get info about last move from search stack (if available)
         bool lastMoveWasCapture = false;
         if (ply > 0 && ply - 1 < 128) {
@@ -229,7 +226,7 @@ eval::Score negamax(Board& board,
         }
         
         shouldCheckDraw = 
-            inCheckPosition ||                      // Always after checks
+            weAreInCheck ||                         // Always after checks (use cached value)
             lastMoveWasCapture ||                   // After captures (50-move reset)
             (ply >= 4 && (ply & 3) == 0);          // Every 4th ply for repetitions
         
