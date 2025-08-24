@@ -2,6 +2,7 @@
 #include "material.h"
 #include "pst.h"  // Stage 9: Include PST header
 #include "pawn_structure.h"  // Phase PP2: Passed pawn evaluation
+#include "king_safety.h"  // Phase KS2: King safety evaluation
 #include "../core/board.h"
 #include "../core/bitboard.h"
 #include "../core/move_generation.h"  // MOB2: For mobility calculation
@@ -704,10 +705,19 @@ Score evaluate(const Board& board) {
     int mobilityValue = whiteMobilityScore - blackMobilityScore;
     Score mobilityScore(mobilityValue);
     
+    // Phase KS2: King safety evaluation (integrated but returns 0 score)
+    // Evaluate for both sides and combine
+    Score whiteKingSafety = KingSafety::evaluate(board, WHITE);
+    Score blackKingSafety = KingSafety::evaluate(board, BLACK);
+    
+    // King safety is from each side's perspective, so we subtract black's from white's
+    // Note: In Phase KS2, both will return 0 since enableScoring = 0
+    Score kingSafetyScore = whiteKingSafety - blackKingSafety;
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
