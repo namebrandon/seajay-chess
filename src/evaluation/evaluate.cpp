@@ -80,6 +80,7 @@ Score evaluate(const Board& board) {
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
     Bitboard whitePassedPawns, blackPassedPawns;
+    Bitboard whiteBackward, blackBackward;  // BP2: Track backward pawns
     uint8_t whiteIslands, blackIslands;  // PI2: Track island counts
     
     if (!pawnEntry) {
@@ -95,6 +96,9 @@ Score evaluate(const Board& board) {
         newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
         newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
         newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
+        // BP2: Compute and cache backward pawns
+        newEntry.backwardPawns[WHITE] = g_pawnStructure.getBackwardPawns(WHITE, whitePawns, blackPawns);
+        newEntry.backwardPawns[BLACK] = g_pawnStructure.getBackwardPawns(BLACK, blackPawns, whitePawns);
         // PI2: Compute and cache pawn island counts
         newEntry.pawnIslands[WHITE] = PawnStructure::countPawnIslands(whitePawns);
         newEntry.pawnIslands[BLACK] = PawnStructure::countPawnIslands(blackPawns);
@@ -109,6 +113,8 @@ Score evaluate(const Board& board) {
         blackDoubled = newEntry.doubledPawns[BLACK];
         whitePassedPawns = newEntry.passedPawns[WHITE];
         blackPassedPawns = newEntry.passedPawns[BLACK];
+        whiteBackward = newEntry.backwardPawns[WHITE];  // BP2
+        blackBackward = newEntry.backwardPawns[BLACK];  // BP2
         whiteIslands = newEntry.pawnIslands[WHITE];  // PI2
         blackIslands = newEntry.pawnIslands[BLACK];  // PI2
     } else {
@@ -119,6 +125,8 @@ Score evaluate(const Board& board) {
         blackDoubled = pawnEntry->doubledPawns[BLACK];
         whitePassedPawns = pawnEntry->passedPawns[WHITE];
         blackPassedPawns = pawnEntry->passedPawns[BLACK];
+        whiteBackward = pawnEntry->backwardPawns[WHITE];  // BP2
+        blackBackward = pawnEntry->backwardPawns[BLACK];  // BP2
         whiteIslands = pawnEntry->pawnIslands[WHITE];  // PI2
         blackIslands = pawnEntry->pawnIslands[BLACK];  // PI2
     }
@@ -522,10 +530,20 @@ Score evaluate(const Board& board) {
     int pawnIslandValue = blackIslandPenalty - whiteIslandPenalty;
     Score pawnIslandScore(pawnIslandValue);
     
+    // BP3: Backward pawn evaluation enabled
+    // Reduced penalty after initial test showed 18cp was too high
+    static constexpr int BACKWARD_PAWN_PENALTY = 8;  // Centipawns penalty per backward pawn
+    int whiteBackwardCount = popCount(whiteBackward);
+    int blackBackwardCount = popCount(blackBackward);
+    
+    // From white's perspective: penalize white's backward pawns, reward black's backward pawns
+    int backwardPawnValue = (blackBackwardCount - whiteBackwardCount) * BACKWARD_PAWN_PENALTY;
+    Score backwardPawnScore(backwardPawnValue);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
