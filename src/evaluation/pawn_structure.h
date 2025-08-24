@@ -13,10 +13,11 @@ struct PawnEntry {
     Bitboard candidatePassers[2];
     Bitboard isolatedPawns[2];  // Track isolated pawns for both colors
     Bitboard doubledPawns[2];   // DP1: Track doubled pawns for both colors
+    uint8_t pawnIslands[2];     // PI1: Count of pawn islands for both colors
     int16_t score;
     bool valid;
     
-    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, doubledPawns{0, 0}, score(0), valid(false) {}
+    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, doubledPawns{0, 0}, pawnIslands{0, 0}, score(0), valid(false) {}
 };
 
 class PawnStructure {
@@ -71,6 +72,14 @@ public:
     
     // Count doubled pawns on a file (returns count - 1, so 3 pawns = 2 doubled)
     static int countDoubledOnFile(int file, Bitboard ourPawns);
+    
+    // PI1: Pawn island detection infrastructure
+    // Count the number of pawn islands (groups of connected pawns)
+    // Fewer islands generally means better pawn structure
+    static int countPawnIslands(Bitboard ourPawns);
+    
+    // Get the number of pawn islands for a color (uses cache if available)
+    int getPawnIslands(Color c, Bitboard ourPawns);
 
 private:
     static Bitboard m_passedPawnMask[2][64];
