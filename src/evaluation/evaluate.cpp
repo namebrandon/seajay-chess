@@ -531,8 +531,8 @@ Score evaluate(const Board& board) {
     Score pawnIslandScore(pawnIslandValue);
     
     // BP3: Backward pawn evaluation enabled
-    // Conservative penalty to start - backward pawns are serious weaknesses
-    static constexpr int BACKWARD_PAWN_PENALTY = 18;  // Centipawns penalty per backward pawn
+    // Reduced penalty after initial test showed 18cp was too high
+    static constexpr int BACKWARD_PAWN_PENALTY = 8;  // Centipawns penalty per backward pawn
     int whiteBackwardCount = popCount(whiteBackward);
     int blackBackwardCount = popCount(blackBackward);
     
