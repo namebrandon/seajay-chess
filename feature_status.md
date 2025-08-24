@@ -33,7 +33,9 @@ Using 4ku chess engine as reference:
 **SPRT Bounds:** [-5.00, 3.00] (infrastructure validation)
 
 ### Phase KS2: Integration Without Scoring (0 to -5 ELO expected)
-**Status:** Not Started
+**Status:** Complete ✓
+**Commit:** 02dd4c5
+**Bench:** 19191913
 **Description:** Hook into evaluation system but return 0 score
 - Integrate KingSafety into Evaluation class
 - Call king safety evaluation but multiply by 0
@@ -75,7 +77,7 @@ Using 4ku chess engine as reference:
 | Phase | Commit | Bench | Expected ELO | Actual ELO | Status |
 |-------|--------|-------|--------------|------------|--------|
 | KS1   | 8adb99d | 19191913 | 0         | AWAIT TEST | Complete |
-| KS2   | -      | -     | 0 to -5      | -          | Not Started |
+| KS2   | 02dd4c5 | 19191913 | 0 to -5   | AWAIT TEST | Complete |
 | KS3   | -      | -     | +20-30       | -          | Not Started |
 | KS4   | -      | -     | +5-10        | -          | Not Started |
 

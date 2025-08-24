@@ -1,11 +1,19 @@
 #include "king_safety.h"
 #include "../core/board.h"
 #include "../core/bitboard.h"
+#include "../search/game_phase.h"  // Phase KS3: For phase tapering
 
 namespace seajay::eval {
 
 // Initialize static parameters
-KingSafety::KingSafetyParams KingSafety::s_params;
+// Phase KS3: Enable scoring with initial values from 4ku
+KingSafety::KingSafetyParams KingSafety::s_params = {
+    .directShieldMg = 33,    // S(33, -10) midgame value
+    .directShieldEg = -10,   // S(33, -10) endgame value  
+    .advancedShieldMg = 25,  // S(25, -7) midgame value
+    .advancedShieldEg = -7,  // S(25, -7) endgame value
+    .enableScoring = 1       // Phase KS3: ENABLED
+};
 
 Score KingSafety::evaluate(const Board& board, Color side) {
     // Phase KS1: Infrastructure phase - compute but don't score
@@ -26,13 +34,29 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     int directCount = popCount(directShield);
     int advancedCount = popCount(advancedShield);
     
-    // Calculate raw score (will be multiplied by enableScoring)
-    // Using simple midgame values for now (no phase tapering yet)
-    int rawScore = directCount * s_params.directShieldMg + 
-                   advancedCount * s_params.advancedShieldMg;
+    // Phase KS3: Implement phase-based scoring
+    // Detect game phase for proper tapering
+    search::GamePhase phase = search::detectGamePhase(board);
     
-    // Phase KS1: Multiply by 0 to disable scoring
-    // Phase KS3: Will set enableScoring to 1
+    int rawScore = 0;
+    
+    // Apply phase-appropriate values
+    switch (phase) {
+        case search::GamePhase::OPENING:
+        case search::GamePhase::MIDDLEGAME:
+            // Use middlegame values (king safety more important)
+            rawScore = directCount * s_params.directShieldMg + 
+                      advancedCount * s_params.advancedShieldMg;
+            break;
+            
+        case search::GamePhase::ENDGAME:
+            // Use endgame values (king safety less important, can be negative)
+            rawScore = directCount * s_params.directShieldEg + 
+                      advancedCount * s_params.advancedShieldEg;
+            break;
+    }
+    
+    // Phase KS3: enableScoring is now 1, so scoring is active
     int finalScore = rawScore * s_params.enableScoring;
     
     // Return score from white's perspective
