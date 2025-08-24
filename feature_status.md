@@ -30,11 +30,11 @@ Implementing evaluation bonuses for rooks on open and semi-open files. This is a
 ## Phase Status
 
 ### Phase 1: Infrastructure
-- **Status:** Not started
+- **Status:** Complete ✓
 - **Branch:** feature/20250824-rook-open-files
-- **Commit:** TBD
-- **Bench:** TBD
-- **OpenBench:** Not tested
+- **Commit:** 1d329eb
+- **Bench:** 19191913
+- **OpenBench:** Awaiting test
 - **Result:** N/A
 
 ### Phase 2: Integration
