@@ -292,9 +292,15 @@ bool PawnStructure::isBackward(Color us, Square sq, Bitboard ourPawns, Bitboard 
     // 2. No friendly pawns on adjacent files can support it (are behind or level with it)
     // 3. The square in front is controlled by enemy pawns
     // 4. It cannot safely advance
+    // 5. NOT already isolated (to avoid double penalty)
     
     int rank = rankOf(sq);
     int file = fileOf(sq);
+    
+    // Don't count isolated pawns as backward (they're already penalized)
+    if (isIsolated(sq, ourPawns)) {
+        return false;
+    }
     
     // Not backward if on starting rank
     if ((us == WHITE && rank == 1) || (us == BLACK && rank == 6)) {
@@ -337,40 +343,50 @@ bool PawnStructure::isBackward(Color us, Square sq, Bitboard ourPawns, Bitboard 
     // Check if the square in front is attacked by enemy pawns
     Square frontSq = (us == WHITE) ? Square(sq + 8) : Square(sq - 8);
     
-    // Check if the front square would be attacked by enemy pawns
-    Bitboard enemyPawnAttacks = 0ULL;
+    // Make sure front square is valid (not off board)
+    if (frontSq < 0 || frontSq >= 64) {
+        return false;  // Pawn at edge, can't advance anyway
+    }
+    
+    // Check if enemy pawns attack the front square
+    bool frontSquareAttacked = false;
+    
     if (us == WHITE) {
-        // Black pawns attack diagonally downward
-        if (fileOf(frontSq) > 0) {
-            Square attackerSq = Square(frontSq + 7);  // Black pawn to the left
-            if (rankOf(attackerSq) < 8 && (theirPawns & (1ULL << attackerSq))) {
-                enemyPawnAttacks |= (1ULL << attackerSq);
+        // Check if black pawns can attack the front square
+        // Black pawns attack from northeast (+7) and northwest (+9) relative to their position
+        // So from the front square's perspective, black pawns would be at +7 and +9
+        if (fileOf(frontSq) > 0 && rankOf(frontSq) < 7) {
+            Square attackerSq = Square(frontSq + 7);  // Black pawn that could attack from left
+            if ((theirPawns & (1ULL << attackerSq))) {
+                frontSquareAttacked = true;
             }
         }
-        if (fileOf(frontSq) < 7) {
-            Square attackerSq = Square(frontSq + 9);  // Black pawn to the right
-            if (rankOf(attackerSq) < 8 && (theirPawns & (1ULL << attackerSq))) {
-                enemyPawnAttacks |= (1ULL << attackerSq);
+        if (fileOf(frontSq) < 7 && rankOf(frontSq) < 7) {
+            Square attackerSq = Square(frontSq + 9);  // Black pawn that could attack from right
+            if ((theirPawns & (1ULL << attackerSq))) {
+                frontSquareAttacked = true;
             }
         }
     } else {
-        // White pawns attack diagonally upward
-        if (fileOf(frontSq) > 0) {
-            Square attackerSq = Square(frontSq - 9);  // White pawn to the left
-            if (rankOf(attackerSq) >= 0 && (theirPawns & (1ULL << attackerSq))) {
-                enemyPawnAttacks |= (1ULL << attackerSq);
+        // Check if white pawns can attack the front square
+        // White pawns attack from southeast (-7) and southwest (-9) relative to their position
+        // So from the front square's perspective, white pawns would be at -7 and -9
+        if (fileOf(frontSq) < 7 && rankOf(frontSq) > 0) {
+            Square attackerSq = Square(frontSq - 7);  // White pawn that could attack from right
+            if ((theirPawns & (1ULL << attackerSq))) {
+                frontSquareAttacked = true;
             }
         }
-        if (fileOf(frontSq) < 7) {
-            Square attackerSq = Square(frontSq - 7);  // White pawn to the right
-            if (rankOf(attackerSq) >= 0 && (theirPawns & (1ULL << attackerSq))) {
-                enemyPawnAttacks |= (1ULL << attackerSq);
+        if (fileOf(frontSq) > 0 && rankOf(frontSq) > 0) {
+            Square attackerSq = Square(frontSq - 9);  // White pawn that could attack from left
+            if ((theirPawns & (1ULL << attackerSq))) {
+                frontSquareAttacked = true;
             }
         }
     }
     
     // If front square is not attacked by enemy pawns, not backward
-    if (!enemyPawnAttacks) {
+    if (!frontSquareAttacked) {
         return false;
     }
     
