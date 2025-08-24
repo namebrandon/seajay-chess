@@ -280,8 +280,8 @@ int PawnStructure::countPawnIslands(Bitboard ourPawns) {
 }
 
 int PawnStructure::getPawnIslands(Color c, Bitboard ourPawns) {
-    // For Phase PI1, just compute directly without caching
-    // Caching will be added when we integrate into evaluation
+    // PI2: Now returns cached value from probe/store cycle in evaluate.cpp
+    // The actual caching happens in evaluate.cpp when it computes all pawn features
     return countPawnIslands(ourPawns);
 }
 

@@ -80,6 +80,7 @@ Score evaluate(const Board& board) {
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
     Bitboard whitePassedPawns, blackPassedPawns;
+    uint8_t whiteIslands, blackIslands;  // PI2: Track island counts
     
     if (!pawnEntry) {
         // Cache miss - compute pawn structure
@@ -94,6 +95,9 @@ Score evaluate(const Board& board) {
         newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
         newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
         newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
+        // PI2: Compute and cache pawn island counts
+        newEntry.pawnIslands[WHITE] = PawnStructure::countPawnIslands(whitePawns);
+        newEntry.pawnIslands[BLACK] = PawnStructure::countPawnIslands(blackPawns);
         
         // Store in cache
         g_pawnStructure.store(pawnKey, newEntry);
@@ -105,6 +109,8 @@ Score evaluate(const Board& board) {
         blackDoubled = newEntry.doubledPawns[BLACK];
         whitePassedPawns = newEntry.passedPawns[WHITE];
         blackPassedPawns = newEntry.passedPawns[BLACK];
+        whiteIslands = newEntry.pawnIslands[WHITE];  // PI2
+        blackIslands = newEntry.pawnIslands[BLACK];  // PI2
     } else {
         // Cache hit - use stored values
         whiteIsolated = pawnEntry->isolatedPawns[WHITE];
@@ -113,6 +119,8 @@ Score evaluate(const Board& board) {
         blackDoubled = pawnEntry->doubledPawns[BLACK];
         whitePassedPawns = pawnEntry->passedPawns[WHITE];
         blackPassedPawns = pawnEntry->passedPawns[BLACK];
+        whiteIslands = pawnEntry->pawnIslands[WHITE];  // PI2
+        blackIslands = pawnEntry->pawnIslands[BLACK];  // PI2
     }
     
     // Calculate passed pawn score
@@ -502,10 +510,22 @@ Score evaluate(const Board& board) {
     // Convert doubled pawn penalty to Score
     Score doubledPawnScore(doubledPawnPenalty);
     
+    // PI2: Pawn islands evaluation - fewer islands is better
+    // Conservative penalties to start (will tune in PI3)
+    static constexpr int PAWN_ISLAND_PENALTY = 5;  // Per island beyond the first
+    
+    // Calculate penalty (having 1 island is ideal, penalize additional islands)
+    int whiteIslandPenalty = (whiteIslands > 1) ? (whiteIslands - 1) * PAWN_ISLAND_PENALTY : 0;
+    int blackIslandPenalty = (blackIslands > 1) ? (blackIslands - 1) * PAWN_ISLAND_PENALTY : 0;
+    
+    // From white's perspective: penalize white's islands, reward black's islands
+    int pawnIslandValue = blackIslandPenalty - whiteIslandPenalty;
+    Score pawnIslandScore(pawnIslandValue);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
