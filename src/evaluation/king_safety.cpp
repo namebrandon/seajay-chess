@@ -72,11 +72,15 @@ Bitboard KingSafety::getShieldPawns(const Board& board, Color side, Square kingS
 }
 
 Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Square kingSquare) {
-    // Get pawns two squares in front of the king
+    // Get pawns two ranks in front of the king
+    // For white: shield is rank 2, advanced is rank 3
+    // For black: shield is rank 7, advanced is rank 6
     Bitboard friendlyPawns = board.pieces(side, PAWN);
     
-    // Get the shield zone and shift it forward one rank
+    // Get the shield zone and shift it forward one rank (toward enemy)
     Bitboard shieldZone = getShieldZone(kingSquare, side);
+    // "north" in 4ku means toward rank 8, so for both colors it's << 8
+    // But for black, "advanced" means toward white (rank 6), so >> 8
     Bitboard advancedZone = (side == WHITE) ? shieldZone << 8 : shieldZone >> 8;
     
     return friendlyPawns & advancedZone;
@@ -121,10 +125,10 @@ Bitboard KingSafety::getShieldZone(Square kingSquare, Color side) {
         // Mirror for black: shield is on rank 7
         if (file > 2) {
             // Kingside: f7, g7, h7
-            return 0xE00000000000ULL;
+            return 0xE0000000000000ULL;
         } else {
             // Queenside: a7, b7, c7
-            return 0x70000000000ULL;
+            return 0x7000000000000ULL;
         }
     }
 }
