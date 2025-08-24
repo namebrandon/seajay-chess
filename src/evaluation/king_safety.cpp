@@ -83,96 +83,50 @@ Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Squa
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
-    // Check if king is in a typical castled position
-    // Based on 4ku's 0xC3D7 mask approach
+    // 4ku's exact mask: 0xC3D7 for white
+    // This covers: a1,b1,c1,d1,e1,g1,h1 on rank 1 + a2,b2,g2,h2 on rank 2
+    
+    Bitboard kingBit = 1ULL << kingSquare;
     
     if (side == WHITE) {
-        // White king reasonable positions:
-        // Queenside: a1, b1, c1, a2, b2
-        // Kingside: g1, h1, g2
-        Bitboard kingBit = 1ULL << kingSquare;
-        
-        // Check rank 1 positions
-        if (rankOf(kingSquare) == 0) {  // Rank 1
-            // a1, b1, c1, g1, h1
-            return (kingBit & 0xC7ULL) != 0;
-        }
-        // Check rank 2 positions
-        else if (rankOf(kingSquare) == 1) {  // Rank 2
-            // a2, b2, g2
-            return (fileOf(kingSquare) <= 1 || fileOf(kingSquare) == 6);
-        }
+        // Use 4ku's exact mask
+        return (kingBit & 0xC3D7ULL) != 0;
     } else {  // BLACK
-        // Black king reasonable positions:
-        // Queenside: a8, b8, c8, a7, b7
-        // Kingside: g8, h8, g7
-        Bitboard kingBit = 1ULL << kingSquare;
-        
-        // Check rank 8 positions
-        if (rankOf(kingSquare) == 7) {  // Rank 8
-            // a8, b8, c8, g8, h8
-            return (kingBit & 0xC700000000000000ULL) != 0;
-        }
-        // Check rank 7 positions
-        else if (rankOf(kingSquare) == 6) {  // Rank 7
-            // a7, b7, g7
-            return (fileOf(kingSquare) <= 1 || fileOf(kingSquare) == 6);
-        }
+        // Mirror of white's mask for rank 7-8
+        // 0xC3D7 shifted to ranks 7-8
+        constexpr Bitboard BLACK_REASONABLE = 0xD7C3000000000000ULL;
+        return (kingBit & BLACK_REASONABLE) != 0;
     }
-    
-    return false;
 }
 
 Bitboard KingSafety::getShieldZone(Square kingSquare, Color side) {
-    // Define the shield zone based on king position
-    // This follows 4ku's approach with adjustment for king file
+    // 4ku's exact approach: const u64 shield = 0x700 << 5 * (file > 2);
+    // 0x700 = files a,b,c on rank 2 (for white)
+    // Shift by 5 files if king is on kingside (file > 2)
     
     int file = fileOf(kingSquare);
-    int rank = rankOf(kingSquare);
-    
-    Bitboard shieldZone = 0ULL;
     
     if (side == WHITE) {
-        // For white, shield is in front (higher ranks)
-        if (rank < 7) {  // Can have shield
-            int shieldRank = rank + 1;
-            
-            // Determine shield files based on king position
-            if (file <= 2) {
-                // Queenside castle or near - shield on files a,b,c
-                shieldZone = 0x7ULL << (shieldRank * 8);  // Files a,b,c
-            } else if (file >= 5) {
-                // Kingside castle or near - shield on files f,g,h
-                shieldZone = 0xE0ULL << (shieldRank * 8);  // Files f,g,h
-            } else {
-                // Central king - shield on king file and adjacent files
-                if (file > 0) shieldZone |= 1ULL << (shieldRank * 8 + file - 1);
-                shieldZone |= 1ULL << (shieldRank * 8 + file);
-                if (file < 7) shieldZone |= 1ULL << (shieldRank * 8 + file + 1);
-            }
+        // 4ku logic: shield is ALWAYS on rank 2
+        // 0x700 = a2,b2,c2 for queenside
+        // 0x700 << 5 = 0xE000 = f2,g2,h2 for kingside
+        if (file > 2) {
+            // Kingside: f2, g2, h2
+            return 0xE000ULL;
+        } else {
+            // Queenside: a2, b2, c2
+            return 0x700ULL;
         }
     } else {  // BLACK
-        // For black, shield is in front (lower ranks)
-        if (rank > 0) {  // Can have shield
-            int shieldRank = rank - 1;
-            
-            // Determine shield files based on king position
-            if (file <= 2) {
-                // Queenside castle or near - shield on files a,b,c
-                shieldZone = 0x7ULL << (shieldRank * 8);  // Files a,b,c
-            } else if (file >= 5) {
-                // Kingside castle or near - shield on files f,g,h
-                shieldZone = 0xE0ULL << (shieldRank * 8);  // Files f,g,h
-            } else {
-                // Central king - shield on king file and adjacent files
-                if (file > 0) shieldZone |= 1ULL << (shieldRank * 8 + file - 1);
-                shieldZone |= 1ULL << (shieldRank * 8 + file);
-                if (file < 7) shieldZone |= 1ULL << (shieldRank * 8 + file + 1);
-            }
+        // Mirror for black: shield is on rank 7
+        if (file > 2) {
+            // Kingside: f7, g7, h7
+            return 0xE00000000000ULL;
+        } else {
+            // Queenside: a7, b7, c7
+            return 0x70000000000ULL;
         }
     }
-    
-    return shieldZone;
 }
 
 } // namespace seajay::eval
