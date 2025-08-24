@@ -530,8 +530,9 @@ Score evaluate(const Board& board) {
     int pawnIslandValue = blackIslandPenalty - whiteIslandPenalty;
     Score pawnIslandScore(pawnIslandValue);
     
-    // BP2: Backward pawn evaluation (weight = 0 for integration phase)
-    static constexpr int BACKWARD_PAWN_PENALTY = 0;  // Will be set in BP3
+    // BP3: Backward pawn evaluation enabled
+    // Conservative penalty to start - backward pawns are serious weaknesses
+    static constexpr int BACKWARD_PAWN_PENALTY = 18;  // Centipawns penalty per backward pawn
     int whiteBackwardCount = popCount(whiteBackward);
     int blackBackwardCount = popCount(blackBackward);
     
