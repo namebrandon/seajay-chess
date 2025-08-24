@@ -1833,6 +1833,33 @@ void Board::recalculatePSTScore() {
     }
 }
 
+// Phase ROF1: Rook on open/semi-open file detection
+bool Board::isOpenFile(int file) const noexcept {
+    // An open file has no pawns (neither white nor black)
+    if (file < 0 || file > 7) return false;
+    
+    // Create a file mask
+    Bitboard fileMask = fileBB(file);
+    
+    // Check if there are any pawns on this file
+    Bitboard allPawns = pieces(PAWN);  // Gets all pawns (both colors)
+    
+    return (fileMask & allPawns) == 0;
+}
+
+bool Board::isSemiOpenFile(int file, Color side) const noexcept {
+    // A semi-open file for a side has no friendly pawns (but may have enemy pawns)
+    if (file < 0 || file > 7) return false;
+    
+    // Create a file mask
+    Bitboard fileMask = fileBB(file);
+    
+    // Check if there are any friendly pawns on this file
+    Bitboard friendlyPawns = pieces(side, PAWN);
+    
+    return (fileMask & friendlyPawns) == 0;
+}
+
 // Null move implementation for null move pruning
 void Board::makeNullMove(UndoInfo& undo) {
     // Save state for undo
