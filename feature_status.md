@@ -72,8 +72,8 @@ Backward pawns are a structural weakness as they:
 
 **Phase BP3:**
 - Base: Phase BP2
-- Bounds: [5.00, 12.00]
-- Rationale: Main feature activation, expect significant gain
+- Bounds: [0.00, 5.00]
+- Rationale: Minor positional feature, realistic nELO expectations
 
 ## Progress Tracking
 
