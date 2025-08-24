@@ -54,6 +54,7 @@ yolo.sh           # Claude permission bypass script
 config.json       # Configuration file
 .claude/          # Claude-specific directory
 .devcontainer/    # Dev container configuration
+feature_status.md # Temporary feature tracking (only on feature branches)
 
 # Test outputs
 *.log

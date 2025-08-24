@@ -236,6 +236,37 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   # WARNING: Never run git clean-ob unless you're sure!
   # Historical references should be kept long-term
 
+  CRITICAL: Files That Should Never Be Tracked
+  
+  The following files/directories are development-specific and should NEVER be pushed to the repository:
+  
+  - CLAUDE.md         # AI assistant context file (contains sensitive project info)
+  - .claude/          # Claude-specific configuration directory
+  - .devcontainer/    # Local development container configuration
+  - feature_status.md # Temporary feature tracking (lives on feature branches only)
+  
+  If these files are accidentally tracked (showing in git status as modified/deleted):
+  
+  # Remove them from git tracking while keeping local copies
+  git rm --cached -r .claude .devcontainer CLAUDE.md feature_status.md
+  
+  # Commit the removal
+  git commit -m "chore: Remove development-specific files from tracking
+  
+  These files should remain local only:
+  - CLAUDE.md (AI context)
+  - .claude/ (Claude config)
+  - .devcontainer/ (dev environment)
+  - feature_status.md (temporary tracking)
+  
+  bench 19191913"
+  
+  # Verify they're in .gitignore
+  grep -E "(CLAUDE|\.claude|\.devcontainer|feature_status)" .gitignore
+  
+  IMPORTANT: These files are already in .gitignore, but if they were added to git
+  BEFORE being gitignored, they'll continue to be tracked. The above commands fix this.
+  
   Best Practices
 
   1. Phased Development Strategy (MANDATORY for complex features)
