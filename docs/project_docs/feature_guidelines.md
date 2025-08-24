@@ -79,6 +79,9 @@ Example: PP1, PP2, PP3a, PP3b
    UCI Options: <if any>
    Ready for OpenBench: YES
    
+   SPRT BOUNDS RECOMMENDATION:
+   [lower, upper] with rationale
+   
    AWAITING HUMAN TEST CONFIRMATION
    Do not proceed to Phase [X+1] until test results are reviewed.
    ```
@@ -90,12 +93,38 @@ Example: PP1, PP2, PP3a, PP3b
 Dev Branch: <feature-branch>
 Base Branch: main (or previous phase)
 Time Control: 10+0.1 (standard) or 60+0.6 (complex features)
-Test Bounds: [lower, upper] based on expectations
+Test Bounds: [lower, upper] based on recommendations
 Book: UHO_4060_v2.epd
 Description: Phase XX - <brief description>
 ```
 
+#### SPRT Bounds Guidelines (for normalized ELO)
+
+**Infrastructure Phases (0 ELO expected):**
+- Bounds: `[-5.00, 3.00]`
+- Rationale: Detect regressions while allowing for noise
+
+**Minor Feature Phases (+5-15 ELO expected):**
+- Bounds: `[0.00, 8.00]` for +5-8 ELO expected
+- Bounds: `[2.00, 12.00]` for +10-15 ELO expected
+- Rationale: Lower bound ensures positive gain, upper allows for upside
+
+**Major Feature Phases (+20-50 ELO expected):**
+- Bounds: `[8.00, 25.00]` for +20-30 ELO expected
+- Bounds: `[15.00, 35.00]` for +30-50 ELO expected
+- Rationale: Require significant gain to justify complexity
+
+**Tuning Phases (+5-10 ELO expected):**
+- Bounds: `[0.00, 8.00]`
+- Rationale: Any positive gain validates tuning effort
+
+**Bug Fix Phases (0 to small positive expected):**
+- Bounds: `[-3.00, 5.00]`
+- Rationale: Ensure fix doesn't regress while allowing small gains
+
 #### Test Interpretation
+- **PASS (LLR ≥ 2.94):** Phase successful, proceed to next
+- **FAIL (LLR ≤ -2.94):** Phase failed, debug required
 - **Within expected range:** Proceed to next phase
 - **Below expectations but positive:** Analyze and decide
 - **Negative result:** STOP and debug
