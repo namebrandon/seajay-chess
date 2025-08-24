@@ -39,10 +39,10 @@
 - **Test Results:** Awaiting OpenBench
 
 ### Phase 2: Basic Integration
-- **Status:** Pending
-- **Commit:** TBD
-- **Bench:** TBD
-- **Test Results:** Awaiting
+- **Status:** Complete
+- **Commit:** 16774bf
+- **Bench:** 19191913
+- **Test Results:** Awaiting OpenBench
 
 ### Phase 3: Tuning
 - **Status:** Pending
