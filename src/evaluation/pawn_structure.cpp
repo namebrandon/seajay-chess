@@ -285,4 +285,112 @@ int PawnStructure::getPawnIslands(Color c, Bitboard ourPawns) {
     return countPawnIslands(ourPawns);
 }
 
+// BP1: Backward pawn detection implementation
+bool PawnStructure::isBackward(Color us, Square sq, Bitboard ourPawns, Bitboard theirPawns) {
+    // A pawn is backward if:
+    // 1. It's not on its starting rank (2nd for white, 7th for black)
+    // 2. No friendly pawns on adjacent files can support it (are behind or level with it)
+    // 3. The square in front is controlled by enemy pawns
+    // 4. It cannot safely advance
+    
+    int rank = rankOf(sq);
+    int file = fileOf(sq);
+    
+    // Not backward if on starting rank
+    if ((us == WHITE && rank == 1) || (us == BLACK && rank == 6)) {
+        return false;
+    }
+    
+    // Check for support from adjacent files
+    bool hasSupport = false;
+    Bitboard adjacentFiles = 0ULL;
+    
+    if (file > 0) adjacentFiles |= fileBB(file - 1);
+    if (file < 7) adjacentFiles |= fileBB(file + 1);
+    
+    Bitboard supportingPawns = ourPawns & adjacentFiles;
+    
+    // For white, supporting pawns must be on same rank or behind (lower rank)
+    // For black, supporting pawns must be on same rank or behind (higher rank)
+    while (supportingPawns) {
+        Square supportSq = popLsb(supportingPawns);
+        int supportRank = rankOf(supportSq);
+        
+        if (us == WHITE) {
+            if (supportRank <= rank) {
+                hasSupport = true;
+                break;
+            }
+        } else {
+            if (supportRank >= rank) {
+                hasSupport = true;
+                break;
+            }
+        }
+    }
+    
+    // If we have support, not backward
+    if (hasSupport) {
+        return false;
+    }
+    
+    // Check if the square in front is attacked by enemy pawns
+    Square frontSq = (us == WHITE) ? Square(sq + 8) : Square(sq - 8);
+    
+    // Check if the front square would be attacked by enemy pawns
+    Bitboard enemyPawnAttacks = 0ULL;
+    if (us == WHITE) {
+        // Black pawns attack diagonally downward
+        if (fileOf(frontSq) > 0) {
+            Square attackerSq = Square(frontSq + 7);  // Black pawn to the left
+            if (rankOf(attackerSq) < 8 && (theirPawns & (1ULL << attackerSq))) {
+                enemyPawnAttacks |= (1ULL << attackerSq);
+            }
+        }
+        if (fileOf(frontSq) < 7) {
+            Square attackerSq = Square(frontSq + 9);  // Black pawn to the right
+            if (rankOf(attackerSq) < 8 && (theirPawns & (1ULL << attackerSq))) {
+                enemyPawnAttacks |= (1ULL << attackerSq);
+            }
+        }
+    } else {
+        // White pawns attack diagonally upward
+        if (fileOf(frontSq) > 0) {
+            Square attackerSq = Square(frontSq - 9);  // White pawn to the left
+            if (rankOf(attackerSq) >= 0 && (theirPawns & (1ULL << attackerSq))) {
+                enemyPawnAttacks |= (1ULL << attackerSq);
+            }
+        }
+        if (fileOf(frontSq) < 7) {
+            Square attackerSq = Square(frontSq - 7);  // White pawn to the right
+            if (rankOf(attackerSq) >= 0 && (theirPawns & (1ULL << attackerSq))) {
+                enemyPawnAttacks |= (1ULL << attackerSq);
+            }
+        }
+    }
+    
+    // If front square is not attacked by enemy pawns, not backward
+    if (!enemyPawnAttacks) {
+        return false;
+    }
+    
+    // Additional check: the pawn should not be able to advance safely
+    // This means there's an enemy pawn blocking or controlling its advance
+    return true;
+}
+
+Bitboard PawnStructure::getBackwardPawns(Color c, Bitboard ourPawns, Bitboard theirPawns) {
+    Bitboard backward = 0ULL;
+    Bitboard pawns = ourPawns;
+    
+    while (pawns) {
+        Square sq = popLsb(pawns);
+        if (isBackward(c, sq, ourPawns, theirPawns)) {
+            backward |= (1ULL << sq);
+        }
+    }
+    
+    return backward;
+}
+
 }

@@ -13,11 +13,12 @@ struct PawnEntry {
     Bitboard candidatePassers[2];
     Bitboard isolatedPawns[2];  // Track isolated pawns for both colors
     Bitboard doubledPawns[2];   // DP1: Track doubled pawns for both colors
+    Bitboard backwardPawns[2];  // BP1: Track backward pawns for both colors
     uint8_t pawnIslands[2];     // PI1: Count of pawn islands for both colors
     int16_t score;
     bool valid;
     
-    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, doubledPawns{0, 0}, pawnIslands{0, 0}, score(0), valid(false) {}
+    PawnEntry() : key(0), passedPawns{0, 0}, candidatePassers{0, 0}, isolatedPawns{0, 0}, doubledPawns{0, 0}, backwardPawns{0, 0}, pawnIslands{0, 0}, score(0), valid(false) {}
 };
 
 class PawnStructure {
@@ -80,6 +81,14 @@ public:
     
     // Get the number of pawn islands for a color (uses cache if available)
     int getPawnIslands(Color c, Bitboard ourPawns);
+    
+    // BP1: Backward pawn detection infrastructure
+    // Check if a pawn at the given square is backward
+    // A pawn is backward if it cannot safely advance and has no support
+    static bool isBackward(Color us, Square sq, Bitboard ourPawns, Bitboard theirPawns);
+    
+    // Get bitboard of all backward pawns for a color
+    Bitboard getBackwardPawns(Color c, Bitboard ourPawns, Bitboard theirPawns);
 
 private:
     static Bitboard m_passedPawnMask[2][64];
