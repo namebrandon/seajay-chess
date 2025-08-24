@@ -87,19 +87,20 @@ Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Squa
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
-    // 4ku's exact mask: 0xC3D7 for white
-    // This covers: a1,b1,c1,d1,e1,g1,h1 on rank 1 + a2,b2,g2,h2 on rank 2
+    // Modified mask: Remove e1/e8 to avoid rewarding uncastled kings
+    // Original 4ku: 0xC3D7 includes e1, but this discourages castling
+    // New mask: a1,b1,c1,g1,h1 on rank 1 + a2,b2,g2,h2 on rank 2 (NO e1)
     
     Bitboard kingBit = 1ULL << kingSquare;
     
     if (side == WHITE) {
-        // Use 4ku's exact mask
-        return (kingBit & 0xC3D7ULL) != 0;
+        // Remove e1 (bit 4) from 0xC3D7 = 0xC3C3
+        constexpr Bitboard WHITE_CASTLED = 0xC3C3ULL;
+        return (kingBit & WHITE_CASTLED) != 0;
     } else {  // BLACK
-        // Mirror of white's mask for rank 7-8
-        // 0xC3D7 shifted to ranks 7-8
-        constexpr Bitboard BLACK_REASONABLE = 0xD7C3000000000000ULL;
-        return (kingBit & BLACK_REASONABLE) != 0;
+        // Mirror without e8
+        constexpr Bitboard BLACK_CASTLED = 0xC3C3000000000000ULL;
+        return (kingBit & BLACK_CASTLED) != 0;
     }
 }
 
