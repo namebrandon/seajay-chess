@@ -16,6 +16,26 @@ You are helping develop SeaJay, a modern chess engine in C++20 that will eventua
 
 Check `project_docs/project_status.md` for detailed progress tracking.
 
+## 🚨 PRIME DIRECTIVE: BENCH IN COMMIT MESSAGES 🚨
+
+**EVERY commit MUST include "bench <node-count>" in EXACT format:**
+```
+bench 19191913
+```
+
+**NOT:**
+- ❌ "Bench: 19191913"
+- ❌ "benchmark 19191913"
+- ❌ "bench count: 19191913"
+- ❌ "19191913 nodes"
+
+**GET BENCH COUNT:**
+```bash
+echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
+```
+
+**WHY:** OpenBench REQUIRES this exact format. Wrong format = failed tests = wasted time.
+
 ## Critical Development Principles
 
 1. **Pre-Stage Planning**: MANDATORY planning process before any stage development begins
@@ -270,17 +290,19 @@ chmod +x /workspace/setup_git_aliases.sh
 - `git clean-features` - Delete ALL feature branches
 - `git clean-tune` - Delete ALL tune branches
 
-**CRITICAL for OpenBench:** Every commit MUST include "bench <node-count>" in the message. Get node count with:
+**CRITICAL for OpenBench:** Every commit MUST include "bench <node-count>" in the message in EXACT format.
+Get node count with:
 ```bash
-echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}'
+echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
 ```
+Then use EXACTLY: `bench 19191913` (not "Bench: 19191913" or any other variation)
 
 ## Important Reminders
 
 1. **Always run perft tests** after move generation changes
 2. **Use the specialized agents** when you need domain expertise
 3. **Document your journey** - this project emphasizes historical journaling
-4. **Commit with bench count** - MUST include "bench <node-count>" for OpenBench
+4. **Commit with bench count** - MUST include EXACTLY "bench <node-count>" format (see PRIME DIRECTIVE above)
 5. **Check project_status.md** before starting new work
 6. **One feature at a time** - resist the temptation to implement multiple things
 7. **Use branch naming convention** - feature/YYYYMMDD-name for readable OpenBench tests

@@ -1,5 +1,31 @@
 # Feature Implementation Guidelines for SeaJay
 
+## 🚨 PRIME DIRECTIVE: BENCH IN COMMIT MESSAGES 🚨
+
+**EVERY commit MUST include "bench <node-count>" in the EXACT format:**
+```
+bench 19191913
+```
+
+**NOT:**
+- ❌ "Bench: 19191913"
+- ❌ "benchmark 19191913"  
+- ❌ "bench count: 19191913"
+- ❌ "19191913 nodes"
+
+**WHY THIS MATTERS:**
+- OpenBench REQUIRES this exact format to parse commits
+- Without it, OpenBench cannot track performance changes
+- Incorrect format = wasted testing time
+
+**HOW TO GET THE BENCH COUNT:**
+```bash
+# After building, ALWAYS run:
+echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
+# Or if using the binary in current directory:
+echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
+```
+
 ## Core Development Philosophy
 
 **STOP → TEST → PROCEED**
@@ -54,13 +80,17 @@ Example: PP1, PP2, PP3a, PP3b
 
 3. **Commit Protocol**
    ```bash
-   # MANDATORY: Include bench count in commit message
+   # STEP 1: Get the bench count (MANDATORY)
+   echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
+   # Example output: 19191913
+   
+   # STEP 2: Include in commit message in EXACT format
    git add -A
    git commit -m "feat: [Phase ID] - Brief description
    
    Detailed explanation of changes...
    
-   bench [node-count]"
+   bench 19191913"  # <-- EXACT FORMAT: "bench <number>"
    ```
 
 4. **Push to Remote**
