@@ -21,7 +21,7 @@ Backward pawns are a structural weakness as they:
 ## Implementation Plan
 
 ### Phase BP1: Infrastructure (0 ELO expected)
-**Status:** PENDING
+**Status:** COMPLETE - Awaiting OpenBench test
 **Purpose:** Add data structures and detection logic without integration
 **Changes:**
 - Add `backwardPawns[2]` to PawnEntry struct
@@ -32,7 +32,7 @@ Backward pawns are a structural weakness as they:
 **Expected Outcome:** No ELO change, validates compilation and structure
 
 ### Phase BP2: Integration (0 to -3 ELO expected)
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 **Purpose:** Integrate detection into pawn structure evaluation
 **Changes:**
 - Call backward pawn detection in pawn structure analysis
@@ -79,7 +79,7 @@ Backward pawns are a structural weakness as they:
 
 | Phase | Commit | Bench | Local Test | OpenBench | Result | Notes |
 |-------|--------|-------|------------|-----------|--------|-------|
-| BP1 | - | - | - | - | - | Pending |
+| BP1 | 283d24d | 19191913 | ✓ Compiled | Pending | - | Infrastructure added |
 | BP2 | - | - | - | - | - | - |
 | BP3 | - | - | - | - | - | - |
 
