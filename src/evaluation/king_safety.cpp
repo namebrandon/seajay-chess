@@ -59,8 +59,8 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     // Phase KS3: enableScoring is now 1, so scoring is active
     int finalScore = rawScore * s_params.enableScoring;
     
-    // Return score from white's perspective
-    return Score(side == WHITE ? finalScore : -finalScore);
+    // Return positive score for good king safety (caller handles perspective)
+    return Score(finalScore);
 }
 
 Bitboard KingSafety::getShieldPawns(const Board& board, Color side, Square kingSquare) {
