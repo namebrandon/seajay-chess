@@ -4,6 +4,7 @@
 #include "pawn_structure.h"  // Phase PP2: Passed pawn evaluation
 #include "../core/board.h"
 #include "../core/bitboard.h"
+#include "../core/move_generation.h"  // MOB2: For mobility calculation
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
 #include <cstdlib>  // PP3b: For std::abs
 
@@ -570,7 +571,7 @@ Score evaluate(const Board& board) {
     
     Score bishopPairScore(bishopPairValue);
     
-    // MOB1: Piece mobility infrastructure (Phase 1 - counting only, no evaluation)
+    // MOB2: Piece mobility evaluation (Phase 2 - basic integration)
     // Count pseudo-legal moves for pieces, excluding squares attacked by enemy pawns
     
     // Get all occupied squares
@@ -593,19 +594,25 @@ Score evaluate(const Board& board) {
         blackPawnAttacks |= pawnAttacks(BLACK, sq);
     }
     
-    // Phase 1: Count mobility for each piece type (not used in evaluation yet)
-    int whiteMobility[5] = {0};  // Knight, Bishop, Rook, Queen, King
-    int blackMobility[5] = {0};  // Knight, Bishop, Rook, Queen, King
+    // Phase 2: Conservative mobility bonuses per move count
+    // Simple linear bonus for now, will tune in Phase 3
+    static constexpr int MOBILITY_BONUS_PER_MOVE = 2;  // 2 centipawns per available move
+    
+    int whiteMobilityScore = 0;
+    int blackMobilityScore = 0;
     
     // Count white piece mobility (excluding squares attacked by black pawns)
-    // Knights
+    // Knights - use precomputed attack tables
     Bitboard whiteKnights = board.pieces(WHITE, KNIGHT);
     Bitboard wn = whiteKnights;
     while (wn) {
         Square sq = popLsb(wn);
-        // In Phase 1, just count - will use precomputed tables in Phase 2
-        // For now, simple counting without actual move generation
-        whiteMobility[0]++;  // Placeholder count
+        // Get knight attacks and exclude own pieces and pawn-attacked squares
+        Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
+        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
+        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
     // Bishops
@@ -613,7 +620,11 @@ Score evaluate(const Board& board) {
     Bitboard wb = whiteBishops;
     while (wb) {
         Square sq = popLsb(wb);
-        whiteMobility[1]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
+        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
+        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
     // Rooks
@@ -621,7 +632,11 @@ Score evaluate(const Board& board) {
     Bitboard wr = whiteRooks;
     while (wr) {
         Square sq = popLsb(wr);
-        whiteMobility[2]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
+        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
+        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
     // Queens
@@ -629,47 +644,70 @@ Score evaluate(const Board& board) {
     Bitboard wq = whiteQueens;
     while (wq) {
         Square sq = popLsb(wq);
-        whiteMobility[3]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
+        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
+        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
     // Count black piece mobility (excluding squares attacked by white pawns)
-    // Similar structure for black pieces
+    // Knights
     Bitboard blackKnights = board.pieces(BLACK, KNIGHT);
     Bitboard bn = blackKnights;
     while (bn) {
         Square sq = popLsb(bn);
-        blackMobility[0]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
+        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
+        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
+    // Bishops
     Bitboard blackBishops = board.pieces(BLACK, BISHOP);
     Bitboard bb = blackBishops;
     while (bb) {
         Square sq = popLsb(bb);
-        blackMobility[1]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
+        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
+        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
+    // Rooks
     Bitboard blackRooks = board.pieces(BLACK, ROOK);
     Bitboard br = blackRooks;
     while (br) {
         Square sq = popLsb(br);
-        blackMobility[2]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
+        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
+        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
+    // Queens
     Bitboard blackQueens = board.pieces(BLACK, QUEEN);
     Bitboard bq = blackQueens;
     while (bq) {
         Square sq = popLsb(bq);
-        blackMobility[3]++;  // Placeholder count
+        Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
+        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
+        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
+        int moveCount = popCount(attacks);
+        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
     }
     
-    // Phase 1: Infrastructure only - compute but don't use
-    int mobilityValue = 0;  // Will be non-zero in Phase 2
+    // Phase 2: Apply mobility difference to evaluation
+    int mobilityValue = whiteMobilityScore - blackMobilityScore;
     Score mobilityScore(mobilityValue);
     
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
