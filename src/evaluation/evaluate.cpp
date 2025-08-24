@@ -530,9 +530,9 @@ Score evaluate(const Board& board) {
     int pawnIslandValue = blackIslandPenalty - whiteIslandPenalty;
     Score pawnIslandScore(pawnIslandValue);
     
-    // BP3: Backward pawn evaluation DISABLED after failed SPRT (-1.6 ELO)
-    // The detection logic needs refinement - too many false positives
-    static constexpr int BACKWARD_PAWN_PENALTY = 0;  // Disabled pending redesign
+    // BP3: Backward pawn evaluation enabled
+    // Conservative penalty to start - backward pawns are serious weaknesses
+    static constexpr int BACKWARD_PAWN_PENALTY = 18;  // Centipawns penalty per backward pawn
     int whiteBackwardCount = popCount(whiteBackward);
     int blackBackwardCount = popCount(blackBackward);
     
