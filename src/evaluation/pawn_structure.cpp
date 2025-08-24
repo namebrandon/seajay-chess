@@ -250,4 +250,39 @@ Bitboard PawnStructure::getDoubledPawns(Color c, Bitboard ourPawns) {
     return doubled;
 }
 
+// PI1: Pawn island counting implementation
+int PawnStructure::countPawnIslands(Bitboard ourPawns) {
+    if (!ourPawns) return 0;
+    
+    int islands = 0;
+    Bitboard remaining = ourPawns;
+    
+    // Process files from a to h
+    // An island starts when we find pawns after a gap (empty file)
+    bool previousFileHadPawns = false;
+    
+    for (int file = 0; file < 8; ++file) {
+        Bitboard fileMask = fileBB(file);
+        bool currentFileHasPawns = (remaining & fileMask) != 0;
+        
+        if (currentFileHasPawns) {
+            // If previous file had no pawns, this starts a new island
+            if (!previousFileHadPawns) {
+                islands++;
+            }
+            // Otherwise, pawns are connected to previous file's pawns
+        }
+        
+        previousFileHadPawns = currentFileHasPawns;
+    }
+    
+    return islands;
+}
+
+int PawnStructure::getPawnIslands(Color c, Bitboard ourPawns) {
+    // For Phase PI1, just compute directly without caching
+    // Caching will be added when we integrate into evaluation
+    return countPawnIslands(ourPawns);
+}
+
 }
