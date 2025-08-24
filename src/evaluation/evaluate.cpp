@@ -631,6 +631,8 @@ Score evaluate(const Board& board) {
     // Rooks
     Bitboard whiteRooks = board.pieces(WHITE, ROOK);
     Bitboard wr = whiteRooks;
+    // Phase ROF2: Track rook open file bonus separately
+    int whiteRookFileBonus = 0;
     while (wr) {
         Square sq = popLsb(wr);
         Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
@@ -638,6 +640,14 @@ Score evaluate(const Board& board) {
         attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
         int moveCount = popCount(attacks);
         whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+        
+        // Phase ROF2: Add open/semi-open file bonuses
+        int file = fileOf(sq);
+        if (board.isOpenFile(file)) {
+            whiteRookFileBonus += 25;  // Open file bonus (25 cp)
+        } else if (board.isSemiOpenFile(file, WHITE)) {
+            whiteRookFileBonus += 15;  // Semi-open file bonus (15 cp)
+        }
     }
     
     // Queens
@@ -680,6 +690,8 @@ Score evaluate(const Board& board) {
     // Rooks
     Bitboard blackRooks = board.pieces(BLACK, ROOK);
     Bitboard br = blackRooks;
+    // Phase ROF2: Track rook open file bonus separately
+    int blackRookFileBonus = 0;
     while (br) {
         Square sq = popLsb(br);
         Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
@@ -687,6 +699,14 @@ Score evaluate(const Board& board) {
         attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
         int moveCount = popCount(attacks);
         blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+        
+        // Phase ROF2: Add open/semi-open file bonuses
+        int file = fileOf(sq);
+        if (board.isOpenFile(file)) {
+            blackRookFileBonus += 25;  // Open file bonus (25 cp)
+        } else if (board.isSemiOpenFile(file, BLACK)) {
+            blackRookFileBonus += 15;  // Semi-open file bonus (15 cp)
+        }
     }
     
     // Queens
@@ -714,10 +734,13 @@ Score evaluate(const Board& board) {
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
     Score kingSafetyScore = whiteKingSafety - blackKingSafety;
     
+    // Phase ROF2: Calculate rook file bonus score
+    Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {

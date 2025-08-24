@@ -86,6 +86,10 @@ public:
     const eval::MgEgScore& pstScore() const noexcept { return m_pstScore; }
     void recalculatePSTScore();
     
+    // Rook evaluation helpers (Phase ROF1)
+    bool isOpenFile(int file) const noexcept;
+    bool isSemiOpenFile(int file, Color side) const noexcept;
+    
     std::string toFEN() const;
     bool fromFEN(const std::string& fen);  // Legacy interface
     FenResult parseFEN(const std::string& fen);  // New safe interface
