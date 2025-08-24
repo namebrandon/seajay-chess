@@ -48,7 +48,9 @@ Using 4ku chess engine as reference:
 **SPRT Bounds:** [-5.00, 3.00] (overhead validation)
 
 ### Phase KS3: Activation (+20-30 ELO expected)
-**Status:** Not Started  
+**Status:** Complete ✓
+**Commit:** faf314f
+**Bench:** 19191913  
 **Description:** Enable king safety scoring with initial values
 - Enable S(33, -10) for direct shield pawns
 - Enable S(25, -7) for advanced shield pawns
@@ -78,7 +80,7 @@ Using 4ku chess engine as reference:
 |-------|--------|-------|--------------|------------|--------|
 | KS1   | 8adb99d | 19191913 | 0         | AWAIT TEST | Complete |
 | KS2   | 02dd4c5 | 19191913 | 0 to -5   | AWAIT TEST | Complete |
-| KS3   | -      | -     | +20-30       | -          | Not Started |
+| KS3   | faf314f | 19191913 | +20-30    | AWAIT TEST | Complete |
 | KS4   | -      | -     | +5-10        | -          | Not Started |
 
 ## Key Learnings
