@@ -6,12 +6,12 @@
 namespace seajay::eval {
 
 // Initialize static parameters
-// Phase KS3: Enable scoring with initial values from 4ku
+// Reduced values - 4ku's seem too high for our implementation
 KingSafety::KingSafetyParams KingSafety::s_params = {
-    .directShieldMg = 33,    // S(33, -10) midgame value
-    .directShieldEg = -10,   // S(33, -10) endgame value  
-    .advancedShieldMg = 25,  // S(25, -7) midgame value
-    .advancedShieldEg = -7,  // S(25, -7) endgame value
+    .directShieldMg = 10,    // Reduced from 33
+    .directShieldEg = -3,    // Reduced from -10
+    .advancedShieldMg = 8,   // Reduced from 25
+    .advancedShieldEg = -2,  // Reduced from -7
     .enableScoring = 1       // Phase KS3: ENABLED
 };
 
@@ -87,20 +87,19 @@ Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Squa
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
-    // Modified mask: Remove e1/e8 to avoid rewarding uncastled kings
-    // Original 4ku: 0xC3D7 includes e1, but this discourages castling
-    // New mask: a1,b1,c1,g1,h1 on rank 1 + a2,b2,g2,h2 on rank 2 (NO e1)
+    // Using 4ku's original mask including e1/e8
+    // But with reduced values to avoid over-rewarding
     
     Bitboard kingBit = 1ULL << kingSquare;
     
     if (side == WHITE) {
-        // Remove e1 (bit 4) from 0xC3D7 = 0xC3C3
-        constexpr Bitboard WHITE_CASTLED = 0xC3C3ULL;
-        return (kingBit & WHITE_CASTLED) != 0;
+        // 4ku's original mask
+        constexpr Bitboard WHITE_REASONABLE = 0xC3D7ULL;
+        return (kingBit & WHITE_REASONABLE) != 0;
     } else {  // BLACK
-        // Mirror without e8
-        constexpr Bitboard BLACK_CASTLED = 0xC3C3000000000000ULL;
-        return (kingBit & BLACK_CASTLED) != 0;
+        // Mirror of white's mask
+        constexpr Bitboard BLACK_REASONABLE = 0xD7C3000000000000ULL;
+        return (kingBit & BLACK_REASONABLE) != 0;
     }
 }
 
