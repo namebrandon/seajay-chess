@@ -540,10 +540,40 @@ Score evaluate(const Board& board) {
     int backwardPawnValue = (blackBackwardCount - whiteBackwardCount) * BACKWARD_PAWN_PENALTY;
     Score backwardPawnScore(backwardPawnValue);
     
+    // BPB2: Bishop pair bonus integration (Phase 2 - conservative values)
+    // Detect if each side has the bishop pair
+    bool whiteBishopPair = (material.count(WHITE, BISHOP) >= 2);
+    bool blackBishopPair = (material.count(BLACK, BISHOP) >= 2);
+    
+    // Phase 2: Apply conservative bishop pair bonus
+    // Starting with 20cp midgame, 50cp endgame (will tune in Phase 3)
+    static constexpr int BISHOP_PAIR_BONUS_MG = 20;
+    static constexpr int BISHOP_PAIR_BONUS_EG = 50;
+    
+    int bishopPairValue = 0;
+    
+    // Apply phase-scaled bonus
+    int bonus = 0;
+    switch (phase) {
+        case search::GamePhase::OPENING:
+        case search::GamePhase::MIDDLEGAME:
+            bonus = BISHOP_PAIR_BONUS_MG;
+            break;
+        case search::GamePhase::ENDGAME:
+            bonus = BISHOP_PAIR_BONUS_EG;
+            break;
+    }
+    
+    // Apply bonus for white, penalty for black (from white's perspective)
+    if (whiteBishopPair) bishopPairValue += bonus;
+    if (blackBishopPair) bishopPairValue -= bonus;
+    
+    Score bishopPairScore(bishopPairValue);
+    
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
