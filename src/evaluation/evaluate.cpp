@@ -540,6 +540,15 @@ Score evaluate(const Board& board) {
     int backwardPawnValue = (blackBackwardCount - whiteBackwardCount) * BACKWARD_PAWN_PENALTY;
     Score backwardPawnScore(backwardPawnValue);
     
+    // BPB1: Bishop pair bonus infrastructure (Phase 1 - detection only, no bonus yet)
+    // Detect if each side has the bishop pair
+    bool whiteBishopPair = (material.count(WHITE, BISHOP) >= 2);
+    bool blackBishopPair = (material.count(BLACK, BISHOP) >= 2);
+    
+    // Phase 1: Infrastructure only - compute but don't use
+    int bishopPairValue = 0;  // Will be non-zero in Phase 2
+    Score bishopPairScore(bishopPairValue);
+    
     // Calculate total evaluation from white's perspective
     // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
