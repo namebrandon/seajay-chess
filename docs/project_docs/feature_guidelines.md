@@ -100,27 +100,34 @@ Description: Phase XX - <brief description>
 
 #### SPRT Bounds Guidelines (for normalized ELO)
 
+**Important:** nELO compresses differences compared to standard ELO. Typical good features gain 3-10 nELO.
+
 **Infrastructure Phases (0 ELO expected):**
 - Bounds: `[-5.00, 3.00]`
 - Rationale: Detect regressions while allowing for noise
 
-**Minor Feature Phases (+5-15 ELO expected):**
-- Bounds: `[0.00, 8.00]` for +5-8 ELO expected
-- Bounds: `[2.00, 12.00]` for +10-15 ELO expected
-- Rationale: Lower bound ensures positive gain, upper allows for upside
+**Minor Feature Phases (+3-8 nELO expected):**
+- Bounds: `[0.00, 5.00]` for small gains
+- Bounds: `[2.00, 8.00]` for medium gains
+- Rationale: Lower bound ensures positive gain, upper realistic for nELO
 
-**Major Feature Phases (+20-50 ELO expected):**
-- Bounds: `[8.00, 25.00]` for +20-30 ELO expected
-- Bounds: `[15.00, 35.00]` for +30-50 ELO expected
-- Rationale: Require significant gain to justify complexity
+**Major Feature Phases (+8-15 nELO expected):**
+- Bounds: `[4.00, 10.00]` for solid features
+- Bounds: `[5.00, 12.00]` for exceptional features
+- Rationale: Major features rarely exceed 15 nELO
 
-**Tuning Phases (+5-10 ELO expected):**
-- Bounds: `[0.00, 8.00]`
-- Rationale: Any positive gain validates tuning effort
+**Tuning Phases (+2-5 nELO expected):**
+- Bounds: `[0.00, 5.00]`
+- Rationale: Tuning typically yields modest gains
 
 **Bug Fix Phases (0 to small positive expected):**
-- Bounds: `[-3.00, 5.00]`
+- Bounds: `[-3.00, 3.00]`
 - Rationale: Ensure fix doesn't regress while allowing small gains
+
+**General Guidelines:**
+- Avoid bounds above 15.00 (unrealistic for nELO)
+- Most features: Use [0.00, 5.00] or [0.00, 8.00]
+- Only use bounds above 10.00 for truly exceptional expected gains
 
 #### Test Interpretation
 - **PASS (LLR ≥ 2.94):** Phase successful, proceed to next
