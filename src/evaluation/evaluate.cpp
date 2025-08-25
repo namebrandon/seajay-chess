@@ -609,8 +609,8 @@ Score evaluate(const Board& board) {
     constexpr Bitboard WHITE_OUTPOST_RANKS = RANK_4_BB | RANK_5_BB | RANK_6_BB;
     constexpr Bitboard BLACK_OUTPOST_RANKS = RANK_3_BB | RANK_4_BB | RANK_5_BB;
     
-    // Phase KO1: Infrastructure only - bonus set to 0
-    constexpr int KNIGHT_OUTPOST_BONUS = 0;  // Will be activated in Phase KO2
+    // Phase KO2: Basic outpost bonus - conservative value
+    constexpr int KNIGHT_OUTPOST_BONUS = 18;  // 18 centipawns per outpost
     
     // Find potential outpost squares (safe from enemy pawns and protected by friendly pawns)
     Bitboard whiteOutpostSquares = WHITE_OUTPOST_RANKS & ~blackPawnAttacks & whitePawnAttacks;
