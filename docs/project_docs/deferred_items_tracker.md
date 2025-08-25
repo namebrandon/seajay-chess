@@ -1207,6 +1207,67 @@ class CaptureHistory {
 - Capture History: ~24KB (6×6×64×2 bytes)
 - All are cache-friendly access patterns
 
+## Game Phase Interpolation for Evaluation Terms
+
+**Date Added:** August 25, 2025  
+**Status:** DEFERRED - Interesting concept for future implementation  
+**Source:** Analysis of Stash engine evaluation approach  
+
+### Concept Overview:
+
+Instead of discrete game phases (OPENING/MIDDLEGAME/ENDGAME) with hard boundaries, implement smooth interpolation between midgame and endgame evaluation values based on remaining material.
+
+### Implementation Approach:
+
+1. **Paired Score Structure:**
+```cpp
+struct ScorePair {
+    int mg;  // midgame value
+    int eg;  // endgame value
+};
+```
+
+2. **Continuous Phase Calculation:**
+```cpp
+// Based on material: Queens=4, Rooks=2, Bishops/Knights=1
+int phase = popCount(queens) * 4 + popCount(rooks) * 2 + 
+            popCount(bishops) + popCount(knights);
+// Clamp between 4 (endgame) and 24 (midgame)
+```
+
+3. **Linear Interpolation:**
+```cpp
+int interpolate(ScorePair score, int phase) {
+    return (score.mg * (phase - 4) + score.eg * (24 - phase)) / 20;
+}
+```
+
+### Benefits:
+- **Smooth transitions:** No evaluation jumps at phase boundaries
+- **More accurate:** Values naturally scale as pieces come off
+- **Better tuning:** Can tune midgame/endgame independently for each term
+
+### Example - Knight Outposts:
+- Current: Flat 35cp regardless of phase
+- With interpolation: 35cp midgame → 30cp endgame
+- Reflects reality that outposts are less valuable in simplified positions
+
+### Implementation Considerations:
+- Would require refactoring all evaluation terms to use ScorePairs
+- Increases complexity but improves accuracy
+- Could start with just a few terms (knight outposts, passed pawns) as test
+
+### Why Deferred:
+- Current discrete phase system is working adequately
+- Mixing with knight outpost feature would complicate testing
+- Better to implement as separate feature for clean A/B testing
+- Estimated gain: 10-20 ELO from smoother evaluation
+
+### Priority: Medium-Low
+- Nice to have but not critical
+- Consider after core search improvements complete
+- Good candidate for Phase 4+ when fine-tuning evaluation
+
 ## Items FROM Stage 18 (LMR) - CRITICAL ISSUES
 
 **Date:** August 20, 2025  
