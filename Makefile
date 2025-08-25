@@ -18,8 +18,8 @@ BUILD_DIR = openbench-build
 CMAKE_BUILD_TYPE = Release
 
 # Compiler flags for optimization
-# Removed architecture-specific flags for better compatibility
-CXXFLAGS = -O2 -DNDEBUG
+# Enable POPCNT and SSE4.2 for hardware acceleration (critical for chess engines)
+CXXFLAGS = -O2 -DNDEBUG -mpopcnt -msse4.2
 CMAKE_CXX_FLAGS = $(CXXFLAGS)
 
 all:
