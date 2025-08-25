@@ -52,6 +52,20 @@ add_compile_definitions(ENABLE_QUIESCENCE)
 
 # Stage 14 Remediation: Quiescence modes removed - all controlled via UCI
 
+# =============================================================================
+# COMPILER FLAGS - LOCAL DEVELOPMENT ONLY
+# =============================================================================
+# NOTE: This CMakeLists.txt is for LOCAL DEVELOPMENT builds via build.sh
+# It uses conservative flags for maximum compatibility with older CPUs.
+#
+# OpenBench builds use the Makefile which adds:
+# - AVX2 for vector operations
+# - BMI2 for PEXT/PDEP (magic bitboards)
+# - POPCNT and SSE4.2 for bitboard operations
+#
+# Local builds only get basic optimizations to ensure compatibility.
+# =============================================================================
+
 # Warning flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # For Debug builds, use strict warnings
@@ -59,11 +73,15 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion)
         add_compile_options(-Wno-unused-parameter -Wno-unused-function)
     else()
-        # For Release builds (including OpenBench), use less strict warnings
+        # For Release builds, use less strict warnings
         add_compile_options(-Wall -Wno-conversion -Wno-sign-conversion -Wno-maybe-uninitialized)
     endif()
     # Ensure 64-bit arithmetic for magic bitboards
     add_compile_options(-m64)
+    
+    # Conservative instruction set support for local development
+    # Only add POPCNT and SSE4.2 if explicitly requested (not by default)
+    # This ensures maximum compatibility with older development machines
 endif()
 
 # Core library sources

@@ -1,10 +1,17 @@
 # OpenBench-compatible Makefile for SeaJay Chess Engine
-# This wraps the CMake build system for OpenBench integration
-# 
+# =============================================================================
+# IMPORTANT: This Makefile is ONLY for OpenBench server builds!
+# For local development, use: ./build.sh or cmake directly
+# =============================================================================
+#
+# OpenBench Server Specs (as of 2024):
+# - CPU: AMD Ryzen 9 5950X (Zen 3 architecture)
+# - Supports: SSE4.2, POPCNT, BMI2, AVX, AVX2
+# - Does NOT support: AVX512 (only in Ryzen 7000+/Zen 4)
+#
 # OpenBench expects:
 # - make with CXX=compiler EXE=output_name
 # - Binary placed at $(EXE) in the root directory
-# - Support for EVALFILE if using neural networks
 
 .PHONY: all clean
 
@@ -17,17 +24,19 @@ EVALFILE ?=
 BUILD_DIR = openbench-build
 CMAKE_BUILD_TYPE = Release
 
-# Compiler flags for optimization
-# Enable POPCNT and SSE4.2 for hardware acceleration (critical for chess engines)
+# =============================================================================
+# COMPILER FLAGS - OPTIMIZED FOR OPENBENCH (Ryzen 9 5950X)
+# =============================================================================
+# Base flags - universally supported
 BASE_FLAGS = -O2 -DNDEBUG -mpopcnt -msse4.2
 
-# Advanced instruction sets - currently empty for maximum compatibility
-# BMI2 provides PEXT/PDEP but may not be available on all systems
-# AVX2/AVX512 removed - not universally supported
-# OpenBench servers vary in CPU capabilities
-ADVANCED_FLAGS =
+# Advanced flags for OpenBench's Ryzen 9 5950X
+# AVX2 - 256-bit vector operations (critical for competing with other engines)
+# BMI2 - PEXT/PDEP instructions for magic bitboards
+ADVANCED_FLAGS = -mavx2 -mbmi2
 
-# Combine all flags for maximum Ryzen compatibility
+# Combined flags for OpenBench builds
+# NOTE: These will NOT work on older CPUs in local development!
 CXXFLAGS = $(BASE_FLAGS) $(ADVANCED_FLAGS)
 CMAKE_CXX_FLAGS = $(CXXFLAGS)
 

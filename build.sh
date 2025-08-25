@@ -1,6 +1,12 @@
 #!/bin/bash
-# Build script for SeaJay Chess Engine
-# Stage 14 Remediation: Simplified build - all modes controlled via UCI
+# Build script for SeaJay Chess Engine - LOCAL DEVELOPMENT
+# =============================================================================
+# This script is for LOCAL DEVELOPMENT ONLY!
+# It uses conservative compiler flags for maximum compatibility.
+# 
+# For OpenBench builds, use: make (which uses AVX2/BMI2 for Ryzen 9 5950X)
+# =============================================================================
+#
 # Usage: ./build.sh [Debug|Release]
 #
 # Examples:
