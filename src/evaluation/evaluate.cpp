@@ -609,8 +609,15 @@ Score evaluate(const Board& board) {
     constexpr Bitboard WHITE_OUTPOST_RANKS = RANK_4_BB | RANK_5_BB | RANK_6_BB;
     constexpr Bitboard BLACK_OUTPOST_RANKS = RANK_3_BB | RANK_4_BB | RANK_5_BB;
     
-    // Phase KO2: Basic outpost bonus - conservative value
-    constexpr int KNIGHT_OUTPOST_BONUS = 18;  // 18 centipawns per outpost
+    // Phase KO3: Basic outpost bonus with quality refinements
+    constexpr int KNIGHT_OUTPOST_BONUS = 18;  // Base bonus for any outpost
+    constexpr int CENTRAL_OUTPOST_BONUS = 8;  // Additional for central files (c-f)
+    constexpr int ADVANCED_OUTPOST_BONUS = 10; // Additional for rank 6 (white) or rank 3 (black)
+    
+    // Define central files and advanced ranks
+    constexpr Bitboard CENTRAL_FILES = FILE_C_BB | FILE_D_BB | FILE_E_BB | FILE_F_BB;
+    constexpr Bitboard WHITE_ADVANCED_RANK = RANK_6_BB;
+    constexpr Bitboard BLACK_ADVANCED_RANK = RANK_3_BB;
     
     // Find potential outpost squares (safe from enemy pawns and protected by friendly pawns)
     Bitboard whiteOutpostSquares = WHITE_OUTPOST_RANKS & ~blackPawnAttacks & whitePawnAttacks;
@@ -620,8 +627,24 @@ Score evaluate(const Board& board) {
     Bitboard whiteKnightOutposts = whiteKnights & whiteOutpostSquares;
     Bitboard blackKnightOutposts = blackKnights & blackOutpostSquares;
     
-    // Apply bonus (0 for Phase KO1)
-    int knightOutpostValue = (popCount(whiteKnightOutposts) - popCount(blackKnightOutposts)) * KNIGHT_OUTPOST_BONUS;
+    // Calculate base outpost value
+    int whiteOutpostCount = popCount(whiteKnightOutposts);
+    int blackOutpostCount = popCount(blackKnightOutposts);
+    int knightOutpostValue = (whiteOutpostCount - blackOutpostCount) * KNIGHT_OUTPOST_BONUS;
+    
+    // Phase KO3: Add quality bonuses
+    // Central file bonus
+    Bitboard whiteCentralOutposts = whiteKnightOutposts & CENTRAL_FILES;
+    Bitboard blackCentralOutposts = blackKnightOutposts & CENTRAL_FILES;
+    int centralBonus = (popCount(whiteCentralOutposts) - popCount(blackCentralOutposts)) * CENTRAL_OUTPOST_BONUS;
+    
+    // Advanced rank bonus
+    Bitboard whiteAdvancedOutposts = whiteKnightOutposts & WHITE_ADVANCED_RANK;
+    Bitboard blackAdvancedOutposts = blackKnightOutposts & BLACK_ADVANCED_RANK;
+    int advancedBonus = (popCount(whiteAdvancedOutposts) - popCount(blackAdvancedOutposts)) * ADVANCED_OUTPOST_BONUS;
+    
+    // Total outpost score
+    knightOutpostValue += centralBonus + advancedBonus;
     Score knightOutpostScore(knightOutpostValue);
     
     // Phase 2: Conservative mobility bonuses per move count
