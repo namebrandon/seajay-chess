@@ -595,6 +595,35 @@ Score evaluate(const Board& board) {
         blackPawnAttacks |= pawnAttacks(BLACK, sq);
     }
     
+    // Get knight bitboards for outpost evaluation
+    Bitboard whiteKnights = board.pieces(WHITE, KNIGHT);
+    Bitboard blackKnights = board.pieces(BLACK, KNIGHT);
+    
+    // Knight outpost evaluation (Phase KO1 - Infrastructure only)
+    // An outpost is a square where a knight:
+    // 1. Cannot be attacked by enemy pawns
+    // 2. Is protected by friendly pawns
+    // 3. Is in enemy territory (ranks 4-6 for white, ranks 3-5 for black)
+    
+    // Define outpost ranks for each side
+    constexpr Bitboard WHITE_OUTPOST_RANKS = RANK_4_BB | RANK_5_BB | RANK_6_BB;
+    constexpr Bitboard BLACK_OUTPOST_RANKS = RANK_3_BB | RANK_4_BB | RANK_5_BB;
+    
+    // Phase KO1: Infrastructure only - bonus set to 0
+    constexpr int KNIGHT_OUTPOST_BONUS = 0;  // Will be activated in Phase KO2
+    
+    // Find potential outpost squares (safe from enemy pawns and protected by friendly pawns)
+    Bitboard whiteOutpostSquares = WHITE_OUTPOST_RANKS & ~blackPawnAttacks & whitePawnAttacks;
+    Bitboard blackOutpostSquares = BLACK_OUTPOST_RANKS & ~whitePawnAttacks & blackPawnAttacks;
+    
+    // Find knights on outpost squares
+    Bitboard whiteKnightOutposts = whiteKnights & whiteOutpostSquares;
+    Bitboard blackKnightOutposts = blackKnights & blackOutpostSquares;
+    
+    // Apply bonus (0 for Phase KO1)
+    int knightOutpostValue = (popCount(whiteKnightOutposts) - popCount(blackKnightOutposts)) * KNIGHT_OUTPOST_BONUS;
+    Score knightOutpostScore(knightOutpostValue);
+    
     // Phase 2: Conservative mobility bonuses per move count
     // Simple linear bonus for now, will tune in Phase 3
     static constexpr int MOBILITY_BONUS_PER_MOVE = 2;  // 2 centipawns per available move
@@ -604,7 +633,6 @@ Score evaluate(const Board& board) {
     
     // Count white piece mobility (excluding squares attacked by black pawns)
     // Knights - use precomputed attack tables
-    Bitboard whiteKnights = board.pieces(WHITE, KNIGHT);
     Bitboard wn = whiteKnights;
     while (wn) {
         Square sq = popLsb(wn);
@@ -664,7 +692,6 @@ Score evaluate(const Board& board) {
     
     // Count black piece mobility (excluding squares attacked by white pawns)
     // Knights
-    Bitboard blackKnights = board.pieces(BLACK, KNIGHT);
     Bitboard bn = blackKnights;
     while (bn) {
         Square sq = popLsb(bn);
@@ -738,9 +765,9 @@ Score evaluate(const Board& board) {
     Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
     
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files + knight outposts
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (board.sideToMove() == WHITE) {
