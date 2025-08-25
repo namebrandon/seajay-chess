@@ -510,52 +510,28 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Singular Extension: Test if the TT move is significantly better than all alternatives
-        // Similar to Stash-bot's implementation but simplified
+        // Singular Extension: DISABLED - Implementation needs redesign
+        // The current implementation using excluded moves doesn't match how
+        // successful engines (Laser, Stockfish) implement it. They iterate
+        // through moves and test each one, rather than doing a single recursive
+        // call with exclusion. This needs to be reimplemented properly.
+        // 
+        // For now, we'll just use check extensions which are proven to work.
         int extension = 0;
         
-        // Conditions for singular extension (following Stash-bot's approach):
-        // 1. Sufficient depth (>= 7)
-        // 2. This is the TT move
-        // 3. TT had LOWER bound (move was good enough to fail high)
-        // 4. TT depth is close to current depth
-        // 5. Not at root
-        // 6. Not in PV node (to control explosion)
-        // 7. Score not near mate
+        // TODO: Reimplement singular extensions properly:
+        // 1. Loop through all moves except TT move
+        // 2. Search each at reduced depth with narrow window
+        // 3. If all fail low, extend the TT move
+        // See Laser engine for reference implementation
+        
+        #if 0  // DISABLED - needs proper implementation
         if (depth >= 7 && move == ttMove && ttBound == Bound::LOWER && 
             ttDepth >= depth - 3 && ply > 0 && !isPvNode &&
             std::abs(ttScore.value()) < MATE_BOUND - MAX_PLY) {
-            
-            // Set singular beta: threshold below which we consider the move singular
-            // Using Stash-bot's formula: tt_score - 10 * depth / 16
-            // Simplified to: tt_score - (5 * depth) / 8
-            eval::Score singularBeta = ttScore - eval::Score((10 * depth) / 16);
-            
-            // Singular search depth (Stash-bot uses depth/2 + 1)
-            int singularDepth = (depth / 2) + 1;
-            
-            // Mark this move as excluded and do a reduced search
-            searchInfo.setExcludedMove(ply, move);
-            
-            // Search with excluded move to see if all alternatives fail low
-            eval::Score singularScore = negamax(board, singularDepth, ply,
-                                               singularBeta - eval::Score(1), singularBeta,
-                                               searchInfo, info, limits, tt, false);
-            
-            // Clear the excluded move
-            searchInfo.setExcludedMove(ply, NO_MOVE);
-            
-            // If the search without this move fails low, the move is singular
-            if (singularScore < singularBeta) {
-                extension = 1;
-                info.singularExtensions++;
-                
-                // TODO: Consider double extensions for very singular moves (like Stash-bot)
-                // if (!isPvNode && singularBeta - singularScore > eval::Score(100)) {
-                //     extension = 2;
-                // }
-            }
+            // Implementation removed - was not working correctly
         }
+        #endif
         
         // Push position to search stack BEFORE making the move
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
