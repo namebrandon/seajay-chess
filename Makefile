@@ -18,8 +18,8 @@ BUILD_DIR = openbench-build
 CMAKE_BUILD_TYPE = Release
 
 # Compiler flags for optimization
-# SSE4.2 is required for compatibility in this environment
-CXXFLAGS = -O2 -DNDEBUG -msse4.2
+# Removed architecture-specific flags for better compatibility
+CXXFLAGS = -O2 -DNDEBUG
 CMAKE_CXX_FLAGS = $(CXXFLAGS)
 
 all:

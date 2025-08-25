@@ -599,9 +599,9 @@ Score evaluate(const Board& board) {
     Bitboard whiteKnights = board.pieces(WHITE, KNIGHT);
     Bitboard blackKnights = board.pieces(BLACK, KNIGHT);
     
-    // Knight outpost evaluation (Phase KO1 - Infrastructure only)
+    // Knight outpost evaluation (simplified to match Stash engine)
     // An outpost is a square where a knight:
-    // 1. Cannot be attacked by enemy pawns
+    // 1. Cannot be attacked by enemy pawns (ever)
     // 2. Is protected by friendly pawns
     // 3. Is in enemy territory (ranks 4-6 for white, ranks 3-5 for black)
     
@@ -609,18 +609,11 @@ Score evaluate(const Board& board) {
     constexpr Bitboard WHITE_OUTPOST_RANKS = RANK_4_BB | RANK_5_BB | RANK_6_BB;
     constexpr Bitboard BLACK_OUTPOST_RANKS = RANK_3_BB | RANK_4_BB | RANK_5_BB;
     
-    // Phase KO3: Basic outpost bonus with quality refinements
-    constexpr int KNIGHT_OUTPOST_BONUS = 55;  // Full bonus for secure outpost
-    constexpr int WEAK_OUTPOST_BONUS = 20;     // Reduced bonus if can be challenged
-    constexpr int CENTRAL_OUTPOST_BONUS = 8;   // Additional for central files (c-f)
-    constexpr int ADVANCED_OUTPOST_BONUS = 10; // Additional for rank 6 (white) or rank 3 (black)
-    
-    // Define central files and advanced ranks
-    constexpr Bitboard CENTRAL_FILES = FILE_C_BB | FILE_D_BB | FILE_E_BB | FILE_F_BB;
-    constexpr Bitboard WHITE_ADVANCED_RANK = RANK_6_BB;
-    constexpr Bitboard BLACK_ADVANCED_RANK = RANK_3_BB;
+    // Simple outpost bonus (similar to Stash's 31cp, we use 35cp)
+    constexpr int KNIGHT_OUTPOST_BONUS = 35;
     
     // Find potential outpost squares (safe from enemy pawns and protected by friendly pawns)
+    // TODO: Should use pawn attack spans instead of current attacks for better accuracy
     Bitboard whiteOutpostSquares = WHITE_OUTPOST_RANKS & ~blackPawnAttacks & whitePawnAttacks;
     Bitboard blackOutpostSquares = BLACK_OUTPOST_RANKS & ~whitePawnAttacks & blackPawnAttacks;
     
@@ -628,99 +621,10 @@ Score evaluate(const Board& board) {
     Bitboard whiteKnightOutposts = whiteKnights & whiteOutpostSquares;
     Bitboard blackKnightOutposts = blackKnights & blackOutpostSquares;
     
-    // Get enemy minor pieces for checking if outposts can be challenged
-    Bitboard blackMinors = blackKnights | board.pieces(BLACK, BISHOP);
-    Bitboard whiteMinors = whiteKnights | board.pieces(WHITE, BISHOP);
-    
-    // Evaluate white knight outposts with defensive consideration
+    // Count outposts and apply bonus
     int knightOutpostValue = 0;
-    Bitboard tempWhiteOutposts = whiteKnightOutposts;
-    while (tempWhiteOutposts) {
-        Square outpostSq = popLsb(tempWhiteOutposts);
-        
-        // Check if this outpost can be challenged by enemy minor pieces
-        bool canBeChallenged = false;
-        
-        // Check enemy knights
-        Bitboard enemyKnightAttacks = 0;
-        Bitboard tempBlackKnights = blackKnights;
-        while (tempBlackKnights) {
-            Square knightSq = popLsb(tempBlackKnights);
-            if (MoveGenerator::getKnightAttacks(knightSq) & (1ULL << outpostSq)) {
-                canBeChallenged = true;
-                break;
-            }
-        }
-        
-        // Check enemy bishops if not already challenged
-        if (!canBeChallenged) {
-            Bitboard tempBlackBishops = board.pieces(BLACK, BISHOP);
-            while (tempBlackBishops) {
-                Square bishopSq = popLsb(tempBlackBishops);
-                if (MoveGenerator::getBishopAttacks(bishopSq, occupied) & (1ULL << outpostSq)) {
-                    canBeChallenged = true;
-                    break;
-                }
-            }
-        }
-        
-        // Apply appropriate bonus
-        int baseBonus = canBeChallenged ? WEAK_OUTPOST_BONUS : KNIGHT_OUTPOST_BONUS;
-        
-        // Add quality bonuses
-        if ((1ULL << outpostSq) & CENTRAL_FILES) {
-            baseBonus += CENTRAL_OUTPOST_BONUS;
-        }
-        if ((1ULL << outpostSq) & WHITE_ADVANCED_RANK) {
-            baseBonus += ADVANCED_OUTPOST_BONUS;
-        }
-        
-        knightOutpostValue += baseBonus;
-    }
-    
-    // Evaluate black knight outposts with defensive consideration
-    Bitboard tempBlackOutposts = blackKnightOutposts;
-    while (tempBlackOutposts) {
-        Square outpostSq = popLsb(tempBlackOutposts);
-        
-        // Check if this outpost can be challenged by enemy minor pieces
-        bool canBeChallenged = false;
-        
-        // Check enemy knights
-        Bitboard tempWhiteKnights = whiteKnights;
-        while (tempWhiteKnights) {
-            Square knightSq = popLsb(tempWhiteKnights);
-            if (MoveGenerator::getKnightAttacks(knightSq) & (1ULL << outpostSq)) {
-                canBeChallenged = true;
-                break;
-            }
-        }
-        
-        // Check enemy bishops if not already challenged
-        if (!canBeChallenged) {
-            Bitboard tempWhiteBishops = board.pieces(WHITE, BISHOP);
-            while (tempWhiteBishops) {
-                Square bishopSq = popLsb(tempWhiteBishops);
-                if (MoveGenerator::getBishopAttacks(bishopSq, occupied) & (1ULL << outpostSq)) {
-                    canBeChallenged = true;
-                    break;
-                }
-            }
-        }
-        
-        // Apply appropriate bonus
-        int baseBonus = canBeChallenged ? WEAK_OUTPOST_BONUS : KNIGHT_OUTPOST_BONUS;
-        
-        // Add quality bonuses
-        if ((1ULL << outpostSq) & CENTRAL_FILES) {
-            baseBonus += CENTRAL_OUTPOST_BONUS;
-        }
-        if ((1ULL << outpostSq) & BLACK_ADVANCED_RANK) {
-            baseBonus += ADVANCED_OUTPOST_BONUS;
-        }
-        
-        knightOutpostValue -= baseBonus;
-    }
+    knightOutpostValue += popCount(whiteKnightOutposts) * KNIGHT_OUTPOST_BONUS;
+    knightOutpostValue -= popCount(blackKnightOutposts) * KNIGHT_OUTPOST_BONUS;
     
     // Create score from total outpost value
     Score knightOutpostScore(knightOutpostValue);
