@@ -1086,9 +1086,16 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
               << "ms" << std::endl;
     #endif
     
+    // Phase 1c: Track iteration times for EBF prediction
+    std::chrono::milliseconds lastIterationTime(0);
+    double lastEBF = 3.0;  // Conservative default EBF
+    
     // Iterative deepening loop
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
         info.depth = depth;
+        
+        // Track iteration start time
+        auto iterationStart = std::chrono::steady_clock::now();
         
         // Set search mode at depth 1
         board.setSearchMode(true);
@@ -1114,14 +1121,25 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
             // Send UCI info about this iteration
             sendSearchInfo(info);
             
+            // Phase 1c: Update iteration time and EBF for next iteration prediction
+            auto iterationEnd = std::chrono::steady_clock::now();
+            lastIterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                iterationEnd - iterationStart);
+            
+            // Get EBF from this iteration (if available)
+            double currentEBF = info.effectiveBranchingFactor();
+            if (currentEBF > 0) {
+                lastEBF = currentEBF;
+            }
+            
             // Stop early if we found a mate
             if (score.is_mate_score()) {
                 // If we found a mate, no need to search deeper
                 break;
             }
             
-            // Phase 1b: Implement soft limit time management
-            // Use soft/hard limits to make intelligent decisions about continuing search
+            // Phase 1c: Use EBF prediction for time management
+            // Replace Phase 1b's simple soft limit check with intelligent prediction
             if (hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
                 auto elapsed = info.elapsed();
                 
@@ -1133,13 +1151,32 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                     break;
                 }
                 
-                // Check soft limit with position stability consideration
-                // For now, use a simple heuristic: stop at soft limit if depth >= 6
-                if (elapsed >= softLimit && depth >= 6) {
-                    std::cerr << "[Time Management] Stopping at depth " << depth 
-                              << " - reached soft limit at reasonable depth (" 
-                              << elapsed.count() << "ms >= " << softLimit.count() << "ms)\n";
-                    break;
+                // Use EBF prediction to decide if we have time for next iteration
+                if (depth >= 2 && lastIterationTime.count() > 0) {
+                    // Predict time for next iteration using our sophisticated prediction function
+                    auto predictedNext = search::predictNextIterationTime(
+                        lastIterationTime, lastEBF, depth);
+                    
+                    // Don't start an iteration we can't finish
+                    if (elapsed + predictedNext > hardLimit) {
+                        std::cerr << "[Time Management] Stopping at depth " << depth 
+                                  << " - predicted next iteration (" << predictedNext.count() 
+                                  << "ms) would exceed hard limit (elapsed: " << elapsed.count() 
+                                  << "ms, hard: " << hardLimit.count() << "ms)\n";
+                        break;
+                    }
+                    
+                    // Use optimum time as a guideline, not a hard stop
+                    // Allow going over optimum if we predict we can complete another iteration
+                    if (elapsed > timeLimits.optimum && depth >= 8) {
+                        // At reasonable depth and past optimum time
+                        // Check if next iteration would take us well past optimum
+                        if (elapsed + predictedNext > timeLimits.optimum * 2) {
+                            std::cerr << "[Time Management] Stopping at depth " << depth 
+                                      << " - sufficient depth reached and next iteration would exceed 2x optimum\n";
+                            break;
+                        }
+                    }
                 }
             }
         } else {
