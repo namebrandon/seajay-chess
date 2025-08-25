@@ -192,6 +192,13 @@ eval::Score negamax(Board& board,
     // Check if we're in check (needed for null move and other decisions)
     bool weAreInCheck = inCheck(board);
     
+    // Check extension: Extend search by 1 ply when in check
+    // This is a fundamental search extension present in all competitive engines
+    // It helps the engine see through forcing sequences and avoid horizon effects
+    if (weAreInCheck) {
+        depth++;
+    }
+    
     // Generate all legal moves (needed for checkmate/stalemate check)
     MoveList moves = generateLegalMoves(board);
     
