@@ -465,6 +465,162 @@ This tracker should be reviewed:
 - Focus remains on recovering the -70 Elo regression first
 - All Stockfish/Ethereal/Leela patterns documented for future reference
 
+## Search Architecture Refactoring (CRITICAL)
+
+**Date Added:** August 25, 2025  
+**Status:** DEFERRED - Major architectural issue identified  
+**Source:** Depth deficit investigation and singular extensions implementation  
+**Severity:** HIGH - Fundamental design pattern mismatch with successful engines  
+
+### The Problem:
+
+During implementation of singular extensions, we discovered that SeaJay's search architecture fundamentally differs from successful engines (Stockfish, Laser, Ethereal) in how it handles move exclusion and special searches.
+
+#### Current SeaJay Approach (Problematic):
+```cpp
+// Single recursive call with excluded move mechanism
+searchInfo.setExcludedMove(ply, move);
+eval::Score singularScore = negamax(board, singularDepth, ply,
+                                   singularBeta - 1, singularBeta,
+                                   searchInfo, info, limits, tt, false);
+searchInfo.setExcludedMove(ply, NO_MOVE);
+
+// Move loop checks for exclusion
+for (const Move& move : moves) {
+    if (searchInfo.isExcluded(ply, move)) {
+        continue;  // Skip excluded move
+    }
+    // ... rest of move processing
+}
+```
+
+**Issues with this approach:**
+1. **Excluded move affects move counting** - moveCount is wrong when moves are skipped
+2. **Breaks move ordering statistics** - excluded moves don't contribute to ordering efficiency metrics
+3. **Complex state management** - must track excluded moves across recursive calls
+4. **Different from proven implementations** - no successful engine uses this pattern
+5. **Hard to debug** - exclusion state is implicit and distributed
+
+#### Successful Engine Approach (Stockfish/Laser/Ethereal):
+```cpp
+// Iterate through moves and test each one explicitly
+bool isSingular = true;
+for (unsigned int i = 0; i < legalMoves.size(); i++) {
+    Move testMove = legalMoves.get(i);
+    if (testMove == ttMove) continue;  // Skip the move being tested
+    
+    Board copyBoard = board.staticCopy();
+    if (!copyBoard.makeMove(testMove)) continue;
+    
+    // Search this specific move with reduced depth
+    int score = -search(copyBoard, singularDepth, -singularBeta, -singularBeta + 1, ...);
+    
+    if (score >= singularBeta) {
+        isSingular = false;  // Found alternative that's good enough
+        break;
+    }
+}
+```
+
+**Advantages of the proven approach:**
+1. **Explicit and clear** - each move is tested individually
+2. **No state pollution** - no excluded move tracking needed
+3. **Correct statistics** - all moves counted properly
+4. **Easier to debug** - can log each move tested
+5. **Proven to work** - used by all top engines
+
+### Impact Beyond Singular Extensions:
+
+This architectural issue affects multiple advanced search features:
+
+1. **Multi-cut pruning** - needs to test multiple moves to prove cutoff
+2. **Probcut** - requires searching specific moves at reduced depth
+3. **IID (Internal Iterative Deepening)** - needs special searches
+4. **Singular extensions** - already failed due to this issue
+5. **Enhanced null move** - verification searches need clean state
+
+### Recommended Refactoring:
+
+#### Phase 1: Create Search Variants
+```cpp
+// Add specialized search functions instead of using flags/exclusions
+eval::Score searchSingular(Board& board, int depth, int ply, 
+                          eval::Score alpha, eval::Score beta,
+                          Move excludeMove, ...);
+
+eval::Score searchProbcut(Board& board, int depth, int ply, ...);
+
+eval::Score searchNull(Board& board, int depth, int ply, ...);
+```
+
+#### Phase 2: Explicit Move Testing Pattern
+```cpp
+// For features that need to test multiple moves
+template<typename Predicate>
+bool testMoves(Board& board, const MoveList& moves, 
+               Predicate shouldTest, int depth, ...) {
+    for (const Move& move : moves) {
+        if (!shouldTest(move)) continue;
+        
+        Board::UndoInfo undo;
+        board.makeMove(move, undo);
+        // ... search this move
+        board.unmakeMove(move, undo);
+        // ... check result
+    }
+}
+```
+
+#### Phase 3: Remove Excluded Move Mechanism
+- Delete `excludedMove` from SearchStack
+- Remove `isExcluded()`, `setExcludedMove()` methods
+- Simplify move loop to always process all moves
+
+### Priority and Timeline:
+
+**Priority:** HIGH - Blocking multiple advanced features  
+**When to implement:** Before any of:
+- Singular extensions (already blocked)
+- Multi-cut pruning
+- Probcut
+- Advanced null move techniques
+
+**Estimated effort:** 10-15 hours
+- 2-3 hours: Design new search architecture
+- 4-6 hours: Implement search variants
+- 2-3 hours: Refactor existing code
+- 2-3 hours: Testing and validation
+
+### Temporary Workarounds:
+
+Until refactoring is complete:
+1. **Avoid features requiring move exclusion** - they won't work properly
+2. **Keep check extensions only** - simple and proven to work
+3. **Focus on features that don't need special searches** - move ordering, time management
+4. **Document all deferred features** - maintain list of blocked improvements
+
+### Success Criteria for Refactoring:
+
+1. **No excluded move mechanism** - completely removed from codebase
+2. **Explicit move testing** - all special searches clearly visible
+3. **Correct statistics** - move counts, ordering efficiency accurate
+4. **Feature parity** - can implement same features as top engines
+5. **Performance maintained** - no regression from refactoring
+
+### References:
+
+1. **Laser Implementation:** Lines 849-891 of search.cpp - clear iteration pattern
+2. **Stockfish:** Uses explicit loops for all special searches
+3. **Ethereal:** Similar pattern with separate search functions
+4. **Our failed attempt:** commit 5a13f1c (feature/20250825-depth-deficit-investigation)
+
+### Lessons Learned:
+
+1. **Copy successful patterns** - don't try to be clever with different approaches
+2. **Explicit > Implicit** - clear code is better than "elegant" state management
+3. **Test infrastructure early** - would have caught the move counting issue
+4. **Study reference implementations** - before designing core architecture
+
 ## Items DEFERRED FROM Stage 10 (Magic Bitboards) TO Future Stages
 
 **Date:** August 12, 2025  
