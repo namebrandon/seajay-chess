@@ -186,8 +186,11 @@ eval::Score negamax(Board& board,
     // 3. Check for fifty-move rule THIRD
     // 4. Only THEN probe TT
     
-    // Initialize TT move (used for move ordering later)
+    // Initialize TT move and info for singular extensions
     Move ttMove = NO_MOVE;
+    eval::Score ttScore = eval::Score::zero();
+    Bound ttBound = Bound::NONE;
+    int ttDepth = -1;
     
     // Check if we're in check (needed for null move and other decisions)
     bool weAreInCheck = inCheck(board);
@@ -304,7 +307,7 @@ eval::Score negamax(Board& board,
                     }
                 }
                 
-                // Sub-phase 4E: Extract TT move for ordering
+                // Sub-phase 4E: Extract TT move and info for ordering and singular extensions
                 // Even if depth is insufficient, we can still use the move
                 ttMove = static_cast<Move>(ttEntry->move);
                 if (ttMove != NO_MOVE) {
@@ -313,6 +316,10 @@ eval::Score negamax(Board& board,
                     Square to = moveTo(ttMove);
                     if (from < 64 && to < 64 && from != to) {
                         info.ttMoveHits++;
+                        // Save TT info for singular extensions
+                        ttScore = eval::Score(ttEntry->score);
+                        ttBound = ttEntry->bound();
+                        ttDepth = ttEntry->depth;
                     } else {
                         // TT move is corrupted - likely from hash collision
                         ttMove = NO_MOVE;
@@ -503,16 +510,51 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Singular Extension: Extend search for moves that appear significantly better than alternatives
-        // For now, we'll use a simpler heuristic: extend the TT move when at sufficient depth
-        // This is less sophisticated than Stockfish but still effective
+        // Singular Extension: Test if the TT move is significantly better than all alternatives
+        // Similar to Stash-bot's implementation but simplified
         int extension = 0;
         
-        // Simple singular extension: extend TT move at depth >= 7
-        // This ensures we explore the best move from previous iterations more deeply
-        if (depth >= 7 && move == ttMove && ply > 0 && !isPvNode) {
-            extension = 1;
-            info.singularExtensions++;
+        // Conditions for singular extension (following Stash-bot's approach):
+        // 1. Sufficient depth (>= 7)
+        // 2. This is the TT move
+        // 3. TT had LOWER bound (move was good enough to fail high)
+        // 4. TT depth is close to current depth
+        // 5. Not at root
+        // 6. Not in PV node (to control explosion)
+        // 7. Score not near mate
+        if (depth >= 7 && move == ttMove && ttBound == Bound::LOWER && 
+            ttDepth >= depth - 3 && ply > 0 && !isPvNode &&
+            std::abs(ttScore.value()) < MATE_BOUND - MAX_PLY) {
+            
+            // Set singular beta: threshold below which we consider the move singular
+            // Using Stash-bot's formula: tt_score - 10 * depth / 16
+            // Simplified to: tt_score - (5 * depth) / 8
+            eval::Score singularBeta = ttScore - eval::Score((10 * depth) / 16);
+            
+            // Singular search depth (Stash-bot uses depth/2 + 1)
+            int singularDepth = (depth / 2) + 1;
+            
+            // Mark this move as excluded and do a reduced search
+            searchInfo.setExcludedMove(ply, move);
+            
+            // Search with excluded move to see if all alternatives fail low
+            eval::Score singularScore = negamax(board, singularDepth, ply,
+                                               singularBeta - eval::Score(1), singularBeta,
+                                               searchInfo, info, limits, tt, false);
+            
+            // Clear the excluded move
+            searchInfo.setExcludedMove(ply, NO_MOVE);
+            
+            // If the search without this move fails low, the move is singular
+            if (singularScore < singularBeta) {
+                extension = 1;
+                info.singularExtensions++;
+                
+                // TODO: Consider double extensions for very singular moves (like Stash-bot)
+                // if (!isPvNode && singularBeta - singularScore > eval::Score(100)) {
+                //     extension = 2;
+                // }
+            }
         }
         
         // Push position to search stack BEFORE making the move
