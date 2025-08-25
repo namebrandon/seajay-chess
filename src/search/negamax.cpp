@@ -1120,14 +1120,25 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                 break;
             }
             
-            // Phase 1a: Remove 40% early exit rule - use proper time management instead
-            // Check if we have enough time for another iteration based on soft/hard limits
+            // Phase 1b: Implement soft limit time management
+            // Use soft/hard limits to make intelligent decisions about continuing search
             if (hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
                 auto elapsed = info.elapsed();
                 
-                // Never start an iteration that would exceed hard limit
-                // This is a basic check - more sophisticated logic will be added in Phase 1b
+                // Never exceed hard limit
                 if (elapsed >= hardLimit) {
+                    std::cerr << "[Time Management] Stopping at depth " << depth 
+                              << " - reached hard limit (" << elapsed.count() << "ms >= " 
+                              << hardLimit.count() << "ms)\n";
+                    break;
+                }
+                
+                // Check soft limit with position stability consideration
+                // For now, use a simple heuristic: stop at soft limit if depth >= 6
+                if (elapsed >= softLimit && depth >= 6) {
+                    std::cerr << "[Time Management] Stopping at depth " << depth 
+                              << " - reached soft limit at reasonable depth (" 
+                              << elapsed.count() << "ms >= " << softLimit.count() << "ms)\n";
                     break;
                 }
             }
