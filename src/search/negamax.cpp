@@ -1070,7 +1070,12 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too
     TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
     info.timeLimit = timeLimits.optimum;
-    std::cerr << "Search: using NEW time management - optimum=" << info.timeLimit.count() << "ms" << std::endl;
+    // Phase 1a: Store soft and hard limits for better time management
+    auto softLimit = timeLimits.soft;
+    auto hardLimit = timeLimits.hard;
+    std::cerr << "Search: using NEW time management - optimum=" << info.timeLimit.count() << "ms" 
+              << ", soft=" << softLimit.count() << "ms"
+              << ", hard=" << hardLimit.count() << "ms" << std::endl;
     
     Move bestMove;
     
@@ -1115,12 +1120,14 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                 break;
             }
             
-            // Check if we have enough time for another iteration
-            // Use a simple heuristic: if we've used more than 40% of our time,
-            // don't start another iteration
-            if (info.timeLimit != std::chrono::milliseconds::max()) {
+            // Phase 1a: Remove 40% early exit rule - use proper time management instead
+            // Check if we have enough time for another iteration based on soft/hard limits
+            if (hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
                 auto elapsed = info.elapsed();
-                if (elapsed * 5 > info.timeLimit * 2) {  // elapsed > 40% of limit
+                
+                // Never start an iteration that would exceed hard limit
+                // This is a basic check - more sophisticated logic will be added in Phase 1b
+                if (elapsed >= hardLimit) {
                     break;
                 }
             }
