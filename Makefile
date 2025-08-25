@@ -21,14 +21,13 @@ CMAKE_BUILD_TYPE = Release
 # Enable POPCNT and SSE4.2 for hardware acceleration (critical for chess engines)
 BASE_FLAGS = -O2 -DNDEBUG -mpopcnt -msse4.2
 
-# Advanced instruction sets for modern CPUs
-# BMI2 provides PEXT/PDEP for magic bitboards
-# AVX2 provides 256-bit vector operations
-# AVX512 provides 512-bit vector operations (if OpenBench server supports it)
-ADVANCED_FLAGS = -mavx2 -mbmi2 -mavx512f -mavx512bw
+# Advanced instruction sets - currently empty for maximum compatibility
+# BMI2 provides PEXT/PDEP but may not be available on all systems
+# AVX2/AVX512 removed - not universally supported
+# OpenBench servers vary in CPU capabilities
+ADVANCED_FLAGS =
 
-# Combine all flags - unsupported instructions will cause compilation to fail
-# which OpenBench will handle by falling back to a different binary
+# Combine all flags for maximum Ryzen compatibility
 CXXFLAGS = $(BASE_FLAGS) $(ADVANCED_FLAGS)
 CMAKE_CXX_FLAGS = $(CXXFLAGS)
 
