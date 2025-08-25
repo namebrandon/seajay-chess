@@ -2,11 +2,14 @@
 
 ## Executive Summary
 
-After systematic testing of 5 hypotheses, we've identified **THREE CONFIRMED ISSUES** and one possible issue causing SeaJay's severe depth deficit (10-11 ply vs opponents' 19-22 ply):
+After systematic testing of 5 hypotheses, we've identified **THREE CONFIRMED ISSUES** causing SeaJay's severe depth deficit (10-11 ply vs opponents' 19-22 ply):
+
+### UPDATE (2025-08-25): FIRST FIX SUCCESSFUL! 
+✅ **Check Extensions Implemented**: +28 Elo gain confirmed via OpenBench testing
 
 ### CONFIRMED ISSUES:
-1. ❌ **NO SEARCH EXTENSIONS** - Critical tactical blindness
-2. ⚠️ **POOR MOVE ORDERING** - 76.8% efficiency (below 85% threshold)
+1. ✅ **NO SEARCH EXTENSIONS** - **FIXED!** +28 Elo gained
+2. ⚠️ **POOR MOVE ORDERING** - 76.8% efficiency (below 85% threshold) - NEXT TARGET
 3. ⚠️ **POSSIBLE LMR ISSUES** - Different moves found with/without LMR
 
 ### NOT CONFIRMED:
@@ -132,7 +135,7 @@ Without null move:
 
 ## Recommended Fix Priority
 
-### Phase 1: Implement Check Extensions [HIGHEST PRIORITY]
+### Phase 1: Implement Check Extensions [COMPLETED - TESTING]
 **Expected gain**: +3-5 ply depth, +50-100 ELO
 ```cpp
 // In negamax, before recursion:
@@ -140,6 +143,13 @@ if (board.inCheck()) {
     depth++;  // Extend when in check
 }
 ```
+
+**Status**: ✅ IMPLEMENTED AND VERIFIED in commit 6dd8671
+- Branch: feature/20250825-depth-deficit-investigation
+- Testing vs main: **PASSED +27.24 ± 11.48 Elo** (LLR: 2.96) [Test 202](https://openbench.seajay-chess.dev/test/202/)
+- Testing vs f865d94: **PASSED +28.54 ± 11.60 Elo** (LLR: 3.01) [Test 201](https://openbench.seajay-chess.dev/test/201/)
+
+**Result**: Confirmed ~28 Elo gain! Single-line fix addressing critical missing feature.
 
 ### Phase 2: Fix Move Ordering
 **Expected gain**: +1-2 ply depth, +20-40 ELO

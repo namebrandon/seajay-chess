@@ -490,12 +490,29 @@ eval::Score negamax(Board& board,
     quietMoves.reserve(moves.size());
     
     for (const Move& move : moves) {
+        // Skip excluded move (for singular extension search)
+        if (searchInfo.isExcluded(ply, move)) {
+            continue;
+        }
+        
         moveCount++;
         info.totalMoves++;  // Track total moves examined
         
         // Track quiet moves for history update
         if (!isCapture(move) && !isPromotion(move)) {
             quietMoves.push_back(move);
+        }
+        
+        // Singular Extension: Extend search for moves that appear significantly better than alternatives
+        // For now, we'll use a simpler heuristic: extend the TT move when at sufficient depth
+        // This is less sophisticated than Stockfish but still effective
+        int extension = 0;
+        
+        // Simple singular extension: extend TT move at depth >= 7
+        // This ensures we explore the best move from previous iterations more deeply
+        if (depth >= 7 && move == ttMove && ply > 0 && !isPvNode) {
+            extension = 1;
+            info.singularExtensions++;
         }
         
         // Push position to search stack BEFORE making the move
@@ -509,8 +526,8 @@ eval::Score negamax(Board& board,
         eval::Score score;
         
         if (moveCount == 1) {
-            // First move: search with full window as PV node
-            score = -negamax(board, depth - 1, ply + 1,
+            // First move: search with full window as PV node (apply extension if any)
+            score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
                             isPvNode);  // Phase P3: First move inherits PV status
         } else {
@@ -538,16 +555,16 @@ eval::Score negamax(Board& board,
                 }
             }
             
-            // Scout search (possibly reduced)
+            // Scout search (possibly reduced, with extension)
             info.pvsStats.scoutSearches++;
-            score = -negamax(board, depth - 1 - reduction, ply + 1,
+            score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
                             false);  // Scout searches are not PV
             
             // If reduced scout fails high, re-search without reduction
             if (score > alpha && reduction > 0) {
                 info.lmrStats.reSearches++;
-                score = -negamax(board, depth - 1, ply + 1,
+                score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
                                 false);  // Still a scout search
             }
@@ -555,7 +572,7 @@ eval::Score negamax(Board& board,
             // If scout search fails high, do full PV re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
-                score = -negamax(board, depth - 1, ply + 1,
+                score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
                                 isPvNode);  // CRITICAL: Re-search as PV node!
             } else if (reduction > 0 && score <= alpha) {

@@ -221,6 +221,9 @@ struct SearchData {
         }
     } pvsStats;
     
+    // Singular extensions counter
+    uint64_t singularExtensions = 0;    // Total singular extensions applied
+    
     // Stage 23, Phase CM2: Countermove statistics (shadow mode)
     struct CounterMoveStats {
         uint64_t updates = 0;           // Total countermove updates
