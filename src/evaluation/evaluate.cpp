@@ -610,7 +610,7 @@ Score evaluate(const Board& board) {
     constexpr Bitboard BLACK_OUTPOST_RANKS = RANK_3_BB | RANK_4_BB | RANK_5_BB;
     
     // Phase KO3: Basic outpost bonus with quality refinements
-    constexpr int KNIGHT_OUTPOST_BONUS = 40;  // Base bonus for any outpost (testing higher value)
+    constexpr int KNIGHT_OUTPOST_BONUS = 60;  // Base bonus for any outpost (testing even higher value)
     constexpr int CENTRAL_OUTPOST_BONUS = 8;  // Additional for central files (c-f)
     constexpr int ADVANCED_OUTPOST_BONUS = 10; // Additional for rank 6 (white) or rank 3 (black)
     
