@@ -55,6 +55,12 @@ bench 19191913"  # EXACT format required
 3. **Tactical suite** verification
 4. **NO merging to main** without human approval
 
+### CRITICAL: Branch Management
+**IMPORTANT:** This branch (`feature/analysis/20250826-pruning-aggressiveness`) should NEVER be merged directly to main.
+- **Parent Branch:** This is a feature analysis branch created from prior work
+- **Merge Target:** Parent feature branch or as directed by human
+- **NOT main:** All merges must go through proper feature branch hierarchy
+
 ---
 
 ## PHASE 1: Conservative Parameter Adjustments [HIGH PRIORITY]
@@ -113,7 +119,7 @@ git push origin feature/analysis/20250826-pruning-aggressiveness
 #### SPRT Validation:
 **OpenBench Test Configuration:**
 - Dev Branch: `feature/analysis/20250826-pruning-aggressiveness`
-- Base Branch: Previous commit on same branch
+- Base Branch: Previous commit on same branch (NOT main)
 - Time Control: `10+0.1`
 - SPRT Bounds: `[-3, 3]` (allowing small regression)
 - Book: `UHO_4060_v2.epd`
@@ -945,6 +951,8 @@ diff baseline.txt after.txt
 ```
 
 #### 3. SPRT Testing Guidelines:
+
+**CRITICAL:** All SPRT tests should use previous commit on THIS branch as base, NOT main branch.
 
 | Phase | Expected Impact | SPRT Bounds | Time Control |
 |-------|----------------|-------------|--------------|
