@@ -23,10 +23,28 @@ void HistoryHeuristic::update(Color side, Square from, Square to, int depth) {
     // Update the history score
     m_history[side][from][to] += bonus;
     
-    // Check if aging is needed
-    // Age if any value gets too large (positive or negative)
+    // Check if aging is needed - only age when many values are high
+    // This prevents premature aging that loses valuable move ordering info
     if (std::abs(m_history[side][from][to]) >= HISTORY_MAX) {
-        ageHistory();
+        // Count how many entries are near the max
+        int highValueCount = 0;
+        const int threshold = HISTORY_MAX * 3 / 4; // 75% of max
+        
+        for (int c = 0; c < 2; ++c) {
+            for (int f = 0; f < 64; ++f) {
+                for (int t = 0; t < 64; ++t) {
+                    if (std::abs(m_history[c][f][t]) >= threshold) {
+                        highValueCount++;
+                    }
+                }
+            }
+        }
+        
+        // Only age if >10% of entries are high (prevents premature aging)
+        // 2 colors * 64 from * 64 to = 8192 total entries
+        if (highValueCount > 819) { // 10% of 8192
+            ageHistory();
+        }
     }
 }
 
@@ -54,7 +72,25 @@ void HistoryHeuristic::updateFailed(Color side, Square from, Square to, int dept
     
     // Check if aging is needed (for negative values too)
     if (std::abs(m_history[side][from][to]) >= HISTORY_MAX) {
-        ageHistory();
+        // Count how many entries are near the max
+        int highValueCount = 0;
+        const int threshold = HISTORY_MAX * 3 / 4; // 75% of max
+        
+        for (int c = 0; c < 2; ++c) {
+            for (int f = 0; f < 64; ++f) {
+                for (int t = 0; t < 64; ++t) {
+                    if (std::abs(m_history[c][f][t]) >= threshold) {
+                        highValueCount++;
+                    }
+                }
+            }
+        }
+        
+        // Only age if >10% of entries are high (prevents premature aging)
+        // 2 colors * 64 from * 64 to = 8192 total entries
+        if (highValueCount > 819) { // 10% of 8192
+            ageHistory();
+        }
     }
 }
 

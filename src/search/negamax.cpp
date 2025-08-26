@@ -70,18 +70,6 @@ template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
                       const SearchData* searchData = nullptr, int ply = 0,
                       Move prevMove = NO_MOVE, int countermoveBonus = 0) noexcept {
-    // Sub-phase 4E: TT Move Ordering
-    // If we have a TT move, put it first
-    if (ttMove != NO_MOVE) {
-        auto it = std::find(moves.begin(), moves.end(), ttMove);
-        if (it != moves.end() && it != moves.begin()) {
-            // Move TT move to front
-            Move temp = *it;
-            std::move_backward(moves.begin(), it, it + 1);
-            *moves.begin() = temp;
-        }
-    }
-    
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
@@ -96,11 +84,12 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         mvvLva.orderMoves(board, moves);
     }
     
-    // After ordering, ensure TT move is still first if it was valid
+    // Sub-phase 4E: TT Move Ordering
+    // Put TT move first AFTER all other ordering (only do this once!)
     if (ttMove != NO_MOVE) {
         auto it = std::find(moves.begin(), moves.end(), ttMove);
         if (it != moves.end() && it != moves.begin()) {
-            // Move TT move back to front (ordering may have moved it)
+            // Move TT move to front
             Move temp = *it;
             std::move_backward(moves.begin(), it, it + 1);
             *moves.begin() = temp;
