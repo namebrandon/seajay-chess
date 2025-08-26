@@ -405,13 +405,43 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Phase A3.2a: No verification search - rely on good zugzwang detection
-            // Don't return mate scores from null search
-            if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
-                return nullScore;
+            // Phase 1.4: Add verification search for very deep nodes
+            if (depth >= 12) {  // Start conservative at depth 12
+                // Verification search at reduced depth
+                eval::Score verifyScore = negamax(
+                    board,
+                    depth - nullMoveReduction - 1,  // Even shallower
+                    ply,
+                    beta - eval::Score(1),
+                    beta,
+                    searchInfo,
+                    info,
+                    limits,
+                    tt,
+                    false
+                );
+                
+                if (verifyScore < beta) {
+                    // Verification failed, don't trust null move
+                    info.nullMoveStats.verificationFails++;
+                    // Continue with normal search instead of returning
+                } else {
+                    // Verification passed, null move cutoff is valid
+                    if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                        return nullScore;
+                    } else {
+                        // Mate score, return beta instead
+                        return beta;
+                    }
+                }
             } else {
-                // Mate score, return beta instead
-                return beta;
+                // Shallow depth, trust null move without verification
+                if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                    return nullScore;
+                } else {
+                    // Mate score, return beta instead
+                    return beta;
+                }
             }
         }
     } else if (!canDoNull && ply > 0 && board.nonPawnMaterial(board.sideToMove()) <= ZUGZWANG_THRESHOLD) {
