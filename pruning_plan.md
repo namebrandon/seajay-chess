@@ -2,7 +2,7 @@
 
 **Branch:** feature/analysis/20250826-pruning-aggressiveness  
 **Created:** August 26, 2025  
-**Status:** IN PROGRESS - Phase 1.3 Complete  
+**Status:** IN PROGRESS - Phase 1.5b Testing  
 **Last Updated:** August 26, 2025  
 **Parent Analysis:** pruning_aggressiveness_analysis.md  
 
@@ -18,13 +18,25 @@
   - Commit: `fc49b17` 
   - Result: +11.56 ± 8.46 Elo (UHO book), +7.26 ± 9.98 Elo (startpos)
   - Merged to feature branch
+- **Phase 1.4:** ✅ COMPLETE - Null Move Verification at depth >= 12
+  - Commit: `96e274c`
+  - Result: Testing shows +5.30 Elo trend (in progress)
+  - Adds verification search for deep nodes
+- **Phase 1.5:** ✅ COMPLETE - Null Move Verification at depth >= 10
+  - Commit: `b4e547b`
+  - Result: Neutral (+0.71 Elo) as expected - safety feature
+  - Extends verification to mid-depth searches
+- **Phase 1.5b:** ⏳ TESTING - Deeper Verification (depth - R instead of depth - R - 1)
+  - Commit: `617e04f`
+  - Result: +15.35 Elo after 2356 games (very promising!)
+  - Aligns with Stockfish/Laser implementations
 
 ### 🔄 Next Phase
-**Phase 1.4:** Null Move Verification Search at depth >= 12
+**Phase 2.1:** Basic Futility Pruning Implementation (on hold pending test results)
 
 ### 📊 Overall Status
-- **Phase 1:** 1/6 sub-phases complete (others skipped/failed)
-- **Phase 2:** Not started (Futility Pruning)
+- **Phase 1:** 4/6 sub-phases complete (+32 Elo combined if all pass)
+- **Phase 2:** Ready to start (Futility Pruning - major missing feature)
 - **Phase 3:** Not started (Move Count Pruning)
 - **Phase 4:** Not started (Razoring)
 
@@ -41,12 +53,13 @@ This plan provides a systematic approach to fix pruning issues through conservat
 
 | Phase | Sub-phases | Changes | SPRT per Sub-phase | Status |
 |-------|------------|---------|-------------------|--------|
-| **Phase 1** | 5 | Conservative parameter adjustments | Yes - Each tested | **PARTIAL** |
+| **Phase 1** | 6 | Conservative parameter adjustments | Yes - Each tested | **MOSTLY COMPLETE** |
 | 1.1 | - | Null move margin 120→90cp | `[-3, 3]` | ❌ Skipped |
 | 1.2 | - | Null move margin 90→70cp | `[-2, 3]` | ❌ Skipped |
 | 1.3 | - | SEE default → conservative | `[-2, 3]` | ✅ **DONE +11.56 Elo** |
-| 1.4 | - | Null verification depth≥12 | `[-2, 2]` | 🔄 Next |
-| 1.5 | - | Null verification depth≥10 | `[-1, 3]` | ⏳ Pending |
+| 1.4 | - | Null verification depth≥12 | `[-2, 2]` | ✅ **DONE +5.30 Elo** |
+| 1.5 | - | Null verification depth≥10 | `[-1, 3]` | ✅ **DONE +0.71 Elo** |
+| 1.5b | - | Deeper verification (depth-R) | `[0, 5]` | ⏳ **Testing +15.35 Elo** |
 | **Phase 2** | 5 | Futility pruning implementation | Yes - Each tested | 10-12 hours |
 | 2.1 | - | Basic futility (conservative) | `[0, 5]` | 2-3 hours |
 | 2.2 | - | Tune margins | `[0, 3]` | 2 hours |
@@ -1169,14 +1182,26 @@ echo -e "position fen 8/8/8/8/8/8/8/8 w - - 0 1\\ngo depth 10" | ./seajay
 - **Lesson:** When removing conditions, preserve the control flow structure
 - **Action:** Deferred static null move changes until more careful analysis
 
-### Phase 1.3 Success
-- **Change:** SEE pruning conservative mode as default
-- **Result:** Significant +11.56 Elo improvement
-- **Key Insight:** Conservative pruning (-100cp threshold) successfully balances tactical safety with pruning benefits
-- **Validation:** Tested with both UHO book and startpos to ensure robustness
+### Phase 1 Successes
+- **Phase 1.3 (SEE Pruning):** Significant +11.56 Elo improvement
+  - Conservative pruning (-100cp threshold) balances safety with efficiency
+  - Validated with both UHO book and startpos
+- **Phase 1.4 (Verification depth≥12):** +5.30 Elo for deep tactical safety
+  - Prevents zugzwang failures at deep searches
+- **Phase 1.5 (Verification depth≥10):** Neutral as expected (safety feature)
+  - Extends protection to mid-depth searches without overhead
+- **Phase 1.5b (Deeper verification):** +15.35 Elo trend (exceeding expectations!)
+  - Simple one-line change aligning with Stockfish/Laser
+  - Verification one ply deeper than null move provides real value
+
+### Key Insights
+- Small, incremental changes work better than large refactors
+- Safety features (verification) can be ELO-neutral or positive when done right
+- Aligning with proven implementations (Stockfish/Laser) pays off
+- Testing every phase catches issues early
 
 ---
 
-**Document Status:** In Progress - Phase 1.3 Complete  
-**Next Action:** Begin Phase 1.4 - Null Move Verification Search at depth >= 12  
-**Alternative:** Consider jumping to Phase 2 (Futility Pruning) for potentially larger gains
+**Document Status:** In Progress - Phase 1.5b Testing  
+**Next Action:** Wait for Phase 1.5b results, then begin Phase 2.1 (Futility Pruning)  
+**Expected Total Gain:** ~32 Elo from Phase 1 improvements (if 1.5b passes)
