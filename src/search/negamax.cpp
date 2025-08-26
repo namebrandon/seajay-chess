@@ -529,27 +529,16 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Phase 2.1: Basic Futility Pruning (Conservative) - TEMPORARILY DISABLED FOR DEBUGGING
-        // Prune quiet moves that are unlikely to improve position
-        // Don't prune moves that give check as they can be tactical
-        if (false && !isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
+        // Phase 2.1: Basic Futility Pruning (Conservative) - CLEAN IMPLEMENTATION
+        // Only prune quiet moves that are unlikely to improve position
+        // Following Laser's pattern more closely
+        if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
             && !isCapture(move) && !isPromotion(move)) {
             
-            // Get static evaluation (use cached if available)
-            eval::Score staticEval = eval::Score::zero();
-            if (ply > 0) {
-                int cachedEval = searchInfo.getStackEntry(ply).staticEval;
-                if (cachedEval != 0) {
-                    staticEval = eval::Score(cachedEval);
-                }
-            }
+            // Always get fresh evaluation - no caching issues
+            eval::Score staticEval = board.evaluate();
             
-            if (staticEval == eval::Score::zero()) {
-                staticEval = board.evaluate();
-                searchInfo.setStaticEval(ply, staticEval);
-            }
-            
-            // Very conservative margin to start (more conservative than Laser's 115 + 90*depth)
+            // Conservative margin (more than Laser's 115 + 90*depth)
             int futilityMargin = 150 + 60 * depth;
             
             // Prune if current position is so bad that even improving by margin won't help
