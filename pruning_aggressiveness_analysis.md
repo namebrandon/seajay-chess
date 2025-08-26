@@ -77,7 +77,11 @@ From the original game analysis (`seajay_investigation_report.md`), SeaJay shows
 
 ### Phase 2: Compare to Reference Engines [2 hours]
 
-1. **Study conservative engines** (e.g., older Stockfish, Ethereal)
+1. **Study reference engines**
+   - [ ] **Laser:** https://raw.githubusercontent.com/jeffreyan11/laser-chess-engine/refs/heads/master/src/search.cpp
+   - [ ] **4ku:** https://raw.githubusercontent.com/kz04px/4ku/refs/heads/master/src/main.cpp
+   - [ ] **Publius:** https://raw.githubusercontent.com/nescitus/publius/refs/heads/main/src/search.cpp
+   - [ ] **Stashbot:** https://raw.githubusercontent.com/mhouppin/stash-bot/9328141bc001913585fb76e6b38efe640eff2701/src/sources/evaluate.c
    - [ ] Document their pruning parameters
    - [ ] Compare thresholds and conditions
    - [ ] Identify major differences
@@ -91,7 +95,9 @@ From the original game analysis (`seajay_investigation_report.md`), SeaJay shows
 1. **Create test positions**
    - [ ] Tactical puzzles that SeaJay fails
    - [ ] Positions from the 171 blunders
-   - [ ] Standard tactical benchmarks (WAC, ECM)
+   - [ ] Use STS (Strategic Test Suite) for tactical testing
+     - Reference: https://www.chessprogramming.org/Strategic_Test_Suite
+   - [ ] Avoid WAC (Win at Chess) - outdated and problematic
 
 2. **Test with different pruning settings**
    - [ ] Baseline (current settings)
@@ -125,8 +131,10 @@ From the original game analysis (`seajay_investigation_report.md`), SeaJay shows
    - [ ] Help future debugging
 
 3. **Create UCI options for key parameters**
-   - [ ] Allow runtime tuning
-   - [ ] Facilitate SPRT testing
+   - [ ] Expose all tunable parameters via UCI for SPSA testing
+   - [ ] Parameters must be accessible at runtime
+   - [ ] Include reasonable min/max bounds for SPSA
+   - [ ] Facilitate both SPRT and SPSA testing on OpenBench
 
 ### Phase 6: Validation [2 hours]
 
@@ -192,6 +200,10 @@ This strongly suggests pruning is too aggressive rather than move ordering being
 2. **Measure everything** - Add statistics for all pruning
 3. **Test tactically** - Ensure we don't miss tactics
 4. **Iterate carefully** - Small changes with validation
+5. **Commit frequently** - Every significant change should be committed
+6. **OpenBench compatibility** - All commit messages MUST include "bench <node-count>" string
+   - Example: "Reduce null move margin to 90cp, bench 1234567"
+   - OpenBench parses this exact format for regression testing
 
 ## Timeline
 
@@ -201,8 +213,16 @@ This strongly suggests pruning is too aggressive rather than move ordering being
 
 Total estimate: 16 hours
 
+## Important Notes
+
+⚠️ **NEVER merge to main without human approval** - All changes must be validated through:
+1. Local testing with tactical suites
+2. SPRT testing on OpenBench
+3. Human review of results and code changes
+
 ## Next Steps
 
 1. Begin Phase 1 audit of current pruning mechanisms
 2. Add statistical counters to measure pruning impact
 3. Create tactical test suite from blunder positions
+4. Ensure all parameters are exposed via UCI for SPSA testing
