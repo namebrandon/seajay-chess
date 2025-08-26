@@ -2,8 +2,31 @@
 
 **Branch:** feature/analysis/20250826-pruning-aggressiveness  
 **Created:** August 26, 2025  
-**Status:** IMPLEMENTATION READY  
+**Status:** IN PROGRESS - Phase 1.3 Complete  
+**Last Updated:** August 26, 2025  
 **Parent Analysis:** pruning_aggressiveness_analysis.md  
+
+## Current Progress
+
+### ✅ Completed Phases
+- **Phase 1.1:** ❌ SKIPPED - Null move margin adjustment (superseded by Phase 1.6 SPSA)
+- **Phase 1.2:** ❌ SKIPPED - Further margin adjustment (will be handled via SPSA)
+- **Phase 1.2a:** ❌ SKIPPED - Static null depth extension (requires careful implementation)
+- **Phase 1.2b:** ❌ FAILED - Material balance check removal (catastrophic -1107 Elo, reverted)
+- **Phase 1.2c:** ❌ SKIPPED - Simplification (deferred due to 1.2b failure)
+- **Phase 1.3:** ✅ COMPLETE - SEE Pruning conservative default
+  - Commit: `fc49b17` 
+  - Result: +11.56 ± 8.46 Elo (UHO book), +7.26 ± 9.98 Elo (startpos)
+  - Merged to feature branch
+
+### 🔄 Next Phase
+**Phase 1.4:** Null Move Verification Search at depth >= 12
+
+### 📊 Overall Status
+- **Phase 1:** 1/6 sub-phases complete (others skipped/failed)
+- **Phase 2:** Not started (Futility Pruning)
+- **Phase 3:** Not started (Move Count Pruning)
+- **Phase 4:** Not started (Razoring)
 
 ## Executive Summary
 
@@ -16,14 +39,14 @@ This plan provides a systematic approach to fix pruning issues through conservat
 
 ## Phase Summary Table
 
-| Phase | Sub-phases | Changes | SPRT per Sub-phase | Total Time |
-|-------|------------|---------|-------------------|------------|
-| **Phase 1** | 5 | Conservative parameter adjustments | Yes - Each tested | 8-10 hours |
-| 1.1 | - | Null move margin 120→90cp | `[-3, 3]` | 1-2 hours |
-| 1.2 | - | Null move margin 90→70cp | `[-2, 3]` | 1-2 hours |
-| 1.3 | - | SEE default → conservative | `[-2, 3]` | 1-2 hours |
-| 1.4 | - | Null verification depth≥12 | `[-2, 2]` | 1-2 hours |
-| 1.5 | - | Null verification depth≥10 | `[-1, 3]` | 1-2 hours |
+| Phase | Sub-phases | Changes | SPRT per Sub-phase | Status |
+|-------|------------|---------|-------------------|--------|
+| **Phase 1** | 5 | Conservative parameter adjustments | Yes - Each tested | **PARTIAL** |
+| 1.1 | - | Null move margin 120→90cp | `[-3, 3]` | ❌ Skipped |
+| 1.2 | - | Null move margin 90→70cp | `[-2, 3]` | ❌ Skipped |
+| 1.3 | - | SEE default → conservative | `[-2, 3]` | ✅ **DONE +11.56 Elo** |
+| 1.4 | - | Null verification depth≥12 | `[-2, 2]` | 🔄 Next |
+| 1.5 | - | Null verification depth≥10 | `[-1, 3]` | ⏳ Pending |
 | **Phase 2** | 5 | Futility pruning implementation | Yes - Each tested | 10-12 hours |
 | 2.1 | - | Basic futility (conservative) | `[0, 5]` | 2-3 hours |
 | 2.2 | - | Tune margins | `[0, 3]` | 2 hours |
@@ -328,9 +351,14 @@ git push
 
 ---
 
-### Phase 1.3: SEE Pruning Conservative Default
+### Phase 1.3: SEE Pruning Conservative Default ✅ COMPLETE
 **Change:** Switch default SEE pruning from "off" to "conservative"  
-**Reference:** Conservative uses -100cp threshold vs aggressive -75cp
+**Reference:** Conservative uses -100cp threshold vs aggressive -75cp  
+**Status:** COMPLETE - Commit `fc49b17` on August 26, 2025  
+**Results:** 
+- +11.56 ± 8.46 Elo (UHO book, 3850 games)
+- +7.26 ± 9.98 Elo (startpos, 2632 games)
+- Successfully reduces tactical blindness while maintaining search efficiency
 
 #### Implementation:
 ```cpp
@@ -1133,5 +1161,22 @@ echo -e "position fen 8/8/8/8/8/8/8/8 w - - 0 1\\ngo depth 10" | ./seajay
 
 ---
 
-**Document Status:** Complete and ready for implementation  
-**Next Action:** Begin Phase 1.1 - Reduce null move static margin
+## Lessons Learned So Far
+
+### Phase 1.2b Failure
+- **Issue:** Removing material balance check caused catastrophic -1107 Elo loss
+- **Root Cause:** Changed control flow incorrectly, not just the condition
+- **Lesson:** When removing conditions, preserve the control flow structure
+- **Action:** Deferred static null move changes until more careful analysis
+
+### Phase 1.3 Success
+- **Change:** SEE pruning conservative mode as default
+- **Result:** Significant +11.56 Elo improvement
+- **Key Insight:** Conservative pruning (-100cp threshold) successfully balances tactical safety with pruning benefits
+- **Validation:** Tested with both UHO book and startpos to ensure robustness
+
+---
+
+**Document Status:** In Progress - Phase 1.3 Complete  
+**Next Action:** Begin Phase 1.4 - Null Move Verification Search at depth >= 12  
+**Alternative:** Consider jumping to Phase 2 (Futility Pruning) for potentially larger gains
