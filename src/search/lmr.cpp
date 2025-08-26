@@ -145,14 +145,15 @@ bool shouldReduceMove(Move move, int depth, int moveNumber, bool isCapture,
     }
     
     // Don't reduce moves with very high history scores
-    // Consider top 15% of history moves as "good" and don't reduce them
+    // Consider top 25% of history moves as "good" and don't reduce them
     if (move != NO_MOVE && !isCapture && !isPromotion(move)) {
         Square from = moveFrom(move);
         Square to = moveTo(move);
         int historyScore = history.getScore(sideToMove, from, to);
         
-        // Don't reduce if history score is in top tier (>75% of max)
-        if (historyScore > HistoryHeuristic::HISTORY_MAX * 3 / 4) {
+        // Don't reduce if history score is in top tier (>50% of max)
+        // Lowered threshold from 75% to 50% to protect more good moves
+        if (historyScore > HistoryHeuristic::HISTORY_MAX / 2) {
             return false;
         }
     }

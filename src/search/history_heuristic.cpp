@@ -17,8 +17,8 @@ void HistoryHeuristic::update(Color side, Square from, Square to, int depth) {
     }
     
     // Calculate bonus based on depth squared
-    // Capped at 400 to prevent rapid overflow (Ethereal-style)
-    int bonus = std::min(depth * depth, 400);
+    // Increased cap from 400 to 800 for stronger history impact
+    int bonus = std::min(depth * depth * 2, 800);
     
     // Update the history score
     m_history[side][from][to] += bonus;
@@ -64,8 +64,8 @@ void HistoryHeuristic::updateFailed(Color side, Square from, Square to, int dept
     }
     
     // Calculate penalty based on depth squared
-    // Use smaller penalty than bonus to avoid over-penalizing moves
-    int penalty = std::min(depth * depth / 2, 200);  // Half the bonus amount
+    // Penalty is proportionally smaller than bonus to avoid over-penalizing
+    int penalty = std::min(depth * depth, 400);  // Half the bonus amount
     
     // Reduce the history score
     m_history[side][from][to] -= penalty;
