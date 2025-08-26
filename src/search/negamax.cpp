@@ -339,22 +339,17 @@ eval::Score negamax(Board& board,
             }
         }
         
-        // If no cached eval and we're likely to benefit, compute it
+        // If no cached eval, compute it (WITHOUT material balance check)
         if (staticEval == eval::Score::zero()) {
-            // Only evaluate if we think we might get a cutoff
-            // Quick material balance check first
-            if (board.material().balance(board.sideToMove()).value() - beta.value() > -200) {
-                staticEval = board.evaluate();
-                searchInfo.setStaticEval(ply, staticEval);
-                
-                // Margin based on depth (tunable)
-                eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
-                
-                if (staticEval - margin >= beta) {
-                    info.nullMoveStats.staticCutoffs++;
-                    return staticEval - margin;  // Return reduced score for safety
-                }
-            }
+            staticEval = board.evaluate();
+            searchInfo.setStaticEval(ply, staticEval);
+        }
+        
+        // Now check for pruning with the valid eval
+        eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+        if (staticEval - margin >= beta) {
+            info.nullMoveStats.staticCutoffs++;
+            return staticEval - margin;  // Return reduced score for safety
         }
     }
     

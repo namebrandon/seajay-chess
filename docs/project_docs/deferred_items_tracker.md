@@ -1658,6 +1658,196 @@ info depth 10 ... info string Countermoves: updates=33187 hits=37853 hitRate=114
 - History update in negamax.cpp after cutoffs
 - Statistics tracking in SearchData struct
 
+## Static Evaluation Architecture Simplification
+
+**Date Added:** August 26, 2025  
+**Status:** DEFERRED - Opportunity for major simplification  
+**Priority:** MEDIUM - Would improve code clarity and potentially performance  
+**Source:** Analysis during Phase 1.2b static null move pruning fixes  
+
+### Current Problem: Complex Lazy Evaluation System
+
+SeaJay currently uses a complex lazy evaluation system with multiple issues:
+
+#### Current Implementation (Problematic):
+```cpp
+// Complex caching and conditional evaluation
+eval::Score staticEval = eval::Score::zero();
+
+// Try to get cached eval first
+if (ply > 0) {
+    int cachedEval = searchInfo.getStackEntry(ply).staticEval;
+    if (cachedEval != 0) {
+        staticEval = eval::Score(cachedEval);
+    }
+}
+
+// If no cached eval, compute it conditionally
+if (staticEval == eval::Score::zero()) {
+    // Various conditions before evaluating...
+    staticEval = board.evaluate();
+    searchInfo.setStaticEval(ply, staticEval);
+}
+```
+
+**Issues with current approach:**
+1. **Complex control flow** - Multiple nested conditions make it error-prone
+2. **Zero ambiguity** - Is zero a valid eval or "not evaluated"?
+3. **Cache invalidation complexity** - Hard to know when cache is stale
+4. **Difficult to maintain** - Easy to break (as Phase 1.2b proved)
+5. **Different from successful engines** - Stockfish, Laser, Publius all evaluate early
+
+### Proposed Solution: Evaluate Early Like Publius/Stockfish
+
+#### Option A: Full Publius-style (Evaluate at Node Entry)
+```cpp
+// At the start of negamax, right after in-check detection:
+eval::Score staticEval = weAreInCheck ? eval::Score(-32000) : board.evaluate();
+searchInfo.setStaticEval(ply, staticEval);
+
+// Then use staticEval throughout the function without any conditions
+// For static null move:
+if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck 
+    && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+    if (staticEval - margin >= beta) {
+        info.nullMoveStats.staticCutoffs++;
+        return staticEval - margin;
+    }
+}
+
+// For null move pruning evaluation:
+// Direct use, no conditions
+
+// For futility pruning (when implemented):
+// Direct use, no conditions
+```
+
+**Benefits:**
+1. **Simple and clear** - Evaluate once, use everywhere
+2. **No ambiguity** - Always have valid eval
+3. **Proven pattern** - Used by all successful engines
+4. **Easier to maintain** - No complex conditional logic
+5. **Better for future features** - Futility, razoring, etc. all need eval
+
+#### Option B: Smart Early Evaluation (Hybrid Approach)
+```cpp
+// Evaluate early but still cache for efficiency
+class SearchStack {
+    eval::Score staticEval;
+    bool evalComputed;
+    
+    eval::Score getEval(Board& board) {
+        if (!evalComputed) {
+            staticEval = board.evaluate();
+            evalComputed = true;
+        }
+        return staticEval;
+    }
+};
+```
+
+### Implementation Plan
+
+#### Phase 1: Analysis and Measurement
+1. Profile current evaluation overhead
+2. Count how many times we evaluate per node
+3. Measure cache hit rate
+4. Identify redundant evaluations
+
+#### Phase 2: Refactoring
+1. Create feature branch for testing
+2. Implement Option A (simplest) first
+3. Test performance impact
+4. Consider Option B if overhead is significant
+
+#### Phase 3: Integration
+1. Update all pruning techniques to use new pattern
+2. Remove old caching logic
+3. Simplify SearchInfo structure
+4. Update tests
+
+### Expected Impact
+
+**Performance:**
+- Potential slight overhead from more evaluations
+- BUT: Simpler code paths may be faster
+- Cache misses eliminated
+- Branch prediction improved
+
+**Code Quality:**
+- 50+ lines of complex logic removed
+- Easier to understand and maintain
+- Fewer bugs from control flow errors
+- Consistent with other engines
+
+**Future Features:**
+- Futility pruning becomes trivial to add
+- Razoring straightforward
+- Delta pruning in quiescence simplified
+- All features that need eval have it immediately
+
+### Testing Requirements
+
+1. **Performance Testing:**
+   - Measure NPS before/after
+   - Check time-to-depth
+   - Profile evaluation overhead
+   
+2. **Correctness Testing:**
+   - Verify same eval values
+   - Check no search behavior changes
+   - Validate with perft
+
+3. **SPRT Testing:**
+   - Should be Elo-neutral change
+   - Test bounds: [-3, 3]
+   - Verify no regression
+
+### Risk Assessment
+
+**Risks:**
+- Slight performance overhead possible
+- May need tuning for optimal placement
+- Could affect time management if slower
+
+**Mitigations:**
+- Thorough profiling before/after
+- Keep old code in branch for comparison
+- Can implement Option B if needed
+- Easy to revert if problematic
+
+### When to Implement
+
+**Prerequisites:**
+- Complete current pruning optimization work
+- Gather baseline performance metrics
+- Have stable version for comparison
+
+**Good Time:**
+- Before implementing futility pruning (needs eval)
+- During Phase 3 architectural cleanup
+- When simplifying for multi-threading
+
+**Priority:** MEDIUM
+- Not urgent but would improve code quality
+- Makes future features easier
+- Reduces bug surface area
+
+### References
+
+1. **Publius:** Evaluates immediately after in-check test
+2. **Stockfish:** Complex but evaluates early when needed
+3. **Laser:** Evaluates early and caches in TT
+4. **Our Phase 1.2b failure:** Proved current system is fragile
+
+### Notes for Implementation
+
+- Consider keeping evaluation stats (count, time)
+- May want UCI option during transition
+- Document the change thoroughly
+- Update all dependent systems carefully
+
 ## Items FROM Stage 18 (LMR) - CRITICAL ISSUES
 
 **Date:** August 20, 2025  
