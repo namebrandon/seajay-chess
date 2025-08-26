@@ -561,12 +561,19 @@ eval::Score negamax(Board& board,
                 bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
                 bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
-                // Check if we should reduce this move
-                if (shouldReduceMove(depth, moveCount, captureMove, 
+                // Check if we should reduce this move with improved conditions
+                if (shouldReduceMove(move, depth, moveCount, captureMove, 
                                     weAreInCheck, givesCheck, pvNode, 
+                                    info.killers, info.history, 
+                                    info.counterMoves, prevMove,
+                                    ply, board.sideToMove(),
                                     info.lmrParams)) {
                     // Calculate reduction amount
-                    reduction = getLMRReduction(depth, moveCount, info.lmrParams);
+                    // For now, assume not improving to be conservative
+                    // (future enhancement: track eval history for proper improving detection)
+                    bool improving = false; // Conservative: assume not improving
+                    
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
                     
                     // Track LMR statistics
                     info.lmrStats.totalReductions++;
