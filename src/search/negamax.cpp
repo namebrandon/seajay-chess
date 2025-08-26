@@ -551,7 +551,8 @@ eval::Score negamax(Board& board,
             // Very conservative margin to start (more conservative than Laser's 115 + 90*depth)
             int futilityMargin = 150 + 60 * depth;
             
-            if (staticEval + eval::Score(futilityMargin) <= alpha) {
+            // Prune if current position is so bad that even improving by margin won't help
+            if (staticEval <= alpha - eval::Score(futilityMargin)) {
                 info.futilityPruned++;
                 continue;  // Skip this move
             }
