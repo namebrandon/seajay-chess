@@ -63,7 +63,7 @@ private:
     
     // Stage 21: Null Move Pruning parameters  
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
-    int m_nullMoveStaticMargin = 120;   // Margin for static null move pruning (Phase A4)
+    int m_nullMoveStaticMargin = 90;   // Margin for static null move pruning - reduced from 120
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
