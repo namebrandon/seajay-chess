@@ -2,6 +2,10 @@
 
 #include "../core/types.h"
 #include "types.h"
+#include "killer_moves.h"
+#include "history_heuristic.h"
+#include "countermoves.h"
+#include <cmath>
 
 namespace seajay::search {
 
@@ -14,29 +18,48 @@ namespace seajay::search {
  */
 
 /**
+ * Initialize the logarithmic reduction table
+ * Should be called once at engine startup
+ */
+void initLMRTable();
+
+/**
  * Calculate the depth reduction for a given move
  * 
  * @param depth Current search depth
  * @param moveNumber Move number in the ordered list (1-based)
  * @param params LMR parameters from UCI options
+ * @param isPvNode Whether this is a principal variation node
+ * @param improving Whether the position is improving
  * @return Depth reduction in plies (0 if no reduction should be applied)
  */
-int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params);
+int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params,
+                   bool isPvNode = false, bool improving = true);
 
 /**
  * Check if a move is eligible for reduction
  * 
+ * @param move The move to check
  * @param depth Current search depth
  * @param moveNumber Move number in the ordered list
  * @param isCapture Whether the move is a capture
  * @param inCheck Whether the side to move is in check
  * @param givesCheck Whether the move gives check
  * @param isPVNode Whether this is a PV node
+ * @param killers Killer moves table
+ * @param history History heuristic table
+ * @param counterMoves Countermoves table
+ * @param prevMove Previous move played
+ * @param ply Current ply
+ * @param sideToMove Side to move
  * @param params LMR parameters
  * @return true if the move should be reduced
  */
-bool shouldReduceMove(int depth, int moveNumber, bool isCapture, 
+bool shouldReduceMove(Move move, int depth, int moveNumber, bool isCapture, 
                      bool inCheck, bool givesCheck, bool isPVNode,
+                     const KillerMoves& killers, const HistoryHeuristic& history,
+                     const CounterMoves& counterMoves, Move prevMove,
+                     int ply, Color sideToMove,
                      const SearchData::LMRParams& params);
 
 } // namespace seajay::search
