@@ -14,6 +14,27 @@ SeaJay exhibits overly aggressive pruning resulting in:
 
 This plan provides a systematic approach to fix pruning issues through conservative adjustments and implementation of missing techniques.
 
+## Phase Summary Table
+
+| Phase | Sub-phases | Changes | SPRT per Sub-phase | Total Time |
+|-------|------------|---------|-------------------|------------|
+| **Phase 1** | 5 | Conservative parameter adjustments | Yes - Each tested | 8-10 hours |
+| 1.1 | - | Null move margin 120→90cp | `[-3, 3]` | 1-2 hours |
+| 1.2 | - | Null move margin 90→70cp | `[-2, 3]` | 1-2 hours |
+| 1.3 | - | SEE default → conservative | `[-2, 3]` | 1-2 hours |
+| 1.4 | - | Null verification depth≥12 | `[-2, 2]` | 1-2 hours |
+| 1.5 | - | Null verification depth≥10 | `[-1, 3]` | 1-2 hours |
+| **Phase 2** | 5 | Futility pruning implementation | Yes - Each tested | 10-12 hours |
+| 2.1 | - | Basic futility (conservative) | `[0, 5]` | 2-3 hours |
+| 2.2 | - | Tune margins | `[0, 3]` | 2 hours |
+| 2.3 | - | Extend to depth 6 | `[0, 3]` | 2 hours |
+| 2.4 | - | Final tuning to Laser | `[0, 5]` | 2 hours |
+| 2.5 | - | UCI options | No SPRT | 1 hour |
+| **Phase 3** | 3 | Move count pruning | Yes - Each tested | 6-8 hours |
+| **Phase 4** | 2 | Razoring | Yes - Each tested | 4 hours |
+
+**Critical Rule:** STOP and wait for SPRT results after EACH sub-phase before proceeding.
+
 ## Critical Requirements
 
 ### OpenBench Compatibility
@@ -40,49 +61,105 @@ bench 19191913"  # EXACT format required
 
 **Goal:** Reduce tactical blindness by making existing pruning less aggressive  
 **Expected Impact:** -5 to 0 Elo short term, but 50%+ reduction in blunders  
-**Time Estimate:** 4-6 hours
+**Time Estimate:** 8-10 hours (including SPRT validation for each sub-phase)
 
-### Phase 1.1: Null Move Static Margin Reduction
-**Reference:** Laser uses 70cp, SeaJay uses 120cp (71% more aggressive)
+**CRITICAL:** Each sub-phase MUST be independently tested with SPRT before proceeding to the next.
 
-#### Implementation Steps:
+---
+
+### Phase 1.1: Null Move Static Margin - First Reduction
+**Change:** Reduce from 120cp to 90cp (intermediate step)  
+**Reference:** Laser uses 70cp, this is 25% reduction toward target
+
+#### Implementation:
 ```cpp
 // File: src/search/negamax.cpp, line ~351
 // Current:
 eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);  // 120
 
-// Phase 1.1a: Reduce to 90cp (intermediate)
-eval::Score margin = eval::Score(90 * depth);
-
-// Phase 1.1b: Match Laser at 70cp (if 90cp tests well)
-eval::Score margin = eval::Score(70 * depth);
+// Change to:
+eval::Score margin = eval::Score(90 * depth);  // Reduced from 120
 ```
 
-#### Validation:
-1. Run tactical suite before/after change
-2. Count nodes on standard positions
-3. SPRT test: bounds `[-3, 3]` (expect small regression)
-
-#### Commit Process:
+#### Local Validation:
 ```bash
-# Build and get bench
-./build.sh
-BENCH=$(echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}')
+# Tactical suite before change
+echo "position fen 2r3k1/1q1nbppp/r3p3/3pP3/p1pP4/P1Q2N2/1PRN1PPP/2R3K1 b - - 0 23" | ./bin/seajay
+# Record nodes and best move
 
-# Commit Phase 1.1a
+# Apply change, rebuild
+./build.sh
+
+# Same position after change
+echo "position fen 2r3k1/1q1nbppp/r3p3/3pP3/p1pP4/P1Q2N2/1PRN1PPP/2R3K1 b - - 0 23" | ./bin/seajay
+# Should see MORE nodes (less aggressive pruning)
+```
+
+#### Commit and Push:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
 git add -A
 git commit -m "fix: Reduce null move static margin from 120cp to 90cp
 
-Conservative adjustment to reduce tactical blindness. Laser uses 70cp,
-this is an intermediate step toward that target.
+First step toward less aggressive null move pruning. Laser uses 70cp,
+this reduces our margin by 25% as an intermediate step.
+
+Expected: Small Elo regression but fewer tactical misses.
 
 bench $BENCH"
-
 git push origin feature/analysis/20250826-pruning-aggressiveness
 ```
 
-### Phase 1.2: SEE Pruning Conservative Default
-**Reference:** Aggressive mode prunes at -75cp, conservative at -100cp
+#### SPRT Validation:
+**OpenBench Test Configuration:**
+- Dev Branch: `feature/analysis/20250826-pruning-aggressiveness`
+- Base Branch: Previous commit on same branch
+- Time Control: `10+0.1`
+- SPRT Bounds: `[-3, 3]` (allowing small regression)
+- Book: `UHO_4060_v2.epd`
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.2**
+
+---
+
+### Phase 1.2: Null Move Static Margin - Final Reduction
+**Change:** Reduce from 90cp to 70cp (match Laser)  
+**Prerequisite:** Phase 1.1 SPRT must pass
+
+#### Implementation:
+```cpp
+// File: src/search/negamax.cpp, line ~351
+// After Phase 1.1:
+eval::Score margin = eval::Score(90 * depth);
+
+// Change to:
+eval::Score margin = eval::Score(70 * depth);  // Match Laser's value
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "fix: Further reduce null move static margin to 70cp
+
+Final adjustment to match Laser's null move margin. This completes
+the null move pruning conservatization.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[-2, 3]` (should be neutral or slightly positive after 1.1)
+- Base: Phase 1.1 commit
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.3**
+
+---
+
+### Phase 1.3: SEE Pruning Conservative Default
+**Change:** Switch default SEE pruning from "off" to "conservative"  
+**Reference:** Conservative uses -100cp threshold vs aggressive -75cp
 
 #### Implementation:
 ```cpp
@@ -90,17 +167,43 @@ git push origin feature/analysis/20250826-pruning-aggressiveness
 // Change default from "off" to "conservative"
 std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
 
-// Also update member initialization
+// File: src/uci/uci.cpp, line ~744 (constructor or initialization)
 m_seePruning = "conservative";  // was "off"
 ```
 
-#### Validation:
-- Verify captures aren't over-pruned
-- Test tactical positions with hanging pieces
-- SPRT: `[-2, 3]`
+#### Local Validation:
+```bash
+# Test position with hanging piece
+echo "position fen rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 4 4" | ./bin/seajay
+# Should still find good tactics but prune bad captures
+```
 
-### Phase 1.3: Null Move Verification Search
-**Reference:** Laser verifies null move at depth >= 10
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "fix: Change SEE pruning default to conservative mode
+
+Switch from no SEE pruning to conservative mode (-100cp threshold).
+This prevents pruning of potentially good tactical captures while
+still eliminating clearly bad exchanges.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[-2, 3]` (should be neutral to positive)
+- Base: Phase 1.2 commit
+- Expected: Small improvement in tactical positions
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.4**
+
+---
+
+### Phase 1.4: Null Move Verification Search - Depth 12+
+**Change:** Add verification search at depth >= 12 (conservative start)  
+**Reference:** Laser verifies at depth >= 10, we start more conservative
 
 #### Implementation:
 ```cpp
@@ -108,8 +211,8 @@ m_seePruning = "conservative";  // was "off"
 if (nullScore >= beta) {
     info.nullMoveStats.cutoffs++;
     
-    // Phase 1.3: Add verification search for deep nodes
-    if (depth >= 10) {
+    // Phase 1.4: Add verification search for very deep nodes
+    if (depth >= 12) {  // Start conservative at depth 12
         // Verification search at reduced depth
         eval::Score verifyScore = negamax(
             board,
@@ -143,24 +246,88 @@ if (nullScore >= beta) {
 }
 ```
 
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Add null move verification search at depth >= 12
+
+Implement verification search for deep null move pruning to prevent
+tactical oversights in critical positions. Starting conservatively
+at depth 12 (Laser uses 10).
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[-2, 2]` (should be neutral)
+- Base: Phase 1.3 commit
+- Expected: Minimal impact at normal depths, safer at deep searches
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.5**
+
+---
+
+### Phase 1.5: Null Move Verification - Extend to Depth 10+
+**Change:** Lower verification threshold from 12 to 10 (match Laser)  
+**Prerequisite:** Phase 1.4 must show no regression
+
+#### Implementation:
+```cpp
+// File: src/search/negamax.cpp
+// Change from:
+if (depth >= 12) {  // Conservative
+
+// To:
+if (depth >= 10) {  // Match Laser's threshold
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Lower null move verification threshold to depth >= 10
+
+Extend verification search to depth 10+ positions, matching Laser's
+implementation. This provides better tactical safety in mid-depth
+searches.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[-1, 3]` (should be slightly positive)
+- Base: Phase 1.4 commit
+- Expected: Slightly fewer nodes but better tactical accuracy
+
+**STOP - Phase 1 Complete - Proceed to Phase 2 only after all sub-phases pass SPRT**
+
 ---
 
 ## PHASE 2: Futility Pruning Implementation [CRITICAL]
 
 **Goal:** Implement standard futility pruning (missing in SeaJay)  
 **Expected Impact:** +10-15% node reduction, +5-10 Elo  
-**Time Estimate:** 6-8 hours  
+**Time Estimate:** 10-12 hours (including SPRT validation for each sub-phase)  
 **Reference:** Laser formula: `staticEval <= alpha - 115 - 90*depth`
 
-### Phase 2.1: Basic Futility Pruning Structure
+**CRITICAL:** This is a major missing feature. Each sub-phase must be carefully validated.
+
+---
+
+### Phase 2.1: Basic Futility Pruning - Conservative Start
+**Change:** Add futility pruning with very conservative margins  
+**Initial Formula:** `staticEval <= alpha - 150 - 60*depth` (more conservative than Laser)
 
 #### Implementation:
 ```cpp
 // File: src/search/negamax.cpp, after null move pruning (~line 420)
 
-// Phase 2.1: Futility Pruning
+// Phase 2.1: Basic Futility Pruning (Conservative)
 // Only for non-PV nodes at shallow depths
-if (!isPvNode && depth <= 6 && !weAreInCheck 
+if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck 
     && std::abs(alpha.value()) < MATE_BOUND - MAX_PLY
     && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
     
@@ -178,8 +345,8 @@ if (!isPvNode && depth <= 6 && !weAreInCheck
         searchInfo.setStaticEval(ply, staticEval);
     }
     
-    // Phase 2.1a: Conservative futility margin
-    int futilityMargin = 100 + 80 * depth;  // Start conservative
+    // Very conservative margin to start
+    int futilityMargin = 150 + 60 * depth;  // More conservative than Laser
     
     if (staticEval + eval::Score(futilityMargin) <= alpha) {
         info.futilityPruned++;  // Add counter to SearchData
@@ -188,44 +355,182 @@ if (!isPvNode && depth <= 6 && !weAreInCheck
 }
 ```
 
-### Phase 2.2: Extended Futility Pruning
+#### Adding Statistics Counter:
+```cpp
+// File: src/search/types.h or search_data.h
+struct SearchData {
+    // ... existing members
+    uint64_t futilityPruned = 0;
+    uint64_t extendedFutilityPruned = 0;
+};
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Add basic futility pruning with conservative margins
+
+Implement futility pruning for depths 1-4 with formula:
+staticEval <= alpha - 150 - 60*depth
+
+This is more conservative than Laser (115 + 90*depth) to ensure
+we don't miss tactics while implementing this new feature.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[0, 5]` (should be positive)
+- Base: Phase 1.5 commit
+- Expected: 5-10% node reduction, small Elo gain
+
+**STOP - Wait for SPRT completion before proceeding to Phase 2.2**
+
+---
+
+### Phase 2.2: Futility Pruning - Tune Margins Closer to Laser
+**Change:** Adjust margins from 150+60*depth to 130+75*depth  
+**Prerequisite:** Phase 2.1 must show positive results
 
 #### Implementation:
 ```cpp
-// Extended futility for depth 1-3
-if (!isPvNode && depth <= 3 && depth >= 1 && !weAreInCheck) {
-    // More aggressive margins for very shallow depths
-    int extendedMargin = 200 + 100 * depth;
-    
-    if (staticEval + eval::Score(extendedMargin) <= alpha) {
-        // Do a quiescence search to verify
-        eval::Score qScore = quiescence(board, ply, alpha, beta, 
-                                       searchInfo, info, limits, *tt, 0, false);
-        if (qScore <= alpha) {
-            info.extendedFutilityPruned++;
-            return qScore;
-        }
-    }
-}
+// File: src/search/negamax.cpp
+// Change from:
+int futilityMargin = 150 + 60 * depth;  // Very conservative
+
+// To:
+int futilityMargin = 130 + 75 * depth;  // Moving toward Laser
 ```
 
-### Phase 2.3: Add UCI Options for Tuning
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Tune futility margins closer to optimal
+
+Adjust futility pruning margins from 150+60*depth to 130+75*depth,
+moving closer to Laser's proven formula while maintaining safety.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[0, 3]` (should be neutral to positive)
+- Base: Phase 2.1 commit
+
+**STOP - Wait for SPRT completion before proceeding to Phase 2.3**
+
+---
+
+### Phase 2.3: Futility Pruning - Extend to Depth 6
+**Change:** Enable futility pruning up to depth 6 (from depth 4)
+
+#### Implementation:
+```cpp
+// File: src/search/negamax.cpp
+// Change from:
+if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck
+
+// To:
+if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck  // Extended to depth 6
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Extend futility pruning to depth 6
+
+Enable futility pruning for depths 1-6 (was 1-4), matching standard
+engine practice. Margins remain at 130+75*depth.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[0, 3]` (should be positive)
+- Base: Phase 2.2 commit
+- Expected: Additional node reduction at mid-depths
+
+**STOP - Wait for SPRT completion before proceeding to Phase 2.4**
+
+---
+
+### Phase 2.4: Futility Pruning - Final Tuning to Match Laser
+**Change:** Adjust to Laser's proven formula: 115 + 90*depth  
+**Prerequisite:** All previous futility phases must pass
+
+#### Implementation:
+```cpp
+// File: src/search/negamax.cpp
+// Final adjustment:
+int futilityMargin = 115 + 90 * depth;  // Match Laser exactly
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Final futility tuning to match Laser formula
+
+Adjust futility margins to 115+90*depth, matching Laser's proven
+formula. This completes the futility pruning implementation.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[0, 5]` (expect good improvement)
+- Base: Phase 2.3 commit
+- Expected: Optimal balance of pruning and accuracy
+
+**STOP - Phase 2 Complete - Validate total improvement vs Phase 1.5**
+
+---
+
+### Phase 2.5: Add UCI Options for Future Tuning
+**Change:** Expose futility parameters via UCI for SPSA tuning  
+**Prerequisite:** Core futility implementation working
 
 #### Implementation:
 ```cpp
 // File: src/uci/uci.cpp
 // Add futility options
 std::cout << "option name FutilityPruning type check default true" << std::endl;
-std::cout << "option name FutilityMarginBase type spin default 100 min 50 max 200" << std::endl;
-std::cout << "option name FutilityMarginDepth type spin default 80 min 50 max 150" << std::endl;
+std::cout << "option name FutilityMarginBase type spin default 115 min 50 max 200" << std::endl;
+std::cout << "option name FutilityMarginDepth type spin default 90 min 50 max 150" << std::endl;
 
 // Add to SearchLimits structure
 bool useFutility = true;
-int futilityBase = 100;
-int futilityDepthMultiplier = 80;
+int futilityBase = 115;  // Laser's value
+int futilityDepthMultiplier = 90;  // Laser's value
 ```
 
-### Phase 2.4: Testing and Tuning
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "feat: Add UCI options for futility pruning parameters
+
+Expose futility pruning parameters via UCI for future SPSA tuning.
+Default values match Laser's proven formula.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- No SPRT needed (UCI options only)
+- Verify options work via UCI interface
+
+---
+
+## Phase 2 Validation Suite
 
 #### Test Positions:
 ```
