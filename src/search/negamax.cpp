@@ -529,6 +529,34 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
+        // Phase 2.1: Basic Futility Pruning (Conservative)
+        // Prune quiet moves that are unlikely to improve position
+        if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
+            && !isCapture(move) && !isPromotion(move)) {
+            
+            // Get static evaluation (use cached if available)
+            eval::Score staticEval = eval::Score::zero();
+            if (ply > 0) {
+                int cachedEval = searchInfo.getStackEntry(ply).staticEval;
+                if (cachedEval != 0) {
+                    staticEval = eval::Score(cachedEval);
+                }
+            }
+            
+            if (staticEval == eval::Score::zero()) {
+                staticEval = board.evaluate();
+                searchInfo.setStaticEval(ply, staticEval);
+            }
+            
+            // Very conservative margin to start (more conservative than Laser's 115 + 90*depth)
+            int futilityMargin = 150 + 60 * depth;
+            
+            if (staticEval + eval::Score(futilityMargin) <= alpha) {
+                info.futilityPruned++;
+                continue;  // Skip this move
+            }
+        }
+        
         // Singular Extension: DISABLED - Implementation needs redesign
         // The current implementation using excluded moves doesn't match how
         // successful engines (Laser, Stockfish) implement it. They iterate

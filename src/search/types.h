@@ -241,6 +241,9 @@ struct SearchData {
         }
     } counterMoveStats;
     
+    // Phase 2.1: Futility pruning statistics
+    uint64_t futilityPruned = 0;        // Positions pruned by futility pruning
+    
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     
@@ -326,6 +329,7 @@ struct SearchData {
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
+        futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         killers.clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations
