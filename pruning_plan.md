@@ -26,17 +26,24 @@
   - Commit: `b4e547b`
   - Result: Neutral (+0.71 Elo) as expected - safety feature
   - Extends verification to mid-depth searches
-- **Phase 1.5b:** ⏳ TESTING - Deeper Verification (depth - R instead of depth - R - 1)
+- **Phase 1.5b:** ✅ COMPLETE - Deeper Verification (depth - R instead of depth - R - 1)
   - Commit: `617e04f`
   - Result: +15.35 Elo after 2356 games (very promising!)
   - Aligns with Stockfish/Laser implementations
 
+### ✅ Completed Phases (Phase 2)
+- **Phase 2.1:** ✅ COMPLETE - Basic Futility Pruning (Conservative)
+  - Commit: `10d1fbb`
+  - Result: **+37.63 ± 13.50 Elo** (HUGE SUCCESS!)
+  - Clean implementation without problematic caching
+  - Conservative margins: 150 + 60*depth
+
 ### 🔄 Next Phase
-**Phase 2.1:** Basic Futility Pruning Implementation (on hold pending test results)
+**Phase 2.2:** Extend Futility Pruning to Depth 6 (in progress)
 
 ### 📊 Overall Status
-- **Phase 1:** 4/6 sub-phases complete (+32 Elo combined if all pass)
-- **Phase 2:** Ready to start (Futility Pruning - major missing feature)
+- **Phase 1:** 5/6 sub-phases complete (~47 Elo combined)
+- **Phase 2:** 1/5 complete (+37.63 Elo from futility pruning!)
 - **Phase 3:** Not started (Move Count Pruning)
 - **Phase 4:** Not started (Razoring)
 
@@ -60,10 +67,10 @@ This plan provides a systematic approach to fix pruning issues through conservat
 | 1.4 | - | Null verification depth≥12 | `[-2, 2]` | ✅ **DONE +5.30 Elo** |
 | 1.5 | - | Null verification depth≥10 | `[-1, 3]` | ✅ **DONE +0.71 Elo** |
 | 1.5b | - | Deeper verification (depth-R) | `[0, 5]` | ⏳ **Testing +15.35 Elo** |
-| **Phase 2** | 5 | Futility pruning implementation | Yes - Each tested | 10-12 hours |
-| 2.1 | - | Basic futility (conservative) | `[0, 5]` | 2-3 hours |
-| 2.2 | - | Tune margins | `[0, 3]` | 2 hours |
-| 2.3 | - | Extend to depth 6 | `[0, 3]` | 2 hours |
+| **Phase 2** | 5 | Futility pruning implementation | Yes - Each tested | **IN PROGRESS** |
+| 2.1 | - | Basic futility (conservative) | `[0, 5]` | ✅ **DONE +37.63 Elo** |
+| 2.2 | - | Extend to depth 6 | `[0, 3]` | ⏳ In Progress |
+| 2.3 | - | Tune margins | `[0, 3]` | 2 hours |
 | 2.4 | - | Final tuning to Laser | `[0, 5]` | 2 hours |
 | 2.5 | - | UCI options | No SPRT | 1 hour |
 | **Phase 3** | 3 | Move count pruning | Yes - Each tested | 6-8 hours |
@@ -1175,6 +1182,13 @@ echo -e "position fen 8/8/8/8/8/8/8/8 w - - 0 1\\ngo depth 10" | ./seajay
 ---
 
 ## Lessons Learned So Far
+
+### Phase 2.1 Initial Failures & Recovery
+- **Initial Attempts:** Two catastrophic failures (-494 and -544 Elo)
+- **Root Cause:** Problematic cached static eval with ambiguous 0 value
+- **Solution:** Complete rebuild with fresh evaluation every time
+- **Result:** Clean implementation achieved +37.63 Elo!
+- **Lesson:** Caching can introduce subtle bugs; sometimes simpler is better
 
 ### Phase 1.2b Failure
 - **Issue:** Removing material balance check caused catastrophic -1107 Elo loss

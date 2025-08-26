@@ -529,10 +529,10 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Phase 2.1: Basic Futility Pruning (Conservative) - CLEAN IMPLEMENTATION
+        // Phase 2.2: Futility Pruning - Extended to Depth 6
         // Only prune quiet moves that are unlikely to improve position
-        // Following Laser's pattern more closely
-        if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
+        // Following Laser's pattern (they use depth <= 6)
+        if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && moveCount > 1
             && !isCapture(move) && !isPromotion(move)) {
             
             // Always get fresh evaluation - no caching issues
