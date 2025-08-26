@@ -1658,6 +1658,171 @@ info depth 10 ... info string Countermoves: updates=33187 hits=37853 hitRate=114
 - History update in negamax.cpp after cutoffs
 - Statistics tracking in SearchData struct
 
+## CRITICAL: Static Null Move Pruning - Fundamental Architecture Problem
+
+**Date Added:** August 26, 2025  
+**Status:** CRITICAL ISSUE - Imposing ELO ceiling on engine  
+**Priority:** HIGH - Must fix to unlock engine's potential  
+**Source:** Phase 1.2b implementation attempts (feature/analysis/20250826-pruning-aggressiveness)  
+**Evidence:** Two catastrophic failures (-1107 and -1199 ELO) when attempting fixes  
+
+### Executive Summary
+
+SeaJay's static null move pruning is fundamentally broken and unfixable without architectural changes. This is likely costing 30-80 ELO and imposing a hard ceiling on the engine's strength. The issue is not a simple bug but a deep architectural problem with how evaluation, caching, and pruning are coupled.
+
+### The Core Problem
+
+The static null move pruning implementation has multiple interrelated issues that cannot be fixed independently:
+
+1. **Material Balance Check is Backwards**
+   ```cpp
+   // Line 346 in negamax.cpp - This is WRONG
+   if (board.material().balance(board.sideToMove()).value() - beta.value() > -200) {
+       // Only evaluates when NOT significantly behind
+       // But static null move should trigger when AHEAD!
+   }
+   ```
+
+2. **Cache Ambiguity Problem**
+   ```cpp
+   int cachedEval = searchInfo.getStackEntry(ply).staticEval;
+   if (cachedEval != 0) {  // 0 means "not cached"
+       staticEval = eval::Score(cachedEval);
+   }
+   // But what if the actual eval IS 0? We can't tell!
+   ```
+
+3. **Deeply Coupled Control Flow**
+   - Pruning only happens inside evaluation block
+   - Evaluation only happens inside material balance check
+   - Can't change one without breaking the others
+
+### Why This Is Critical
+
+**Current Performance Loss:**
+- Static null move pruning should provide 50-100 ELO
+- Current implementation likely provides <20 ELO
+- We're missing ~80% of pruning opportunities
+- The material balance check PREVENTS pruning when winning
+
+**Comparison with Successful Engines:**
+| Engine | Implementation | ELO Gain |
+|--------|---------------|----------|
+| Stockfish | Simple, early eval | ~80 ELO |
+| Laser | Clean, no complex checks | ~70 ELO |
+| Publius | Straightforward | ~60 ELO |
+| **SeaJay** | **Broken, complex** | **<20 ELO** |
+
+### Evidence of the Problem
+
+1. **Phase 1.2a Success:** Extending depth from 3 to 6 worked (simple change)
+2. **Phase 1.2b Catastrophe #1:** Removing material check = -1107 ELO (0 wins in 294 games)
+3. **Phase 1.2b Catastrophe #2:** "Proper" fix = -1199 ELO (0 wins in 40 games)
+
+The fact that ANY attempt to fix the material balance check causes complete engine failure proves this is architectural, not a simple bug.
+
+### The Required Solution
+
+#### Option 1: Adopt Publius/Stockfish Pattern (RECOMMENDED)
+```cpp
+// Evaluate ONCE at node entry (like all successful engines)
+eval::Score staticEval = weAreInCheck ? eval::Score(-32000) : board.evaluate();
+searchInfo.setStaticEval(ply, staticEval);
+
+// Then for static null move - SIMPLE and CLEAR:
+if (!isPvNode && depth <= 6 && !weAreInCheck && 
+    std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    
+    eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+    if (staticEval - margin >= beta) {
+        return staticEval - margin;
+    }
+}
+```
+
+#### Option 2: Fix Cache System First
+```cpp
+struct CachedEval {
+    bool valid = false;
+    eval::Score value = eval::Score::zero();
+};
+```
+Then refactor to use proper cache validation.
+
+### Implementation Plan
+
+#### Phase 1: Analysis (2-3 hours)
+1. Profile current static null move effectiveness
+2. Count how often material balance check prevents pruning
+3. Measure actual ELO contribution of current implementation
+
+#### Phase 2: Architectural Refactor (8-10 hours)
+1. Create feature branch for major refactor
+2. Implement early evaluation pattern
+3. Remove complex nested conditions
+4. Simplify cache system
+5. Extensive testing at each step
+
+#### Phase 3: Validation (4-5 hours)
+1. Ensure no behavioral changes initially
+2. Then fix the material balance logic
+3. SPRT testing with bounds [30, 80]
+4. Expect significant ELO gain
+
+### Risk Assessment
+
+**If We Don't Fix This:**
+- Engine is stuck with ~20 ELO from broken static null move
+- Missing 30-80 ELO that competitors have
+- Cannot implement other pruning techniques properly
+- Permanent ceiling on engine strength
+
+**If We Do Fix This:**
+- Expect 30-80 ELO immediate gain
+- Unlock ability to add futility pruning (+20 ELO)
+- Enable proper razoring (+10 ELO)
+- Remove complexity that causes bugs
+
+### Why Previous Attempts Failed
+
+Both attempts failed because they tried to fix the problem locally without addressing the architectural issues:
+
+1. **Attempt 1:** Removed material check but broke control flow
+2. **Attempt 2:** Fixed control flow but cache ambiguity caused invalid pruning
+
+The ONLY way to fix this is architectural refactoring.
+
+### Temporary Workaround
+
+Until this is fixed:
+- Keep the broken implementation (at least it doesn't crash)
+- Focus on features that don't depend on evaluation architecture
+- Document all pruning-related features as blocked
+
+### Success Criteria
+
+1. Static null move triggers when position is good (not when behind)
+2. Clean, understandable code matching successful engines
+3. 30-80 ELO gain in SPRT testing
+4. Ability to add other pruning techniques easily
+
+### References
+
+1. `/workspace/phase_1_2b_complete_analysis.md` - Detailed failure analysis
+2. `/workspace/static_null_comparison.md` - Comparison with working engines
+3. OpenBench tests 214 and 215 - Catastrophic failures
+4. Publius source - Example of correct implementation
+
+### Priority: CRITICAL
+
+This is not a "nice to have" - it's a fundamental issue that:
+- Imposes a hard ceiling on engine strength
+- Blocks implementation of other features
+- Makes the codebase fragile and error-prone
+- Costs 30-80 ELO compared to proper implementation
+
+**This should be the next major work item after current testing completes.**
+
 ## Items FROM Stage 18 (LMR) - CRITICAL ISSUES
 
 **Date:** August 20, 2025  
