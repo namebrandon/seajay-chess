@@ -176,9 +176,9 @@ SeaJay is free and open-source software. You can redistribute it and/or modify i
 ## Acknowledgments
 
 - The chess programming community for extensive documentation and resources, especially the [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page).
-- **Andrew Grant** for the OpenBench framework for testing infrastructure. OpenBench alone has provided a level of rigor and testing history that would've been impossible to achieve without it, it's a truly brilliant project and has been indispensable. Thanks to Andrew for suffering through numerous stupid questions on Discord.
+- **Andrew Grant** for the OpenBench framework for testing infrastructure. OpenBench alone has provided a level of rigor and testing history that would've been impossible to achieve without it, it's a truly brilliant project and has been indispensable. Thanks also to Andrew and company for suffering through numerous basic questions on Discord.
 - UCI protocol designers **Stefan Meyer-Kahlen** and **Rudolf Huber**.
-- Open-source engines - So many to recognize here, I can't underscore enough the impact of having the ability to review examples of "good" for understanding complex (and at times, even simple) concepts. In particular, thanks to the authors of :
+- Open-source engines -  In particular, thanks to the authors of :
   - [Publius](https://github.com/nescitus/publius)
   - [4ku](https://github.com/kz04px/4ku)
   - [stash](https://github.com/mhouppin/stash-bot/tree/9328141bc001913585fb76e6b38efe640eff2701)
@@ -195,7 +195,7 @@ SeaJay is free and open-source software. You can redistribute it and/or modify i
 For questions, suggestions, or discussions about SeaJay and AI-assisted development:
 
 - Open an issue on GitHub
-- Join our discussions in the Issues section
+- Join the discussions in the Issues section
 - Find me on Discord on the Engine Programming or OpenBench servers.
 
 ------
