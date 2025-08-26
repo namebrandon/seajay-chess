@@ -87,7 +87,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
-    std::cout << "option name SEEPruning type combo default off var off var conservative var aggressive" << std::endl;
+    std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;

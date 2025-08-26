@@ -52,7 +52,7 @@ private:
     std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
-    std::string m_seePruning = "off";  // SEE pruning: off, conservative, aggressive
+    std::string m_seePruning = "conservative";  // SEE pruning: off, conservative, aggressive
     
     // Stage 18: Late Move Reductions (LMR) parameters
     bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)
