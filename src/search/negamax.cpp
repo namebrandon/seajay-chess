@@ -555,6 +555,13 @@ eval::Score negamax(Board& board,
         if (!isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
             && !isCapture(move) && !isPromotion(move) && !info.killers.isKiller(ply, move)) {
             
+            // Phase 3.3: Countermove Consideration
+            // Don't prune countermoves - they're often good responses
+            if (prevMove != NO_MOVE && move == info.counterMoves.getCounterMove(prevMove)) {
+                // This is a countermove, don't prune it
+                // Skip the entire move count pruning block
+            } else {
+            
             // CONSERVATIVE depth-based move count limits
             // Starting at depth 3 to avoid shallow tactical issues
             static const int moveCountLimit[9] = {
@@ -595,6 +602,7 @@ eval::Score negamax(Board& board,
                 info.moveCountPruned++;
                 continue;  // Skip this move
             }
+            } // End of else block for countermove check
         }
         
         // Singular Extension: DISABLED - Implementation needs redesign
