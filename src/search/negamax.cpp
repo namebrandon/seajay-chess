@@ -538,8 +538,10 @@ eval::Score negamax(Board& board,
             // Always get fresh evaluation - no caching issues
             eval::Score staticEval = board.evaluate();
             
-            // Conservative margin (more than Laser's 115 + 90*depth)
-            int futilityMargin = 150 + 60 * depth;
+            // Conservative margin with cap to prevent over-pruning at deeper depths
+            // Linear scaling would give 510cp at depth 6 (too much!)
+            // Cap at 350cp (roughly 3.5 pawns) to avoid missing important moves
+            int futilityMargin = std::min(150 + 60 * depth, 350);
             
             // Prune if current position is so bad that even improving by margin won't help
             if (staticEval <= alpha - eval::Score(futilityMargin)) {
