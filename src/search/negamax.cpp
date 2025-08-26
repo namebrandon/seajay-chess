@@ -549,6 +549,54 @@ eval::Score negamax(Board& board,
             }
         }
         
+        // Phase 3.1 CONSERVATIVE: Move Count Pruning (Late Move Pruning)
+        // Only prune at depths 3+ to avoid tactical blindness at shallow depths
+        // Much more conservative limits to avoid over-pruning
+        if (!isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
+            && !isCapture(move) && !isPromotion(move) && !info.killers.isKiller(ply, move)) {
+            
+            // CONSERVATIVE depth-based move count limits
+            // Starting at depth 3 to avoid shallow tactical issues
+            static const int moveCountLimit[9] = {
+                999, // depth 0 (not used)
+                999, // depth 1 (not used - too shallow)
+                999, // depth 2 (not used - too shallow)  
+                16,  // depth 3 - conservative
+                24,  // depth 4 - conservative
+                32,  // depth 5 - conservative
+                40,  // depth 6 - conservative
+                48,  // depth 7 - conservative
+                56   // depth 8 - conservative
+            };
+            
+            // Check if we're improving (compare to previous ply's eval)
+            bool improving = false;
+            if (ply >= 2) {
+                int prevEval = searchInfo.getStackEntry(ply - 2).staticEval;
+                int currEval = searchInfo.getStackEntry(ply).staticEval;
+                if (prevEval != 0 && currEval != 0) {
+                    improving = (currEval > prevEval);
+                }
+            }
+            
+            // Adjust limit based on improvement
+            int limit = moveCountLimit[depth];
+            if (!improving) {
+                limit = (limit * 3) / 4;  // Reduce by 25% if not improving
+            }
+            
+            // History-based adjustment (conservative)
+            int historyScore = info.history.getScore(board.sideToMove(), moveFrom(move), moveTo(move));
+            if (historyScore > 2000) {  // Higher threshold for safety
+                limit += 8;  // More generous bonus
+            }
+            
+            if (moveCount > limit) {
+                info.moveCountPruned++;
+                continue;  // Skip this move
+            }
+        }
+        
         // Singular Extension: DISABLED - Implementation needs redesign
         // The current implementation using excluded moves doesn't match how
         // successful engines (Laser, Stockfish) implement it. They iterate
