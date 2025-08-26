@@ -531,8 +531,9 @@ eval::Score negamax(Board& board,
         
         // Phase 2.1: Basic Futility Pruning (Conservative)
         // Prune quiet moves that are unlikely to improve position
+        // Don't prune moves that give check as they can be tactical
         if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
-            && !isCapture(move) && !isPromotion(move)) {
+            && !isCapture(move) && !isPromotion(move) && !board.givesCheck(move)) {
             
             // Get static evaluation (use cached if available)
             eval::Score staticEval = eval::Score::zero();
