@@ -327,7 +327,7 @@ eval::Score negamax(Board& board,
     
     // Phase A4: Static null move pruning (reverse futility) for shallow depths
     // This is a lightweight check before the more expensive null move search
-    if (!isPvNode && depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
         // Only evaluate if we haven't already
         eval::Score staticEval = eval::Score::zero();
         

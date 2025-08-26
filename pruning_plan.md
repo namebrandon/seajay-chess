@@ -122,36 +122,201 @@ git push origin feature/analysis/20250826-pruning-aggressiveness
 
 ---
 
-### Phase 1.2: Null Move Static Margin - Final Reduction
-**Change:** Reduce from 90cp to 70cp (match Laser)  
-**Prerequisite:** Phase 1.1 SPRT must pass
+### Phase 1.2: [REMOVED - Will be handled via SPSA tuning in Phase 1.6]
+**Note:** The final margin value will be determined through SPSA tuning after other fixes are in place.
+The NullMoveStaticMargin UCI parameter (range 50-300) allows for automated tuning.
+
+**PROCEED DIRECTLY TO Phase 1.2a**
+
+---
+
+### Phase 1.2a: Extend Static Null Move Pruning Depth
+**Change:** Increase static null move pruning from depth <= 3 to depth <= 6  
+**Reference:** Laser uses depth <= 6, most modern engines use 4-7 range  
+**Note:** This is a MORE IMPACTFUL change than margin adjustment
 
 #### Implementation:
 ```cpp
-// File: src/search/negamax.cpp, line ~351
-// After Phase 1.1:
-eval::Score margin = eval::Score(90 * depth);
+// File: src/search/negamax.cpp, line ~330
+// Current:
+if (!isPvNode && depth <= 3 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
 
 // Change to:
-eval::Score margin = eval::Score(70 * depth);  // Match Laser's value
+if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+```
+
+#### Local Validation:
+```bash
+# Test at depths 4-6 where new pruning would trigger
+echo "position fen rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2" | ./bin/seajay
+# Should see reduced nodes at depths 4-6
 ```
 
 #### Commit:
 ```bash
 BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
 git add -A
-git commit -m "fix: Further reduce null move static margin to 70cp
+git commit -m "feat: Extend static null move pruning to depth <= 6
 
-Final adjustment to match Laser's null move margin. This completes
-the null move pruning conservatization.
+Increase static null move (reverse futility) pruning depth limit from 3 to 6,
+matching Laser and other modern engines. This allows pruning at mid-depths
+when position is significantly above beta.
 
 bench $BENCH"
 git push
 ```
 
 #### SPRT Validation:
-- SPRT Bounds: `[-2, 3]` (should be neutral or slightly positive after 1.1)
-- Base: Phase 1.1 commit
+- SPRT Bounds: `[0, 5]` (should be positive - more pruning opportunities)
+- Base: Phase 1.2 commit
+- Expected: 5-10% node reduction with minimal tactical impact
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.2b**
+
+---
+
+### Phase 1.2b: Fix Static Null Move Material Balance Check
+**Change:** Remove or invert the material balance pre-check that prevents pruning  
+**Reference:** See `/workspace/static_null_comparison.md` for detailed analysis  
+**Issue:** Current check only allows pruning when NOT behind, but should trigger when AHEAD
+
+#### Current Problem:
+```cpp
+// Line 346: This logic seems backwards!
+if (board.material().balance(board.sideToMove()).value() - beta.value() > -200) {
+    // Only evaluates if material balance - beta > -200
+    // This PREVENTS pruning when we're ahead!
+}
+```
+
+#### Implementation Option A - Remove the check entirely:
+```cpp
+// File: src/search/negamax.cpp, lines 343-358
+// Remove the material balance check completely
+if (staticEval == eval::Score::zero()) {
+    staticEval = board.evaluate();
+    searchInfo.setStaticEval(ply, staticEval);
+}
+
+// Margin based on depth (tunable)
+eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+
+if (staticEval - margin >= beta) {
+    info.nullMoveStats.staticCutoffs++;
+    return staticEval - margin;
+}
+```
+
+#### Implementation Option B - Invert the logic:
+```cpp
+// Only prune when we're materially ahead or equal
+if (board.material().balance(board.sideToMove()).value() >= 0) {
+    // Now we prune when ahead, which makes sense
+}
+```
+
+#### Local Validation:
+```bash
+# Test position where we're materially ahead
+echo "position fen r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4
+go depth 8" | ./bin/seajay 2>/dev/null | grep "info depth 8"
+# Should see fewer nodes with the fix
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "fix: Remove restrictive material balance check in static null move
+
+The material balance pre-check was preventing static null move pruning
+in positions where we're ahead. Static null move should trigger when
+we can afford to pass, not when we're behind.
+
+Reference: static_null_comparison.md shows Publius and Laser don't use
+this check.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[0, 5]` (should enable more pruning)
+- Base: Phase 1.2a commit
+- Expected: 5-10% node reduction when ahead materially
+
+**STOP - Wait for SPRT completion before proceeding to Phase 1.2c**
+
+---
+
+### Phase 1.2c: Simplify Static Null Move Implementation
+**Change:** Remove complex caching logic and simplify to match Publius/Laser style  
+**Reference:** See `/workspace/static_null_comparison.md` - Publius uses simplest approach  
+**Goal:** Reduce overhead and make pruning more predictable
+
+#### Current Complex Implementation:
+```cpp
+// Lines 335-358: Complex caching and multiple checks
+if (ply > 0) {
+    int cachedEval = searchInfo.getStackEntry(ply).staticEval;
+    if (cachedEval != 0) {
+        staticEval = eval::Score(cachedEval);
+    }
+}
+// ... more complex logic
+```
+
+#### New Simplified Implementation (Publius-style):
+```cpp
+// File: src/search/negamax.cpp, replace lines 330-359
+// Simple static null move pruning (matches Publius/Laser style)
+if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck 
+    && std::abs(beta.value()) < MATE_BOUND - MAX_PLY
+    && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD) {
+    
+    eval::Score staticEval = board.evaluate();
+    eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+    
+    if (staticEval - margin >= beta) {
+        info.nullMoveStats.staticCutoffs++;
+        return staticEval - margin;
+    }
+}
+```
+
+#### Benefits:
+1. **Cleaner code** - easier to understand and maintain
+2. **Less overhead** - no complex caching logic
+3. **More predictable** - always evaluates when conditions met
+4. **Matches successful engines** - Publius gained 14 Elo with simple version
+
+#### Local Validation:
+```bash
+# Compare node counts and time
+echo "position startpos
+go depth 12" | ./bin/seajay 2>/dev/null | grep "info depth 12"
+# Should see similar nodes but potentially faster nps
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "refactor: Simplify static null move implementation
+
+Remove complex caching logic and simplify to match Publius/Laser style.
+This reduces overhead and makes the pruning more predictable.
+
+Publius gained 14 Elo with this simple approach.
+
+bench $BENCH"
+git push
+```
+
+#### SPRT Validation:
+- SPRT Bounds: `[-2, 3]` (refactor, should be neutral)
+- Base: Phase 1.2b commit
+- Expected: Neutral Elo, potentially better nps
 
 **STOP - Wait for SPRT completion before proceeding to Phase 1.3**
 
@@ -302,7 +467,82 @@ git push
 - Base: Phase 1.4 commit
 - Expected: Slightly fewer nodes but better tactical accuracy
 
-**STOP - Phase 1 Complete - Proceed to Phase 2 only after all sub-phases pass SPRT**
+**STOP - Wait for SPRT completion before proceeding to Phase 1.6**
+
+---
+
+### Phase 1.6: SPSA Tuning of NullMoveStaticMargin
+**Change:** Use SPSA to find optimal null move static margin value  
+**Prerequisite:** All other Phase 1 changes must be complete and tested  
+**Note:** This replaces the manual Phase 1.2 (70cp adjustment)
+
+#### Current State After Phase 1:
+- Margin set to 90cp (reduced from 120cp)
+- Depth extended to 6 (from 3)
+- Material check fixed/removed
+- Implementation simplified
+- Verification search added
+
+#### SPSA Configuration:
+```
+Parameter: NullMoveStaticMargin
+Current Value: 90
+Range: [50, 200]  # Conservative range for safety
+Initial Step: 10
+Games: 20000+
+```
+
+#### OpenBench SPSA Setup:
+1. Ensure all Phase 1.1-1.5 changes are merged
+2. Configure SPSA test:
+   - Base: Current branch with margin=90
+   - Parameter: `NullMoveStaticMargin`
+   - Range: `[50, 200]`
+   - Focus on tactical test positions if possible
+
+#### Expected Outcome:
+- **Laser uses 70cp** - we may converge near this
+- **Publius uses 135cp** - but they have different conditions
+- **Optimal for SeaJay:** Likely 60-90cp range given our safety features
+
+#### Validation:
+- Monitor tactical performance during tuning
+- Ensure blunder rate doesn't increase
+- Check node count changes
+- Verify depth isn't negatively impacted
+
+#### Final Implementation:
+```bash
+# After SPSA completes, update default value
+# File: src/uci/uci.h, line 66
+int m_nullMoveStaticMargin = [SPSA_RESULT];  // SPSA-tuned value
+
+# File: src/search/types.h, line 73  
+int nullMoveStaticMargin = [SPSA_RESULT];   // SPSA-tuned value
+
+# Update UCI option default
+# File: src/uci/uci.cpp, line 101
+std::cout << "option name NullMoveStaticMargin type spin default [SPSA_RESULT] min 50 max 300" << std::endl;
+```
+
+#### Commit:
+```bash
+BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | sed 's/.*complete: \([0-9]*\) nodes.*/\1/')
+git add -A
+git commit -m "tune: Set NullMoveStaticMargin to SPSA-optimized value
+
+After SPSA tuning with [X] games, optimal value determined to be [Y]cp.
+This balances tactical safety with pruning effectiveness.
+
+Previous: 90cp (manually set)
+Optimized: [Y]cp (SPSA result)
+Comparison: Laser=70cp, Publius=135cp
+
+bench $BENCH"
+git push
+```
+
+**Phase 1 COMPLETE after SPSA tuning - Proceed to Phase 2**
 
 ---
 
