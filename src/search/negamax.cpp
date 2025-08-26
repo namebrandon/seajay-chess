@@ -405,8 +405,8 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Phase 1.4: Add verification search for very deep nodes
-            if (depth >= 12) {  // Start conservative at depth 12
+            // Phase 1.5: Verification search at depth >= 10 (matching Laser)
+            if (depth >= 10) {  // Lowered from 12 to match Laser's threshold
                 // Verification search at reduced depth
                 eval::Score verifyScore = negamax(
                     board,

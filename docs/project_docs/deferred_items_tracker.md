@@ -1042,6 +1042,120 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-march=x86-64 -mpopcnt -msse
 
 ---
 
+## UCI Parameter Tuning - SPSA Optimization Opportunities
+
+**Date Added:** August 26, 2025  
+**Status:** DEFERRED - Multiple tuning opportunities identified  
+**Priority:** MEDIUM - Significant ELO gains possible through tuning  
+
+### Parameters Ready for SPSA Tuning:
+
+#### 1. Aspiration Window Settings (HIGH POTENTIAL)
+**Current UCI Options:**
+- `AspirationWindow`: Default 16cp (range: 5-50)
+- `AspirationMaxAttempts`: Default 5 (range: 3-10)
+- `AspirationGrowth`: Default "exponential" (options: linear, moderate, exponential, adaptive)
+
+**Tuning Opportunities:**
+- **Initial window size:** Current 16cp is very narrow (Stockfish-style), but may cause excessive re-searches
+- **Wider windows (20-30cp):** Better for tactical positions, fewer re-searches
+- **Narrower windows (10-15cp):** More aggressive pruning, deeper searches
+- **Growth mode tuning:** Linear vs exponential growth patterns
+- **Depth-based adjustment:** Different window sizes for different depths
+
+**Expected Impact:** 10-30 ELO from optimal aspiration settings
+**Testing Strategy:** SPSA with 20,000+ games, monitor re-search rates
+
+#### 2. Null Move Parameters
+**Current UCI Options:**
+- `NullMoveReduction`: Default 3 (range: 2-4)
+- `NullMoveStaticMargin`: Default 120 (range: 50-300)
+- `UseNullMove`: Default true
+
+**Note:** Static margin tuning already planned in Phase 1.6 of pruning optimization
+
+#### 3. LMR Parameters
+**Current UCI Options:**
+- `LMRMinDepth`: Default 3
+- `LMRMinMoveNumber`: Default 6
+- `LMRBaseReduction`: Default 1
+- `LMRDepthFactor`: Default 3
+
+**Expected Impact:** 5-15 ELO from optimal reduction formula
+
+#### 4. SEE Pruning Thresholds
+**Current UCI Options:**
+- `SEEPruning`: Default "off" (should test "conservative" vs "aggressive")
+- Conservative threshold: -100cp
+- Aggressive threshold: -75cp
+
+**Note:** Currently disabled by default, but tuning thresholds could make it viable
+
+#### 5. Quiescence Search Parameters
+**Current UCI Options:**
+- `DeltaPruningMargin`: Fixed at 900cp (could be tunable)
+- `QSearchNodeLimit`: Default 0 (unlimited)
+
+#### 6. Move Ordering Bonuses
+**Current UCI Options:**
+- `KillerMoveBonus`: Default 8000 (range: 0-20000)
+- `CountermoveBonus`: Default 8000 (range: 0-20000)
+
+#### 7. Time Management Parameters
+**Current UCI Options:**
+- `StabilityThreshold`: Default 6 (range: 3-12)
+- `OpeningStability`: Default 4 (range: 2-8)
+- `MiddlegameStability`: Default 6 (range: 3-10)
+- `EndgameStability`: Default 8 (range: 4-12)
+
+### General SPSA Tuning Strategy:
+
+1. **Batch Related Parameters:** Tune aspiration settings together
+2. **Use OpenBench SPSA:** Built-in support for parameter tuning
+3. **Start Conservative:** Begin with small ranges around current values
+4. **Monitor Side Effects:** Watch for tactical blindness or time losses
+5. **Phase-Specific Tuning:** Different settings for different game phases
+
+### Implementation Priority:
+
+**Phase 1 (Immediate after current work):**
+- Aspiration window settings (high impact, easy to test)
+- Null move static margin (already planned)
+
+**Phase 2 (After initial tuning):**
+- LMR parameters (once move ordering is stable)
+- Move ordering bonuses (killer/countermove values)
+
+**Phase 3 (Future optimization):**
+- SEE thresholds (if SEE becomes viable)
+- Time management parameters
+- Quiescence margins
+
+### Expected Total Gain from Tuning:
+- Conservative estimate: 30-50 ELO
+- Optimistic estimate: 50-80 ELO
+- Depends heavily on current parameter quality
+
+### Testing Protocol:
+```bash
+# Example OpenBench SPSA configuration
+Parameter: AspirationWindow
+Start: 16
+Min: 8
+Max: 32
+Step: 2
+Games: 20000
+Time Control: 10+0.1
+```
+
+### Notes:
+- Some parameters interact (e.g., aspiration width affects null move effectiveness)
+- Tuning should be done iteratively, not all at once
+- Re-tune periodically as engine strength increases
+- Document optimal values for different time controls
+
+---
+
 ## Items DEFERRED FROM Stage 14 (Quiescence Search) TO Future Stages
 
 **Date:** August 15, 2025  
