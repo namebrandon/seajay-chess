@@ -1424,6 +1424,240 @@ int interpolate(ScorePair score, int phase) {
 - Consider after core search improvements complete
 - Good candidate for Phase 4+ when fine-tuning evaluation
 
+## Move Ordering Enhancements - Detailed Analysis
+
+**Date Added:** August 25, 2025  
+**Status:** ANALYZED - Multiple improvements identified  
+**Branch:** feature/analysis/20250825-move-ordering  
+**Analysis Document:** /workspace/move_ordering_analysis.md  
+
+### Current Move Ordering Efficiency Problem
+
+**Measured Performance:**
+- Depth 6: 86.0% efficiency
+- Depth 10: 75.9% efficiency (TARGET: >85%)
+- **Degradation:** -10.1 percentage points from shallow to deep depths
+- **Impact:** ~30% wasted nodes, causing 1-2 ply depth loss
+
+### Identified Missing Features and Issues
+
+#### 1. Piece-Type History (MISSING - HIGH PRIORITY)
+
+**Current Implementation:**
+- Uses only from-square and to-square: `history[side][from][to]`
+- Total entries: 2 × 64 × 64 = 8,192 entries
+- Cannot distinguish between different pieces moving to same squares
+
+**Proposed Enhancement:**
+```cpp
+class PieceToHistory {
+    // Include piece type for better discrimination
+    int16_t history[NUM_COLORS][NUM_PIECE_TYPES][64][64];
+    // Or more memory-efficient: [color][piece_type][to_square]
+    int16_t history[NUM_COLORS][NUM_PIECE_TYPES][64];
+    
+    void update(Color side, PieceType piece, Square from, Square to, int bonus) {
+        history[side][piece][from][to] += bonus;
+        // Age if needed
+    }
+};
+```
+
+**Benefits:**
+- Better discrimination between moves (Knight to e5 vs Bishop to e5)
+- More accurate history tracking
+- Reduced collision in history table
+
+**Implementation Complexity:** Medium
+- Requires modifying history table structure
+- Update all history access points
+- Increase memory usage (6× current for full, 1.5× for compact)
+
+**Expected Gain:** +10-15 ELO
+
+#### 2. Continuation History (MISSING - MEDIUM PRIORITY)
+
+**Description:** Track move pair sequences that work well together
+
+**Current State:** Not implemented at all
+
+**Proposed Implementation:**
+```cpp
+class ContinuationHistory {
+    // Track sequences: "After move A, move B is often good"
+    // Indexed by [prev_piece][prev_to][curr_piece][curr_to]
+    int16_t history[NUM_PIECE_TYPES][64][NUM_PIECE_TYPES][64];
+    
+    // Alternative compact version (1-ply continuation)
+    int16_t history[NUM_PIECE_TYPES][64][64];  // [prev_piece][prev_to][curr_to]
+    
+    void update(Move prevMove, Move currMove, int bonus) {
+        PieceType prevPiece = getPieceType(prevMove);
+        Square prevTo = moveTo(prevMove);
+        PieceType currPiece = getPieceType(currMove);
+        Square currTo = moveTo(currMove);
+        
+        history[prevPiece][prevTo][currPiece][currTo] += bonus;
+    }
+};
+```
+
+**Use Cases:**
+- "After Nf3, Bg5 is often strong"
+- "After e4, d4 follows well"
+- Captures context from previous move
+
+**Memory Requirements:**
+- Full version: ~1.5MB (6×64×6×64×2 bytes)
+- Compact version: ~48KB (6×64×64×2 bytes)
+
+**Implementation Complexity:** High
+- Requires tracking move sequences
+- Complex aging mechanism needed
+- Integration with existing move ordering
+
+**Expected Gain:** +15-20 ELO
+
+#### 3. Capture History (MISSING - LOW PRIORITY)
+
+**Description:** Separate history table specifically for captures
+
+**Current State:** Captures use MVV-LVA only, no historical learning
+
+**Proposed Implementation:**
+```cpp
+class CaptureHistory {
+    // Track which specific captures work well
+    // Indexed by [attacker_type][victim_type][to_square]
+    int16_t history[NUM_PIECE_TYPES][NUM_PIECE_TYPES][64];
+    
+    void updateCapture(PieceType attacker, PieceType victim, 
+                       Square to, int bonus) {
+        history[attacker][victim][to] += bonus;
+        // Separate aging from quiet history
+    }
+    
+    int getScore(PieceType attacker, PieceType victim, Square to) {
+        return history[attacker][victim][to];
+    }
+};
+```
+
+**Benefits:**
+- Learns which captures are actually good beyond material value
+- Helps order equal-value captures (e.g., NxB vs BxN)
+- Can learn bad capture patterns (e.g., QxP defended by pawn)
+
+**Memory Requirements:** ~24KB (6×6×64×2 bytes)
+
+**Implementation Complexity:** Low
+- Simple addition to existing capture ordering
+- Easy to integrate with MVV-LVA
+
+**Expected Gain:** +3-5 ELO
+
+#### 4. Statistical Tracking Bug (CONFIRMED BUG)
+
+**Issue:** Countermove hit rate shows >100% (e.g., 114.1% at depth 10)
+
+**Evidence from testing:**
+```
+info depth 10 ... info string Countermoves: updates=33187 hits=37853 hitRate=114.1%
+```
+
+**Root Cause Analysis:**
+- Hit count (37,853) exceeds update count (33,187)
+- Suggests double-counting or incorrect increment location
+- May be counting hits in quiescence but not updates
+
+**Likely Bug Location:**
+```cpp
+// In negamax.cpp or SearchData struct
+// Probably incrementing hits multiple times per node
+// Or not incrementing updates in all code paths
+```
+
+**Impact:**
+- Incorrect statistics mislead optimization efforts
+- Cannot trust countermove effectiveness metrics
+- May hide actual performance issues
+
+**Fix Required:**
+1. Audit all countermove stat increment locations
+2. Ensure updates++ happens exactly once per countermove update
+3. Ensure hits++ happens exactly once per countermove hit
+4. Add assertion: hits <= updates
+
+**Priority:** HIGH - Need accurate statistics for optimization
+
+### Implementation Priority Order
+
+#### Phase 1: Fix Bugs (Immediate)
+1. Fix countermove statistics tracking
+2. Verify all move ordering statistics are accurate
+
+#### Phase 2: Piece-Type History (Next)
+1. Implement piece-to history
+2. Test memory vs discrimination tradeoff
+3. Validate with SPRT
+
+#### Phase 3: Continuation History (Later)
+1. Start with 1-ply continuation (simpler)
+2. Test memory impact
+3. Consider 2-ply if successful
+
+#### Phase 4: Capture History (Optional)
+1. Only if profiling shows bad capture ordering
+2. Low priority due to small expected gain
+
+### Testing Strategy
+
+**For each enhancement:**
+1. Implement in isolation on separate branch
+2. Measure efficiency improvement at depths 6-12
+3. Run SPRT with bounds [0.00, 5.00]
+4. Check for tactical blindness
+5. Monitor memory usage and NPS impact
+
+**Success Criteria:**
+- Move ordering efficiency >85% at depth 10
+- No tactical regressions
+- Memory usage acceptable (<10MB total)
+- NPS degradation <5%
+
+### References and Examples
+
+**Stockfish Implementation:**
+- Uses all four types of history
+- Complex aging with multiple tables
+- ~10MB total memory for history tables
+
+**Ethereal Implementation:**
+- Simpler piece-to history
+- No continuation history
+- Still achieves good ordering efficiency
+
+**Our Current Implementation:**
+- Basic from-to history only
+- Aggressive aging (may be too aggressive)
+- No learning from captures
+
+### Notes for Implementation
+
+**Memory Alignment:**
+- Ensure cache-line alignment for hot tables
+- Consider separating read-heavy and write-heavy data
+
+**Aging Strategies:**
+- Current: Divide by 2 when >10% entries near max
+- Consider: Gradual decay each iteration
+- Alternative: Separate aging for different tables
+
+**Integration Points:**
+- Move ordering function in move_ordering.cpp
+- History update in negamax.cpp after cutoffs
+- Statistics tracking in SearchData struct
+
 ## Items FROM Stage 18 (LMR) - CRITICAL ISSUES
 
 **Date:** August 20, 2025  
