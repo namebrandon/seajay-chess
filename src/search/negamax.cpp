@@ -405,12 +405,12 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Phase 1.5: Verification search at depth >= 10 (matching Laser)
+            // Phase 1.5b: Deeper verification search at depth >= 10
             if (depth >= 10) {  // Lowered from 12 to match Laser's threshold
-                // Verification search at reduced depth
+                // Verification search at depth - R (one ply deeper than null move)
                 eval::Score verifyScore = negamax(
                     board,
-                    depth - nullMoveReduction - 1,  // Even shallower
+                    depth - nullMoveReduction,  // depth - R (matches Stockfish/Laser)
                     ply,
                     beta - eval::Score(1),
                     beta,
