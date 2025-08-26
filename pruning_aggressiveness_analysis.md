@@ -78,17 +78,161 @@ From the original game analysis (`seajay_investigation_report.md`), SeaJay shows
 ### Phase 2: Compare to Reference Engines [2 hours]
 
 1. **Study reference engines**
-   - [ ] **Laser:** https://raw.githubusercontent.com/jeffreyan11/laser-chess-engine/refs/heads/master/src/search.cpp
+   - [x] **Laser:** https://raw.githubusercontent.com/jeffreyan11/laser-chess-engine/refs/heads/master/src/search.cpp
    - [ ] **4ku:** https://raw.githubusercontent.com/kz04px/4ku/refs/heads/master/src/main.cpp
    - [ ] **Publius:** https://raw.githubusercontent.com/nescitus/publius/refs/heads/main/src/search.cpp
    - [ ] **Stashbot:** https://raw.githubusercontent.com/mhouppin/stash-bot/9328141bc001913585fb76e6b38efe640eff2701/src/sources/evaluate.c
-   - [ ] Document their pruning parameters
-   - [ ] Compare thresholds and conditions
-   - [ ] Identify major differences
+   - [x] Document Laser pruning parameters (see detailed analysis below)
+   - [x] Compare thresholds and conditions
+   - [x] Identify major differences
 
 2. **Create comparison table**
-   - [ ] SeaJay vs reference parameters
-   - [ ] Highlight aggressive outliers
+   - [x] SeaJay vs Laser parameters (detailed comparison below)
+   - [x] Highlight aggressive outliers (see Critical Findings section)
+
+#### SeaJay vs Laser Pruning Comparison (COMPLETED)
+
+| **Pruning Technique** | **SeaJay** | **Laser** | **Analysis** |
+|----------------------|------------|-----------|---------------|
+| **Null Move Pruning** |
+| Conditions | Not in check, has non-pawn material, no consecutive nulls | Not PV, not in check, depth >= 2, eval >= beta, has non-pawn material | ✅ Similar |
+| Reduction | `R = 2 + (depth >= 6) + (depth >= 12)` (max 4) | `R = 2 + (32*depth + min(eval-beta, 384))/128` | 🔴 **DIFFERENT** - SeaJay simpler |
+| Static Margin | 120cp per depth | 70cp per depth | 🔴 **MORE AGGRESSIVE** - SeaJay 71% higher |
+| Verification | None | At depth >= 10 | 🔴 **MISSING** - Could cause tactical errors |
+| **Futility Pruning** |
+| Implementation | ❌ **NOT IMPLEMENTED** | ✅ Implemented | 🔴 **MAJOR GAP** |
+| Formula | N/A | `staticEval <= alpha - 115 - 90*depth` | Missing 115+90*depth margins |
+| Max Depth | N/A | 6 plies | SeaJay has no futility pruning |
+| **Razoring** |
+| Implementation | ❌ **NOT IMPLEMENTED** | ✅ Implemented | 🔴 **MISSING TECHNIQUE** |
+| Formula | N/A | `staticEval <= alpha - 300` | Missing 300cp razoring |
+| Max Depth | N/A | 2 plies | Could help with shallow tactics |
+| **LMR Parameters** |
+| Formula | `0.5 + log(depth) * log(moves) / 2.25` | `0.5 + log(depth) * log(moves) / 2.1` | ✅ Very similar |
+| Min Depth | 3 | 3 | ✅ Identical |
+| Min Move Number | 6 | 1 (but table gives 0 for moves 1-2) | ✅ Effectively similar |
+| **Move Count Pruning** |
+| Implementation | ❌ **NOT IMPLEMENTED** | ✅ Implemented | 🔴 **MAJOR GAP** |
+| Tables | N/A | Two 13-element arrays by eval improving | Missing systematic late move pruning |
+| Max Depth | N/A | 12 plies | Could reduce nodes significantly |
+| **SEE Pruning (QS)** |
+| Standard | `SEE >= 0` | `SEE >= 0` | ✅ Identical |
+| Aggressive Mode | `SEE >= -75` | N/A (always 0) | 🔴 **MORE AGGRESSIVE** |
+| Futility in QS | `staticEval + 80cp < alpha` | `staticEval + 80cp < alpha` | ✅ Identical |
+| **Additional Techniques** |
+| ProbCut | ❌ **NOT IMPLEMENTED** | ✅ Implemented | 🔴 **MISSING** |
+| History Pruning | ❌ **NOT IMPLEMENTED** | ✅ Implemented (depth <= 2) | 🔴 **MISSING** |
+| Reverse Futility | Partial (static null move) | ✅ Full implementation | 🟡 **INCOMPLETE** |
+
+#### **Critical Findings:**
+
+**🔴 MAJOR GAPS (Likely causing the 20% fewer nodes):**
+1. **No Futility Pruning** - This is standard in all modern engines
+2. **No Move Count Pruning** - Laser prunes moves systematically after 2-79 moves depending on depth
+3. **No Razoring** - Missing shallow-depth pruning technique
+4. **No ProbCut** - Missing capture pruning technique
+5. **No History-based Pruning** - Missing move history pruning
+
+**🔴 AGGRESSIVE SETTINGS (Likely causing tactical errors):**
+1. **Static Null Move Margin**: 120cp vs 70cp (71% more aggressive)
+2. **No Null Move Verification** - Laser verifies at depth >= 10
+3. **SEE Aggressive Mode** - Allows -75cp captures vs Laser's 0cp threshold
+
+#### **Recommended Actions:**
+
+**Priority 1 (Implement Missing Techniques):**
+- Add futility pruning with Laser's parameters: `115 + 90*depth`
+- Add move count pruning with similar tables to Laser
+- Add razoring for depth <= 2 with 300cp margin
+
+**Priority 2 (Conservative Adjustments):**
+- Reduce static null move margin from 120cp to 90cp
+- Add null move verification at depth >= 10
+- Default SEE mode to "conservative" instead of "aggressive"
+
+**Expected Impact:**
+- More nodes searched (closing the 20% gap)
+- Fewer tactical blunders (target: <50 vs current 171)
+- Potential small Elo loss initially, but better tactical play
+
+#### Laser Chess Engine Pruning Analysis (COMPLETED)
+
+**Analyzed from:** https://github.com/jeffreyan11/laser-chess-engine/src/search.cpp
+
+##### 1. Null Move Pruning
+- **Conditions:**
+  - Not a PV node (`!isPVNode`)
+  - Not in check (`!isInCheck`)
+  - Depth >= 2
+  - Static evaluation >= beta (`staticEval >= beta`)
+  - Side has non-pawn material (`b.getNonPawnMaterial(color)`)
+- **Reduction formula:** `R = 2 + (32 * depth + min(staticEval - beta, 384)) / 128`
+- **Verification search:** Performed at depths >= 10 with same reduction
+- **Key insight:** Dynamic reduction based on how far ahead the position is
+
+##### 2. Reverse Futility Pruning (Static Null Move)
+- **Conditions:**
+  - Not a PV node (`!isPVNode`)
+  - Not in check (`!isInCheck`)
+  - Depth <= 6
+  - `staticEval - 70 * depth >= beta`
+  - Side has non-pawn material
+- **Margin:** 70 centipawns per depth level
+- **Returns:** `staticEval` immediately
+
+##### 3. Razoring
+- **Conditions:**
+  - Depth <= 2
+  - `staticEval <= alpha - RAZOR_MARGIN` (300 centipawns)
+- **Implementation:** Quick quiescence search to confirm fail-low
+- **Margin:** Fixed 300 centipawn threshold
+
+##### 4. Futility Pruning (Main Search)
+- **Conditions:**
+  - Move is prunable (quiet, non-hash, not giving check)
+  - Not in check
+  - `pruneDepth <= 6`
+  - `staticEval <= alpha - 115 - 90 * pruneDepth`
+- **Formula:** Base margin 115cp + 90cp per depth level
+- **Special:** Uses `pruneDepth` which is LMR-adjusted depth
+
+##### 5. Late Move Reductions (LMR)
+- **Formula:** `lmrReductions[depth][movesSearched] = (int)(0.5 + log(depth) * log(movesSearched) / 2.1)`
+- **Table:** Pre-computed 64x64 table
+- **Conditions:** Applied to quiet moves at depth >= 3, movesSearched > 1
+- **Adjustments:** Various based on history, killer status, etc.
+
+##### 6. Move Count Pruning (Late Move Pruning)
+- **Conditions:** `depth <= 12` and `movesSearched > LMP_MOVE_COUNTS[evalImproving][depth]`
+- **Tables:** Two arrays based on whether evaluation is improving:
+  ```
+  Not improving: {0, 2, 4,  7, 11, 16, 22, 29, 37, 46,  56,  67,  79}
+  Improving:     {0, 4, 7, 12, 20, 30, 42, 56, 73, 92, 113, 136, 161}
+  ```
+- **PV adjustment:** Add `depth` to threshold for PV nodes
+
+##### 7. SEE Pruning (Main Search)
+- **Two thresholds:**
+  1. `!b.isSEEAbove(color, m, -24 * pruneDepth * pruneDepth)` for depths <= 6
+  2. `!b.isSEEAbove(color, m, -100 * depth)` for depths <= 5
+- **Conditions:** Applied to prunable moves
+
+##### 8. Quiescence SEE Pruning
+- **Standard captures:** Must pass `SEE >= 0`
+- **Futility in QS:** If `staticEval < alpha - 80` and `!SEE > 1`, prune
+- **QS futility margin:** 80 centipawns
+
+##### 9. History-based Pruning
+- **Conditions:** 
+  - Move is prunable
+  - `pruneDepth <= 2`  
+  - Both counter-move and followup history are negative
+- **Implementation:** Prunes moves with consistently bad history
+
+##### 10. ProbCut
+- **Conditions:** Not PV, not in check, depth >= 6, `staticEval >= beta - 100 - 20*depth`
+- **Margin:** `beta + 90`
+- **Searches:** Up to 3 capture moves with shallow search
 
 ### Phase 3: Tactical Test Suite [3 hours]
 
@@ -219,6 +363,55 @@ Total estimate: 16 hours
 1. Local testing with tactical suites
 2. SPRT testing on OpenBench
 3. Human review of results and code changes
+
+## Analysis Summary (August 26, 2025)
+
+### ✅ **Completed:**
+- **Phase 2**: Comprehensive analysis of Laser chess engine pruning mechanisms
+- **Detailed comparison**: SeaJay vs Laser pruning parameters  
+- **Root cause identified**: SeaJay is missing critical pruning techniques that are standard in modern engines
+
+### 🔴 **Key Findings:**
+
+**Primary Issues Causing 20% Fewer Nodes:**
+1. **Missing Futility Pruning** - Standard technique with `115 + 90*depth` margins
+2. **Missing Move Count Pruning** - Systematic late move pruning (saves many nodes) 
+3. **Missing Razoring** - Shallow depth pruning for hopeless positions
+4. **Missing ProbCut** - Capture sequence pruning 
+5. **Missing History-based Pruning** - Prunes moves with poor history
+
+**Aggressive Settings Causing Tactical Errors:**
+1. **Static Null Move Margin**: 120cp vs Laser's 70cp (71% more aggressive)
+2. **No Null Move Verification** - Laser double-checks at depth >= 10  
+3. **Aggressive SEE Thresholds** - Allows losing captures up to 75cp
+
+### 📋 **Immediate Action Items:**
+
+**Priority 1 - Missing Techniques (High Impact):**
+- [ ] Implement futility pruning: `staticEval <= alpha - 115 - 90*depth` for depth <= 6
+- [ ] Implement move count pruning with depth-based move limits 
+- [ ] Add razoring for depth <= 2 with 300cp threshold
+
+**Priority 2 - Conservative Adjustments (Reduce Tactical Errors):**  
+- [ ] Reduce static null move margin from 120cp to 90cp
+- [ ] Add null move verification search at depth >= 10
+- [ ] Change default SEE mode from "aggressive" to "conservative"
+
+### 🎯 **Expected Outcomes:**
+- **Nodes**: Increase by 15-20% (matching peer engines)  
+- **Tactical blunders**: Reduce from 171 to <50 per 29 games
+- **Playing style**: More solid, fewer obvious tactical errors
+- **Elo impact**: Initially small loss, but better tactical reliability
+
+### 📈 **Success Metrics:**
+1. Node count within 10% of Laser at same depth
+2. <50 tactical blunders per 29 games (vs current 171)
+3. SPRT validation showing no significant Elo regression
+4. Improved tactical puzzle solving rate
+
+---
+
+## Original Investigation Plan
 
 ## Next Steps
 

@@ -12,6 +12,8 @@ master_plan.md (THIS DOCUMENT - Top Level)
 │   └── depth_deficit_investigation_plan.md (Deep dive into Issue #1)
 │       ├── depth_deficit_investigation_results.md (Test results)
 │       └── search_extensions_analysis.md (Reference engine comparison)
+├── pruning_aggressiveness_analysis.md (Deep dive into Issue #3)
+│   └── pruning_plan.md (Implementation plan with phases)
 ├── docs/project_docs/deferred_items_tracker.md (Long-term tracking)
 └── Future investigation docs...
 ```
@@ -22,10 +24,12 @@ master_plan.md (THIS DOCUMENT - Top Level)
 1. **Game Analysis** - Identified 3 critical issues from 29 games
 2. **Check Extensions** - Implemented and verified (+28 Elo)
 3. **Initial Depth Investigation** - Root causes identified
+4. **Pruning Analysis** - Comprehensive comparison with Laser engine completed
 
 ### 🔄 In Progress
 1. **Depth Deficit Resolution** - Partially addressed, more work needed
 2. **Search Architecture Issues** - Documented, needs refactoring
+3. **Pruning Improvements** - Analysis complete, implementation planned
 
 ### ❌ Not Started
 1. **Move Ordering Improvements** - 76.8% efficiency needs fixing
@@ -60,11 +64,21 @@ From `seajay_investigation_report.md`, we identified three critical issues:
 - [ ] Consider tactical extensions (pins, forks)
 
 ### Issue #3: Overly Aggressive Pruning [20% fewer nodes]
-**Status:** NOT ADDRESSED
-**Priority:** MEDIUM (after depth deficit)
-- [ ] Review null move pruning parameters
-- [ ] Check futility pruning margins
-- [ ] Validate LMR isn't pruning good moves
+**Status:** ANALYZED - Root causes identified  
+**Document:** `pruning_aggressiveness_analysis.md` & `pruning_plan.md`  
+**Priority:** HIGH (causing tactical blindness)
+
+#### Key Findings:
+- **Missing Techniques:** No futility pruning, move count pruning, razoring
+- **Overly Aggressive:** Null move margin 71% higher than Laser (120cp vs 70cp)
+- **No Safety Checks:** Missing null move verification at high depths
+
+#### Implementation Plan:
+- [ ] **Phase 1:** Add missing futility pruning (biggest impact)
+- [ ] **Phase 2:** Reduce aggressive parameters to conservative values
+- [ ] **Phase 3:** Implement move count pruning
+- [ ] **Phase 4:** Add razoring and advanced techniques
+**Expected Gain:** Reduce blunders from 171 to <50, +15-20% nodes
 
 ---
 
@@ -141,14 +155,15 @@ These require the search refactoring from Phase 2:
 ## Priority Order (What to Do Next)
 
 ### Immediate (This Week):
-1. **Time Management Fix** - Remove 40% rule (2 hours)
-2. **Move Ordering Analysis** - Why only 76.8%? (4 hours)
-3. **LMR Tuning** - Less aggressive (2 hours)
+1. **Pruning Fixes Phase 1** - Reduce aggressive parameters (4 hours)
+2. **Futility Pruning** - Implement missing technique (6 hours)
+3. **Time Management Fix** - Remove 40% rule (2 hours)
 
 ### Short Term (Next 2 Weeks):
-1. **Search Architecture Refactoring** - Unblock advanced features (15 hours)
-2. **Singular Extensions** - Proper implementation (5 hours)
-3. **Move Ordering Fixes** - Reach 85%+ efficiency (5 hours)
+1. **Move Count Pruning** - Implement with depth tables (5 hours)
+2. **Null Move Verification** - Add safety checks (3 hours)
+3. **Move Ordering Analysis** - Why only 76.8%? (4 hours)
+4. **LMR Tuning** - Less aggressive (2 hours)
 
 ### Medium Term (Next Month):
 1. **Complete Depth Deficit Resolution** - Reach 15+ ply consistently
@@ -195,6 +210,8 @@ These require the search refactoring from Phase 2:
 - `depth_deficit_investigation_plan.md` - Deep dive planning
 - `depth_deficit_investigation_results.md` - Test results
 - `search_extensions_analysis.md` - Reference engine comparison
+- `pruning_aggressiveness_analysis.md` - Pruning comparison with Laser
+- `pruning_plan.md` - Detailed implementation plan for pruning fixes
 
 ### Implementation Tracking:
 - `docs/project_docs/deferred_items_tracker.md` - Long-term items
