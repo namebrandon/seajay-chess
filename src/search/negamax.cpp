@@ -529,19 +529,18 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Phase 2.2: Futility Pruning - Extended to Depth 6
-        // Only prune quiet moves that are unlikely to improve position
-        // Following Laser's pattern (they use depth <= 6)
-        if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && moveCount > 1
+        // Phase 2.1 FINAL: Futility Pruning - Optimal at Depth 4
+        // Testing showed depth 4 is optimal for SeaJay's current strength
+        // Attempts to extend to depth 6 caused regressions (see test history)
+        if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
             && !isCapture(move) && !isPromotion(move)) {
             
             // Always get fresh evaluation - no caching issues
             eval::Score staticEval = board.evaluate();
             
-            // Conservative margin with cap to prevent over-pruning at deeper depths
-            // Linear scaling would give 510cp at depth 6 (too much!)
-            // Cap at 350cp (roughly 3.5 pawns) to avoid missing important moves
-            int futilityMargin = std::min(150 + 60 * depth, 350);
+            // Conservative margin that works well at depths 1-4
+            // Testing showed this formula optimal: +37.63 Elo
+            int futilityMargin = 150 + 60 * depth;
             
             // Prune if current position is so bad that even improving by margin won't help
             if (staticEval <= alpha - eval::Score(futilityMargin)) {
