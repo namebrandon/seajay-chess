@@ -65,8 +65,7 @@ public:
         // Use XOR 56 for efficient rank mirroring as per plan
         Square lookupSq = (c == WHITE) ? sq : (sq ^ 56);
         MgEgScore val = s_pstTables[pt][lookupSq];
-        // FIX: Do NOT negate for Black pieces - board.cpp handles the perspective
-        // by subtracting Black piece values from the score
+        // Return raw value - board.cpp handles the perspective
         return val;
     }
     

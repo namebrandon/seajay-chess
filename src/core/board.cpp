@@ -126,11 +126,11 @@ void Board::setPiece(Square s, Piece p) {
             // Update material tracking
             m_material.remove(oldPiece);
             // Update PST score (Stage 9) - remove old piece value
-            // PST values are from white's perspective, negate for black
+            // PST::value returns raw positive values for both colors
             if (oldColor == WHITE) {
                 m_pstScore -= eval::PST::value(oldType, s, WHITE);
             } else {
-                m_pstScore += eval::PST::value(oldType, s, BLACK);  // Removing Black piece adds to White's score
+                m_pstScore += eval::PST::value(oldType, s, BLACK);  // Removing Black piece improves White's score
             }
         }
     }
@@ -147,11 +147,11 @@ void Board::setPiece(Square s, Piece p) {
             // Update material tracking
             m_material.add(p);
             // Update PST score (Stage 9) - add new piece value
-            // PST values are from white's perspective, negate for black
+            // PST::value returns raw positive values for both colors
             if (newColor == WHITE) {
                 m_pstScore += eval::PST::value(newType, s, WHITE);
             } else {
-                m_pstScore -= eval::PST::value(newType, s, BLACK);  // Adding Black piece subtracts from White's score
+                m_pstScore -= eval::PST::value(newType, s, BLACK);  // Adding Black piece worsens White's score
             }
         }
     }
@@ -1373,13 +1373,13 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
             m_pstScore -= eval::PST::value(PAWN, from, WHITE);
             m_pstScore += eval::PST::value(PAWN, to, WHITE);
             // Captured enemy pawn (removing it benefits White)
-            m_pstScore += eval::PST::value(PAWN, capturedSquare, BLACK);  // Removing Black piece adds to White's score
+            m_pstScore += eval::PST::value(PAWN, capturedSquare, BLACK);  // Removing Black piece improves White's score
         } else {
             // Our pawn moved
-            m_pstScore -= eval::PST::value(PAWN, from, BLACK);  // FIX: Remove from old position
-            m_pstScore += eval::PST::value(PAWN, to, BLACK);    // FIX: Add to new position
-            // Captured enemy pawn (removing it benefits Black, hurts White)
-            m_pstScore -= eval::PST::value(PAWN, capturedSquare, WHITE);  // Removing White piece subtracts from White's score
+            m_pstScore += eval::PST::value(PAWN, from, BLACK);  // Removing from old position improves White's score
+            m_pstScore -= eval::PST::value(PAWN, to, BLACK);    // Adding to new position worsens White's score
+            // Captured enemy pawn
+            m_pstScore -= eval::PST::value(PAWN, capturedSquare, WHITE);
         }
         
         m_evalCacheValid = false;
@@ -1431,16 +1431,16 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
             m_pstScore += eval::PST::value(promotedType, to, WHITE);
             // Remove captured piece PST if any (removing Black piece benefits White)
             if (capturedPiece != NO_PIECE) {
-                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);  // Removing Black piece adds to White's score
+                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);
             }
         } else {
             // Remove pawn PST
-            m_pstScore -= eval::PST::value(PAWN, from, BLACK);  // FIX: Remove from old position
+            m_pstScore += eval::PST::value(PAWN, from, BLACK);  // Removing Black pawn improves White's score
             // Add promoted piece PST
-            m_pstScore += eval::PST::value(promotedType, to, BLACK);  // FIX: Add to new position
-            // Remove captured piece PST if any (removing White piece hurts White)
+            m_pstScore -= eval::PST::value(promotedType, to, BLACK);  // Adding Black piece worsens White's score
+            // Remove captured piece PST if any
             if (capturedPiece != NO_PIECE) {
-                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);  // Removing White piece subtracts from White's score
+                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);
             }
         }
         
@@ -1489,15 +1489,15 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
             m_pstScore += eval::PST::value(movingType, to, WHITE);
             // Capturing enemy piece (removing Black piece benefits White)
             if (capturedPiece != NO_PIECE) {
-                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);  // Removing Black piece adds to White's score
+                m_pstScore += eval::PST::value(typeOf(capturedPiece), to, BLACK);
             }
         } else {
             // Moving our piece
-            m_pstScore -= eval::PST::value(movingType, from, BLACK);  // FIX: Remove from old position
-            m_pstScore += eval::PST::value(movingType, to, BLACK);    // FIX: Add to new position
-            // Capturing enemy piece (removing White piece hurts White)
+            m_pstScore += eval::PST::value(movingType, from, BLACK);  // Removing from old position improves White's score
+            m_pstScore -= eval::PST::value(movingType, to, BLACK);    // Adding to new position worsens White's score
+            // Capturing enemy piece
             if (capturedPiece != NO_PIECE) {
-                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);  // Removing White piece subtracts from White's score
+                m_pstScore -= eval::PST::value(typeOf(capturedPiece), to, WHITE);
             }
         }
     }
