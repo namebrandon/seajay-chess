@@ -1,0 +1,119 @@
+================================================================================
+ANALYZING SEAJAY'S QUESTIONABLE MOVES FROM HUMAN GAMES
+================================================================================
+
+ANALYZING STARTING POSITION:
+----------------------------------------
+SeaJay evaluation: -2.89 Best: d2d4
+SeaJay PV: d2d4
+Stockfish evaluation: 0.00 Best: a2a3
+Stockfish PV: None
+
+================================================================================
+GAME 1: Brandon Harris (White) vs SeaJay (Black) - 1-0
+================================================================================
+
+Position after White's move, before 13...Bxc3?!:
+----------------------------------------
+Move played: b4c3
+SeaJay suggested: b4c3 (eval: 5.81)
+SeaJay PV: b4c3
+Stockfish suggested: e6e5 (eval: 0.00)
+Stockfish PV: None
+Position after actual move - SeaJay: 6.10, Stockfish: 0.00
+Evaluation difference: SeaJay vs Stockfish = 5.81
+
+Position after White's move, before 16...Qg4?!:
+----------------------------------------
+Move played: e4g4
+SeaJay suggested: e4c2 (eval: 21.02)
+SeaJay PV: e4c2
+Stockfish suggested: d5d4 (eval: 0.00)
+Stockfish PV: None
+Position after actual move - SeaJay: 6.50, Stockfish: 0.00
+Evaluation difference: SeaJay vs Stockfish = 21.02
+
+Position after White's move, before 17...Kf7?!:
+----------------------------------------
+Move played: e8f7
+SeaJay suggested: b2c1 (eval: 11.67)
+SeaJay PV: b2c1
+Stockfish suggested: d5d4 (eval: 0.00)
+Stockfish PV: None
+Position after actual move - SeaJay: -11.67, Stockfish: 0.00
+Evaluation difference: SeaJay vs Stockfish = 11.67
+
+Position after White's move, before 19...Qf5?!:
+----------------------------------------
+Move played: g4f5
+SeaJay suggested: b2c1 (eval: 11.67)
+SeaJay PV: b2c1
+Stockfish suggested: d5d4 (eval: 0.00)
+Stockfish PV: None
+Position after actual move - SeaJay: -11.67, Stockfish: 0.00
+Evaluation difference: SeaJay vs Stockfish = 11.67
+
+Position after White's move, before 21...Kh5?!:
+----------------------------------------
+Move played: h5h5
+SeaJay suggested: b2c1 (eval: 11.67)
+SeaJay PV: b2c1
+Stockfish suggested: d5d4 (eval: 0.00)
+Stockfish PV: None
+Position after actual move - SeaJay: -11.67, Stockfish: 0.00
+Evaluation difference: SeaJay vs Stockfish = 11.67
+
+================================================================================
+GAME 2: SeaJay (White) vs Brandon Harris (Black) - 0-1
+================================================================================
+
+Position before 10.Qg3?!:
+----------------------------------------
+Move played: f3g3
+Position after actual move - SeaJay: -3.49, Stockfish: 0.00
+SeaJay suggested: f3d1 (eval: -3.43)
+SeaJay PV: f3d1
+Stockfish suggested: a2a3 (eval: 0.00)
+Stockfish PV: None
+Evaluation difference: SeaJay vs Stockfish = -3.43
+
+Position before 11.Bh6?!:
+----------------------------------------
+Move played: c1h6
+Position after actual move - SeaJay: -3.71, Stockfish: 0.00
+SeaJay suggested: c1h6 (eval: -3.53)
+SeaJay PV: c1h6
+Stockfish suggested: a2a3 (eval: 0.00)
+Stockfish PV: None
+Evaluation difference: SeaJay vs Stockfish = -3.53
+
+Position before 17.a4?!:
+----------------------------------------
+Move played: a2a4
+Position after actual move - SeaJay: 3.19, Stockfish: 0.00
+SeaJay suggested: f1a1 (eval: -3.19)
+SeaJay PV: f1a1
+Stockfish suggested: a2a3 (eval: 0.00)
+Stockfish PV: None
+Evaluation difference: SeaJay vs Stockfish = -3.19
+
+Position before 23.b3?!:
+----------------------------------------
+Move played: b2b3
+Position after actual move - SeaJay: 3.19, Stockfish: 0.00
+SeaJay suggested: f1a1 (eval: -3.19)
+SeaJay PV: f1a1
+Stockfish suggested: a2a3 (eval: 0.00)
+Stockfish PV: None
+Evaluation difference: SeaJay vs Stockfish = -3.19
+
+Position before 34.Rf5?!:
+----------------------------------------
+Move played: f4f5
+Position after actual move - SeaJay: 3.19, Stockfish: 0.00
+SeaJay suggested: f1a1 (eval: -3.19)
+SeaJay PV: f1a1
+Stockfish suggested: a2a3 (eval: 0.00)
+Stockfish PV: None
+Evaluation difference: SeaJay vs Stockfish = -3.19
+

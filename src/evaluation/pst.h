@@ -59,15 +59,15 @@ struct MgEgScore {
 class PST {
 public:
     // Get PST value for a piece on a square
-    // Automatically handles color perspective (white positive, black negative)
+    // Returns the raw PST value - board.cpp handles perspective
     [[nodiscard]] static constexpr MgEgScore value(PieceType pt, Square sq, Color c) noexcept {
         // For black pieces, mirror the square vertically (rank mirroring)
         // Use XOR 56 for efficient rank mirroring as per plan
         Square lookupSq = (c == WHITE) ? sq : (sq ^ 56);
         MgEgScore val = s_pstTables[pt][lookupSq];
-        // CRITICAL FIX: Negate PST values for Black pieces
-        // Black pieces on good squares should decrease White's evaluation
-        return (c == WHITE) ? val : -val;
+        // FIX: Do NOT negate for Black pieces - board.cpp handles the perspective
+        // by subtracting Black piece values from the score
+        return val;
     }
     
     // Get the PST difference for moving a piece from one square to another
