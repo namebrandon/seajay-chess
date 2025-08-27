@@ -133,7 +133,6 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
 }
 
 // Order moves with killer move integration (Stage 19, Phase A2)
-// IMPROVED: Killers now come after high-value captures but before low-value captures
 void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves, 
                                            const KillerMoves& killers, int ply) const {
     // Nothing to order if empty or single move
@@ -144,60 +143,34 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     // First do standard MVV-LVA ordering for captures
     orderMoves(board, moves);
     
-    // Phase 1 Improvement: Separate captures into high-value and low-value
-    // High-value: Promotions and captures of Queen/Rook (MVV-LVA > 300)
-    // Low-value: Captures by heavy pieces of pawns/minors (MVV-LVA < 100)
-    
-    // Find the boundaries
-    auto captureEnd = std::find_if(moves.begin(), moves.end(),
+    // Now insert killer moves after captures but before other quiet moves
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
         [](const Move& move) {
             return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
         });
     
-    // Find where low-value captures start (MVV-LVA < 100)
-    // These are typically QxP, RxP, QxN, RxN which have scores like:
-    // QxP = 100-900 = -800 (normalized to 91)
-    // RxP = 100-500 = -400 (normalized to 95)
-    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
-    for (auto it = moves.begin(); it != captureEnd; ++it) {
-        if (!isPromotion(*it)) {
-            int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
-                lowValueCaptureStart = it;
-                break;
-            }
-        }
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
     }
     
-    // Now we have three sections:
-    // [moves.begin(), lowValueCaptureStart) = high-value captures & promotions
-    // [lowValueCaptureStart, captureEnd) = low-value captures
-    // [captureEnd, moves.end()) = quiet moves
-    
-    // Insert killer moves between high-value and low-value captures
-    auto killerInsertPoint = lowValueCaptureStart;
+    // Try to move killer moves to the front of quiet moves
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
             // Find this killer in the quiet moves section
-            auto it = std::find(captureEnd, moves.end(), killer);
-            if (it != moves.end()) {
-                // Move killer to the insertion point (after high-value captures)
-                Move temp = *it;
-                // Shift everything between killerInsertPoint and it
-                for (auto shift = it; shift > killerInsertPoint; --shift) {
-                    *shift = *(shift - 1);
-                }
-                *killerInsertPoint = temp;
-                ++killerInsertPoint;  // Next killer goes after this one
-                // Don't increment captureEnd - it still points to first quiet move
+            auto it = std::find(quietStart, moves.end(), killer);
+            if (it != moves.end() && it != quietStart) {
+                // Move killer to front of quiet moves
+                std::rotate(quietStart, it, it + 1);
+                ++quietStart;  // Next killer goes after this one
             }
         }
     }
 }
 
 // Order moves with both killers and history (Stage 20, Phase B2)
-// IMPROVED: Killers now come after high-value captures but before low-value captures
 void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                                           const KillerMoves& killers, 
                                           const HistoryHeuristic& history, int ply) const {
@@ -209,49 +182,37 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     // First do standard MVV-LVA ordering for captures
     orderMoves(board, moves);
     
-    // Phase 1 Improvement: Separate captures into high-value and low-value
-    auto captureEnd = std::find_if(moves.begin(), moves.end(),
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
         [](const Move& move) {
             return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
         });
     
-    // Find where low-value captures start
-    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
-    for (auto it = moves.begin(); it != captureEnd; ++it) {
-        if (!isPromotion(*it)) {
-            int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
-                lowValueCaptureStart = it;
-                break;
-            }
-        }
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
     }
     
-    // Insert killer moves between high-value and low-value captures
-    auto killerInsertPoint = lowValueCaptureStart;
+    // First, move killer moves to the front of quiet moves
+    auto killerEnd = quietStart;
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
             // Find this killer in the quiet moves section
-            auto it = std::find(captureEnd, moves.end(), killer);
-            if (it != moves.end()) {
-                // Move killer to the insertion point
-                Move temp = *it;
-                for (auto shift = it; shift > killerInsertPoint; --shift) {
-                    *shift = *(shift - 1);
-                }
-                *killerInsertPoint = temp;
-                ++killerInsertPoint;
-                // Don't increment captureEnd - it still points to first quiet move
+            auto it = std::find(killerEnd, moves.end(), killer);
+            if (it != moves.end() && it != killerEnd) {
+                // Move killer to front of quiet moves
+                std::rotate(killerEnd, it, it + 1);
+                ++killerEnd;  // Next killer goes after this one
             }
         }
     }
     
     // Now sort the remaining quiet moves by history score
-    // (moves after captureEnd are non-killer quiet moves)
-    if (captureEnd != moves.end()) {
+    // (moves after killerEnd are non-killer quiet moves)
+    if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
-        std::stable_sort(captureEnd, moves.end(),
+        std::stable_sort(killerEnd, moves.end(),
             [&history, side](const Move& a, const Move& b) {
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
@@ -262,7 +223,6 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
 }
 
 // Order moves with killers, history, and countermoves (Stage 23, CM3.3)
-// IMPROVED: Killers and countermove now come after high-value captures but before low-value captures
 void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                                           const KillerMoves& killers, 
                                           const HistoryHeuristic& history,
@@ -276,60 +236,43 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     // First do standard MVV-LVA ordering for captures
     orderMoves(board, moves);
     
-    // Phase 1 Improvement: Separate captures into high-value and low-value
-    auto captureEnd = std::find_if(moves.begin(), moves.end(),
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
         [](const Move& move) {
             return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
         });
     
-    // Find where low-value captures start
-    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
-    for (auto it = moves.begin(); it != captureEnd; ++it) {
-        if (!isPromotion(*it)) {
-            int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
-                lowValueCaptureStart = it;
-                break;
-            }
-        }
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
     }
     
-    // Insert killer moves between high-value and low-value captures
-    auto insertPoint = lowValueCaptureStart;
+    // First, move killer moves to the front of quiet moves
+    auto killerEnd = quietStart;
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
             // Find this killer in the quiet moves section
-            auto it = std::find(captureEnd, moves.end(), killer);
-            if (it != moves.end()) {
-                // Move killer to the insertion point
-                Move temp = *it;
-                for (auto shift = it; shift > insertPoint; --shift) {
-                    *shift = *(shift - 1);
-                }
-                *insertPoint = temp;
-                ++insertPoint;
-                // Don't increment captureEnd - it still points to first quiet move
+            auto it = std::find(killerEnd, moves.end(), killer);
+            if (it != moves.end() && it != killerEnd) {
+                // Move killer to front of quiet moves
+                std::rotate(killerEnd, it, it + 1);
+                ++killerEnd;  // Next killer goes after this one
             }
         }
     }
     
-    // CM4.1: Position countermove after killers but still before low-value captures
+    // CM4.1: Position countermove with hit tracking
     if (countermoveBonus > 0 && prevMove != NO_MOVE) {
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
         if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
             // Find the countermove in the remaining quiet moves
-            auto it = std::find(captureEnd, moves.end(), counterMove);
-            if (it != moves.end()) {
-                // Move countermove to position after killers
-                Move temp = *it;
-                for (auto shift = it; shift > insertPoint; --shift) {
-                    *shift = *(shift - 1);
-                }
-                *insertPoint = temp;
-                ++insertPoint;
-                // Don't increment captureEnd - it still points to first quiet move
+            auto it = std::find(killerEnd, moves.end(), counterMove);
+            if (it != moves.end() && it != killerEnd) {
+                // Move countermove right after killers
+                std::rotate(killerEnd, it, it + 1);
+                ++killerEnd;  // History moves go after countermove
                 
                 // CM4.1: Track that we found and used a countermove
                 // This will be picked up by SearchData stats later
@@ -338,10 +281,10 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
     
     // Now sort the remaining quiet moves by history score
-    // (moves after captureEnd are non-killer, non-countermove quiet moves)
-    if (captureEnd != moves.end()) {
+    // (moves after killerEnd are non-killer, non-countermove quiet moves)
+    if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
-        std::stable_sort(captureEnd, moves.end(),
+        std::stable_sort(killerEnd, moves.end(),
             [&history, side](const Move& a, const Move& b) {
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
