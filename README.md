@@ -57,9 +57,9 @@ We commit to responsible practices by:
 
 
 
-## Lack of features
+## Current State
 
-If you're wondering if you should test out SeaJay against stockfish, the answer is probably not. The following items have not yet been implemented, though on the roadmap
+Active development is messy. I've done my best to keep main neat, but the code is currently a bit disorganized and things are not as clean as I'd like. Many features and capabilities are in a "I'll fix that later" state. If you're wondering if you should test out SeaJay against stockfish, the answer is probably not. The following items have not yet been implemented, though are on the roadmap. The priority is sound functionality before expanding to widely.
 
 - Multi-threaded / Multi-core support
 - Tablebases
