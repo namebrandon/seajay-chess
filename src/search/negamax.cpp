@@ -637,6 +637,34 @@ eval::Score negamax(Board& board,
         }
         #endif
         
+        // Track QxP and RxP attempts before making the move
+        if (isCapture(move) && !isPromotion(move)) {
+            Square fromSq = moveFrom(move);
+            Square toSq = moveTo(move);
+            Piece attacker = board.pieceAt(fromSq);
+            Piece victim = board.pieceAt(toSq);
+            PieceType attackerType = typeOf(attacker);
+            PieceType victimType = typeOf(victim);
+            
+            if (victimType == PAWN) {
+                if (attackerType == QUEEN) {
+                    info.moveOrderingStats.qxpAttempts++;
+                } else if (attackerType == ROOK) {
+                    info.moveOrderingStats.rxpAttempts++;
+                }
+            }
+        }
+        
+        // Track game phase
+        int pieceCount = __builtin_popcountll(board.occupied());
+        if (pieceCount > 28) {
+            info.moveOrderingStats.openingNodes++;
+        } else if (pieceCount >= 16) {
+            info.moveOrderingStats.middlegameNodes++;
+        } else {
+            info.moveOrderingStats.endgameNodes++;
+        }
+        
         // Push position to search stack BEFORE making the move
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         
@@ -754,6 +782,49 @@ eval::Score negamax(Board& board,
                     info.betaCutoffs++;  // Track beta cutoffs
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
+                    }
+                    
+                    // Track detailed move ordering statistics
+                    auto& stats = info.moveOrderingStats;
+                    
+                    // Track which type of move caused cutoff
+                    if (move == ttMove && ttMove != NO_MOVE) {
+                        stats.ttMoveCutoffs++;
+                    } else if (isCapture(move) || isPromotion(move)) {
+                        if (moveCount == 1) {
+                            stats.firstCaptureCutoffs++;
+                        }
+                        // Check if it's a bad capture (QxP or RxP)
+                        Square fromSq = moveFrom(move);
+                        Square toSq = moveTo(move);
+                        Piece attacker = board.pieceAt(fromSq);
+                        Piece victim = board.pieceAt(toSq);
+                        PieceType attackerType = typeOf(attacker);
+                        PieceType victimType = typeOf(victim);
+                        
+                        if (victimType == PAWN && (attackerType == QUEEN || attackerType == ROOK)) {
+                            stats.badCaptureCutoffs++;
+                            if (attackerType == QUEEN) {
+                                stats.qxpCutoffs++;
+                            } else {
+                                stats.rxpCutoffs++;
+                            }
+                        }
+                    } else if (info.killers.isKiller(ply, move)) {
+                        stats.killerCutoffs++;
+                    } else if (info.countermoveBonus > 0 && prevMove != NO_MOVE &&
+                               move == info.counterMoves.getCounterMove(prevMove)) {
+                        stats.counterMoveCutoffs++;
+                    } else {
+                        stats.quietCutoffs++;
+                    }
+                    
+                    // Track cutoff by move index
+                    int moveIndex = moveCount - 1;
+                    if (moveIndex < 10) {
+                        stats.cutoffsAtMove[moveIndex]++;
+                    } else {
+                        stats.cutoffsAfter10++;
                     }
                     
                     // Stage 19, Phase A3: Update killer moves for quiet moves that cause cutoffs
@@ -1059,6 +1130,60 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                           << " hits=" << info.counterMoveStats.hits
                           << " hitRate=" << std::fixed << std::setprecision(1) << hitRate << "%"
                           << " bonus=" << info.countermoveBonus << std::endl;
+            }
+            
+            // Output detailed move ordering statistics at depth 5 and 10
+            if ((depth == 5 || depth == 10) && info.nodes > 1000) {
+                auto& stats = info.moveOrderingStats;
+                uint64_t totalCutoffs = stats.ttMoveCutoffs + stats.firstCaptureCutoffs + 
+                                       stats.killerCutoffs + stats.counterMoveCutoffs +
+                                       stats.quietCutoffs + stats.badCaptureCutoffs;
+                
+                // Always output stats for debugging
+                std::cout << "info string MoveOrdering: totalCutoffs=" << totalCutoffs 
+                          << " TT=" << stats.ttMoveCutoffs 
+                          << " Cap=" << stats.firstCaptureCutoffs
+                          << " Kill=" << stats.killerCutoffs 
+                          << " nodes=" << info.nodes << std::endl;
+                
+                if (totalCutoffs > 0) {
+                    std::cout << "info string MoveOrdering cutoffs: "
+                              << std::fixed << std::setprecision(1)
+                              << "TT=" << (100.0 * stats.ttMoveCutoffs / totalCutoffs) << "% "
+                              << "1stCap=" << (100.0 * stats.firstCaptureCutoffs / totalCutoffs) << "% "
+                              << "Killer=" << (100.0 * stats.killerCutoffs / totalCutoffs) << "% "
+                              << "Counter=" << (100.0 * stats.counterMoveCutoffs / totalCutoffs) << "% "
+                              << "Quiet=" << (100.0 * stats.quietCutoffs / totalCutoffs) << "% "
+                              << "BadCap=" << (100.0 * stats.badCaptureCutoffs / totalCutoffs) << "%" << std::endl;
+                    
+                    // Output cutoff distribution by move index
+                    std::cout << "info string Cutoff by index: ";
+                    for (int i = 0; i < 5; i++) {
+                        std::cout << "[" << i << "]=" << stats.cutoffDistribution(i) << "% ";
+                    }
+                    std::cout << "[5+]=" << (stats.cutoffDistribution(5) + stats.cutoffDistribution(6) + 
+                                             stats.cutoffDistribution(7) + stats.cutoffDistribution(8) +
+                                             stats.cutoffDistribution(9)) << "% "
+                              << "[10+]=" << stats.cutoffDistribution(10) << "%" << std::endl;
+                    
+                    // Output QxP and RxP statistics
+                    if (stats.qxpAttempts > 0 || stats.rxpAttempts > 0) {
+                        std::cout << "info string Bad captures: "
+                                  << "QxP=" << stats.qxpAttempts << " attempts (" 
+                                  << (stats.qxpAttempts > 0 ? (100.0 * stats.qxpCutoffs / stats.qxpAttempts) : 0.0) << "% cutoff) "
+                                  << "RxP=" << stats.rxpAttempts << " attempts ("
+                                  << (stats.rxpAttempts > 0 ? (100.0 * stats.rxpCutoffs / stats.rxpAttempts) : 0.0) << "% cutoff)" << std::endl;
+                    }
+                    
+                    // Output game phase distribution
+                    uint64_t totalPhaseNodes = stats.openingNodes + stats.middlegameNodes + stats.endgameNodes;
+                    if (totalPhaseNodes > 0) {
+                        std::cout << "info string Phase distribution: "
+                                  << "Opening=" << (100.0 * stats.openingNodes / totalPhaseNodes) << "% "
+                                  << "Middle=" << (100.0 * stats.middlegameNodes / totalPhaseNodes) << "% "
+                                  << "Endgame=" << (100.0 * stats.endgameNodes / totalPhaseNodes) << "%" << std::endl;
+                    }
+                }
             }
             
             // Stage 13, Deliverable 2.2b: Dynamic time management

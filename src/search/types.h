@@ -253,6 +253,57 @@ struct SearchData {
         }
     } counterMoveStats;
     
+    // Comprehensive move ordering statistics
+    struct MoveOrderingStats {
+        // Which move caused the cutoff
+        uint64_t ttMoveCutoffs = 0;         // Cutoffs from TT move
+        uint64_t firstCaptureCutoffs = 0;   // Cutoffs from first capture
+        uint64_t killerCutoffs = 0;         // Cutoffs from killer moves
+        uint64_t counterMoveCutoffs = 0;    // Cutoffs from countermove
+        uint64_t quietCutoffs = 0;          // Cutoffs from quiet moves
+        uint64_t badCaptureCutoffs = 0;     // Cutoffs from bad captures (QxP, RxP)
+        
+        // Move index statistics
+        uint64_t cutoffsAtMove[10] = {0};   // Track cutoffs by move index (0-9)
+        uint64_t cutoffsAfter10 = 0;        // Cutoffs after move 10
+        
+        // Special cases
+        uint64_t qxpAttempts = 0;           // Times QxP was tried
+        uint64_t rxpAttempts = 0;           // Times RxP was tried
+        uint64_t qxpCutoffs = 0;            // Times QxP caused cutoff
+        uint64_t rxpCutoffs = 0;            // Times RxP caused cutoff
+        
+        // Opening vs middlegame/endgame
+        uint64_t openingNodes = 0;          // Nodes in opening (piece count > 28)
+        uint64_t middlegameNodes = 0;       // Nodes in middlegame (16-28 pieces)
+        uint64_t endgameNodes = 0;          // Nodes in endgame (< 16 pieces)
+        
+        void reset() {
+            ttMoveCutoffs = 0;
+            firstCaptureCutoffs = 0;
+            killerCutoffs = 0;
+            counterMoveCutoffs = 0;
+            quietCutoffs = 0;
+            badCaptureCutoffs = 0;
+            for (int i = 0; i < 10; i++) cutoffsAtMove[i] = 0;
+            cutoffsAfter10 = 0;
+            qxpAttempts = rxpAttempts = 0;
+            qxpCutoffs = rxpCutoffs = 0;
+            openingNodes = middlegameNodes = endgameNodes = 0;
+        }
+        
+        double cutoffDistribution(int moveIndex) const {
+            uint64_t total = 0;
+            for (int i = 0; i < 10; i++) total += cutoffsAtMove[i];
+            total += cutoffsAfter10;
+            if (total == 0) return 0.0;
+            if (moveIndex < 10) {
+                return (100.0 * cutoffsAtMove[moveIndex]) / total;
+            }
+            return (100.0 * cutoffsAfter10) / total;
+        }
+    } moveOrderingStats;
+    
     // Phase 2.1: Futility pruning statistics
     uint64_t futilityPruned = 0;        // Positions pruned by futility pruning
     

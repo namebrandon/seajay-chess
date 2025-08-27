@@ -299,12 +299,105 @@ Based on move ordering importance:
 - SPRT Bounds: [0.00, 8.00] (expecting moderate gain)
 - Status: READY FOR TESTING
 
+## Implementation Update - August 27, 2025
+
+### Failed Attempts Summary
+
+#### Attempt 1: Complex Move Reordering (FAILED -35.82 ELO)
+- Tried to insert killers between high and low-value captures
+- Multiple bugs: wrong initialization, iterator corruption
+- Complex manual shifting prone to errors
+- **Result:** Significant regression in testing
+
+#### Attempt 2: Simple Bad Capture Penalty (FAILED)
+- Added -10000 penalty to QxP and RxP in MVV-LVA scoring
+- Neutral in middlegame positions (UHO book)
+- **-15.27 ELO from startpos**
+- Exposed underlying issues with move ordering assumptions
+
+#### Key Learning: All Attempts Reverted
+- Returned to original implementation
+- Clean separation: Captures → Killers → Quiet moves
+- Sometimes "improvements" expose hidden bugs
+
+## Comprehensive Statistics Analysis (NEW)
+
+### Statistics Implementation
+Added detailed move ordering statistics tracking:
+- Which move type causes cutoffs (TT, captures, killers, etc.)
+- Cutoff distribution by move index
+- QxP/RxP attempt and success rates
+- Game phase distribution
+
+### Critical Findings from Statistics
+
+#### Opening Positions (startpos):
+```
+Move ordering efficiency: 79.9% (first move cutoff)
+Cutoff distribution:
+- Killer moves: 38.4% (!)
+- TT moves: 31.1%
+- First capture: 27.7%
+- Quiet moves: 1.9%
+- Bad captures: 0.5%
+
+QxP statistics: 5284 attempts, only 6.9% cause cutoff
+RxP statistics: 97 attempts, 14.4% cause cutoff
+```
+
+#### Tactical Middlegame (Kiwipete):
+```
+Move ordering efficiency: 95.4% (first move cutoff)
+Cutoff distribution:
+- First capture: 59.0%
+- TT moves: 39.5%
+- Killer moves: 0.6% (!)
+- Quiet moves: 0.2%
+- Bad captures: 0.5%
+
+QxP statistics: 29536 attempts, only 2.4% cause cutoff
+```
+
+### Root Cause Identified: Killer Move Pollution
+
+**THE PROBLEM:** Killer moves are causing 38.4% of cutoffs in opening positions!
+
+This is abnormal because:
+1. Opening positions are mostly quiet (few captures)
+2. Killer moves from different positions pollute the table
+3. A killer from one opening position may be illegal/bad in another
+4. This explains why changes hurt openings but not middlegame
+
+**Evidence:**
+- Opening: Killers cause 38.4% of cutoffs (way too high)
+- Tactical: Killers cause 0.6% of cutoffs (expected)
+- Our "improvements" changed killer placement, breaking opening play
+
 ## Next Steps
 
-1. **Immediate:** Submit to OpenBench for Phase MO1 testing
-2. **If Pass:** Consider Phase MO2 - Add piece-type history
-3. **If Fail:** Debug with more granular thresholds
-4. **Long Term:** Revisit SEE when engine reaches 2400+ ELO
+### Immediate Fix: Killer Move Validation
+1. **Add position validation** to killer moves
+2. **Clear killers** between different opening lines
+3. **Reduce killer influence** in early game (ply < 10)
+
+### Alternative: History Heuristic Investigation  
+The history heuristic might also be polluted in openings:
+- Same move (e4-e5) happens in many different positions
+- History accumulates across unrelated positions
+- Consider clearing history at root moves
+
+### Long-term Improvements
+1. **Position-specific killers** (hash killer moves by position features)
+2. **Ply-based killer aging** (older killers get less priority)
+3. **Opening book** to avoid search issues entirely in known positions
+
+## Updated Success Criteria
+
+- [ ] Move ordering efficiency reaches 85%+ **in all phases**
+- [x] Understand why opening differs from middlegame (killer pollution)
+- [ ] Fix killer move pollution issue
+- [ ] Achieve consistent ordering efficiency across game phases
+- [ ] No regression when testing from startpos
 
 ## Success Criteria
 
