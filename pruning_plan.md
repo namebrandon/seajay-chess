@@ -37,15 +37,29 @@
   - Result: **+37.63 ± 13.50 Elo** (HUGE SUCCESS!)
   - Clean implementation without problematic caching
   - Conservative margins: 150 + 60*depth
+- **Phase 2.2:** ✅ COMPLETE - Optimal at Depth 4
+  - Commit: `0a508a1`
+  - Result: Testing showed depth 4 is optimal for SeaJay
+  - Attempts to extend to depth 6 caused regressions
 
-### 🔄 Next Phase
-**Phase 2.2:** Extend Futility Pruning to Depth 6 (in progress)
+### ✅ Completed Phases (Phase 3)
+- **Phase 3 Conservative:** ✅ COMPLETE - Move Count Pruning
+  - Commit: `2a5340d` (merged from `da78cc9`)
+  - Result: **+10.42 ± 8.54 nELO** (PASS)
+  - Conservative implementation with countermove protection
+  - Moderately conservative limits: 12, 18, 24, 30, 36, 42 for depths 3-8
+
+### 🔄 Current Phase
+**Phase 4.1:** Basic Razoring Implementation (testing)
+  - Commit: `9f41daf`
+  - Conservative 300cp margin at depth <= 2
+  - Awaiting OpenBench results
 
 ### 📊 Overall Status
-- **Phase 1:** 5/6 sub-phases complete (~47 Elo combined)
-- **Phase 2:** 1/5 complete (+37.63 Elo from futility pruning!)
-- **Phase 3:** Not started (Move Count Pruning)
-- **Phase 4:** Not started (Razoring)
+- **Phase 1:** 5/6 sub-phases complete (~32 Elo combined)
+- **Phase 2:** COMPLETE (+37.63 Elo from futility pruning, optimal at depth 4)
+- **Phase 3:** COMPLETE (+10.42 nELO from conservative move count pruning)
+- **Phase 4:** IN PROGRESS (Razoring implementation testing)
 
 ## Executive Summary
 
