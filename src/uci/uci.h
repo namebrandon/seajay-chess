@@ -71,6 +71,18 @@ private:
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
     int m_countermoveBonus = 8000;      // Optimal bonus score for countermoves (CM3.5 testing)
     
+    // Phase 3: Move Count Pruning parameters (conservative implementation)
+    bool m_useMoveCountPruning = true;    // Enable/disable move count pruning
+    int m_moveCountLimit3 = 12;           // Move limit for depth 3
+    int m_moveCountLimit4 = 18;           // Move limit for depth 4
+    int m_moveCountLimit5 = 24;           // Move limit for depth 5
+    int m_moveCountLimit6 = 30;           // Move limit for depth 6
+    int m_moveCountLimit7 = 36;           // Move limit for depth 7
+    int m_moveCountLimit8 = 42;           // Move limit for depth 8
+    int m_moveCountHistoryThreshold = 1500; // History score threshold for bonus moves
+    int m_moveCountHistoryBonus = 6;      // Extra moves for good history
+    int m_moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
+    
     // Multi-threading support (stub for OpenBench compatibility)
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
     

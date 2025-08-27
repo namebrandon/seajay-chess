@@ -116,6 +116,18 @@ void UCIEngine::handleUCI() {
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
     std::cout << "option name CountermoveBonus type spin default 8000 min 0 max 20000" << std::endl;
     
+    // Phase 3: Move Count Pruning parameters (conservative implementation)
+    std::cout << "option name MoveCountPruning type check default true" << std::endl;
+    std::cout << "option name MoveCountLimit3 type spin default 12 min 3 max 50" << std::endl;
+    std::cout << "option name MoveCountLimit4 type spin default 18 min 5 max 60" << std::endl;
+    std::cout << "option name MoveCountLimit5 type spin default 24 min 8 max 70" << std::endl;
+    std::cout << "option name MoveCountLimit6 type spin default 30 min 10 max 80" << std::endl;
+    std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
+    std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
+    std::cout << "option name MoveCountHistoryThreshold type spin default 1500 min 0 max 5000" << std::endl;
+    std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
+    std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
+    
     std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
     std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
     std::cout << "option name UseAspirationWindows type check default true" << std::endl;
@@ -453,6 +465,18 @@ void UCIEngine::search(const SearchParams& params) {
     
     // Stage 23 CM3.3: Pass countermove bonus to search
     limits.countermoveBonus = m_countermoveBonus;
+    
+    // Phase 3: Pass move count pruning parameters to search
+    limits.useMoveCountPruning = m_useMoveCountPruning;
+    limits.moveCountLimit3 = m_moveCountLimit3;
+    limits.moveCountLimit4 = m_moveCountLimit4;
+    limits.moveCountLimit5 = m_moveCountLimit5;
+    limits.moveCountLimit6 = m_moveCountLimit6;
+    limits.moveCountLimit7 = m_moveCountLimit7;
+    limits.moveCountLimit8 = m_moveCountLimit8;
+    limits.moveCountHistoryThreshold = m_moveCountHistoryThreshold;
+    limits.moveCountHistoryBonus = m_moveCountHistoryBonus;
+    limits.moveCountImprovingRatio = m_moveCountImprovingRatio;
     
     // Stage 13, Deliverable 5.1a: Use iterative test wrapper for enhanced UCI output
     Move bestMove = search::searchIterativeTest(m_board, limits, &m_tt);
@@ -878,6 +902,47 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } catch (const std::exception&) {
             std::cerr << "info string Invalid CountermoveBonus value: " << value << std::endl;
         }
+    }
+    // Phase 3: Move Count Pruning options
+    else if (optionName == "MoveCountPruning") {
+        m_useMoveCountPruning = (value == "true");
+        std::cerr << "info string MoveCountPruning set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit3") {
+        m_moveCountLimit3 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit3 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit4") {
+        m_moveCountLimit4 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit4 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit5") {
+        m_moveCountLimit5 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit5 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit6") {
+        m_moveCountLimit6 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit6 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit7") {
+        m_moveCountLimit7 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit7 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountLimit8") {
+        m_moveCountLimit8 = std::stoi(value);
+        std::cerr << "info string MoveCountLimit8 set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountHistoryThreshold") {
+        m_moveCountHistoryThreshold = std::stoi(value);
+        std::cerr << "info string MoveCountHistoryThreshold set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountHistoryBonus") {
+        m_moveCountHistoryBonus = std::stoi(value);
+        std::cerr << "info string MoveCountHistoryBonus set to " << value << std::endl;
+    }
+    else if (optionName == "MoveCountImprovingRatio") {
+        m_moveCountImprovingRatio = std::stoi(value);
+        std::cerr << "info string MoveCountImprovingRatio set to " << value << std::endl;
     }
     // Stage 13 Remediation: Handle aspiration window options
     else if (optionName == "AspirationWindow") {

@@ -81,6 +81,18 @@ struct SearchLimits {
     // Stage 23 CM3.3: Countermove heuristic bonus
     int countermoveBonus = 0;  // Bonus score for countermoves (0 = disabled)
     
+    // Phase 3: Move Count Pruning parameters (conservative implementation)
+    bool useMoveCountPruning = true;    // Enable/disable move count pruning
+    int moveCountLimit3 = 12;           // Move limit for depth 3
+    int moveCountLimit4 = 18;           // Move limit for depth 4
+    int moveCountLimit5 = 24;           // Move limit for depth 5
+    int moveCountLimit6 = 30;           // Move limit for depth 6
+    int moveCountLimit7 = 36;           // Move limit for depth 7
+    int moveCountLimit8 = 42;           // Move limit for depth 8
+    int moveCountHistoryThreshold = 1500; // History score threshold for bonus moves
+    int moveCountHistoryBonus = 6;      // Extra moves for good history
+    int moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
+    
     // Default constructor
     SearchLimits() = default;
 };

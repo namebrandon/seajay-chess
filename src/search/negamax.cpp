@@ -559,7 +559,7 @@ eval::Score negamax(Board& board,
         // Phase 3.1 CONSERVATIVE: Move Count Pruning (Late Move Pruning)
         // Only prune at depths 3+ to avoid tactical blindness at shallow depths
         // Much more conservative limits to avoid over-pruning
-        if (!isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
+        if (limits.useMoveCountPruning && !isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
             && !isCapture(move) && !isPromotion(move) && !info.killers.isKiller(ply, move)) {
             
             // Phase 3.3: Countermove Consideration
@@ -572,16 +572,17 @@ eval::Score negamax(Board& board,
             // MODERATELY CONSERVATIVE depth-based move count limits
             // Starting at depth 3 to avoid shallow tactical issues
             // 25% less conservative than previous version for more pruning
-            static const int moveCountLimit[9] = {
+            // Now configurable via UCI for SPSA tuning
+            int moveCountLimit[9] = {
                 999, // depth 0 (not used)
                 999, // depth 1 (not used - too shallow)
                 999, // depth 2 (not used - too shallow)  
-                12,  // depth 3 - moderately conservative (was 16)
-                18,  // depth 4 - moderately conservative (was 24)
-                24,  // depth 5 - moderately conservative (was 32)
-                30,  // depth 6 - moderately conservative (was 40)
-                36,  // depth 7 - moderately conservative (was 48)
-                42   // depth 8 - moderately conservative (was 56)
+                limits.moveCountLimit3,  // depth 3 - moderately conservative
+                limits.moveCountLimit4,  // depth 4 - moderately conservative
+                limits.moveCountLimit5,  // depth 5 - moderately conservative
+                limits.moveCountLimit6,  // depth 6 - moderately conservative
+                limits.moveCountLimit7,  // depth 7 - moderately conservative
+                limits.moveCountLimit8   // depth 8 - moderately conservative
             };
             
             // Check if we're improving (compare to previous ply's eval)
@@ -597,13 +598,13 @@ eval::Score negamax(Board& board,
             // Adjust limit based on improvement
             int limit = moveCountLimit[depth];
             if (!improving) {
-                limit = (limit * 3) / 4;  // Reduce by 25% if not improving
+                limit = (limit * limits.moveCountImprovingRatio) / 100;  // Configurable reduction ratio
             }
             
             // History-based adjustment (moderately conservative)
             int historyScore = info.history.getScore(board.sideToMove(), moveFrom(move), moveTo(move));
-            if (historyScore > 1500) {  // Reduced threshold (was 2000)
-                limit += 6;  // Slightly less generous bonus (was 8)
+            if (historyScore > limits.moveCountHistoryThreshold) {  // Configurable threshold
+                limit += limits.moveCountHistoryBonus;  // Configurable bonus
             }
             
             if (moveCount > limit) {
