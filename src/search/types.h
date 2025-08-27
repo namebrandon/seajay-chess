@@ -247,6 +247,9 @@ struct SearchData {
     // Phase 3: Move count pruning statistics (conservative version)
     uint64_t moveCountPruned = 0;       // Moves pruned by move count pruning
     
+    // Phase 4: Razoring statistics
+    uint64_t razoringCutoffs = 0;       // Positions cut off by razoring
+    
     // Stage 19: Killer moves for move ordering
     KillerMoves killers;
     
@@ -334,6 +337,7 @@ struct SearchData {
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
+        razoringCutoffs = 0;  // Phase 4: Reset razoring counter
         killers.clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations

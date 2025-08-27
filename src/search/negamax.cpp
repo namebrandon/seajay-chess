@@ -449,6 +449,28 @@ eval::Score negamax(Board& board,
         info.nullMoveStats.zugzwangAvoids++;
     }
     
+    // Phase 4.1: Razoring
+    // Prune at very shallow depths when far below alpha
+    // This is a forward pruning technique that drops into quiescence search
+    // when the static evaluation is so bad that even with improvement we won't reach alpha
+    if (!isPvNode && !weAreInCheck && depth <= 2 && depth > 0) {
+        // Get static evaluation
+        eval::Score staticEval = board.evaluate();
+        
+        // Conservative razoring margin (Laser uses 300cp)
+        int razorMargin = 300;
+        
+        if (staticEval + eval::Score(razorMargin) < alpha) {
+            // Drop into quiescence search to verify
+            eval::Score razorScore = quiescence(board, ply, alpha, beta, 
+                                               searchInfo, info, limits, *tt, 0, false);
+            if (razorScore <= alpha) {
+                info.razoringCutoffs++;
+                return razorScore;
+            }
+        }
+    }
+    
     // In quiescence search (depth <= 0), handle differently
     if (depth <= 0) {
         // Get info about last move
