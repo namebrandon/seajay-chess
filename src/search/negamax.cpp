@@ -993,6 +993,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         info.depth = depth;
         board.setSearchMode(true);
         
+        // MO2c: Clear killers periodically to prevent pollution from shallow searches
+        // Clear at depth 1 (fresh start) and depth 6 (transition from opening to middle game)
+        // This prevents killers from very shallow depths polluting deeper searches
+        if (depth == 1 || depth == 6) {
+            info.killers.clear();
+        }
+        
         // Track start time for this iteration
         auto iterationStart = std::chrono::steady_clock::now();
         uint64_t nodesBeforeIteration = info.nodes;  // Save node count before iteration
