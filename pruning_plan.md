@@ -49,17 +49,20 @@
   - Conservative implementation with countermove protection
   - Moderately conservative limits: 12, 18, 24, 30, 36, 42 for depths 3-8
 
-### 🔄 Current Phase
-**Phase 4.1:** Basic Razoring Implementation (testing)
-  - Commit: `9f41daf`
-  - Conservative 300cp margin at depth <= 2
-  - Awaiting OpenBench results
+### ❌ Failed Phases
+**Phase 4.1:** Basic Razoring Implementation
+  - Commit: `9f41daf` 
+  - Result: **-39.45 ± 22.41 Elo** (MASSIVE FAILURE)
+  - Reverted in commit: `a59455e`
+  - Razoring appears incompatible with SeaJay's architecture
 
 ### 📊 Overall Status
 - **Phase 1:** 5/6 sub-phases complete (~32 Elo combined)
 - **Phase 2:** COMPLETE (+37.63 Elo from futility pruning, optimal at depth 4)
 - **Phase 3:** COMPLETE (+10.42 nELO from conservative move count pruning)
-- **Phase 4:** IN PROGRESS (Razoring implementation testing)
+- **Phase 4:** FAILED AND ABANDONED (Razoring incompatible with SeaJay)
+
+**Total Gains from Pruning Work:** ~80 Elo from successful phases
 
 ## Executive Summary
 
@@ -1203,6 +1206,16 @@ echo -e "position fen 8/8/8/8/8/8/8/8 w - - 0 1\\ngo depth 10" | ./seajay
 - **Solution:** Complete rebuild with fresh evaluation every time
 - **Result:** Clean implementation achieved +37.63 Elo!
 - **Lesson:** Caching can introduce subtle bugs; sometimes simpler is better
+
+### Phase 4.1 Razoring Failure
+- **Issue:** Razoring caused -39.45 Elo regression despite conservative implementation
+- **Analysis:** Direct port from Laser failed badly
+- **Root Causes:** 
+  - SeaJay already has aggressive pruning at shallow depths (futility, move count)
+  - Evaluation function may not be accurate enough for razoring decisions
+  - Negative interaction with existing pruning techniques
+- **Lesson:** Not all techniques transfer between engines; SeaJay's architecture may be incompatible with razoring
+- **Action:** Abandoned razoring, focus on improving existing techniques
 
 ### Phase 1.2b Failure
 - **Issue:** Removing material balance check caused catastrophic -1107 Elo loss
