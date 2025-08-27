@@ -158,7 +158,7 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     // These are typically QxP, RxP, QxN, RxN which have scores like:
     // QxP = 100-900 = -800 (normalized to 91)
     // RxP = 100-500 = -400 (normalized to 95)
-    auto lowValueCaptureStart = moves.begin();
+    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);
@@ -216,7 +216,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         });
     
     // Find where low-value captures start
-    auto lowValueCaptureStart = moves.begin();
+    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);
@@ -283,7 +283,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         });
     
     // Find where low-value captures start
-    auto lowValueCaptureStart = moves.begin();
+    auto lowValueCaptureStart = captureEnd;  // Default: no low-value captures
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);

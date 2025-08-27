@@ -265,13 +265,46 @@ Based on move ordering importance:
 - Improve quiet move ordering
 - Requires more memory but better patterns
 
+## Implementation Progress
+
+### Phase MO1: High-Value Capture Separation [COMPLETE - Testing]
+**Branch:** feature/analysis/20250826-pruning-aggressiveness  
+**Commit:** 6c0919d  
+**Bench:** 19191913  
+**Date:** August 27, 2025  
+
+**Changes Made:**
+- Separated captures into high-value (MVV-LVA > 300) and low-value (MVV-LVA < 100)
+- Moved killer moves AFTER high-value captures but BEFORE low-value captures
+- Applied same logic to all three ordering functions (killers, history, countermoves)
+
+**New Move Order:**
+1. TT move (if valid)
+2. Promotions
+3. High-value captures (Queen/Rook captures, MVV-LVA > 300)
+4. **Killer moves** (2 slots) ← MOVED UP!
+5. **Countermove** (if different from killers) ← MOVED UP!
+6. Low-value captures (Heavy pieces capturing pawns, MVV-LVA < 100)
+7. Quiet moves (ordered by history)
+
+**Expected Impact:**
+- +5-10 ELO from preventing bad captures before killers
+- Improved move ordering efficiency (target: 80-82%)
+- Better pruning effectiveness
+
+**OpenBench Testing:**
+- Dev Branch: feature/analysis/20250826-pruning-aggressiveness
+- Base Branch: main
+- Commit: 6c0919d
+- SPRT Bounds: [0.00, 8.00] (expecting moderate gain)
+- Status: READY FOR TESTING
+
 ## Next Steps
 
-1. **Immediate:** Add instrumentation to collect detailed statistics
-2. **Today:** Run test games with statistics enabled
-3. **Tomorrow:** Analyze results and identify biggest issue
-4. **This Week:** Implement fixes for top issues
-5. **Next Week:** SPRT testing of improvements
+1. **Immediate:** Submit to OpenBench for Phase MO1 testing
+2. **If Pass:** Consider Phase MO2 - Add piece-type history
+3. **If Fail:** Debug with more granular thresholds
+4. **Long Term:** Revisit SEE when engine reaches 2400+ ELO
 
 ## Success Criteria
 
