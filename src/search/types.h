@@ -61,6 +61,9 @@ struct SearchLimits {
     // Stage 14 Remediation: Runtime quiescence node limit
     uint64_t qsearchNodeLimit = 0;    // Per-position node limit (0 = unlimited)
     
+    // Quiescence search check extension depth limit
+    int maxCheckPly = 6;              // Maximum check extensions in quiescence (0-10)
+    
     // Stage 18: Late Move Reductions (LMR) parameters
     bool lmrEnabled = true;           // Enable/disable LMR via UCI
     int lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)

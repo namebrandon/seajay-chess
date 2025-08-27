@@ -83,6 +83,9 @@ void UCIEngine::handleUCI() {
     // Stage 14 Remediation: Runtime node limit for quiescence search
     std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
     
+    // Quiescence search check extension depth limit
+    std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
+    
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
@@ -432,6 +435,7 @@ void UCIEngine::search(const SearchParams& params) {
     
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
+    limits.maxCheckPly = m_maxCheckPly;
     
     // Stage 18: Pass LMR parameters  
     limits.lmrEnabled = m_lmrEnabled;
@@ -672,6 +676,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid QSearchNodeLimit value: " << value << std::endl;
+        }
+    }
+    // Handle MaxCheckPly option
+    else if (optionName == "MaxCheckPly") {
+        try {
+            int maxPly = std::stoi(value);
+            if (maxPly >= 0 && maxPly <= 10) {
+                m_maxCheckPly = maxPly;
+                std::cerr << "info string MaxCheckPly set to " << maxPly << std::endl;
+            } else {
+                std::cerr << "info string MaxCheckPly must be between 0 and 10" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid MaxCheckPly value: " << value << std::endl;
         }
     }
     // Stage 10 Remediation: Handle UseMagicBitboards option

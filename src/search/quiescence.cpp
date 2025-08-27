@@ -151,8 +151,8 @@ eval::Score quiescence(
     // Deliverable 3.2.1: Track check ply depth and limit extensions
     int newCheckPly = isInCheck ? checkPly + 1 : 0;
     
-    // Stop extending checks after MAX_CHECK_PLY to prevent search explosion
-    if (newCheckPly > MAX_CHECK_PLY) {
+    // Stop extending checks after maxCheckPly to prevent search explosion
+    if (newCheckPly > limits.maxCheckPly) {
         // Return static evaluation when check depth limit reached
         return eval::evaluate(board);
     }
