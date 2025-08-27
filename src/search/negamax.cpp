@@ -549,6 +549,63 @@ eval::Score negamax(Board& board,
             }
         }
         
+        // Phase 3.1 CONSERVATIVE: Move Count Pruning (Late Move Pruning)
+        // Only prune at depths 3+ to avoid tactical blindness at shallow depths
+        // Much more conservative limits to avoid over-pruning
+        if (!isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
+            && !isCapture(move) && !isPromotion(move) && !info.killers.isKiller(ply, move)) {
+            
+            // Phase 3.3: Countermove Consideration
+            // Don't prune countermoves - they're often good responses
+            if (prevMove != NO_MOVE && move == info.counterMoves.getCounterMove(prevMove)) {
+                // This is a countermove, don't prune it
+                // Skip the entire move count pruning block
+            } else {
+            
+            // MODERATELY CONSERVATIVE depth-based move count limits
+            // Starting at depth 3 to avoid shallow tactical issues
+            // 25% less conservative than previous version for more pruning
+            static const int moveCountLimit[9] = {
+                999, // depth 0 (not used)
+                999, // depth 1 (not used - too shallow)
+                999, // depth 2 (not used - too shallow)  
+                12,  // depth 3 - moderately conservative (was 16)
+                18,  // depth 4 - moderately conservative (was 24)
+                24,  // depth 5 - moderately conservative (was 32)
+                30,  // depth 6 - moderately conservative (was 40)
+                36,  // depth 7 - moderately conservative (was 48)
+                42   // depth 8 - moderately conservative (was 56)
+            };
+            
+            // Check if we're improving (compare to previous ply's eval)
+            bool improving = false;
+            if (ply >= 2) {
+                int prevEval = searchInfo.getStackEntry(ply - 2).staticEval;
+                int currEval = searchInfo.getStackEntry(ply).staticEval;
+                if (prevEval != 0 && currEval != 0) {
+                    improving = (currEval > prevEval);
+                }
+            }
+            
+            // Adjust limit based on improvement
+            int limit = moveCountLimit[depth];
+            if (!improving) {
+                limit = (limit * 3) / 4;  // Reduce by 25% if not improving
+            }
+            
+            // History-based adjustment (moderately conservative)
+            int historyScore = info.history.getScore(board.sideToMove(), moveFrom(move), moveTo(move));
+            if (historyScore > 1500) {  // Reduced threshold (was 2000)
+                limit += 6;  // Slightly less generous bonus (was 8)
+            }
+            
+            if (moveCount > limit) {
+                info.moveCountPruned++;
+                continue;  // Skip this move
+            }
+            } // End of else block for countermove check
+        }
+        
         // Singular Extension: DISABLED - Implementation needs redesign
         // The current implementation using excluded moves doesn't match how
         // successful engines (Laser, Stockfish) implement it. They iterate
