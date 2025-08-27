@@ -158,20 +158,25 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     
     // Try to move killer moves to the front of quiet moves
     // PHASE MO2a: Add pseudo-legal validation to prevent killer pollution
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // Validate killer is pseudo-legal in current position (prevents pollution)
-            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
-                continue;  // Skip invalid killer from different position
-            }
-            
-            // Find this killer in the quiet moves section
-            auto it = std::find(quietStart, moves.end(), killer);
-            if (it != moves.end() && it != quietStart) {
-                // Move killer to front of quiet moves
-                std::rotate(quietStart, it, it + 1);
-                ++quietStart;  // Next killer goes after this one
+    // PHASE MO2b: Skip killers in early opening (ply < 6) to avoid cross-game pollution
+    constexpr int MIN_PLY_FOR_KILLERS = 6;  // Don't use killers in first 6 plies (3 moves each side)
+    
+    if (ply >= MIN_PLY_FOR_KILLERS) {  // MO2b: Only use killers after opening moves
+        for (int slot = 0; slot < 2; ++slot) {
+            Move killer = killers.getKiller(ply, slot);
+            if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+                // Validate killer is pseudo-legal in current position (prevents pollution)
+                if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                    continue;  // Skip invalid killer from different position
+                }
+                
+                // Find this killer in the quiet moves section
+                auto it = std::find(quietStart, moves.end(), killer);
+                if (it != moves.end() && it != quietStart) {
+                    // Move killer to front of quiet moves
+                    std::rotate(quietStart, it, it + 1);
+                    ++quietStart;  // Next killer goes after this one
+                }
             }
         }
     }
@@ -201,21 +206,26 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
     
     // First, move killer moves to the front of quiet moves
+    // MO2b: Skip killers in early opening (ply < 6) to avoid cross-game pollution
+    constexpr int MIN_PLY_FOR_KILLERS = 6;
     auto killerEnd = quietStart;
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
-            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
-                continue;  // Skip invalid killer from different position
-            }
-            
-            // Find this killer in the quiet moves section
-            auto it = std::find(killerEnd, moves.end(), killer);
-            if (it != moves.end() && it != killerEnd) {
-                // Move killer to front of quiet moves
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // Next killer goes after this one
+    
+    if (ply >= MIN_PLY_FOR_KILLERS) {  // MO2b: Only use killers after opening moves
+        for (int slot = 0; slot < 2; ++slot) {
+            Move killer = killers.getKiller(ply, slot);
+            if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+                // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
+                if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                    continue;  // Skip invalid killer from different position
+                }
+                
+                // Find this killer in the quiet moves section
+                auto it = std::find(killerEnd, moves.end(), killer);
+                if (it != moves.end() && it != killerEnd) {
+                    // Move killer to front of quiet moves
+                    std::rotate(killerEnd, it, it + 1);
+                    ++killerEnd;  // Next killer goes after this one
+                }
             }
         }
     }
@@ -260,27 +270,33 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
     
     // First, move killer moves to the front of quiet moves
+    // MO2b: Skip killers in early opening (ply < 6) to avoid cross-game pollution
+    constexpr int MIN_PLY_FOR_KILLERS = 6;
     auto killerEnd = quietStart;
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
-            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
-                continue;  // Skip invalid killer from different position
-            }
-            
-            // Find this killer in the quiet moves section
-            auto it = std::find(killerEnd, moves.end(), killer);
-            if (it != moves.end() && it != killerEnd) {
-                // Move killer to front of quiet moves
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // Next killer goes after this one
+    
+    if (ply >= MIN_PLY_FOR_KILLERS) {  // MO2b: Only use killers after opening moves
+        for (int slot = 0; slot < 2; ++slot) {
+            Move killer = killers.getKiller(ply, slot);
+            if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+                // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
+                if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                    continue;  // Skip invalid killer from different position
+                }
+                
+                // Find this killer in the quiet moves section
+                auto it = std::find(killerEnd, moves.end(), killer);
+                if (it != moves.end() && it != killerEnd) {
+                    // Move killer to front of quiet moves
+                    std::rotate(killerEnd, it, it + 1);
+                    ++killerEnd;  // Next killer goes after this one
+                }
             }
         }
     }
     
     // CM4.1: Position countermove with hit tracking
-    if (countermoveBonus > 0 && prevMove != NO_MOVE) {
+    // MO2b: Also apply ply restriction to countermoves for consistency
+    if (countermoveBonus > 0 && prevMove != NO_MOVE && ply >= MIN_PLY_FOR_KILLERS) {
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
         if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {

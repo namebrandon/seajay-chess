@@ -1183,6 +1183,14 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                                   << "Middle=" << (100.0 * stats.middlegameNodes / totalPhaseNodes) << "% "
                                   << "Endgame=" << (100.0 * stats.endgameNodes / totalPhaseNodes) << "%" << std::endl;
                     }
+                    
+                    // MO2a: Output killer validation statistics
+                    if (stats.killerValidationAttempts > 0) {
+                        std::cout << "info string Killer validation: "
+                                  << stats.killerValidationAttempts << " attempts, "
+                                  << stats.killerValidationFailures << " illegal ("
+                                  << (100.0 * stats.killerValidationFailures / stats.killerValidationAttempts) << "% pollution rate)" << std::endl;
+                    }
                 }
             }
             
