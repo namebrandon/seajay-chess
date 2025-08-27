@@ -162,7 +162,7 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 100) {  // Low-value capture threshold
+            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
                 lowValueCaptureStart = it;
                 break;
             }
@@ -190,7 +190,7 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
                 }
                 *killerInsertPoint = temp;
                 ++killerInsertPoint;  // Next killer goes after this one
-                ++captureEnd;  // We moved a quiet move forward
+                // Don't increment captureEnd - it still points to first quiet move
             }
         }
     }
@@ -220,7 +220,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 100) {  // Low-value capture threshold
+            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
                 lowValueCaptureStart = it;
                 break;
             }
@@ -242,7 +242,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 }
                 *killerInsertPoint = temp;
                 ++killerInsertPoint;
-                ++captureEnd;
+                // Don't increment captureEnd - it still points to first quiet move
             }
         }
     }
@@ -287,7 +287,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (auto it = moves.begin(); it != captureEnd; ++it) {
         if (!isPromotion(*it)) {
             int mvvLvaScore = scoreMove(board, *it);
-            if (mvvLvaScore < 100) {  // Low-value capture threshold
+            if (mvvLvaScore < 95) {  // Low-value capture threshold (QxP=91, RxP<95)
                 lowValueCaptureStart = it;
                 break;
             }
@@ -309,7 +309,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 }
                 *insertPoint = temp;
                 ++insertPoint;
-                ++captureEnd;
+                // Don't increment captureEnd - it still points to first quiet move
             }
         }
     }
@@ -329,7 +329,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 }
                 *insertPoint = temp;
                 ++insertPoint;
-                ++captureEnd;
+                // Don't increment captureEnd - it still points to first quiet move
                 
                 // CM4.1: Track that we found and used a countermove
                 // This will be picked up by SearchData stats later
