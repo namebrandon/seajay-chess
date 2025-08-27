@@ -273,6 +273,10 @@ struct SearchData {
         uint64_t qxpCutoffs = 0;            // Times QxP caused cutoff
         uint64_t rxpCutoffs = 0;            // Times RxP caused cutoff
         
+        // MO2a: Killer validation statistics
+        uint64_t killerValidationAttempts = 0;  // Times we checked killer legality
+        uint64_t killerValidationFailures = 0;  // Times killer was illegal (pollution)
+        
         // Opening vs middlegame/endgame
         uint64_t openingNodes = 0;          // Nodes in opening (piece count > 28)
         uint64_t middlegameNodes = 0;       // Nodes in middlegame (16-28 pieces)
@@ -289,6 +293,7 @@ struct SearchData {
             cutoffsAfter10 = 0;
             qxpAttempts = rxpAttempts = 0;
             qxpCutoffs = rxpCutoffs = 0;
+            killerValidationAttempts = killerValidationFailures = 0;  // MO2a
             openingNodes = middlegameNodes = endgameNodes = 0;
         }
         

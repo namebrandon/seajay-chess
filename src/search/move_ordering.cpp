@@ -1,5 +1,6 @@
 #include "move_ordering.h"
 #include "../core/board_safety.h"  // For moveToString
+#include "../core/move_generation.h"  // For MoveGenerator::isPseudoLegal (MO2a)
 #include <algorithm>
 #include <iostream>
 #include <chrono>  // For timestamp in log file
@@ -156,9 +157,15 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     }
     
     // Try to move killer moves to the front of quiet moves
+    // PHASE MO2a: Add pseudo-legal validation to prevent killer pollution
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Validate killer is pseudo-legal in current position (prevents pollution)
+            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                continue;  // Skip invalid killer from different position
+            }
+            
             // Find this killer in the quiet moves section
             auto it = std::find(quietStart, moves.end(), killer);
             if (it != moves.end() && it != quietStart) {
@@ -198,6 +205,11 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
+            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                continue;  // Skip invalid killer from different position
+            }
+            
             // Find this killer in the quiet moves section
             auto it = std::find(killerEnd, moves.end(), killer);
             if (it != moves.end() && it != killerEnd) {
@@ -252,6 +264,11 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
+            if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
+                continue;  // Skip invalid killer from different position
+            }
+            
             // Find this killer in the quiet moves section
             auto it = std::find(killerEnd, moves.end(), killer);
             if (it != moves.end() && it != killerEnd) {
@@ -267,15 +284,18 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
         if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
-            // Find the countermove in the remaining quiet moves
-            auto it = std::find(killerEnd, moves.end(), counterMove);
-            if (it != moves.end() && it != killerEnd) {
-                // Move countermove right after killers
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // History moves go after countermove
-                
-                // CM4.1: Track that we found and used a countermove
-                // This will be picked up by SearchData stats later
+            // PHASE MO2a: Also validate countermove is pseudo-legal
+            if (seajay::MoveGenerator::isPseudoLegal(board, counterMove)) {
+                // Find the countermove in the remaining quiet moves
+                auto it = std::find(killerEnd, moves.end(), counterMove);
+                if (it != moves.end() && it != killerEnd) {
+                    // Move countermove right after killers
+                    std::rotate(killerEnd, it, it + 1);
+                    ++killerEnd;  // History moves go after countermove
+                    
+                    // CM4.1: Track that we found and used a countermove
+                    // This will be picked up by SearchData stats later
+                }
             }
         }
     }
