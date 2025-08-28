@@ -113,7 +113,7 @@ eval::Score negamax(Board& board,
                    TranspositionTable* tt,
                    bool isPvNode) {
     
-    // Debug output at root
+    // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
         std::cerr << "Negamax: Starting search at depth " << depth << std::endl;
     }
@@ -141,8 +141,9 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
-    // Phase 1: Check for periodic UCI info updates at root
-    if (ply == 0 && info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
+    // Phase 1 & 2: Check for periodic UCI info updates
+    // Check periodically regardless of ply depth (since we spend most time at deeper plies)
+    if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
         // Try to cast to IterativeSearchData for time-based updates
         auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
         if (iterativeInfo && iterativeInfo->shouldSendInfo()) {
@@ -540,6 +541,12 @@ eval::Score negamax(Board& board,
         
         moveCount++;
         info.totalMoves++;  // Track total moves examined
+        
+        // Phase 2: Track current root move for UCI currmove output
+        if (ply == 0) {
+            info.currentRootMove = move;
+            info.currentRootMoveNumber = moveCount;
+        }
         
         // Track quiet moves for history update
         if (!isCapture(move) && !isPromotion(move)) {
@@ -1633,6 +1640,20 @@ void sendCurrentSearchInfo(const IterativeSearchData& info) {
     std::cout << " nodes " << info.nodes
               << " nps " << info.nps()
               << " time " << info.elapsed().count();
+    
+    // Phase 2: Add currmove info if we have a current root move
+    // Show when search has been running for a while and we have a valid current move
+    if (info.currentRootMove != NO_MOVE && info.currentRootMoveNumber > 0) {
+        // Force accurate time calculation for periodic updates (not cached)
+        auto now = std::chrono::steady_clock::now();
+        auto actualElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - info.startTime);
+        
+        // Show currmove after 3 seconds of search time
+        if (actualElapsed.count() > 3000) {
+            std::cout << " currmove " << SafeMoveExecutor::moveToString(info.currentRootMove)
+                      << " currmovenumber " << info.currentRootMoveNumber;
+        }
+    }
     
     // PV if available
     if (info.bestMove != NO_MOVE) {

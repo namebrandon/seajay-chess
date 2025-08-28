@@ -132,6 +132,10 @@ struct SearchData {
     Move bestMove;                 // Best move found so far
     eval::Score bestScore = eval::Score::zero(); // Score of best move
     
+    // Phase 2: Currmove tracking for UCI info at root
+    Move currentRootMove;          // Current move being searched at root
+    int currentRootMoveNumber = 0; // Move number (1-based) at root
+    
     // Time management
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds timeLimit{0};
@@ -416,6 +420,8 @@ struct SearchData {
         seldepth = 0;
         bestMove = Move();
         bestScore = eval::Score::zero();
+        currentRootMove = Move();
+        currentRootMoveNumber = 0;
         startTime = std::chrono::steady_clock::now();
         stopped = false;
         m_timeCheckCounter = 0;
