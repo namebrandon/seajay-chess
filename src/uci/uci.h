@@ -116,6 +116,7 @@ private:
     void handleQuit();
     void handleBench(const std::vector<std::string>& tokens);
     void handleSetOption(const std::vector<std::string>& tokens);  // Stage 14, Deliverable 1.8
+    void handleEval();  // Phase 3: UCI eval command for position analysis
     
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);

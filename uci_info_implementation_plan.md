@@ -201,7 +201,7 @@ Start with Phase 1-2 for immediate GUI improvement, then proceed through phases 
 | Phase | Status | Branch | Commit | Testing |
 |-------|--------|--------|--------|---------|
 | Phase 1 | **Completed** | feature/20250827-uci-info | 9a14934 | ✅ Bench unchanged (19191913) |
-| Phase 2 | **Completed** | feature/20250827-uci-info | 40af9e6 | ✅ Bench unchanged (19191913) |
+| Phase 2 | **Completed** | feature/20250827-uci-info | 7c7a684 | ✅ Bench unchanged (19191913), currmove verified |
 | Phase 3 | Not Started | - | - | - |
 | Phase 4 | Not Started | - | - | - |
 | Phase 5 | Not Started | - | - | - |

@@ -8,6 +8,7 @@
 #include "../search/lmr.h"             // For LMR table initialization
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
+#include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -64,6 +65,9 @@ void UCIEngine::run() {
         }
         else if (command == "setoption") {
             handleSetOption(tokens);  // Stage 14, Deliverable 1.8
+        }
+        else if (command == "eval") {
+            handleEval();  // Phase 3: Position evaluation display
         }
         // Ignore unknown commands (UCI protocol requirement)
     }
@@ -1057,4 +1061,58 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         }
     }
     // Ignore unknown options (UCI requirement)
+}
+
+void UCIEngine::handleEval() {
+    // Phase 3: UCI eval command implementation
+    // Display static evaluation breakdown for the current position
+    
+    // Get detailed evaluation breakdown
+    eval::EvalBreakdown breakdown = eval::evaluateDetailed(m_board);
+    
+    std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
+    std::cout << "| Position Evaluation |" << std::endl;
+    std::cout << "+---+---+---+---+---+---+---+---+" << std::endl;
+    
+    // Display the board for context
+    std::cout << "\nCurrent Position:" << std::endl;
+    std::cout << m_board.toString() << std::endl;
+    
+    // Display FEN
+    std::cout << "FEN: " << m_board.toFEN() << std::endl;
+    
+    // Display detailed evaluation breakdown
+    std::cout << "\n+--- Evaluation Breakdown ---+" << std::endl;
+    std::cout << "                            cp" << std::endl;
+    std::cout << "Material:              " << std::setw(7) << breakdown.material.to_cp() << std::endl;
+    std::cout << "Piece-Square Tables:   " << std::setw(7) << breakdown.pst.to_cp() << std::endl;
+    std::cout << "Passed Pawns:          " << std::setw(7) << breakdown.passedPawns.to_cp() << std::endl;
+    std::cout << "Isolated Pawns:        " << std::setw(7) << breakdown.isolatedPawns.to_cp() << std::endl;
+    std::cout << "Doubled Pawns:         " << std::setw(7) << breakdown.doubledPawns.to_cp() << std::endl;
+    std::cout << "Backward Pawns:        " << std::setw(7) << breakdown.backwardPawns.to_cp() << std::endl;
+    std::cout << "Pawn Islands:          " << std::setw(7) << breakdown.pawnIslands.to_cp() << std::endl;
+    std::cout << "Bishop Pair:           " << std::setw(7) << breakdown.bishopPair.to_cp() << std::endl;
+    std::cout << "Mobility:              " << std::setw(7) << breakdown.mobility.to_cp() << std::endl;
+    std::cout << "King Safety:           " << std::setw(7) << breakdown.kingSafety.to_cp() << std::endl;
+    std::cout << "Rook Files:            " << std::setw(7) << breakdown.rookFiles.to_cp() << std::endl;
+    std::cout << "Knight Outposts:       " << std::setw(7) << breakdown.knightOutposts.to_cp() << std::endl;
+    std::cout << "------------------------------" << std::endl;
+    std::cout << "Total:                 " << std::setw(7);
+    if (breakdown.total.to_cp() >= 0) std::cout << "+";
+    std::cout << breakdown.total.to_cp() << std::endl;
+    
+    // Display evaluation perspective info
+    std::cout << "\n(Evaluation from " << (m_board.sideToMove() == WHITE ? "White" : "Black") 
+              << "'s perspective - side to move)" << std::endl;
+    
+    // Convert to white's perspective for traditional display
+    eval::EvalBreakdown whitePersp = breakdown;
+    if (m_board.sideToMove() == BLACK) {
+        whitePersp.total = -whitePersp.total;
+    }
+    std::cout << "From White's perspective: ";
+    if (whitePersp.total.to_cp() >= 0) std::cout << "+";
+    std::cout << whitePersp.total.to_cp() << " cp" << std::endl;
+    
+    std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
 }
