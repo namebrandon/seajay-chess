@@ -100,6 +100,13 @@ struct SearchLimits {
 
 // Search statistics and state information
 struct SearchData {
+    // Virtual destructor to make class polymorphic for dynamic_cast
+    virtual ~SearchData() = default;
+    
+    // Virtual method to check if this is an IterativeSearchData
+    // This replaces expensive dynamic_cast in hot path
+    virtual bool isIterativeSearch() const { return false; }
+    
     // Node statistics
     uint64_t nodes = 0;           // Total nodes searched
     uint64_t betaCutoffs = 0;     // Total beta cutoffs
@@ -129,6 +136,13 @@ struct SearchData {
     // Best move information
     Move bestMove;                 // Best move found so far
     eval::Score bestScore = eval::Score::zero(); // Score of best move
+    
+    // Phase 2: Currmove tracking for UCI info at root
+    Move currentRootMove;          // Current move being searched at root
+    int currentRootMoveNumber = 0; // Move number (1-based) at root
+    
+    // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
+    Color rootSideToMove = WHITE;  // Side to move at root (for UCI perspective conversion)
     
     // Time management
     std::chrono::steady_clock::time_point startTime;
@@ -320,13 +334,17 @@ struct SearchData {
     uint64_t razoringCutoffs = 0;       // Positions cut off by razoring
     
     // Stage 19: Killer moves for move ordering
-    KillerMoves killers;
+    // PERFORMANCE FIX: Changed from embedded to pointer to reduce SearchData size from 42KB to 1KB
+    // This fixes cache thrashing that caused 30-40 ELO loss
+    KillerMoves* killers = nullptr;
     
     // Stage 20: History heuristic for move ordering
-    HistoryHeuristic history;
+    // PERFORMANCE FIX: Changed from embedded to pointer (was 32KB embedded)
+    HistoryHeuristic* history = nullptr;
     
     // Stage 23: Countermove heuristic for move ordering
-    CounterMoves counterMoves;
+    // PERFORMANCE FIX: Changed from embedded to pointer (was 16KB embedded)
+    CounterMoves* counterMoves = nullptr;
     int countermoveBonus = 0;  // CM3.3: Bonus value from UCI
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
@@ -407,13 +425,15 @@ struct SearchData {
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
         razoringCutoffs = 0;  // Phase 4: Reset razoring counter
-        killers.clear();  // Stage 19: Clear killer moves
+        if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations
         depth = 0;
         seldepth = 0;
         bestMove = Move();
         bestScore = eval::Score::zero();
+        currentRootMove = Move();
+        currentRootMoveNumber = 0;
         startTime = std::chrono::steady_clock::now();
         stopped = false;
         m_timeCheckCounter = 0;

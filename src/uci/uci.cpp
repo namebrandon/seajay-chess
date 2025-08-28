@@ -8,6 +8,7 @@
 #include "../search/lmr.h"             // For LMR table initialization
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
+#include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -64,6 +65,9 @@ void UCIEngine::run() {
         }
         else if (command == "setoption") {
             handleSetOption(tokens);  // Stage 14, Deliverable 1.8
+        }
+        else if (command == "eval") {
+            handleEval();  // Phase 3: Position evaluation display
         }
         // Ignore unknown commands (UCI protocol requirement)
     }
@@ -141,6 +145,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name OpeningStability type spin default 4 min 2 max 8" << std::endl;
     std::cout << "option name MiddlegameStability type spin default 6 min 3 max 10" << std::endl;
     std::cout << "option name EndgameStability type spin default 8 min 4 max 12" << std::endl;
+    
+    // Important notice about evaluation scoring
+    std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
     
     std::cout << "uciok" << std::endl;
 }
@@ -1057,4 +1064,69 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         }
     }
     // Ignore unknown options (UCI requirement)
+}
+
+void UCIEngine::handleEval() {
+    // Phase 3: UCI eval command implementation
+    // Display static evaluation breakdown for the current position
+    // UCI Score Conversion: Show all values from White's perspective
+    
+    // Get detailed evaluation breakdown (in side-to-move perspective)
+    eval::EvalBreakdown breakdown = eval::evaluateDetailed(m_board);
+    
+    // UCI Score Conversion: Convert to White's perspective if Black to move
+    eval::EvalBreakdown uciBreakdown = breakdown;
+    if (m_board.sideToMove() == BLACK) {
+        // Negate all components for White's perspective
+        uciBreakdown.material = -uciBreakdown.material;
+        uciBreakdown.pst = -uciBreakdown.pst;
+        uciBreakdown.passedPawns = -uciBreakdown.passedPawns;
+        uciBreakdown.isolatedPawns = -uciBreakdown.isolatedPawns;
+        uciBreakdown.doubledPawns = -uciBreakdown.doubledPawns;
+        uciBreakdown.backwardPawns = -uciBreakdown.backwardPawns;
+        uciBreakdown.pawnIslands = -uciBreakdown.pawnIslands;
+        uciBreakdown.bishopPair = -uciBreakdown.bishopPair;
+        uciBreakdown.mobility = -uciBreakdown.mobility;
+        uciBreakdown.kingSafety = -uciBreakdown.kingSafety;
+        uciBreakdown.rookFiles = -uciBreakdown.rookFiles;
+        uciBreakdown.knightOutposts = -uciBreakdown.knightOutposts;
+        uciBreakdown.total = -uciBreakdown.total;
+    }
+    
+    std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
+    std::cout << "| Position Evaluation |" << std::endl;
+    std::cout << "+---+---+---+---+---+---+---+---+" << std::endl;
+    
+    // Display the board for context
+    std::cout << "\nCurrent Position:" << std::endl;
+    std::cout << m_board.toString() << std::endl;
+    
+    // Display FEN
+    std::cout << "FEN: " << m_board.toFEN() << std::endl;
+    
+    // Display detailed evaluation breakdown (White's perspective)
+    std::cout << "\n+--- Evaluation Breakdown (White's Perspective) ---+" << std::endl;
+    std::cout << "                            cp" << std::endl;
+    std::cout << "Material:              " << std::setw(7) << uciBreakdown.material.to_cp() << std::endl;
+    std::cout << "Piece-Square Tables:   " << std::setw(7) << uciBreakdown.pst.to_cp() << std::endl;
+    std::cout << "Passed Pawns:          " << std::setw(7) << uciBreakdown.passedPawns.to_cp() << std::endl;
+    std::cout << "Isolated Pawns:        " << std::setw(7) << uciBreakdown.isolatedPawns.to_cp() << std::endl;
+    std::cout << "Doubled Pawns:         " << std::setw(7) << uciBreakdown.doubledPawns.to_cp() << std::endl;
+    std::cout << "Backward Pawns:        " << std::setw(7) << uciBreakdown.backwardPawns.to_cp() << std::endl;
+    std::cout << "Pawn Islands:          " << std::setw(7) << uciBreakdown.pawnIslands.to_cp() << std::endl;
+    std::cout << "Bishop Pair:           " << std::setw(7) << uciBreakdown.bishopPair.to_cp() << std::endl;
+    std::cout << "Mobility:              " << std::setw(7) << uciBreakdown.mobility.to_cp() << std::endl;
+    std::cout << "King Safety:           " << std::setw(7) << uciBreakdown.kingSafety.to_cp() << std::endl;
+    std::cout << "Rook Files:            " << std::setw(7) << uciBreakdown.rookFiles.to_cp() << std::endl;
+    std::cout << "Knight Outposts:       " << std::setw(7) << uciBreakdown.knightOutposts.to_cp() << std::endl;
+    std::cout << "------------------------------" << std::endl;
+    std::cout << "Total:                 " << std::setw(7);
+    if (uciBreakdown.total.to_cp() >= 0) std::cout << "+";
+    std::cout << uciBreakdown.total.to_cp() << std::endl;
+    
+    // Display perspective info for clarity
+    std::cout << "\n(All values shown from White's perspective per UCI standard)" << std::endl;
+    std::cout << "Side to move: " << (m_board.sideToMove() == WHITE ? "White" : "Black") << std::endl;
+    
+    std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
 }

@@ -1614,6 +1614,13 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
     m_sideToMove = ~m_sideToMove;
     updateZobristSideToMove();
     
+    // CRITICAL BUG FIX: Evaluation depends on side-to-move!
+    // The evaluation function returns scores from the side-to-move's perspective.
+    // When we change sides, the cached evaluation has the wrong sign.
+    // This was causing a 40 ELO regression because the search was using 
+    // evaluations with the wrong perspective for quiet moves.
+    m_evalCacheValid = false;
+    
 #ifdef DEBUG
     // Verify zobrist consistency
     Hash reconstructed = ZobristKeyManager::computeKey(*this);

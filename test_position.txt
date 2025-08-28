@@ -1,0 +1,4 @@
+setoption name Hash value 512
+position fen r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17
+go depth 16
+quit

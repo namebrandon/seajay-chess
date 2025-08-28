@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
+#include <type_traits>  // DEBUG_UCI_REGRESSION: For std::is_polymorphic
 
 namespace seajay::search {
 
@@ -76,10 +77,10 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Stage 20, Phase B2: Use history heuristic for quiet moves
     // Stage 23, CM3.2: Countermove lookup (no bonus yet)
     static MvvLvaOrdering mvvLva;
-    if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
+    if (searchData != nullptr) {
         // CM3.2: Use new overload with countermoves (bonus=0 for this phase)
-        mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
-                                    *searchData->counterMoves, prevMove, ply, countermoveBonus);
+        mvvLva.orderMovesWithHistory(board, moves, searchData->killers, searchData->history,
+                                    searchData->counterMoves, prevMove, ply, countermoveBonus);
     } else {
         // Fallback to standard MVV-LVA
         mvvLva.orderMoves(board, moves);
@@ -114,6 +115,15 @@ eval::Score negamax(Board& board,
                    TranspositionTable* tt,
                    bool isPvNode) {
     
+    // DEBUG_UCI_REGRESSION: Measure SearchData object size and alignment
+    static bool debugInfoPrinted = false;
+    if (!debugInfoPrinted && ply == 0) {
+        debugInfoPrinted = true;
+        std::cerr << "[DEBUG_UCI_REGRESSION] SearchData size: " << sizeof(SearchData) << " bytes" << std::endl;
+        std::cerr << "[DEBUG_UCI_REGRESSION] SearchData alignment: " << alignof(SearchData) << " bytes" << std::endl;
+        std::cerr << "[DEBUG_UCI_REGRESSION] IterativeSearchData size: " << sizeof(IterativeSearchData) << " bytes" << std::endl;
+        std::cerr << "[DEBUG_UCI_REGRESSION] Has virtual table: " << (std::is_polymorphic<SearchData>::value ? "YES" : "NO") << std::endl;
+    }
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
@@ -143,19 +153,52 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
+    // DEBUG_UCI_REGRESSION: Track info output overhead
+    static uint64_t totalInfoCalls = 0;
+    static uint64_t totalDynamicCasts = 0;
+    static uint64_t successfulDynamicCasts = 0;
+    static std::chrono::nanoseconds totalInfoTime{0};
+    static std::chrono::nanoseconds totalCastTime{0};
     
     // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
     if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
-        // Use virtual method instead of expensive dynamic_cast
-        // This eliminates RTTI overhead in the hot path
-        if (info.isIterativeSearch()) {
-            auto* iterativeInfo = static_cast<IterativeSearchData*>(&info);
+        // DEBUG_UCI_REGRESSION: Time the dynamic cast
+        auto castStart = std::chrono::high_resolution_clock::now();
+        totalDynamicCasts++;
+        
+        // Try to cast to IterativeSearchData for time-based updates
+        auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
+        
+        auto castEnd = std::chrono::high_resolution_clock::now();
+        totalCastTime += std::chrono::duration_cast<std::chrono::nanoseconds>(castEnd - castStart);
+        
+        if (iterativeInfo) {
+            successfulDynamicCasts++;
             if (iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
+                // DEBUG_UCI_REGRESSION: Time the info output
+                auto infoStart = std::chrono::high_resolution_clock::now();
+                totalInfoCalls++;
+                
                 // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
                 sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);
                 iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
+                
+                auto infoEnd = std::chrono::high_resolution_clock::now();
+                totalInfoTime += std::chrono::duration_cast<std::chrono::nanoseconds>(infoEnd - infoStart);
             }
+        }
+        
+        // DEBUG_UCI_REGRESSION: Report overhead every 1M nodes
+        if ((info.nodes & 0xFFFFF) == 0 && info.nodes > 0) {
+            std::cerr << "[DEBUG_UCI_REGRESSION] Nodes=" << info.nodes 
+                      << " DynCasts=" << totalDynamicCasts 
+                      << " (" << successfulDynamicCasts << " successful)"
+                      << " InfoCalls=" << totalInfoCalls
+                      << " CastTime=" << (totalCastTime.count() / 1000000.0) << "ms"
+                      << " InfoTime=" << (totalInfoTime.count() / 1000000.0) << "ms"
+                      << " Overhead=" << ((totalCastTime.count() + totalInfoTime.count()) * 100.0 / (info.elapsed().count() * 1000000.0)) << "%"
+                      << std::endl;
         }
     }
     
@@ -499,7 +542,7 @@ eval::Score negamax(Board& board,
     
     // CM4.1: Track countermove hit attempts
     if (prevMove != NO_MOVE && info.countermoveBonus > 0) {
-        Move counterMove = info.counterMoves->getCounterMove(prevMove);
+        Move counterMove = info.counterMoves.getCounterMove(prevMove);
         if (counterMove != NO_MOVE) {
             // Check if countermove is in our move list
             if (std::find(moves.begin(), moves.end(), counterMove) != moves.end()) {
@@ -584,11 +627,11 @@ eval::Score negamax(Board& board,
         // Only prune at depths 3+ to avoid tactical blindness at shallow depths
         // Much more conservative limits to avoid over-pruning
         if (limits.useMoveCountPruning && !isPvNode && !weAreInCheck && depth >= 3 && depth <= 8 && moveCount > 1
-            && !isCapture(move) && !isPromotion(move) && !info.killers->isKiller(ply, move)) {
+            && !isCapture(move) && !isPromotion(move) && !info.killers.isKiller(ply, move)) {
             
             // Phase 3.3: Countermove Consideration
             // Don't prune countermoves - they're often good responses
-            if (prevMove != NO_MOVE && move == info.counterMoves->getCounterMove(prevMove)) {
+            if (prevMove != NO_MOVE && move == info.counterMoves.getCounterMove(prevMove)) {
                 // This is a countermove, don't prune it
                 // Skip the entire move count pruning block
             } else {
@@ -626,7 +669,7 @@ eval::Score negamax(Board& board,
             }
             
             // History-based adjustment (moderately conservative)
-            int historyScore = info.history->getScore(board.sideToMove(), moveFrom(move), moveTo(move));
+            int historyScore = info.history.getScore(board.sideToMove(), moveFrom(move), moveTo(move));
             if (historyScore > limits.moveCountHistoryThreshold) {  // Configurable threshold
                 limit += limits.moveCountHistoryBonus;  // Configurable bonus
             }
@@ -720,8 +763,8 @@ eval::Score negamax(Board& board,
                 // Check if we should reduce this move with improved conditions
                 if (shouldReduceMove(move, depth, moveCount, captureMove, 
                                     weAreInCheck, givesCheck, pvNode, 
-                                    *info.killers, *info.history, 
-                                    *info.counterMoves, prevMove,
+                                    info.killers, info.history, 
+                                    info.counterMoves, prevMove,
                                     ply, board.sideToMove(),
                                     info.lmrParams)) {
                     // Calculate reduction amount
@@ -834,10 +877,10 @@ eval::Score negamax(Board& board,
                                 stats.rxpCutoffs++;
                             }
                         }
-                    } else if (info.killers->isKiller(ply, move)) {
+                    } else if (info.killers.isKiller(ply, move)) {
                         stats.killerCutoffs++;
                     } else if (info.countermoveBonus > 0 && prevMove != NO_MOVE &&
-                               move == info.counterMoves->getCounterMove(prevMove)) {
+                               move == info.counterMoves.getCounterMove(prevMove)) {
                         stats.counterMoveCutoffs++;
                     } else {
                         stats.quietCutoffs++;
@@ -855,16 +898,16 @@ eval::Score negamax(Board& board,
                     // Stage 20, Phase B3: Update history for quiet moves that cause cutoffs
                     // Stage 23, Phase CM2: Update countermoves (shadow mode - no ordering yet)
                     if (!isCapture(move) && !isPromotion(move)) {
-                        info.killers->update(ply, move);
+                        info.killers.update(ply, move);
                         
                         // Update history with depth-based bonus for cutoff move
                         Color side = board.sideToMove();
-                        info.history->update(side, moveFrom(move), moveTo(move), depth);
+                        info.history.update(side, moveFrom(move), moveTo(move), depth);
                         
                         // Butterfly update: penalize quiet moves tried before the cutoff
                         for (const Move& quietMove : quietMoves) {
                             if (quietMove != move) {  // Don't penalize the cutoff move itself
-                                info.history->updateFailed(side, moveFrom(quietMove), moveTo(quietMove), depth);
+                                info.history.updateFailed(side, moveFrom(quietMove), moveTo(quietMove), depth);
                             }
                         }
                         
@@ -873,7 +916,7 @@ eval::Score negamax(Board& board,
                         if (ply > 0) {
                             Move prevMove = searchInfo.getStackEntry(ply - 1).move;
                             if (prevMove != NO_MOVE) {
-                                info.counterMoves->update(prevMove, move);
+                                info.counterMoves.update(prevMove, move);
                                 info.counterMoveStats.updates++;  // Track shadow mode updates
                             }
                         }
@@ -935,6 +978,18 @@ eval::Score negamax(Board& board,
 // This function calls the existing search without modifications
 // Used to verify that IterativeSearchData doesn't break anything
 Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
+    // TEMPORARY DEBUG - REMOVE AFTER FIX
+    static bool sizesReported = false;
+    if (!sizesReported) {
+        std::cerr << "=== Object Sizes Before Fix ===" << std::endl;
+        std::cerr << "SearchData size: " << sizeof(SearchData) << " bytes" << std::endl;
+        std::cerr << "IterativeSearchData size: " << sizeof(IterativeSearchData) << " bytes" << std::endl;
+        std::cerr << "KillerMoves size: " << sizeof(KillerMoves) << " bytes" << std::endl;
+        std::cerr << "HistoryHeuristic size: " << sizeof(HistoryHeuristic) << " bytes" << std::endl;
+        std::cerr << "CounterMoves size: " << sizeof(CounterMoves) << " bytes" << std::endl;
+        sizesReported = true;
+    }
+    
     // Stage 13, Deliverable 1.2c: Full iteration recording (all depths)
     // Stage 13, Deliverable 2.2a: Time management integration prep
     SearchInfo searchInfo;
@@ -1660,6 +1715,14 @@ void sendSearchInfo(const SearchData& info) {
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
 // UCI Score Conversion: Added Color parameter for White's perspective conversion
 void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
+    // DEBUG_UCI_REGRESSION: Measure InfoBuilder overhead
+    static uint64_t totalBuilderCalls = 0;
+    static std::chrono::nanoseconds totalBuilderTime{0};
+    static std::chrono::nanoseconds totalStreamTime{0};
+    
+    auto builderStart = std::chrono::high_resolution_clock::now();
+    totalBuilderCalls++;
+    
     uci::InfoBuilder builder;
     
     // Basic depth info
@@ -1695,7 +1758,24 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
         builder.appendPv(info.bestMove);
     }
     
+    auto builderEnd = std::chrono::high_resolution_clock::now();
+    totalBuilderTime += std::chrono::duration_cast<std::chrono::nanoseconds>(builderEnd - builderStart);
+    
+    // DEBUG_UCI_REGRESSION: Measure stream output time
+    auto streamStart = std::chrono::high_resolution_clock::now();
     std::cout << builder.build();
+    auto streamEnd = std::chrono::high_resolution_clock::now();
+    totalStreamTime += std::chrono::duration_cast<std::chrono::nanoseconds>(streamEnd - streamStart);
+    
+    // DEBUG_UCI_REGRESSION: Report every 100 calls
+    if ((totalBuilderCalls % 100) == 0) {
+        std::cerr << "[DEBUG_UCI_REGRESSION] InfoBuilder calls: " << totalBuilderCalls
+                  << " BuilderTime: " << (totalBuilderTime.count() / 1000000.0) << "ms"
+                  << " StreamTime: " << (totalStreamTime.count() / 1000000.0) << "ms"
+                  << " AvgBuilder: " << (totalBuilderTime.count() / totalBuilderCalls / 1000.0) << "us"
+                  << " AvgStream: " << (totalStreamTime.count() / totalBuilderCalls / 1000.0) << "us"
+                  << std::endl;
+    }
 }
 
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details

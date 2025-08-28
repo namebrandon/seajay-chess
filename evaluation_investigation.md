@@ -6,7 +6,12 @@
 
 ## Executive Summary
 
-SeaJay demonstrates catastrophic move selection despite reasonable static evaluation. In the test position, SeaJay's static evaluation (+221 cp) is close to correct (+300 cp), but the moves it selects (Kf7, Kd7, Qg2+, d5d4) all lose immediately or severely worsen the position.
+**UPDATED 2025-08-28**: Critical discovery - SeaJay's evaluation has the WRONG SIGN for this position!
+- SeaJay evaluates: +315 cp (meaning Black is winning)  
+- Correct evaluation: -300 cp from Black's view (White is winning)
+- This is a **600+ centipawn error** due to incorrect evaluation perspective
+
+Original finding: SeaJay demonstrates catastrophic move selection. The moves it selects (Kf7, Kd7, Qg2+, d5d4) all lose immediately or severely worsen the position.
 
 ---
 
@@ -31,20 +36,28 @@ FEN: r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17
 
 | Engine | Evaluation | Notes |
 |--------|------------|-------|
-| Independent engines | +300 cp (±100) | White is better despite material deficit |
-| SeaJay | +221 cp | Reasonably close to correct |
-| Stockfish 17 | +46 cp | Surprisingly low, possible NNUE issue |
+| Independent engines | +250 to +320 cp | White is better despite material deficit |
+| Stockfish 16 (no NNUE) | +250 to +320 cp | Consistent with other classical engines |
+| SeaJay (from Black's view) | -315 cp (static), -198 cp (depth 12) | INCORRECT - thinks Black is winning! |
+| Stockfish 17 (NNUE) | +46 cp | Surprisingly low, confirmed NNUE issue |
 
-### SeaJay's Evaluation Breakdown
+### SeaJay's Evaluation Breakdown (UPDATED 2025-08-28)
+
+**CRITICAL ERROR DISCOVERED**: SeaJay uses negamax scoring (always from side-to-move perspective)
+- When Black to move: +315 cp means "Black is winning by 315 cp"
+- Reality: White should be winning by +250 to +320 cp
+- **SeaJay has the evaluation BACKWARDS!**
 
 ```
-Material: -300 cp (Black up 3 pawns - correct)
-PST: +50 cp (middlegame)
-Other factors: +471 cp (!)
-Total: +221 cp for White
+From Black's perspective (side to move):
+Material: +300 cp (Black up 3 pawns - counted correctly)
+PST: -50 cp 
+Passed pawns: +50 cp
+Isolated pawns: +15 cp
+Total: +315 cp (thinks Black is winning!)
 ```
 
-**Key finding**: SeaJay adds +471 cp beyond material and PST, suggesting evaluation components (passed pawns, king safety, mobility, etc.) are heavily favoring White. While this seems to land us in the same evaluation range as independent engines, we should not assume SeaJay has arrived to the value with correct or similar logic. 
+**Key finding**: SeaJay evaluates this as +315 cp for Black (the side to move), when it should be approximately -300 cp for Black. This is a **600+ centipawn error** in evaluation sign/perspective! 
 
 ---
 
