@@ -126,16 +126,9 @@ SEAJAY_NODES=$(echo "$SEAJAY_INFO" | grep -oP "nodes \K[0-9]+")
 SEAJAY_NPS=$(echo "$SEAJAY_INFO" | grep -oP "nps \K[0-9]+")
 SEAJAY_PV=$(echo "$SEAJAY_INFO" | grep -oP "pv \K[^ ]+" | head -1)
 
-# Convert SeaJay score to UCI perspective
-if [ -n "$SEAJAY_SCORE" ]; then
-    if [ "$SIDE_TO_MOVE" = "w" ]; then
-        SEAJAY_UCI_SCORE=$SEAJAY_SCORE
-    else
-        SEAJAY_UCI_SCORE=$((-SEAJAY_SCORE))
-    fi
-else
-    SEAJAY_UCI_SCORE=""
-fi
+# SeaJay now outputs UCI-compliant scores (White's perspective) after conversion update
+# No conversion needed anymore
+SEAJAY_UCI_SCORE=$SEAJAY_SCORE
 
 # Run Stockfish analysis
 echo -e "${YELLOW}[2/4] Running Stockfish...${NC}"
@@ -193,7 +186,7 @@ echo -e "==========================================${NC}"
 echo
 echo -e "${BOLD}Scores (White's perspective):"
 echo -e "----------------------------------------${NC}"
-printf "%-12s %+7scp  %-18s %s\n" "SeaJay:" "${SEAJAY_UCI_SCORE:-N/A}" "$([ -n "$SEAJAY_UCI_SCORE" ] && interpret_score "$SEAJAY_UCI_SCORE" || echo "")" "[negamax→UCI]"
+printf "%-12s %+7scp  %-18s %s\n" "SeaJay:" "${SEAJAY_UCI_SCORE:-N/A}" "$([ -n "$SEAJAY_UCI_SCORE" ] && interpret_score "$SEAJAY_UCI_SCORE" || echo "")" "[UCI-compliant]"
 printf "%-12s %+7scp  %-18s\n" "Stockfish:" "${SF_SCORE:-N/A}" "$([ -n "$SF_SCORE" ] && interpret_score "$SF_SCORE" || echo "")"
 printf "%-12s %+7scp  %-18s\n" "Stash:" "${STASH_SCORE:-N/A}" "$([ -n "$STASH_SCORE" ] && interpret_score "$STASH_SCORE" || echo "")"
 printf "%-12s %+7scp  %-18s\n" "Laser:" "${LASER_SCORE:-N/A}" "$([ -n "$LASER_SCORE" ] && interpret_score "$LASER_SCORE" || echo "")"
@@ -357,13 +350,8 @@ echo -e "${BOLD}Static evaluations (in centipawns):${NC}"
 echo -e "----------------------------------------"
 
 if [ -n "$SEAJAY_EVAL" ]; then
-    # Convert to White's perspective
-    if [ "$SIDE_TO_MOVE" = "w" ]; then
-        SEAJAY_EVAL_WHITE=$SEAJAY_EVAL
-    else
-        SEAJAY_EVAL_WHITE=$((-SEAJAY_EVAL))
-    fi
-    printf "%-12s %+7dcp (side-to-move: %+dcp)\n" "SeaJay:" "$SEAJAY_EVAL_WHITE" "$SEAJAY_EVAL"
+    # SeaJay eval now shows White's perspective after UCI conversion update
+    printf "%-12s %+7dcp (White's view)\n" "SeaJay:" "$SEAJAY_EVAL"
 fi
 
 if [ -n "$SF_EVAL_CP" ]; then
@@ -378,13 +366,13 @@ fi
 echo -e "%-12s (no eval command)" "Stash:"
 
 # Calculate static eval variance if we have multiple values
-if [ -n "$SEAJAY_EVAL_WHITE" ] && [ -n "$SF_EVAL_CP" -o -n "$LASER_EVAL" ]; then
+if [ -n "$SEAJAY_EVAL" ] && [ -n "$SF_EVAL_CP" -o -n "$LASER_EVAL" ]; then
     echo
     echo -e "${BOLD}Static eval analysis:${NC}"
     
     # Find min/max among available evals
-    MIN_EVAL=$SEAJAY_EVAL_WHITE
-    MAX_EVAL=$SEAJAY_EVAL_WHITE
+    MIN_EVAL=$SEAJAY_EVAL
+    MAX_EVAL=$SEAJAY_EVAL
     
     if [ -n "$SF_EVAL_CP" ]; then
         [ "$SF_EVAL_CP" -lt "$MIN_EVAL" ] && MIN_EVAL=$SF_EVAL_CP
@@ -411,7 +399,7 @@ fi
 echo
 echo -e "${BOLD}==========================================${NC}"
 echo -e "${BOLD}Key Insights:${NC}"
-echo -e "• SeaJay uses negamax (converted to UCI above)"
+echo -e "• SeaJay now outputs UCI-compliant White's perspective"
 echo -e "• Compare all four engines to identify:"
 echo -e "  - Evaluation function issues"
 echo -e "  - Search depth problems"
