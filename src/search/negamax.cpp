@@ -142,14 +142,14 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
-    // Phase 1 & 2: Check for periodic UCI info updates
+    // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
     if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
         // Try to cast to IterativeSearchData for time-based updates
         auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
-        if (iterativeInfo && iterativeInfo->shouldSendInfo()) {
+        if (iterativeInfo && iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
             sendCurrentSearchInfo(*iterativeInfo, tt);
-            iterativeInfo->recordInfoSent();
+            iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
         }
     }
     
@@ -1070,7 +1070,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             bestMove = info.bestMove;
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
+            // Phase 6: Always send info at iteration completion and record it
             sendIterationInfo(info, tt);
+            info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
             // Record iteration data for ALL depths (full recording)
             auto iterationEnd = std::chrono::steady_clock::now();

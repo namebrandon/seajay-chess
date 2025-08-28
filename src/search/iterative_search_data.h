@@ -9,6 +9,7 @@
 #include "time_management.h"
 #include <array>
 #include <chrono>
+#include <cstdlib>  // For std::abs
 #include <algorithm>  // For std::min
 
 namespace seajay::search {
@@ -49,9 +50,16 @@ public:
     int m_scoreStabilityCount{0};                    // Iterations with similar score
     eval::Score m_scoreWindow{eval::Score(10)};      // Window for score stability (10 cp)
     
-    // UCI info update timing (Phase 1)
+    // UCI info update timing (Phase 1, enhanced in Phase 6)
     std::chrono::steady_clock::time_point m_lastInfoTime;  // Last time info was sent
-    static constexpr auto INFO_UPDATE_INTERVAL = std::chrono::milliseconds(100);  // Update interval
+    uint64_t m_nodesAtLastInfo{0};  // Node count at last info update (Phase 6)
+    eval::Score m_scoreAtLastInfo{eval::Score::zero()};  // Score at last info update (Phase 6)
+    
+    // Phase 6: Adaptive update intervals based on search time
+    static constexpr auto INFO_UPDATE_FAST = std::chrono::milliseconds(50);    // First 1 second
+    static constexpr auto INFO_UPDATE_MEDIUM = std::chrono::milliseconds(200);  // 1-10 seconds
+    static constexpr auto INFO_UPDATE_SLOW = std::chrono::milliseconds(1000);  // > 10 seconds
+    static constexpr auto INFO_MIN_NODES = uint64_t(10000);  // Minimum nodes between updates (Phase 6)
     
     // Reset for new search
     void reset() {
@@ -68,6 +76,8 @@ public:
         m_scoreStabilityCount = 0;
         m_scoreWindow = eval::Score(10);
         m_lastInfoTime = std::chrono::steady_clock::now();  // Phase 1: Reset info time
+        m_nodesAtLastInfo = 0;  // Phase 6: Reset node counter
+        m_scoreAtLastInfo = eval::Score::zero();  // Phase 6: Reset score
         
         // Clear iteration data
         for (auto& iter : m_iterations) {
@@ -75,16 +85,49 @@ public:
         }
     }
     
-    // Phase 1: Check if we should send UCI info update
-    bool shouldSendInfo() const {
+    // Phase 6: Enhanced check if we should send UCI info update with smart throttling
+    bool shouldSendInfo(bool forceOnScoreChange = false) const {
         auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastInfoTime);
-        return elapsed >= INFO_UPDATE_INTERVAL;
+        auto timeSinceLastInfo = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastInfoTime);
+        auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
+        
+        // Determine appropriate interval based on total search time
+        std::chrono::milliseconds requiredInterval;
+        if (totalElapsed < std::chrono::seconds(1)) {
+            requiredInterval = INFO_UPDATE_FAST;    // 50ms for first second
+        } else if (totalElapsed < std::chrono::seconds(10)) {
+            requiredInterval = INFO_UPDATE_MEDIUM;  // 200ms for 1-10 seconds
+        } else {
+            requiredInterval = INFO_UPDATE_SLOW;    // 1000ms after 10 seconds
+        }
+        
+        // Check time interval
+        if (timeSinceLastInfo < requiredInterval) {
+            return false;  // Not enough time has passed
+        }
+        
+        // Phase 6: Check minimum node count between updates
+        uint64_t nodesSinceLastInfo = nodes - m_nodesAtLastInfo;
+        if (nodesSinceLastInfo < INFO_MIN_NODES) {
+            return false;  // Not enough nodes searched
+        }
+        
+        // Phase 6: Check for significant score change (optional)
+        if (forceOnScoreChange && bestScore != eval::Score::zero()) {
+            int32_t scoreDiff = std::abs((bestScore - m_scoreAtLastInfo).to_cp());
+            if (scoreDiff >= 50) {  // Force update on 50cp change
+                return true;
+            }
+        }
+        
+        return true;  // All conditions met
     }
     
-    // Phase 1: Record that info was sent
-    void recordInfoSent() {
+    // Phase 6: Enhanced record that info was sent
+    void recordInfoSent(eval::Score currentScore) {
         m_lastInfoTime = std::chrono::steady_clock::now();
+        m_nodesAtLastInfo = nodes;
+        m_scoreAtLastInfo = currentScore;
     }
     
     // Basic methods for iteration tracking (Deliverable 1.1c)
