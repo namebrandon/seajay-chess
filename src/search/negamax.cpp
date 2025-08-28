@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
-#include <type_traits>  // DEBUG_UCI_REGRESSION: For std::is_polymorphic
 
 namespace seajay::search {
 
@@ -115,15 +114,6 @@ eval::Score negamax(Board& board,
                    TranspositionTable* tt,
                    bool isPvNode) {
     
-    // DEBUG_UCI_REGRESSION: Measure SearchData object size and alignment
-    static bool debugInfoPrinted = false;
-    if (!debugInfoPrinted && ply == 0) {
-        debugInfoPrinted = true;
-        std::cerr << "[DEBUG_UCI_REGRESSION] SearchData size: " << sizeof(SearchData) << " bytes" << std::endl;
-        std::cerr << "[DEBUG_UCI_REGRESSION] SearchData alignment: " << alignof(SearchData) << " bytes" << std::endl;
-        std::cerr << "[DEBUG_UCI_REGRESSION] IterativeSearchData size: " << sizeof(IterativeSearchData) << " bytes" << std::endl;
-        std::cerr << "[DEBUG_UCI_REGRESSION] Has virtual table: " << (std::is_polymorphic<SearchData>::value ? "YES" : "NO") << std::endl;
-    }
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
@@ -153,52 +143,19 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
-    // DEBUG_UCI_REGRESSION: Track info output overhead
-    static uint64_t totalInfoCalls = 0;
-    static uint64_t totalDynamicCasts = 0;
-    static uint64_t successfulDynamicCasts = 0;
-    static std::chrono::nanoseconds totalInfoTime{0};
-    static std::chrono::nanoseconds totalCastTime{0};
     
     // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
     if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
-        // DEBUG_UCI_REGRESSION: Time the dynamic cast
-        auto castStart = std::chrono::high_resolution_clock::now();
-        totalDynamicCasts++;
-        
         // Try to cast to IterativeSearchData for time-based updates
         auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
         
-        auto castEnd = std::chrono::high_resolution_clock::now();
-        totalCastTime += std::chrono::duration_cast<std::chrono::nanoseconds>(castEnd - castStart);
-        
         if (iterativeInfo) {
-            successfulDynamicCasts++;
             if (iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
-                // DEBUG_UCI_REGRESSION: Time the info output
-                auto infoStart = std::chrono::high_resolution_clock::now();
-                totalInfoCalls++;
-                
                 // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
                 sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);
                 iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
-                
-                auto infoEnd = std::chrono::high_resolution_clock::now();
-                totalInfoTime += std::chrono::duration_cast<std::chrono::nanoseconds>(infoEnd - infoStart);
             }
-        }
-        
-        // DEBUG_UCI_REGRESSION: Report overhead every 1M nodes
-        if ((info.nodes & 0xFFFFF) == 0 && info.nodes > 0) {
-            std::cerr << "[DEBUG_UCI_REGRESSION] Nodes=" << info.nodes 
-                      << " DynCasts=" << totalDynamicCasts 
-                      << " (" << successfulDynamicCasts << " successful)"
-                      << " InfoCalls=" << totalInfoCalls
-                      << " CastTime=" << (totalCastTime.count() / 1000000.0) << "ms"
-                      << " InfoTime=" << (totalInfoTime.count() / 1000000.0) << "ms"
-                      << " Overhead=" << ((totalCastTime.count() + totalInfoTime.count()) * 100.0 / (info.elapsed().count() * 1000000.0)) << "%"
-                      << std::endl;
         }
     }
     
@@ -1703,14 +1660,6 @@ void sendSearchInfo(const SearchData& info) {
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
 // UCI Score Conversion: Added Color parameter for White's perspective conversion
 void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
-    // DEBUG_UCI_REGRESSION: Measure InfoBuilder overhead
-    static uint64_t totalBuilderCalls = 0;
-    static std::chrono::nanoseconds totalBuilderTime{0};
-    static std::chrono::nanoseconds totalStreamTime{0};
-    
-    auto builderStart = std::chrono::high_resolution_clock::now();
-    totalBuilderCalls++;
-    
     uci::InfoBuilder builder;
     
     // Basic depth info
@@ -1746,24 +1695,7 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
         builder.appendPv(info.bestMove);
     }
     
-    auto builderEnd = std::chrono::high_resolution_clock::now();
-    totalBuilderTime += std::chrono::duration_cast<std::chrono::nanoseconds>(builderEnd - builderStart);
-    
-    // DEBUG_UCI_REGRESSION: Measure stream output time
-    auto streamStart = std::chrono::high_resolution_clock::now();
     std::cout << builder.build();
-    auto streamEnd = std::chrono::high_resolution_clock::now();
-    totalStreamTime += std::chrono::duration_cast<std::chrono::nanoseconds>(streamEnd - streamStart);
-    
-    // DEBUG_UCI_REGRESSION: Report every 100 calls
-    if ((totalBuilderCalls % 100) == 0) {
-        std::cerr << "[DEBUG_UCI_REGRESSION] InfoBuilder calls: " << totalBuilderCalls
-                  << " BuilderTime: " << (totalBuilderTime.count() / 1000000.0) << "ms"
-                  << " StreamTime: " << (totalStreamTime.count() / 1000000.0) << "ms"
-                  << " AvgBuilder: " << (totalBuilderTime.count() / totalBuilderCalls / 1000.0) << "us"
-                  << " AvgStream: " << (totalStreamTime.count() / totalBuilderCalls / 1000.0) << "us"
-                  << std::endl;
-    }
 }
 
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
