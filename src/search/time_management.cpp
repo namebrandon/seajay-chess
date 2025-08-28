@@ -102,6 +102,12 @@ TimeLimits calculateTimeLimits(const SearchLimits& limits,
     // Soft limit is the same as optimum (can be exceeded if position is unstable)
     result.soft = result.optimum;
     
+    // For infinite analysis, set all limits to max
+    if (limits.infinite) {
+        result.hard = std::chrono::milliseconds::max();
+        return result;
+    }
+    
     // Hard limit is 3x the optimum, but capped at 50% of remaining time
     result.hard = std::chrono::milliseconds(result.optimum.count() * 3);
     
@@ -124,6 +130,11 @@ bool shouldStopOnTime(const TimeLimits& limits,
     
     // Never stop if we haven't searched anything
     if (completedDepth < 1) {
+        return false;
+    }
+    
+    // Never stop for infinite time (max value)
+    if (limits.hard == std::chrono::milliseconds::max()) {
         return false;
     }
     

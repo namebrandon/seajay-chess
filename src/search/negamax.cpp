@@ -983,6 +983,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.m_hardLimit = timeLimits.hard.count();
     info.m_optimumTime = timeLimits.optimum.count();
     
+    
     // Use NEW calculation for timeLimit (replacing old)
     info.timeLimit = timeLimits.optimum;
     
@@ -1226,7 +1227,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             }
             
             // Stage 13, Deliverable 4.2b: Enhanced early termination logic
-            if (info.m_hardLimit > 0) {
+            // Skip time management for infinite searches
+            if (!limits.infinite && info.m_hardLimit > 0) {
                 // Use actual elapsed time, not cached (for accurate time management)
                 auto now = std::chrono::steady_clock::now();
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -1234,10 +1236,18 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 bool stable = info.isPositionStable();
                 
                 // Check if we should stop based on new time management
-                if (shouldStopOnTime(TimeLimits{std::chrono::milliseconds(info.m_softLimit),
-                                               std::chrono::milliseconds(info.m_hardLimit),
-                                               std::chrono::milliseconds(info.m_optimumTime)},
-                                   elapsed, depth, stable)) {
+                // Guard against max value issues
+                TimeLimits checkLimits;
+                checkLimits.soft = std::chrono::milliseconds(info.m_softLimit);
+                checkLimits.optimum = std::chrono::milliseconds(info.m_optimumTime);
+                // Protect against overflow when hardLimit is near max
+                if (info.m_hardLimit >= std::chrono::milliseconds::max().count() - 1000) {
+                    checkLimits.hard = std::chrono::milliseconds::max();
+                } else {
+                    checkLimits.hard = std::chrono::milliseconds(info.m_hardLimit);
+                }
+                
+                if (shouldStopOnTime(checkLimits, elapsed, depth, stable)) {
                     std::cerr << "[Time Management] Stopping at depth " << depth 
                               << " (elapsed=" << elapsed.count() << "ms, "
                               << (stable ? "stable" : "unstable") << ")\n";

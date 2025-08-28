@@ -200,7 +200,7 @@ Start with Phase 1-2 for immediate GUI improvement, then proceed through phases 
 
 | Phase | Status | Branch | Commit | Testing |
 |-------|--------|--------|--------|---------|
-| Phase 1 | Not Started | - | - | - |
+| Phase 1 | **Completed** | feature/20250827-uci-info | 9a14934 | ✅ Bench unchanged (19191913) |
 | Phase 2 | Not Started | - | - | - |
 | Phase 3 | Not Started | - | - | - |
 | Phase 4 | Not Started | - | - | - |
@@ -209,3 +209,23 @@ Start with Phase 1-2 for immediate GUI improvement, then proceed through phases 
 | Phase 7 | Future | - | - | - |
 
 Last Updated: 2025-08-27
+
+## Implementation Notes
+
+### Phase 1 Completed
+- Added `m_lastInfoTime` and `INFO_UPDATE_INTERVAL` (100ms) to `IterativeSearchData`
+- Implemented `shouldSendInfo()` and `recordInfoSent()` methods
+- Created `sendCurrentSearchInfo()` function for mid-search updates
+- Added periodic check every 4096 nodes at root (ply==0) using dynamic_cast
+- Made `SearchData` polymorphic (added virtual destructor) to enable runtime type checking
+
+### Critical Bug Fixed During Phase 1
+**Issue:** Infinite search (`go infinite`) was stopping after depth 1
+**Root Cause:** Time management was incorrectly evaluating time limits for infinite searches
+**Fixes Applied:**
+1. Added `!limits.infinite` guard before time management checks in `searchIterativeTest()`
+2. Fixed overflow issues in `calculateTimeLimits()` when handling max milliseconds
+3. Added protection in `shouldStopOnTime()` to return false for infinite time
+4. Made `SearchData` polymorphic to enable `dynamic_cast` for periodic updates
+
+**Testing:** Verified infinite search now continues indefinitely until stopped

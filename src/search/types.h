@@ -100,6 +100,8 @@ struct SearchLimits {
 
 // Search statistics and state information
 struct SearchData {
+    // Virtual destructor to make class polymorphic for dynamic_cast
+    virtual ~SearchData() = default;
     // Node statistics
     uint64_t nodes = 0;           // Total nodes searched
     uint64_t betaCutoffs = 0;     // Total beta cutoffs
