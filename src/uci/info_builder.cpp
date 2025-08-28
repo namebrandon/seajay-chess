@@ -34,9 +34,7 @@ InfoBuilder& InfoBuilder::appendDepth(int depth, int seldepth) {
 }
 
 InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, ScoreBound bound) {
-    // TESTING: Disable UCI conversion to isolate regression
-    // Just pass through the score as-is (negamax perspective)
-    (void)sideToMove; // Suppress unused parameter warning
+    // TEST 1: Enable ONLY centipawn conversion, not mate score conversion
     
     if (score.is_mate_score()) {
         int mateIn = 0;
@@ -45,13 +43,17 @@ InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, Score
         } else {
             mateIn = -(eval::Score::mate().value() + score.value()) / 2;
         }
-        // Pass through mate score without conversion
+        // KEEP mate score WITHOUT conversion
         addSpace();
         m_stream << "score mate " << mateIn;
         return *this;
     } else {
-        // Pass through centipawn score without conversion
-        return appendCentipawnScore(score.to_cp(), bound);
+        // ENABLE centipawn conversion to White's perspective
+        int cp = score.to_cp();
+        if (sideToMove == BLACK) {
+            cp = -cp;  // Negate for Black to get White's perspective
+        }
+        return appendCentipawnScore(cp, bound);
     }
 }
 
