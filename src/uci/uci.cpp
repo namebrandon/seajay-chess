@@ -1069,9 +1069,29 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
 void UCIEngine::handleEval() {
     // Phase 3: UCI eval command implementation
     // Display static evaluation breakdown for the current position
+    // UCI Score Conversion: Show all values from White's perspective
     
-    // Get detailed evaluation breakdown
+    // Get detailed evaluation breakdown (in side-to-move perspective)
     eval::EvalBreakdown breakdown = eval::evaluateDetailed(m_board);
+    
+    // UCI Score Conversion: Convert to White's perspective if Black to move
+    eval::EvalBreakdown uciBreakdown = breakdown;
+    if (m_board.sideToMove() == BLACK) {
+        // Negate all components for White's perspective
+        uciBreakdown.material = -uciBreakdown.material;
+        uciBreakdown.pst = -uciBreakdown.pst;
+        uciBreakdown.passedPawns = -uciBreakdown.passedPawns;
+        uciBreakdown.isolatedPawns = -uciBreakdown.isolatedPawns;
+        uciBreakdown.doubledPawns = -uciBreakdown.doubledPawns;
+        uciBreakdown.backwardPawns = -uciBreakdown.backwardPawns;
+        uciBreakdown.pawnIslands = -uciBreakdown.pawnIslands;
+        uciBreakdown.bishopPair = -uciBreakdown.bishopPair;
+        uciBreakdown.mobility = -uciBreakdown.mobility;
+        uciBreakdown.kingSafety = -uciBreakdown.kingSafety;
+        uciBreakdown.rookFiles = -uciBreakdown.rookFiles;
+        uciBreakdown.knightOutposts = -uciBreakdown.knightOutposts;
+        uciBreakdown.total = -uciBreakdown.total;
+    }
     
     std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
     std::cout << "| Position Evaluation |" << std::endl;
@@ -1084,38 +1104,29 @@ void UCIEngine::handleEval() {
     // Display FEN
     std::cout << "FEN: " << m_board.toFEN() << std::endl;
     
-    // Display detailed evaluation breakdown
-    std::cout << "\n+--- Evaluation Breakdown ---+" << std::endl;
+    // Display detailed evaluation breakdown (White's perspective)
+    std::cout << "\n+--- Evaluation Breakdown (White's Perspective) ---+" << std::endl;
     std::cout << "                            cp" << std::endl;
-    std::cout << "Material:              " << std::setw(7) << breakdown.material.to_cp() << std::endl;
-    std::cout << "Piece-Square Tables:   " << std::setw(7) << breakdown.pst.to_cp() << std::endl;
-    std::cout << "Passed Pawns:          " << std::setw(7) << breakdown.passedPawns.to_cp() << std::endl;
-    std::cout << "Isolated Pawns:        " << std::setw(7) << breakdown.isolatedPawns.to_cp() << std::endl;
-    std::cout << "Doubled Pawns:         " << std::setw(7) << breakdown.doubledPawns.to_cp() << std::endl;
-    std::cout << "Backward Pawns:        " << std::setw(7) << breakdown.backwardPawns.to_cp() << std::endl;
-    std::cout << "Pawn Islands:          " << std::setw(7) << breakdown.pawnIslands.to_cp() << std::endl;
-    std::cout << "Bishop Pair:           " << std::setw(7) << breakdown.bishopPair.to_cp() << std::endl;
-    std::cout << "Mobility:              " << std::setw(7) << breakdown.mobility.to_cp() << std::endl;
-    std::cout << "King Safety:           " << std::setw(7) << breakdown.kingSafety.to_cp() << std::endl;
-    std::cout << "Rook Files:            " << std::setw(7) << breakdown.rookFiles.to_cp() << std::endl;
-    std::cout << "Knight Outposts:       " << std::setw(7) << breakdown.knightOutposts.to_cp() << std::endl;
+    std::cout << "Material:              " << std::setw(7) << uciBreakdown.material.to_cp() << std::endl;
+    std::cout << "Piece-Square Tables:   " << std::setw(7) << uciBreakdown.pst.to_cp() << std::endl;
+    std::cout << "Passed Pawns:          " << std::setw(7) << uciBreakdown.passedPawns.to_cp() << std::endl;
+    std::cout << "Isolated Pawns:        " << std::setw(7) << uciBreakdown.isolatedPawns.to_cp() << std::endl;
+    std::cout << "Doubled Pawns:         " << std::setw(7) << uciBreakdown.doubledPawns.to_cp() << std::endl;
+    std::cout << "Backward Pawns:        " << std::setw(7) << uciBreakdown.backwardPawns.to_cp() << std::endl;
+    std::cout << "Pawn Islands:          " << std::setw(7) << uciBreakdown.pawnIslands.to_cp() << std::endl;
+    std::cout << "Bishop Pair:           " << std::setw(7) << uciBreakdown.bishopPair.to_cp() << std::endl;
+    std::cout << "Mobility:              " << std::setw(7) << uciBreakdown.mobility.to_cp() << std::endl;
+    std::cout << "King Safety:           " << std::setw(7) << uciBreakdown.kingSafety.to_cp() << std::endl;
+    std::cout << "Rook Files:            " << std::setw(7) << uciBreakdown.rookFiles.to_cp() << std::endl;
+    std::cout << "Knight Outposts:       " << std::setw(7) << uciBreakdown.knightOutposts.to_cp() << std::endl;
     std::cout << "------------------------------" << std::endl;
     std::cout << "Total:                 " << std::setw(7);
-    if (breakdown.total.to_cp() >= 0) std::cout << "+";
-    std::cout << breakdown.total.to_cp() << std::endl;
+    if (uciBreakdown.total.to_cp() >= 0) std::cout << "+";
+    std::cout << uciBreakdown.total.to_cp() << std::endl;
     
-    // Display evaluation perspective info
-    std::cout << "\n(Evaluation from " << (m_board.sideToMove() == WHITE ? "White" : "Black") 
-              << "'s perspective - side to move)" << std::endl;
-    
-    // Convert to white's perspective for traditional display
-    eval::EvalBreakdown whitePersp = breakdown;
-    if (m_board.sideToMove() == BLACK) {
-        whitePersp.total = -whitePersp.total;
-    }
-    std::cout << "From White's perspective: ";
-    if (whitePersp.total.to_cp() >= 0) std::cout << "+";
-    std::cout << whitePersp.total.to_cp() << " cp" << std::endl;
+    // Display perspective info for clarity
+    std::cout << "\n(All values shown from White's perspective per UCI standard)" << std::endl;
+    std::cout << "Side to move: " << (m_board.sideToMove() == WHITE ? "White" : "Black") << std::endl;
     
     std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
 }
