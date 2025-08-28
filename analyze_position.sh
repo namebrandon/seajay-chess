@@ -126,8 +126,7 @@ SEAJAY_NODES=$(echo "$SEAJAY_INFO" | grep -oP "nodes \K[0-9]+")
 SEAJAY_NPS=$(echo "$SEAJAY_INFO" | grep -oP "nps \K[0-9]+")
 SEAJAY_PV=$(echo "$SEAJAY_INFO" | grep -oP "pv \K[^ ]+" | head -1)
 
-# SeaJay now outputs UCI-compliant scores (White's perspective) after conversion update
-# No conversion needed anymore
+# SeaJay now outputs UCI-compliant scores (White's perspective) - no conversion needed
 SEAJAY_UCI_SCORE=$SEAJAY_SCORE
 
 # Run Stockfish analysis
@@ -186,7 +185,7 @@ echo -e "==========================================${NC}"
 echo
 echo -e "${BOLD}Scores (White's perspective):"
 echo -e "----------------------------------------${NC}"
-printf "%-12s %+7scp  %-18s %s\n" "SeaJay:" "${SEAJAY_UCI_SCORE:-N/A}" "$([ -n "$SEAJAY_UCI_SCORE" ] && interpret_score "$SEAJAY_UCI_SCORE" || echo "")" "[UCI-compliant]"
+printf "%-12s %+7scp  %-18s\n" "SeaJay:" "${SEAJAY_UCI_SCORE:-N/A}" "$([ -n "$SEAJAY_UCI_SCORE" ] && interpret_score "$SEAJAY_UCI_SCORE" || echo "")"
 printf "%-12s %+7scp  %-18s\n" "Stockfish:" "${SF_SCORE:-N/A}" "$([ -n "$SF_SCORE" ] && interpret_score "$SF_SCORE" || echo "")"
 printf "%-12s %+7scp  %-18s\n" "Stash:" "${STASH_SCORE:-N/A}" "$([ -n "$STASH_SCORE" ] && interpret_score "$STASH_SCORE" || echo "")"
 printf "%-12s %+7scp  %-18s\n" "Laser:" "${LASER_SCORE:-N/A}" "$([ -n "$LASER_SCORE" ] && interpret_score "$LASER_SCORE" || echo "")"
@@ -227,9 +226,9 @@ if [ -n "$SF_SCORE" ] && [ -n "$STASH_SCORE" ] && [ -n "$LASER_SCORE" ]; then
         if [ -n "$SEAJAY_UCI_SCORE" ]; then
             SEAJAY_SIGN=$([ "$SEAJAY_UCI_SCORE" -ge 0 ] && echo "+" || echo "-")
             if [ "$SEAJAY_SIGN" = "$SF_SIGN" ]; then
-                echo -e "  ${GREEN}✓ SeaJay (converted) agrees with UCI engines${NC}"
+                echo -e "  ${GREEN}✓ SeaJay agrees with UCI engines${NC}"
             else
-                echo -e "  ${RED}✗ SeaJay (converted) disagrees on who's better!${NC}"
+                echo -e "  ${RED}✗ SeaJay disagrees on who's better!${NC}"
             fi
         fi
     else
@@ -350,7 +349,7 @@ echo -e "${BOLD}Static evaluations (in centipawns):${NC}"
 echo -e "----------------------------------------"
 
 if [ -n "$SEAJAY_EVAL" ]; then
-    # SeaJay eval now shows White's perspective after UCI conversion update
+    # SeaJay eval shows White's perspective (UCI-compliant)
     printf "%-12s %+7dcp (White's view)\n" "SeaJay:" "$SEAJAY_EVAL"
 fi
 
@@ -399,7 +398,7 @@ fi
 echo
 echo -e "${BOLD}==========================================${NC}"
 echo -e "${BOLD}Key Insights:${NC}"
-echo -e "• SeaJay now outputs UCI-compliant White's perspective"
+echo -e "• All engines output UCI-compliant White's perspective"
 echo -e "• Compare all four engines to identify:"
 echo -e "  - Evaluation function issues"
 echo -e "  - Search depth problems"
