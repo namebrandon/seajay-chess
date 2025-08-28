@@ -45,11 +45,13 @@ InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, Score
         }
         return appendMateScore(mateIn, sideToMove);
     } else {
-        // Convert centipawn score to White's perspective
+        // Score is already from root's perspective in negamax
+        // We should NOT be converting it!
         int cp = score.to_cp();
-        if (sideToMove == BLACK) {
-            cp = -cp;  // Negate for Black to get White's perspective
-        }
+        // REMOVED: The problematic negation that caused -30 ELO regression
+        // if (sideToMove == BLACK) {
+        //     cp = -cp;  
+        // }
         return appendCentipawnScore(cp, bound);
     }
 }
