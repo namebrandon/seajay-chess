@@ -147,7 +147,7 @@ eval::Score negamax(Board& board,
         // Try to cast to IterativeSearchData for time-based updates
         auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
         if (iterativeInfo && iterativeInfo->shouldSendInfo()) {
-            sendCurrentSearchInfo(*iterativeInfo);
+            sendCurrentSearchInfo(*iterativeInfo, tt);
             iterativeInfo->recordInfoSent();
         }
     }
@@ -1069,7 +1069,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             bestMove = info.bestMove;
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
-            sendIterationInfo(info);
+            sendIterationInfo(info, tt);
             
             // Record iteration data for ALL depths (full recording)
             auto iterationEnd = std::chrono::steady_clock::now();
@@ -1617,7 +1617,7 @@ void sendSearchInfo(const SearchData& info) {
 }
 
 // Phase 1: Send current search info during a search (periodic updates)
-void sendCurrentSearchInfo(const IterativeSearchData& info) {
+void sendCurrentSearchInfo(const IterativeSearchData& info, TranspositionTable* tt) {
     // Basic info
     std::cout << "info"
               << " depth " << info.depth
@@ -1640,6 +1640,11 @@ void sendCurrentSearchInfo(const IterativeSearchData& info) {
     std::cout << " nodes " << info.nodes
               << " nps " << info.nps()
               << " time " << info.elapsed().count();
+    
+    // Phase 4: Add hashfull reporting
+    if (tt) {
+        std::cout << " hashfull " << tt->hashfull();
+    }
     
     // Phase 2: Add currmove info if we have a current root move
     // Show when search has been running for a while and we have a valid current move
@@ -1664,7 +1669,7 @@ void sendCurrentSearchInfo(const IterativeSearchData& info) {
 }
 
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
-void sendIterationInfo(const IterativeSearchData& info) {
+void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt) {
     // Basic info
     std::cout << "info"
               << " depth " << info.depth
@@ -1743,6 +1748,11 @@ void sendIterationInfo(const IterativeSearchData& info) {
     if (info.ttProbes > 0) {
         double hitRate = (100.0 * info.ttHits) / info.ttProbes;
         std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
+    }
+    
+    // Phase 4: Add hashfull reporting
+    if (tt) {
+        std::cout << " hashfull " << tt->hashfull();
     }
     
     // Principal variation

@@ -9,7 +9,9 @@ This document tracks identified but unresolved bugs in the SeaJay chess engine, 
 
 ### Open Bugs Summary:
 1. **Bug #014** (CRITICAL): Engine makes illegal moves during gameplay - Causes immediate game loss
-2. **Bug #011** (MEDIUM): Test script initialization hangs - Does not affect actual gameplay
+2. **Bug #015** (HIGH): Transposition Table not being used properly - Missing cutoffs, wasting search effort
+3. **Bug #016** (HIGH): Repetition detection incomplete - May miss draws or allow illegal repetitions
+4. **Bug #011** (MEDIUM): Test script initialization hangs - Does not affect actual gameplay
 
 ### Recently Resolved:
 - **Bug #013** (RESOLVED 2025-08-19): Illegal PV moves - Fixed with move validation, no strength loss
@@ -1452,3 +1454,141 @@ echo -e "position fen [reconstructed FEN at move 18]\ngo depth 1\nquit" | ./bin/
 4. Trace through move validation logic
 5. Check if recent changes (LMR, Bug #013 fix) introduced this issue
 6. Implement additional move validation before making moves
+
+---
+
+## Bug #015: Transposition Table Not Being Used Properly
+
+**Status:** OPEN - Critical Performance Issue  
+**Priority:** HIGH  
+**Discovery Date:** 2025-08-27 (During UCI Info Phase 3 Implementation)  
+**Impact:** Missing important cutoffs, wasting significant search effort
+
+### Summary
+
+Compiler warnings reveal that transposition table probe results are not being utilized in the negamax search function. Variables `ttBound` and `ttDepth` are set when probing the TT but never used for cutoffs or move ordering, suggesting the TT implementation is incomplete or broken.
+
+### Technical Details
+
+**Location:** `/workspace/src/search/negamax.cpp:192-193`
+```cpp
+Bound ttBound = Bound::NONE;
+int ttDepth = -1;
+// These are set but never used!
+```
+
+**Expected Usage:**
+- Early cutoff if TT has sufficient depth and appropriate bounds
+- Move ordering hints from TT best move
+- Bound-based pruning decisions
+- Avoiding re-searching positions
+
+### Impact Assessment
+
+**Severe Performance Impact:**
+- Positions are re-searched unnecessarily
+- No benefit from transposition detection
+- Search effort is wasted on duplicate positions
+- Effective branching factor likely much higher than necessary
+- Could explain why engine strength plateaus
+
+### Code Areas to Investigate
+
+1. `/workspace/src/search/negamax.cpp` - TT probe and cutoff logic
+2. `/workspace/src/core/transposition_table.h` - TT implementation
+3. Move ordering to use TT best move
+4. Bound types and cutoff conditions
+
+### Verification Strategy
+
+1. Add proper TT cutoff logic
+2. Use ttBound for pruning decisions
+3. Order TT best move first
+4. Measure node count reduction
+5. Validate with perft and game testing
+
+---
+
+## Bug #016: Repetition Detection Implementation Incomplete
+
+**Status:** OPEN - Potential Draw/Loss Issues  
+**Priority:** HIGH  
+**Discovery Date:** 2025-08-27 (During UCI Info Phase 3 Implementation)  
+**Impact:** May miss threefold repetition draws or allow illegal repetitions
+
+### Summary
+
+The variable `maxLookback` is computed but never used in the `isRepetitionDrawInSearch()` function, indicating the repetition detection logic is incomplete. This could lead to missing draws by repetition or incorrectly continuing play in drawn positions.
+
+### Technical Details
+
+**Location:** `/workspace/src/core/board.cpp:2318`
+```cpp
+int maxLookback = std::min(static_cast<int>(m_halfmoveClock), 100);
+// Computed but never used - suggests incomplete implementation
+```
+
+**Expected Behavior:**
+- Should limit how far back to check for repetitions
+- Should detect threefold repetition correctly
+- Should respect the 50-move rule interaction
+
+### Impact Assessment
+
+**Game Playing Impact:**
+- May miss forced draws by repetition
+- Could incorrectly evaluate drawn positions
+- May violate chess rules in repetition scenarios
+- Could affect endgame play significantly
+
+### Investigation Areas
+
+1. `/workspace/src/core/board.cpp` - isRepetitionDrawInSearch() implementation
+2. Game history tracking mechanism
+3. Interaction with 50-move rule
+4. Search vs game repetition detection differences
+
+### Testing Requirements
+
+1. Create positions with forced repetitions
+2. Verify threefold repetition is detected
+3. Test interaction with 50-move rule
+4. Validate against chess rules
+
+---
+
+## Bug #017: Evaluation Function Code Duplication
+
+**Status:** OPEN - Design Issue  
+**Priority:** MEDIUM  
+**Discovery Date:** 2025-08-27 (During UCI Info Phase 3 Implementation)  
+**Impact:** Maintenance burden, potential for inconsistencies
+
+### Summary
+
+The `evaluateDetailed()` function created for the UCI eval command provides a simplified breakdown that doesn't match the actual evaluation logic. Many components return 0 or use simplified calculations, making the eval command misleading for debugging.
+
+### Issues Found
+
+1. **Passed Pawns:** Uses simple count * 50 instead of complex rank-based evaluation with bonuses
+2. **Mobility:** Always returns 0 (not calculated)
+3. **King Safety:** Always returns 0 (not calculated)  
+4. **Knight Outposts:** Always returns 0 (not calculated)
+5. **Rook Files:** Always returns 0 (not calculated)
+
+### Actual Evaluation Features Not Reflected
+
+The real `evaluate()` function includes:
+- Passed pawns with protection bonus, blockade penalty, connected passers, king proximity, unstoppable passers
+- Detailed mobility calculation per piece type
+- King safety evaluation (though currently returns 0)
+- Rook open/semi-open file bonuses
+- Knight outpost evaluation
+
+### Recommended Solution
+
+Either:
+1. Refactor `evaluate()` to return a breakdown structure that both functions can use, OR
+2. Make `evaluateDetailed()` call the actual evaluation logic components
+
+This would ensure the eval command provides accurate debugging information.

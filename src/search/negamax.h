@@ -65,9 +65,9 @@ void sendSearchInfo(const SearchData& info);
 // Stage 13, Deliverable 5.1a: Enhanced UCI info with iteration details
 // Forward declaration - IterativeSearchData is defined in iterative_search_data.h
 class IterativeSearchData;
-void sendIterationInfo(const IterativeSearchData& info);
+void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt = nullptr);
 
 // Phase 1: Send current search info during search (periodic updates)
-void sendCurrentSearchInfo(const IterativeSearchData& info);
+void sendCurrentSearchInfo(const IterativeSearchData& info, TranspositionTable* tt = nullptr);
 
 } // namespace seajay::search
