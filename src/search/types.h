@@ -136,6 +136,9 @@ struct SearchData {
     Move currentRootMove;          // Current move being searched at root
     int currentRootMoveNumber = 0; // Move number (1-based) at root
     
+    // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
+    Color rootSideToMove = WHITE;  // Side to move at root (for UCI perspective conversion)
+    
     // Time management
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds timeLimit{0};

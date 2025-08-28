@@ -148,7 +148,8 @@ eval::Score negamax(Board& board,
         // Try to cast to IterativeSearchData for time-based updates
         auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
         if (iterativeInfo && iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
-            sendCurrentSearchInfo(*iterativeInfo, board.sideToMove(), tt);
+            // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
+            sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);
             iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
         }
     }
@@ -937,6 +938,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     IterativeSearchData info;  // Using new class instead of SearchData
     
+    // UCI Score Conversion FIX: Store root side-to-move for all UCI output
+    // This MUST be used for all UCI output, not the changing board.sideToMove() during search
+    info.rootSideToMove = board.sideToMove();
+    
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
@@ -1071,8 +1076,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
             // Phase 6: Always send info at iteration completion and record it
-            // UCI Score Conversion: Pass sideToMove for White's perspective conversion
-            sendIterationInfo(info, board.sideToMove(), tt);
+            // UCI Score Conversion FIX: Use root side-to-move, not current position's side
+            sendIterationInfo(info, info.rootSideToMove, tt);
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
             // Record iteration data for ALL depths (full recording)
@@ -1365,6 +1370,9 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
     
     SearchData info;  // For search statistics
+    
+    // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
+    info.rootSideToMove = board.sideToMove();
     
     // Stage 20, Phase B3 Fix: Clear history only at search start,
     // not between iterative deepening iterations
