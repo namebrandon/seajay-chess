@@ -147,10 +147,10 @@ eval::Score negamax(Board& board,
     // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
     if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
-        // Try to cast to IterativeSearchData for time-based updates
-        auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
-        
-        if (iterativeInfo) {
+        // Use virtual method instead of expensive dynamic_cast
+        // This eliminates RTTI overhead in the hot path
+        if (info.isIterativeSearch()) {
+            auto* iterativeInfo = static_cast<IterativeSearchData*>(&info);
             if (iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
                 // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
                 sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);

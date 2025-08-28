@@ -30,6 +30,10 @@ public:
     // Destructor
     ~IterativeSearchData() = default;
     
+    // Override virtual method to identify as IterativeSearchData
+    // This replaces expensive dynamic_cast in hot path
+    virtual bool isIterativeSearch() const override { return true; }
+    
     // Public data members (skeleton only - no logic yet)
     std::array<IterationInfo, MAX_ITERATIONS> m_iterations{};  // Iteration history
     size_t m_iterationCount{0};                                // Number of completed iterations
