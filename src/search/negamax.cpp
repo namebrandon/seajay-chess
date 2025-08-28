@@ -12,6 +12,7 @@
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../evaluation/evaluate.h"
+#include "../uci/info_builder.h"     // Phase 5: Structured info building
 #include "quiescence.h"  // Stage 14: Quiescence search
 #include <iostream>
 #include <iomanip>
@@ -1617,76 +1618,56 @@ void sendSearchInfo(const SearchData& info) {
 }
 
 // Phase 1: Send current search info during a search (periodic updates)
+// Phase 5: Refactored to use InfoBuilder for cleaner construction
 void sendCurrentSearchInfo(const IterativeSearchData& info, TranspositionTable* tt) {
-    // Basic info
-    std::cout << "info"
-              << " depth " << info.depth
-              << " seldepth " << info.seldepth;
+    uci::InfoBuilder builder;
     
-    // Score output
-    if (info.bestScore.is_mate_score()) {
-        int mateIn = 0;
-        if (info.bestScore > eval::Score::zero()) {
-            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
-        } else {
-            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
-        }
-        std::cout << " score mate " << mateIn;
-    } else {
-        std::cout << " score cp " << info.bestScore.to_cp();
-    }
+    // Basic depth info
+    builder.appendDepth(info.depth, info.seldepth);
     
-    // Node info
-    std::cout << " nodes " << info.nodes
-              << " nps " << info.nps()
-              << " time " << info.elapsed().count();
+    // Score
+    builder.appendScore(info.bestScore);
     
-    // Phase 4: Add hashfull reporting
+    // Node statistics
+    builder.appendNodes(info.nodes)
+           .appendNps(info.nps())
+           .appendTime(info.elapsed().count());
+    
+    // Phase 4: Hashfull
     if (tt) {
-        std::cout << " hashfull " << tt->hashfull();
+        builder.appendHashfull(tt->hashfull());
     }
     
-    // Phase 2: Add currmove info if we have a current root move
-    // Show when search has been running for a while and we have a valid current move
+    // Phase 2: Currmove info for long searches
     if (info.currentRootMove != NO_MOVE && info.currentRootMoveNumber > 0) {
-        // Force accurate time calculation for periodic updates (not cached)
+        // Force accurate time calculation for periodic updates
         auto now = std::chrono::steady_clock::now();
         auto actualElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - info.startTime);
         
-        // Show currmove after 3 seconds of search time
+        // Show currmove after 3 seconds
         if (actualElapsed.count() > 3000) {
-            std::cout << " currmove " << SafeMoveExecutor::moveToString(info.currentRootMove)
-                      << " currmovenumber " << info.currentRootMoveNumber;
+            builder.appendCurrmove(info.currentRootMove, info.currentRootMoveNumber);
         }
     }
     
-    // PV if available
+    // Principal variation
     if (info.bestMove != NO_MOVE) {
-        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+        builder.appendPv(info.bestMove);
     }
     
-    std::cout << std::endl;
+    std::cout << builder.build();
 }
 
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
+// Phase 5: Refactored to use InfoBuilder for cleaner construction
 void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt) {
-    // Basic info
-    std::cout << "info"
-              << " depth " << info.depth
-              << " seldepth " << info.seldepth;
+    uci::InfoBuilder builder;
     
-    // Score output
-    if (info.bestScore.is_mate_score()) {
-        int mateIn = 0;
-        if (info.bestScore > eval::Score::zero()) {
-            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
-        } else {
-            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
-        }
-        std::cout << " score mate " << mateIn;
-    } else {
-        std::cout << " score cp " << info.bestScore.to_cp();
-    }
+    // Basic depth info
+    builder.appendDepth(info.depth, info.seldepth);
+    
+    // Score
+    builder.appendScore(info.bestScore);
     
     // Iteration-specific information
     if (info.hasIterations()) {
@@ -1698,61 +1679,61 @@ void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt) 
             if (lastIter.windowAttempts > 0) {
                 // Window was used and there were re-searches
                 if (lastIter.failedHigh) {
-                    std::cout << " string fail-high(" << lastIter.windowAttempts << ")";
+                    builder.appendString("fail-high(" + std::to_string(lastIter.windowAttempts) + ")");
                 } else if (lastIter.failedLow) {
-                    std::cout << " string fail-low(" << lastIter.windowAttempts << ")";
+                    builder.appendString("fail-low(" + std::to_string(lastIter.windowAttempts) + ")");
                 }
             }
             
             // Show window bounds for debugging (optional)
             if (lastIter.alpha != eval::Score::minus_infinity() || 
                 lastIter.beta != eval::Score::infinity()) {
-                std::cout << " bound [" 
-                          << (lastIter.alpha == eval::Score::minus_infinity() ? "-inf" : 
-                              std::to_string(lastIter.alpha.to_cp()))
-                          << "," 
-                          << (lastIter.beta == eval::Score::infinity() ? "inf" : 
-                              std::to_string(lastIter.beta.to_cp()))
-                          << "]";
+                std::string boundStr = "[";
+                boundStr += (lastIter.alpha == eval::Score::minus_infinity() ? "-inf" : 
+                            std::to_string(lastIter.alpha.to_cp()));
+                boundStr += ",";
+                boundStr += (lastIter.beta == eval::Score::infinity() ? "inf" : 
+                            std::to_string(lastIter.beta.to_cp()));
+                boundStr += "]";
+                builder.appendCustom("bound", boundStr);
             }
         }
         
         // Stability indicator
         if (info.getIterationCount() >= 3) {
             if (info.isPositionStable()) {
-                std::cout << " string stable";
+                builder.appendString("stable");
             } else if (info.shouldExtendDueToInstability()) {
-                std::cout << " string unstable";
+                builder.appendString("unstable");
             }
         }
         
         // Effective branching factor from sophisticated calculation
         double ebf = info.getSophisticatedEBF();
         if (ebf > 0) {
-            std::cout << " ebf " << std::fixed << std::setprecision(2) << ebf;
+            builder.appendCustom("ebf", ebf);
         }
     }
     
     // Standard statistics
-    std::cout << " nodes " << info.nodes
-              << " nps " << info.nps()
-              << " time " << info.elapsed().count();
+    builder.appendNodes(info.nodes)
+           .appendNps(info.nps())
+           .appendTime(info.elapsed().count());
     
     // Move ordering efficiency
     if (info.betaCutoffs > 0) {
-        std::cout << " moveeff " << std::fixed << std::setprecision(1)
-                  << info.moveOrderingEfficiency() << "%";
+        builder.appendCustom("moveeff", info.moveOrderingEfficiency());
     }
     
     // TT statistics
     if (info.ttProbes > 0) {
         double hitRate = (100.0 * info.ttHits) / info.ttProbes;
-        std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
+        builder.appendCustom("tthits", hitRate);
     }
     
-    // Phase 4: Add hashfull reporting
+    // Phase 4: Hashfull
     if (tt) {
-        std::cout << " hashfull " << tt->hashfull();
+        builder.appendHashfull(tt->hashfull());
     }
     
     // Principal variation
@@ -1762,7 +1743,7 @@ void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt) 
         Square from = moveFrom(info.bestMove);
         Square to = moveTo(info.bestMove);
         if (from < 64 && to < 64 && from != to) {
-            std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
+            builder.appendPv(info.bestMove);
         } else {
             // Log warning about corrupted move but don't output it
             std::cerr << "WARNING: Corrupted bestMove detected in sendIterationInfo: " 
@@ -1770,7 +1751,7 @@ void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt) 
         }
     }
     
-    std::cout << std::endl;
+    std::cout << builder.build();
 }
 
 } // namespace seajay::search

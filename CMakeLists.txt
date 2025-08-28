@@ -158,6 +158,7 @@ add_library(seajay_core ${CORE_SOURCES} ${EVAL_SOURCES} ${SEARCH_SOURCES})
 # UCI and benchmark sources
 set(UCI_SOURCES
     src/uci/uci.cpp
+    src/uci/info_builder.cpp
     src/benchmark/benchmark.cpp
 )
 

@@ -203,7 +203,7 @@ Start with Phase 1-2 for immediate GUI improvement, then proceed through phases 
 | Phase 1 | **Completed** | feature/20250827-uci-info | 9a14934 | ✅ Bench unchanged (19191913) |
 | Phase 2 | **Completed** | feature/20250827-uci-info | 7c7a684 | ✅ Bench unchanged (19191913), currmove verified |
 | Phase 3 | **Completed** | feature/20250827-uci-info | a8719b0 | ✅ Bench unchanged (19191913), eval command working |
-| Phase 4 | Not Started | - | - | - |
+| Phase 4 | **Completed** | feature/20250827-uci-info | 379fb1e | ✅ Bench unchanged (19191913), hashfull working (0-121 permil observed) |
 | Phase 5 | Not Started | - | - | - |
 | Phase 6 | Not Started | - | - | - |
 | Phase 7 | Future | - | - | - |
