@@ -32,8 +32,9 @@ public:
     InfoBuilder& appendDepth(int depth, int seldepth);
     
     // Score information with optional bounds
-    InfoBuilder& appendScore(eval::Score score, ScoreBound bound = ScoreBound::EXACT);
-    InfoBuilder& appendMateScore(int mateIn);
+    // NEW: Added Color parameter for UCI-compliant White's perspective conversion
+    InfoBuilder& appendScore(eval::Score score, Color sideToMove, ScoreBound bound = ScoreBound::EXACT);
+    InfoBuilder& appendMateScore(int mateIn, Color sideToMove);
     InfoBuilder& appendCentipawnScore(int cp, ScoreBound bound = ScoreBound::EXACT);
     
     // Node and time information

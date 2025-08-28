@@ -33,7 +33,9 @@ InfoBuilder& InfoBuilder::appendDepth(int depth, int seldepth) {
     return *this;
 }
 
-InfoBuilder& InfoBuilder::appendScore(eval::Score score, ScoreBound bound) {
+InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, ScoreBound bound) {
+    // Convert from negamax (side-to-move perspective) to UCI (White's perspective)
+    // CRITICAL: Only convert the perspective, NOT the internal score value
     if (score.is_mate_score()) {
         int mateIn = 0;
         if (score > eval::Score::zero()) {
@@ -41,15 +43,22 @@ InfoBuilder& InfoBuilder::appendScore(eval::Score score, ScoreBound bound) {
         } else {
             mateIn = -(eval::Score::mate().value() + score.value()) / 2;
         }
-        return appendMateScore(mateIn);
+        return appendMateScore(mateIn, sideToMove);
     } else {
-        return appendCentipawnScore(score.to_cp(), bound);
+        // Convert centipawn score to White's perspective
+        int cp = score.to_cp();
+        if (sideToMove == BLACK) {
+            cp = -cp;  // Negate for Black to get White's perspective
+        }
+        return appendCentipawnScore(cp, bound);
     }
 }
 
-InfoBuilder& InfoBuilder::appendMateScore(int mateIn) {
+InfoBuilder& InfoBuilder::appendMateScore(int mateIn, Color sideToMove) {
     addSpace();
-    m_stream << "score mate " << mateIn;
+    // Convert mate score to White's perspective
+    int uciMateIn = (sideToMove == WHITE) ? mateIn : -mateIn;
+    m_stream << "score mate " << uciMateIn;
     return *this;
 }
 

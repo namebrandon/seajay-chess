@@ -65,9 +65,11 @@ void sendSearchInfo(const SearchData& info);
 // Stage 13, Deliverable 5.1a: Enhanced UCI info with iteration details
 // Forward declaration - IterativeSearchData is defined in iterative_search_data.h
 class IterativeSearchData;
-void sendIterationInfo(const IterativeSearchData& info, TranspositionTable* tt = nullptr);
+// UCI Score Conversion: Added Color parameter for White's perspective conversion
+void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt = nullptr);
 
 // Phase 1: Send current search info during search (periodic updates)
-void sendCurrentSearchInfo(const IterativeSearchData& info, TranspositionTable* tt = nullptr);
+// UCI Score Conversion: Added Color parameter for White's perspective conversion
+void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt = nullptr);
 
 } // namespace seajay::search

@@ -146,6 +146,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MiddlegameStability type spin default 6 min 3 max 10" << std::endl;
     std::cout << "option name EndgameStability type spin default 8 min 4 max 12" << std::endl;
     
+    // Important notice about evaluation scoring
+    std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
+    
     std::cout << "uciok" << std::endl;
 }
 

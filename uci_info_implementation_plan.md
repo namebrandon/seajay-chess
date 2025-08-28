@@ -205,7 +205,7 @@ Start with Phase 1-2 for immediate GUI improvement, then proceed through phases 
 | Phase 3 | **Completed** | feature/20250827-uci-info | a8719b0 | ✅ Bench unchanged (19191913), eval command working |
 | Phase 4 | **Completed** | feature/20250827-uci-info | 379fb1e | ✅ Bench unchanged (19191913), hashfull working (0-121 permil observed) |
 | Phase 5 | **Completed** | feature/20250827-uci-info | 508ee04 | ✅ Bench unchanged (19191913), InfoBuilder working |
-| Phase 6 | Not Started | - | - | - |
+| Phase 6 | **Completed** | feature/20250827-uci-info | f8c2605 | ✅ Bench unchanged (19191913), Smart throttling working |
 | Phase 7 | Future | - | - | - |
 
 Last Updated: 2025-08-27
@@ -229,3 +229,17 @@ Last Updated: 2025-08-27
 4. Made `SearchData` polymorphic to enable `dynamic_cast` for periodic updates
 
 **Testing:** Verified infinite search now continues indefinitely until stopped
+
+### Phase 6 Completed
+- Enhanced `shouldSendInfo()` with adaptive intervals based on total search time
+- Added minimum node count (10,000) between updates to prevent flooding
+- Implemented force update on significant score changes (50cp threshold)
+- Added tracking of `m_nodesAtLastInfo` and `m_scoreAtLastInfo` for smart throttling
+- Enhanced `recordInfoSent()` to track score and node count at last update
+- Ensured info is always sent at iteration completion (with recordInfoSent call)
+
+**Testing:** Verified adaptive intervals work correctly:
+- Fast updates (50ms) in first second: ~10 updates in 500ms
+- Medium updates (200ms) for 1-10 seconds: appropriate spacing
+- Slow updates (1000ms) after 10 seconds: prevents flooding in long analysis
+- Score change force updates working (50cp threshold)
