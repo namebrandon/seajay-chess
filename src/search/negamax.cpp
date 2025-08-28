@@ -141,6 +141,16 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
+    // Phase 1: Check for periodic UCI info updates at root
+    if (ply == 0 && info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
+        // Try to cast to IterativeSearchData for time-based updates
+        auto* iterativeInfo = dynamic_cast<IterativeSearchData*>(&info);
+        if (iterativeInfo && iterativeInfo->shouldSendInfo()) {
+            sendCurrentSearchInfo(*iterativeInfo);
+            iterativeInfo->recordInfoSent();
+        }
+    }
+    
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
     
@@ -1584,6 +1594,39 @@ void sendSearchInfo(const SearchData& info) {
             std::cerr << "WARNING: Corrupted bestMove detected in sendUCIInfo: " 
                       << std::hex << info.bestMove << std::dec << std::endl;
         }
+    }
+    
+    std::cout << std::endl;
+}
+
+// Phase 1: Send current search info during a search (periodic updates)
+void sendCurrentSearchInfo(const IterativeSearchData& info) {
+    // Basic info
+    std::cout << "info"
+              << " depth " << info.depth
+              << " seldepth " << info.seldepth;
+    
+    // Score output
+    if (info.bestScore.is_mate_score()) {
+        int mateIn = 0;
+        if (info.bestScore > eval::Score::zero()) {
+            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
+        } else {
+            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
+        }
+        std::cout << " score mate " << mateIn;
+    } else {
+        std::cout << " score cp " << info.bestScore.to_cp();
+    }
+    
+    // Node info
+    std::cout << " nodes " << info.nodes
+              << " nps " << info.nps()
+              << " time " << info.elapsed().count();
+    
+    // PV if available
+    if (info.bestMove != NO_MOVE) {
+        std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
     }
     
     std::cout << std::endl;

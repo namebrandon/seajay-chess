@@ -49,6 +49,10 @@ public:
     int m_scoreStabilityCount{0};                    // Iterations with similar score
     eval::Score m_scoreWindow{eval::Score(10)};      // Window for score stability (10 cp)
     
+    // UCI info update timing (Phase 1)
+    std::chrono::steady_clock::time_point m_lastInfoTime;  // Last time info was sent
+    static constexpr auto INFO_UPDATE_INTERVAL = std::chrono::milliseconds(100);  // Update interval
+    
     // Reset for new search
     void reset() {
         SearchData::reset();  // Call base class reset
@@ -63,11 +67,24 @@ public:
         m_stableScore = eval::Score::zero();
         m_scoreStabilityCount = 0;
         m_scoreWindow = eval::Score(10);
+        m_lastInfoTime = std::chrono::steady_clock::now();  // Phase 1: Reset info time
         
         // Clear iteration data
         for (auto& iter : m_iterations) {
             iter = IterationInfo{};
         }
+    }
+    
+    // Phase 1: Check if we should send UCI info update
+    bool shouldSendInfo() const {
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastInfoTime);
+        return elapsed >= INFO_UPDATE_INTERVAL;
+    }
+    
+    // Phase 1: Record that info was sent
+    void recordInfoSent() {
+        m_lastInfoTime = std::chrono::steady_clock::now();
     }
     
     // Basic methods for iteration tracking (Deliverable 1.1c)

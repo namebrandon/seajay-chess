@@ -67,4 +67,7 @@ void sendSearchInfo(const SearchData& info);
 class IterativeSearchData;
 void sendIterationInfo(const IterativeSearchData& info);
 
+// Phase 1: Send current search info during search (periodic updates)
+void sendCurrentSearchInfo(const IterativeSearchData& info);
+
 } // namespace seajay::search
