@@ -162,9 +162,7 @@ eval::Score negamax(Board& board,
     
     // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
-    // PERFORMANCE FIX: Reduced info output frequency from every 4096 to every 16384 nodes
-    // This reduces dynamic cast and string building overhead by 75%
-    if (info.nodes > 0 && (info.nodes & 0x3FFF) == 0) {
+    if (info.nodes > 0 && (info.nodes & 0xFFF) == 0) {
         // DEBUG_UCI_REGRESSION: Time the dynamic cast
         auto castStart = std::chrono::high_resolution_clock::now();
         totalDynamicCasts++;
