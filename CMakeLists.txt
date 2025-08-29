@@ -94,6 +94,7 @@ set(CORE_SOURCES
     src/core/perft.cpp
     src/core/transposition_table.cpp
     src/core/see.cpp
+    src/core/attack_cache.cpp
     src/core/bitboard.h
     src/core/board.h
     src/core/board_safety.h
@@ -102,6 +103,7 @@ set(CORE_SOURCES
     src/core/perft.h
     src/core/types.h
     src/core/attack_wrapper.h
+    src/core/attack_cache.h
     src/core/magic_validator.h
     src/core/magic_bitboards.h
     src/core/magic_constants.h

@@ -1,6 +1,7 @@
 #include "move_generation.h"
 #include "bitboard.h"
 #include "attack_wrapper.h"  // Use runtime-switchable attacks
+#include "attack_cache.h"    // Phase 2.1.b: Attack caching
 #include <algorithm>
 #include <cstdlib>
 
@@ -579,19 +580,31 @@ Bitboard MoveGenerator::getKingAttacks(Square square) {
     return s_kingAttacks[square];
 }
 
-// Check detection - Phase 2.1.a optimized version
+// Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
 bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
-    // Phase 2.1.a: Reordered checks for early exit, optimized queen handling
+    // Phase 2.1.b: Try cache first with lightweight per-square caching
+    auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor);
+    if (hit) {
+        return isAttacked;
+    }
+    
+    // Cache miss - compute using Phase 2.1.a optimized algorithm
     
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
-    if (knights & getKnightAttacks(square)) return true;
+    if (knights & getKnightAttacks(square)) {
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        return true;
+    }
     
     // 2. Check pawn attacks second (numerous pieces, simple calculation)
     Bitboard pawns = board.pieces(attackingColor, PAWN);
     if (pawns) {
         Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
-        if (pawns & pawnAttacks) return true;
+        if (pawns & pawnAttacks) {
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            return true;
+        }
     }
     
     // 3. Get occupied bitboard once (avoid multiple calls)
@@ -604,7 +617,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Use direct magic bitboard calls to avoid runtime config check in hot path
         Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
                                seajay::magicRookAttacks(square, occupied);
-        if (queens & queenAttacks) return true;
+        if (queens & queenAttacks) {
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            return true;
+        }
     }
     
     // 5. Check bishop attacks (only if no queen found it on diagonal)
@@ -612,7 +628,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (bishops) {
         // Direct magic bitboard call for hot path optimization
         Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
-        if (bishops & bishopAttacks) return true;
+        if (bishops & bishopAttacks) {
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            return true;
+        }
     }
     
     // 6. Check rook attacks (only if no queen found it on rank/file)
@@ -620,15 +639,24 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (rooks) {
         // Direct magic bitboard call for hot path optimization
         Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
-        if (rooks & rookAttacks) return true;
+        if (rooks & rookAttacks) {
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            return true;
+        }
     }
     
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
-    if (king & getKingAttacks(square)) return true;
+    if (king & getKingAttacks(square)) {
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        return true;
+    }
     
+    // Not attacked - cache the negative result
+    t_attackCache.store(board.zobristKey(), square, attackingColor, false);
     return false;
 }
+
 
 bool MoveGenerator::inCheck(const Board& board) {
     return inCheck(board, board.sideToMove());
