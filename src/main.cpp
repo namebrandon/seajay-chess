@@ -1,5 +1,6 @@
 #include <iostream>
 #include "uci/uci.h"
+#include "version.h"
 
 /**
  * SeaJay Chess Engine - Main Entry Point
@@ -32,6 +33,12 @@ int main(int argc, char* argv[]) {
                 return 0;
             }
         }
+        
+        // Display welcome message to indicate engine is running
+        std::cout << "SeaJay Chess Engine v" << SEAJAY_VERSION << std::endl;
+        std::cout << "Author: Brandon Harris" << std::endl;
+        std::cout << "Type 'uci' for UCI mode" << std::endl;
+        std::cout << std::endl;
         
         // No arguments or unrecognized argument - start normal UCI loop
         seajay::UCIEngine engine;
