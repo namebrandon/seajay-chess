@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
+#include <vector>
 
 namespace seajay::search {
 
@@ -1119,8 +1120,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
             // Phase 6: Always send info at iteration completion and record it
+            // Phase PV4: Pass rootPV for full principal variation display
             // UCI Score Conversion FIX: Use root side-to-move, not current position's side
-            sendIterationInfo(info, info.rootSideToMove, tt);
+            sendIterationInfo(info, info.rootSideToMove, tt, &rootPV);
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
             // Record iteration data for ALL depths (full recording)
@@ -1665,10 +1667,27 @@ void sendSearchInfo(const SearchData& info) {
         }
     }
     
-    // Output principal variation (just the best move for now)
-    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
-    if (info.bestMove != Move()) {
-        // Quick validation - check that from and to squares are valid
+    // Phase PV4: Output full principal variation
+    if (pv != nullptr && !pv->isEmpty(0)) {
+        // Extract full PV from root
+        std::vector<Move> pvMoves = pv->extractPV(0);
+        if (!pvMoves.empty()) {
+            std::cout << " pv";
+            for (Move move : pvMoves) {
+                // Validate each move before outputting
+                Square from = moveFrom(move);
+                Square to = moveTo(move);
+                if (from < 64 && to < 64 && from != to) {
+                    std::cout << " " << SafeMoveExecutor::moveToString(move);
+                } else {
+                    // Stop outputting if we hit a corrupted move
+                    break;
+                }
+            }
+        }
+    } else if (info.bestMove != Move()) {
+        // Fallback: Output just the best move if no PV available
+        // Bug #013 fix: Validate move is legal before outputting
         Square from = moveFrom(info.bestMove);
         Square to = moveTo(info.bestMove);
         if (from < 64 && to < 64 && from != to) {
@@ -1728,7 +1747,7 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
 // UCI Score Conversion: Added Color parameter for White's perspective conversion
-void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
+void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt, const TriangularPV* pv) {
     uci::InfoBuilder builder;
     
     // Basic depth info
