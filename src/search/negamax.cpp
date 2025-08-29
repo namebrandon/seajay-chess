@@ -7,6 +7,7 @@
 #include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "lmr.h"            // Stage 18: Late Move Reductions
+#include "principal_variation.h"     // PV tracking infrastructure
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -112,6 +113,7 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt,
+                   TriangularPV* pv,
                    bool isPvNode) {
     
     
@@ -412,6 +414,7 @@ eval::Score negamax(Board& board,
             info,
             limits,
             tt,
+            nullptr,  // Phase PV1: Pass nullptr for now
             false  // Phase P2: Null move searches are never PV nodes
         );
         
@@ -436,6 +439,7 @@ eval::Score negamax(Board& board,
                     info,
                     limits,
                     tt,
+                    nullptr,  // Phase PV1: Pass nullptr for now
                     false
                 );
                 
@@ -703,6 +707,7 @@ eval::Score negamax(Board& board,
             // First move: search with full window as PV node (apply extension if any)
             score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
+                            nullptr,  // Phase PV1: Pass nullptr for now
                             isPvNode);  // Phase P3: First move inherits PV status
         } else {
             // Later moves: use PVS with LMR
@@ -740,6 +745,7 @@ eval::Score negamax(Board& board,
             info.pvsStats.scoutSearches++;
             score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                            nullptr,  // Phase PV1: Pass nullptr for now
                             false);  // Scout searches are not PV
             
             // If reduced scout fails high, re-search without reduction
@@ -747,6 +753,7 @@ eval::Score negamax(Board& board,
                 info.lmrStats.reSearches++;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                nullptr,  // Phase PV1: Pass nullptr for now
                                 false);  // Still a scout search
             }
             
@@ -755,6 +762,7 @@ eval::Score negamax(Board& board,
                 info.pvsStats.reSearches++;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
+                                nullptr,  // Phase PV1: Pass nullptr for now
                                 isPvNode);  // CRITICAL: Re-search as PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
@@ -955,6 +963,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.history = &historyHeuristic;
     info.counterMoves = &counterMovesTable;
     
+    // Phase PV1: Stack-allocate triangular PV array for future use
+    // Currently passing nullptr to maintain existing behavior
+    alignas(64) TriangularPV rootPV;
+    
     // UCI Score Conversion FIX: Store root side-to-move for all UCI output
     // This MUST be used for all UCI output, not the changing board.sideToMove() during search
     info.rootSideToMove = board.sideToMove();
@@ -1056,7 +1068,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             beta = eval::Score::infinity();
         }
         
-        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
+        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
+                                   nullptr);  // Phase PV1: Pass nullptr for now
         
         // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
@@ -1074,7 +1087,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 beta = window.beta;
                 
                 // Re-search with widened window
-                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
+                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
+                              nullptr);  // Phase PV1: Pass nullptr for now
                 
                 // Check if we're now using an infinite window
                 if (window.isInfinite()) {
@@ -1462,7 +1476,8 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, info, limits, tt);
+                                   searchInfo, info, limits, tt,
+                                   nullptr);  // Phase PV1: Pass nullptr for now
         
         // Clear search mode after search
         board.setSearchMode(false);

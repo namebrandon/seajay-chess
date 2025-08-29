@@ -13,6 +13,9 @@ class TranspositionTable;
 
 namespace seajay::search {
 
+// Forward declaration for PV tracking
+class TriangularPV;
+
 // Core negamax search function
 // Returns the best score for the current position
 // Parameters:
@@ -25,6 +28,7 @@ namespace seajay::search {
 //   info  - Search statistics and control information
 //   limits - Search limits for quiescence node control
 //   tt    - Transposition table (can be nullptr)
+//   pv    - Principal variation array for move collection (can be nullptr)
 //   isPvNode - Whether this is a principal variation node (Phase P2)
 eval::Score negamax(Board& board, 
                    int depth, 
@@ -35,6 +39,7 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt = nullptr,
+                   TriangularPV* pv = nullptr,
                    bool isPvNode = true);
 
 // Iterative deepening search controller
