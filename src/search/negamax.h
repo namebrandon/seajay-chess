@@ -13,6 +13,9 @@ class TranspositionTable;
 
 namespace seajay::search {
 
+// Forward declaration for PV tracking
+class TriangularPV;
+
 // Core negamax search function
 // Returns the best score for the current position
 // Parameters:
@@ -25,6 +28,7 @@ namespace seajay::search {
 //   info  - Search statistics and control information
 //   limits - Search limits for quiescence node control
 //   tt    - Transposition table (can be nullptr)
+//   pv    - Principal variation array for move collection (can be nullptr)
 //   isPvNode - Whether this is a principal variation node (Phase P2)
 eval::Score negamax(Board& board, 
                    int depth, 
@@ -35,6 +39,7 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt = nullptr,
+                   TriangularPV* pv = nullptr,
                    bool isPvNode = true);
 
 // Iterative deepening search controller
@@ -65,8 +70,9 @@ void sendSearchInfo(const SearchData& info);
 // Stage 13, Deliverable 5.1a: Enhanced UCI info with iteration details
 // Forward declaration - IterativeSearchData is defined in iterative_search_data.h
 class IterativeSearchData;
+// Phase PV4: Added PV parameter for full principal variation display
 // UCI Score Conversion: Added Color parameter for White's perspective conversion
-void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt = nullptr);
+void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt = nullptr, const TriangularPV* pv = nullptr);
 
 // Phase 1: Send current search info during search (periodic updates)
 // UCI Score Conversion: Added Color parameter for White's perspective conversion

@@ -1,4 +1,5 @@
 #include "uci.h"
+#include "../version.h"                // For SEAJAY_VERSION
 #include "../benchmark/benchmark.h"
 #include "../search/search.h"
 #include "../search/negamax.h"
@@ -74,7 +75,7 @@ void UCIEngine::run() {
 }
 
 void UCIEngine::handleUCI() {
-    std::cout << "id name SeaJay Stage14-Remediated" << std::endl;
+    std::cout << "id name SeaJay v" << SEAJAY_VERSION << std::endl;
     std::cout << "id author Brandon Harris" << std::endl;
     // Stage 15: Static Exchange Evaluation (SEE) - Day 3 X-Ray Support
     

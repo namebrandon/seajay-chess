@@ -7,6 +7,7 @@
 #include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "lmr.h"            // Stage 18: Late Move Reductions
+#include "principal_variation.h"     // PV tracking infrastructure
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -19,6 +20,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
+#include <vector>
 
 namespace seajay::search {
 
@@ -112,6 +114,7 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt,
+                   TriangularPV* pv,
                    bool isPvNode) {
     
     
@@ -412,6 +415,7 @@ eval::Score negamax(Board& board,
             info,
             limits,
             tt,
+            nullptr,  // Phase PV1: Pass nullptr for now
             false  // Phase P2: Null move searches are never PV nodes
         );
         
@@ -436,6 +440,7 @@ eval::Score negamax(Board& board,
                     info,
                     limits,
                     tt,
+                    nullptr,  // Phase PV1: Pass nullptr for now
                     false
                 );
                 
@@ -696,13 +701,20 @@ eval::Score negamax(Board& board,
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
+        // Phase PV3: Create child PV for recursive calls
+        // Only allocate if we're in a PV node and have a parent PV to update
+        TriangularPV childPV;
+        
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
         if (moveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
+            // Pass childPV only if we're in a PV node and have a parent PV
+            TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
             score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
+                            firstMoveChildPV,  // Phase PV3: Pass child PV for PV nodes
                             isPvNode);  // Phase P3: First move inherits PV status
         } else {
             // Later moves: use PVS with LMR
@@ -740,6 +752,7 @@ eval::Score negamax(Board& board,
             info.pvsStats.scoutSearches++;
             score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                            nullptr,  // Phase PV3: Scout searches don't need PV
                             false);  // Scout searches are not PV
             
             // If reduced scout fails high, re-search without reduction
@@ -747,14 +760,18 @@ eval::Score negamax(Board& board,
                 info.lmrStats.reSearches++;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                nullptr,  // Phase PV3: Still a scout search
                                 false);  // Still a scout search
             }
             
             // If scout search fails high, do full PV re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
+                // For re-search, we need to collect PV if we're in a PV node
+                TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
+                                reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
                                 isPvNode);  // CRITICAL: Re-search as PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
@@ -780,6 +797,13 @@ eval::Score negamax(Board& board,
         if (score > bestScore) {
             bestScore = score;
             bestMove = move;
+            
+            // Phase PV3: Update PV at all depths
+            if (pv != nullptr && isPvNode) {
+                // Update PV with best move and child's PV
+                // childPV should have been populated by the successful search
+                pv->updatePV(ply, move, &childPV);
+            }
             
             // At root, store the best move in SearchInfo
             if (ply == 0) {
@@ -955,6 +979,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.history = &historyHeuristic;
     info.counterMoves = &counterMovesTable;
     
+    // Phase PV1: Stack-allocate triangular PV array for future use
+    // Currently passing nullptr to maintain existing behavior
+    alignas(64) TriangularPV rootPV;
+    
     // UCI Score Conversion FIX: Store root side-to-move for all UCI output
     // This MUST be used for all UCI output, not the changing board.sideToMove() during search
     info.rootSideToMove = board.sideToMove();
@@ -1056,7 +1084,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             beta = eval::Score::infinity();
         }
         
-        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
+        // Phase PV2: Pass rootPV to collect principal variation at root
+        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
+                                   &rootPV);  // Phase PV2: Collect PV at root
         
         // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
@@ -1074,7 +1104,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 beta = window.beta;
                 
                 // Re-search with widened window
-                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt);
+                // Phase PV2: Pass rootPV for re-search at root
+                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
+                              &rootPV);  // Phase PV2: Collect PV at root re-search
                 
                 // Check if we're now using an infinite window
                 if (window.isInfinite()) {
@@ -1093,8 +1125,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
             // Phase 6: Always send info at iteration completion and record it
+            // Phase PV4: Pass rootPV for full principal variation display
             // UCI Score Conversion FIX: Use root side-to-move, not current position's side
-            sendIterationInfo(info, info.rootSideToMove, tt);
+            sendIterationInfo(info, info.rootSideToMove, tt, &rootPV);
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
             // Record iteration data for ALL depths (full recording)
@@ -1462,7 +1495,8 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
         eval::Score score = negamax(board, depth, 0,
                                    eval::Score::minus_infinity(),
                                    eval::Score::infinity(),
-                                   searchInfo, info, limits, tt);
+                                   searchInfo, info, limits, tt,
+                                   nullptr);  // Phase PV1: Pass nullptr for now
         
         // Clear search mode after search
         board.setSearchMode(false);
@@ -1701,7 +1735,7 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
 // UCI Score Conversion: Added Color parameter for White's perspective conversion
-void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
+void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt, const TriangularPV* pv) {
     uci::InfoBuilder builder;
     
     // Basic depth info
@@ -1777,10 +1811,32 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
         builder.appendHashfull(tt->hashfull());
     }
     
-    // Principal variation
-    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
-    if (info.bestMove != Move()) {
-        // Quick validation - check that from and to squares are valid
+    // Phase PV4: Output full principal variation
+    if (pv != nullptr && !pv->isEmpty(0)) {
+        // Extract full PV from root
+        std::vector<Move> pvMoves = pv->extractPV(0);
+        if (!pvMoves.empty()) {
+            // Validate moves and build clean PV
+            std::vector<Move> validPvMoves;
+            for (Move move : pvMoves) {
+                // Validate each move before adding
+                Square from = moveFrom(move);
+                Square to = moveTo(move);
+                if (from < 64 && to < 64 && from != to) {
+                    validPvMoves.push_back(move);
+                } else {
+                    // Stop if we hit a corrupted move
+                    break;
+                }
+            }
+            // Pass entire PV vector to builder (it will add "pv" once)
+            if (!validPvMoves.empty()) {
+                builder.appendPv(validPvMoves);
+            }
+        }
+    } else if (info.bestMove != Move()) {
+        // Fallback: Output just the best move if no PV available
+        // Bug #013 fix: Validate move is legal before outputting
         Square from = moveFrom(info.bestMove);
         Square to = moveTo(info.bestMove);
         if (from < 64 && to < 64 && from != to) {
