@@ -11,10 +11,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Compiler flags
+# Compiler flags - Using -O3 and auto-detection for local builds
+# Note: -march=native will detect SSE4.2 and POPCNT in this environment
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -march=native")
 
 # Magic bitboards development options (Stage 10)
 # REMEDIATED: USE_MAGIC_BITBOARDS removed - now controlled via UCI option (default: ON)

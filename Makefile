@@ -1,13 +1,14 @@
 # OpenBench-compatible Makefile for SeaJay Chess Engine
 # =============================================================================
-# IMPORTANT: This Makefile is ONLY for OpenBench server builds!
-# For local development, use: ./build.sh or cmake directly
+# This Makefile is used for both OpenBench server builds and local testing
+# It auto-detects CPU capabilities using -march=native
 # =============================================================================
 #
-# OpenBench Server Specs (as of 2024):
-# - CPU: AMD Ryzen 9 5950X (Zen 3 architecture)
-# - Supports: SSE4.2, POPCNT, BMI2, AVX, AVX2
-# - Does NOT support: AVX512 (only in Ryzen 7000+/Zen 4)
+# CPU Support:
+# - Automatically detects and uses best available instruction sets
+# - Works on any x86-64 CPU (Ryzen, Xeon, Core i7, etc.)
+# - Will use SSE4.2, POPCNT, BMI2, AVX2 if available
+# - Falls back gracefully on older CPUs
 #
 # OpenBench expects:
 # - make with CXX=compiler EXE=output_name
@@ -25,19 +26,16 @@ BUILD_DIR = openbench-build
 CMAKE_BUILD_TYPE = Release
 
 # =============================================================================
-# COMPILER FLAGS - OPTIMIZED FOR OPENBENCH (Ryzen 9 5950X)
+# COMPILER FLAGS - AUTO-DETECTED FOR ANY MACHINE
 # =============================================================================
-# Base flags - universally supported
-BASE_FLAGS = -O2 -DNDEBUG -mpopcnt -msse4.2
+# Auto-detect the best instruction set for THIS machine
+# -O3: Maximum optimization (faster than -O2)
+# -march=native: Auto-detect CPU capabilities (SSE4.2, AVX2, BMI2, etc.)
+# -flto: Link-time optimization for additional performance
+BASE_FLAGS = -O3 -DNDEBUG -march=native -flto
 
-# Advanced flags for OpenBench's Ryzen 9 5950X
-# AVX2 - 256-bit vector operations (critical for competing with other engines)
-# BMI2 - PEXT/PDEP instructions for magic bitboards
-ADVANCED_FLAGS = -mavx2 -mbmi2
-
-# Combined flags for OpenBench builds
-# NOTE: These will NOT work on older CPUs in local development!
-CXXFLAGS = $(BASE_FLAGS) $(ADVANCED_FLAGS)
+# Use auto-detected flags for all builds
+CXXFLAGS = $(BASE_FLAGS)
 CMAKE_CXX_FLAGS = $(CXXFLAGS)
 
 all:
