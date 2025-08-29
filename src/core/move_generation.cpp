@@ -613,38 +613,34 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 3. Get occupied bitboard once (avoid multiple calls)
     Bitboard occupied = board.occupied();
     
-    // 4. Check queen attacks (can attack like both bishop and rook)
+    // 4-6. Phase 2.1.c: Combined sliding piece checks to minimize magic bitboard calls
+    // Get all sliding pieces at once
     Bitboard queens = board.pieces(attackingColor, QUEEN);
-    if (queens) {
-        // Compute combined diagonal and straight attacks for queens
-        // Use direct magic bitboard calls to avoid runtime config check in hot path
-        Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
-                               seajay::magicRookAttacks(square, occupied);
-        if (queens & queenAttacks) {
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
-            return true;
-        }
-    }
-    
-    // 5. Check bishop attacks (only if no queen found it on diagonal)
     Bitboard bishops = board.pieces(attackingColor, BISHOP);
-    if (bishops) {
-        // Direct magic bitboard call for hot path optimization
-        Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
-        if (bishops & bishopAttacks) {
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
-            return true;
-        }
-    }
-    
-    // 6. Check rook attacks (only if no queen found it on rank/file)
     Bitboard rooks = board.pieces(attackingColor, ROOK);
-    if (rooks) {
-        // Direct magic bitboard call for hot path optimization
-        Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
-        if (rooks & rookAttacks) {
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
-            return true;
+    
+    // Only compute attacks if we have sliding pieces
+    if (queens | bishops | rooks) {
+        // Compute sliding attacks once and reuse
+        Bitboard bishopAttacks = 0;
+        Bitboard rookAttacks = 0;
+        
+        // Only compute bishop attacks if we have diagonal attackers
+        if (queens | bishops) {
+            bishopAttacks = seajay::magicBishopAttacks(square, occupied);
+            if ((queens | bishops) & bishopAttacks) {
+                // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+                return true;
+            }
+        }
+        
+        // Only compute rook attacks if we have straight attackers
+        if (queens | rooks) {
+            rookAttacks = seajay::magicRookAttacks(square, occupied);
+            if ((queens | rooks) & rookAttacks) {
+                // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+                return true;
+            }
         }
     }
     
