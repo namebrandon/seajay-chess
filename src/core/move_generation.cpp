@@ -583,17 +583,20 @@ Bitboard MoveGenerator::getKingAttacks(Square square) {
 // Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
 bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
     // Phase 2.1.b: Try cache first with lightweight per-square caching
+    // TESTING: Disabled caching for comparison
+    #if 0
     auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor);
     if (hit) {
         return isAttacked;
     }
+    #endif
     
     // Cache miss - compute using Phase 2.1.a optimized algorithm
     
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
     if (knights & getKnightAttacks(square)) {
-        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
     
@@ -602,7 +605,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (pawns) {
         Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
         if (pawns & pawnAttacks) {
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -618,7 +621,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
                                seajay::magicRookAttacks(square, occupied);
         if (queens & queenAttacks) {
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -629,7 +632,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
         if (bishops & bishopAttacks) {
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -640,7 +643,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
         if (rooks & rookAttacks) {
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -648,12 +651,12 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
     if (king & getKingAttacks(square)) {
-        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
     
     // Not attacked - cache the negative result
-    t_attackCache.store(board.zobristKey(), square, attackingColor, false);
+    // t_attackCache.store(board.zobristKey(), square, attackingColor, false);
     return false;
 }
 
