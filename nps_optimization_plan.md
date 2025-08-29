@@ -8,13 +8,22 @@ SeaJay is running at **477K nps** while competitor engines achieve:
 
 ## Critical Development Constraints
 
-### 1. Instruction Set Limitations
-⚠️ **MAXIMUM: SSE 4.2** (no AVX/AVX2/BMI2)
-- Development environment only supports up to SSE 4.2
-- Cannot use Makefile directly (has AVX2/BMI2 flags)
-- **MUST use**: `rm -rf build && ./build.sh`
+### 1. Build System Documentation
+📖 **REQUIRED READING: /workspace/docs/BUILD_SYSTEM.md**
+- Contains essential build system information
+- Details auto-detection of CPU capabilities
+- Explains Makefile vs CMake usage
+- Documents recent optimization improvements
 
-### 2. Build System Requirements
+### 2. Instruction Set Auto-Detection
+⚠️ **Build System Uses `-march=native` for Auto-Detection**
+- Makefile and CMake now use `-march=native` (see BUILD_SYSTEM.md)
+- Automatically detects and uses best available CPU instructions
+- Development environment limited to SSE 4.2, but this is handled automatically
+- **For local builds**: `rm -rf build && ./build.sh`
+- **OpenBench builds**: Uses Makefile with auto-detection
+
+### 3. Build System Requirements
 ⚠️ **OpenBench Integration**
 - OpenBench uses `make` to build from remote commits
 - **ANY build optimizations MUST be added to Makefile**
@@ -43,11 +52,21 @@ bench 19191913"  # EXACT format required
 - No proceeding without test confirmation
 
 ### 5. Thread Safety Requirements
-⚠️ **Design for Future LazySMP**
-- All optimizations must be thread-safe
-- No global mutable state without proper design
-- Prefer thread-local storage where needed
-- Avoid changes that complicate parallelization
+⚠️ **CRITICAL: Design for Future LazySMP Multi-Threading**
+- **ALL optimizations MUST be thread-safe** - no exceptions
+- **No global mutable state** without atomic operations or mutexes
+- **Prefer thread-local storage** for per-thread data
+- **Avoid changes that complicate parallelization**
+- **Consider data races** - multiple threads will search simultaneously
+- **Board state must be copyable** - each thread needs independent state
+- **Shared structures** (TT, history tables) need synchronization design
+- **Cache-friendly access patterns** - avoid false sharing between threads
+
+**LazySMP Requirements:**
+- Each thread will run independent search from root position
+- Threads share: transposition table, history heuristics
+- Threads DON'T share: board state, move stacks, search stacks
+- Optimizations should not introduce thread dependencies
 
 ---
 
@@ -148,11 +167,91 @@ Based on Phase 1 profiling, we'll tackle each bottleneck in separate sub-phases:
 **Branch**: `feature/20250829-attack-detection`
 **Current**: 14.8M calls consuming 12.83% of runtime
 **Target**: Reduce by 50% through caching or algorithm improvements
-**Approaches**:
-- Option A: Add attack map caching per position
-- Option B: Use incremental attack updates during make/unmake
-- Option C: Optimize attack generation with better bitboard algorithms
-- Option D: Pre-compute common attack patterns
+
+**Thread Safety Considerations**:
+- Any caching must be per-thread or use atomic operations
+- Attack maps cannot be global mutable state
+- Incremental updates must not create race conditions
+- Pre-computed patterns must be read-only or thread-local
+
+##### Phase 2.1.a: Algorithmic Optimizations (Quick Wins)
+**Goal**: Optimize attack detection algorithm without architectural changes
+**Expected Gain**: 1.5-2x speedup of isSquareAttacked function
+
+**Implementation Details**:
+1. **Reorder piece type checks** for early exit:
+   - Knights first (most common attackers in middlegame)
+   - Pawns second (numerous and simple attacks)
+   - Queens (combined bishop+rook attacks)
+   - Bishops and Rooks separately only if no queen hits
+   - King last (least likely attacker)
+
+2. **Optimize queen handling**:
+   - Compute bishop+rook attacks once for queens
+   - Avoid duplicate sliding piece calculations
+   - Cache occupancy bitboard calculation
+
+3. **Early exit optimizations**:
+   - Return immediately on first attacker found
+   - Skip piece types with no pieces on board
+   - Check piece existence before attack generation
+
+4. **Remove runtime configuration overhead**:
+   - Eliminate useMagicBitboards runtime checks in hot path
+   - Use compile-time selection or direct calls
+
+**Testing Requirements**:
+- Local NPS measurement before/after
+- Perft validation for correctness
+- Bench count for commit
+- SPRT test with bounds [-3.00, 3.00]
+- **STOP**: Wait for human SPRT approval before proceeding to 2.1.b
+
+##### Phase 2.1.b: Thread-Safe Attack Caching
+**Goal**: Implement position-based attack caching with thread-local storage
+**Expected Gain**: 3-5x speedup with good cache hit rates (combined with 2.1.a)
+**Prerequisite**: Phase 2.1.a must pass SPRT
+
+**Implementation Details**:
+1. **Thread-local cache structure**:
+   - Small cache size (16 entries) for L1 cache friendliness
+   - Cache line aligned entries (64 bytes)
+   - LRU or simple hash replacement policy
+   - Store attacks for both colors per entry
+
+2. **Cache entry design**:
+   ```cpp
+   struct CacheEntry {
+       Hash zobristKey;
+       Bitboard attackedByWhite;
+       Bitboard attackedByBlack;
+       uint8_t age;  // For replacement
+   };
+   ```
+
+3. **Cache integration**:
+   - Use thread_local storage for zero synchronization overhead
+   - Hash position zobrist key for cache indexing
+   - Compute both colors' attacks on cache miss (amortize cost)
+   - Add statistics tracking for hit rates (debug builds)
+
+4. **Memory considerations**:
+   - Total memory: 16 entries * 64 bytes = 1KB per thread
+   - Cache-line aligned to prevent false sharing
+   - Consider NUMA awareness for large systems
+
+**Testing Requirements**:
+- Measure cache hit rates on typical positions
+- Verify thread safety with concurrent searches
+- Compare NPS improvement over 2.1.a baseline
+- Full perft validation
+- SPRT test with bounds [0.00, 5.00] (expecting positive gain)
+- **STOP**: Wait for human SPRT approval before proceeding to Phase 2.2
+
+**Expected Combined Impact of 2.1.a + 2.1.b**:
+- Function speedup: 5-8x
+- Overall NPS improvement: 15-25% (500K → 600-625K nps)
+- Addresses the #1 performance bottleneck
 
 #### Phase 2.2: makeMoveInternal Optimization (12.83% runtime)
 **Branch**: `feature/20250829-make-unmake-opt`
@@ -342,14 +441,20 @@ for each specific CPU, eliminating the need for hardcoded flags.
 ### For Any Agents Called:
 ```
 CRITICAL CONSTRAINTS:
-1. MUST use: rm -rf build && ./build.sh
-2. CANNOT use: make (except for OpenBench)
-3. Maximum instruction set: SSE 4.2 + POPCNT
-4. No AVX, AVX2, or BMI2 instructions
-5. All changes must be thread-safe
+1. MUST use: rm -rf build && ./build.sh for local development
+2. OpenBench uses Makefile automatically
+3. Build system auto-detects CPU capabilities via -march=native
+4. Don't hardcode specific instruction sets (let compiler decide)
+5. ALL changes MUST be thread-safe for LazySMP
 6. Update BOTH Makefile and CMakeLists.txt
 7. Include "bench [count]" in EVERY commit
 8. Design for future LazySMP implementation
+
+MANDATORY READING BEFORE ANY WORK:
+- Read /workspace/nps_optimization_plan.md FIRST
+- Read /workspace/docs/BUILD_SYSTEM.md SECOND
+- DO NOT modify existing codebase unless explicitly instructed
+- Analysis and planning only unless told otherwise
 ```
 
 ---
