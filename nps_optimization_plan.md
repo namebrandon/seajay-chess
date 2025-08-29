@@ -134,14 +134,89 @@ git push
 
 ---
 
-### Phase 2: Board Representation Optimization  
-**Goal**: Fix potential bugs and optimize make/unmake or copy-make operations
+### Phase 2: Board Representation & Attack Detection Optimization
+**Goal**: Address the top bottlenecks identified in profiling
 
-**Investigation areas**:
-- Check for unnecessary board copies
-- Validate zobrist key updates
-- Look for redundant state updates
-- Check move generation correctness
+**Git Branch Strategy**:
+- Each sub-phase gets its own feature branch from main
+- Merge to main only after successful SPRT test
+- Clean isolation of each optimization attempt
+
+Based on Phase 1 profiling, we'll tackle each bottleneck in separate sub-phases:
+
+#### Phase 2.1: isSquareAttacked Optimization (12.83% runtime)
+**Branch**: `feature/20250829-attack-detection`
+**Current**: 14.8M calls consuming 12.83% of runtime
+**Target**: Reduce by 50% through caching or algorithm improvements
+**Approaches**:
+- Option A: Add attack map caching per position
+- Option B: Use incremental attack updates during make/unmake
+- Option C: Optimize attack generation with better bitboard algorithms
+- Option D: Pre-compute common attack patterns
+
+#### Phase 2.2: makeMoveInternal Optimization (12.83% runtime)
+**Branch**: `feature/20250829-make-unmake-opt`
+**Current**: 14.1M calls consuming 12.83% of runtime
+**Target**: Reduce overhead by 30-40%
+**Approaches**:
+- Option A: Reduce unnecessary state updates
+- Option B: Optimize piece list maintenance
+- Option C: Streamline zobrist key updates
+- Option D: Consider copy-make vs make-unmake tradeoffs
+
+#### Phase 2.3: updateBitboards Optimization (10.57% runtime)
+**Branch**: `feature/20250829-bitboard-updates`
+**Current**: 60M calls consuming 10.57% of runtime
+**Target**: Inline or optimize the hot path
+**Approaches**:
+- Option A: Force inline the function
+- Option B: Use branchless bit manipulation
+- Option C: Combine updates to reduce function calls
+- Option D: Template specialization for common cases
+
+#### Phase 2.4: HistoryHeuristic Access Optimization (7.92% runtime)
+**Branch**: `feature/20250829-history-cache`
+**Current**: 73.7M calls consuming 7.92% of runtime
+**Target**: Improve cache locality and access patterns
+**Approaches**:
+- Option A: Optimize array layout for cache lines
+- Option B: Reduce array dimensions if possible
+- Option C: Use smaller data types to improve cache usage
+- Option D: Consider compression or sparse representation
+
+#### Phase 2.5: Evaluation Function Optimization (7.92% runtime)
+**Branch**: `feature/20250829-eval-speedup`
+**Current**: 1.5M calls consuming 7.92% of runtime
+**Target**: Speed up by 20-30% without losing strength
+**Approaches**:
+- Option A: Lazy evaluation (compute only what's needed)
+- Option B: Incremental evaluation updates
+- Option C: Better PST access patterns
+- Option D: SIMD for material/PST calculations
+
+**Git Workflow for Each Sub-Phase**:
+1. **HUMAN**: Merge current branch to main (if successful)
+2. Create new feature branch from main: `git feature <name>`
+3. Implement optimization
+4. Test locally and commit with bench count
+5. Push branch to origin
+6. **HUMAN**: Run SPRT test on OpenBench
+7. **HUMAN**: If successful, approve merge to main
+8. If failed: abandon branch and try different approach
+
+**Testing Protocol for Each Sub-Phase**:
+1. Implement optimization
+2. Measure NPS improvement locally
+3. Run bench and commit with exact count
+4. Push to origin for OpenBench access
+5. **HUMAN**: Run SPRT test with bounds [-3.00, 3.00] 
+6. **HUMAN**: Review results and decide next steps
+7. Document results before proceeding
+
+**Success Criteria**:
+- Each sub-phase should maintain or improve NPS
+- No strength regression (SPRT pass)
+- Combined target: 2x overall NPS improvement (1M+ nps)
 
 ---
 
@@ -189,44 +264,29 @@ git push
 
 ---
 
-### Phase 7: Compiler Optimization Flags (LAST)
-**Goal**: Optimize build flags within SSE 4.2 limits
+### Phase 0.5: Compiler Optimization (COMPLETED ✅)
+**Goal**: Optimize build flags with auto-detection
 
-1. **Update Makefile for OpenBench**
-   - Add `-O3` if using `-O2`
-   - Add `-msse4.2 -mpopcnt` explicitly
-   - Consider `-flto` for link-time optimization
-   - Add `-march=x86-64-v2` (includes up to SSE4.2)
+**Changes Made:**
+1. **Makefile Updates**
+   - Switched from hardcoded `-mavx2 -mbmi2` to `-march=native`
+   - Upgraded from `-O2` to `-O3` for better optimization
+   - Added `-flto` for link-time optimization
+   - Now auto-detects CPU capabilities on any x86-64 CPU
 
-2. **Synchronize with CMakeLists.txt**
-   - Match optimization flags
-   - Ensure both build systems produce similar binaries
+2. **CMakeLists.txt Updates**
+   - Added same optimizations for local builds
+   - Release builds use `-O3 -march=native -flto`
+   - Debug and RelWithDebInfo modes also updated
 
-3. **Benchmark changes**
-   ```bash
-   rm -rf build
-   ./build.sh Release
-   # Test with slow search position for NPS comparison
-   echo -e "position fen r2q1rk1/ppp1bppp/2np1n2/4p3/2B1P3/2NP1Q1P/PPP2PP1/R1B2RK1 b - - 0 9\ngo depth 14\nquit" | ./bin/seajay
-   # Also get bench count for commit message
-   echo "bench" | ./bin/seajay | grep "Benchmark complete"
-   ```
+3. **Results**
+   - **NPS Improvement**: 440K → 500K (14% gain)
+   - **OpenBench**: Confirmed working on Ryzen, Xeon, and i9 processors
+   - **Compatibility**: Auto-detection ensures optimal performance on any CPU
 
-**Commit checkpoint**:
-```bash
-git add Makefile CMakeLists.txt
-git commit -m "build: Optimize compiler flags for SSE 4.2 environments
-
-- Add explicit SSE 4.2 and POPCNT support
-- Enable O3 optimization level
-- Add link-time optimization
-- Synchronize Makefile and CMake flags
-
-bench [ACTUAL_COUNT]"
-git push
-```
-
-**WAIT FOR HUMAN**: SPRT test results
+**Key Learning**: Using `-march=native` allows the compiler to automatically
+detect and use the best available instruction sets (SSE4.2, AVX2, BMI2, etc.)
+for each specific CPU, eliminating the need for hardcoded flags.
 
 ---
 
@@ -296,32 +356,63 @@ CRITICAL CONSTRAINTS:
 
 ## Phase Tracking
 
-| Phase | Description | Status | NPS Before | NPS After | SPRT Result |
-|-------|-------------|--------|------------|-----------|-------------|
-| 0 | Baseline Analysis | Complete | - | 440K | N/A |
-| 1 | Profiling & Hotspots | Pending | 440K | - | N/A |
-| 2 | Board Optimization | Pending | - | - | Awaiting |
-| 3 | Move Generation | Pending | - | - | Awaiting |
-| 4 | Evaluation | Pending | - | - | Awaiting |
-| 5 | Search Loop | Pending | - | - | Awaiting |
-| 6 | Memory & Cache | Pending | - | - | Awaiting |
-| 7 | Compiler Flags (LAST) | Pending | - | - | Awaiting |
+| Phase | Description | Branch | Status | NPS Before | NPS After | SPRT |
+|-------|-------------|--------|--------|------------|-----------|------|
+| 0 | Baseline Analysis | - | Complete | - | 440K | N/A |
+| 0.5 | Compiler Optimization | (merged) | Complete | 440K | 500K | ✅ PASSED |
+| 1 | Profiling & Hotspots | feature/20250829-slow-search-analysis | Complete | 500K | 500K | Analysis |
+| **2.1** | isSquareAttacked Opt | feature/20250829-attack-detection | **Ready** | 500K | - | - |
+| 2.2 | makeMoveInternal Opt | feature/20250829-make-unmake-opt | Pending | - | - | - |
+| 2.3 | updateBitboards Opt | feature/20250829-bitboard-updates | Pending | - | - | - |
+| 2.4 | HistoryHeuristic Opt | feature/20250829-history-cache | Pending | - | - | - |
+| 2.5 | Evaluation Opt | feature/20250829-eval-speedup | Pending | - | - | - |
+| 3 | Move Generation | TBD | Pending | - | - | - |
+| 4 | Search Optimizations | TBD | Pending | - | - | - |
+| 5 | Memory & Cache | TBD | Pending | - | - | - |
 
 ---
 
 ## Notes Section
 
 ### Findings from Analysis:
-(To be filled during investigation)
-
-### Bottlenecks Identified:
-(To be documented during profiling)
+1. **Compiler Optimization Impact**: Simply switching from -O2 to -O3 with -march=native gave 14% speedup
+2. **Instruction Sets**: Competitors use SSE/BMI but not AVX in their binaries
+3. **Baseline NPS**: 440K nps on test position (still 2.3-3.7x slower than competitors)
 
 ### Successful Optimizations:
-(To be tracked as we progress)
+1. **Phase 0.5 - Compiler Flags** (2025-08-29)
+   - Changed: -O2 → -O3, added -march=native and -flto
+   - Result: 14% NPS improvement (440K → 500K)
+   - Verified on multiple CPU architectures via OpenBench
 
-### Failed Attempts:
-(Important for learning)
+### Phase 1 Profiling Results (2025-08-29):
+
+**Top Hotspots Identified (gprof analysis):**
+1. **isSquareAttacked** (12.83%) - Called 14.8M times
+2. **makeMoveInternal** (12.83%) - Called 14.1M times  
+3. **updateBitboards** (10.57%) - Called 60M times
+4. **HistoryHeuristic::getScore** (7.92%) - Called 73.7M times
+5. **evaluate** (7.92%) - Called 1.5M times
+
+**Key Findings:**
+- Move generation and board operations dominate runtime (36.23% combined)
+- History heuristic lookup is extremely hot (73.7M calls)
+- Attack detection is a major bottleneck
+- SEE calculations and move ordering also significant
+
+**NPS Status:** ~500K (no change from Phase 0.5)
+
+### Next Investigation Areas:
+- Optimize isSquareAttacked with better caching or algorithm
+- Reduce updateBitboards overhead in make/unmake
+- Optimize history heuristic access patterns
+- Consider incremental attack updates
+- Review board copy vs copy-make tradeoffs
+
+### Build System Notes:
+- Makefile now uses -march=native for auto-detection
+- Works on Ryzen (AVX2/BMI2), Xeon, and Core i9 processors
+- Development environment limited to SSE4.2 + POPCNT
 
 ---
 
