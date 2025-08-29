@@ -407,32 +407,91 @@ for each specific CPU, eliminating the need for hardcoded flags.
 
 ## Testing Strategy
 
+### Understanding Bench and Perft Validation
+
+#### What is Perft?
+Perft (performance test) validates move generation correctness by:
+- Generating all legal moves from a position
+- Recursively exploring all moves to a given depth
+- Counting total leaf nodes
+- Comparing against known correct values
+
+#### How Bench Uses Perft
+The `bench` command runs perft on 12 standard positions:
+- Always produces **19,191,913 nodes** for correct move generation
+- This node count is a "fingerprint" of correctness
+- Required in every commit message for OpenBench validation
+- Uses the engine's actual move generation code
+
+#### Validation Tools
+1. **Bench command**: `echo "bench" | ./bin/seajay`
+   - Tests 12 positions, outputs total node count
+   - Must always output 19,191,913 nodes
+
+2. **Perft tool**: `./bin/perft_tool`
+   - Standalone tool using same engine components
+   - Can test individual positions to any depth
+   - Includes test suite with known values
+
+3. **Built-in test suite**: `./bin/perft_tool --suite --max-depth 4`
+   - Validates standard positions
+   - Tests special moves (castling, en passant, promotions)
+
 ### For Each Phase with Code Changes:
+
 1. **Local testing**
    ```bash
    rm -rf build
    ./build.sh Release
-   echo "bench" | ./bin/seajay
-   ./tools/analyze_position.sh "[test FEN]" depth 14
+   
+   # Verify move generation correctness with perft
+   echo "bench" | ./bin/seajay | grep "19191913"  # Must output this exact count
+   ./bin/perft_tool --suite --max-depth 4  # Run validation suite
+   
+   # Test NPS on reference position
+   echo -e "position fen r2q1rk1/ppp1bppp/2np1n2/4p3/2B1P3/2NP1Q1P/PPP2PP1/R1B2RK1 b - - 0 9\ngo depth 14\nquit" | ./bin/seajay | grep nps
    ```
 
-2. **Commit with bench**
+2. **Correctness validation**
+   ```bash
+   # Quick perft validation (should complete without errors)
+   ./bin/perft_tool kiwipete 3  # Complex position test
+   ./bin/perft_tool startpos 5  # Should output 4865609 nodes
+   
+   # If any perft test fails, DO NOT COMMIT
+   # Debug the issue before proceeding
+   ```
+
+3. **Commit with bench**
    ```bash
    BENCH=$(echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}')
+   # Verify bench is exactly 19191913
+   if [ "$BENCH" != "19191913" ]; then
+       echo "ERROR: Bench count incorrect! Expected 19191913, got $BENCH"
+       echo "Move generation may be broken. Debug before committing."
+       exit 1
+   fi
    git commit -m "Description... bench $BENCH"
    git push
    ```
 
-3. **OpenBench SPRT**
-   - Branch: feature/20250829-slow-search-analysis
+4. **OpenBench SPRT**
+   - Branch: feature branch for the phase
    - Base: main (or previous phase)
    - Bounds: [-3.00, 3.00] for no regression
    - Bounds: [0.00, 5.00] for improvements
 
-4. **Wait for results**
+5. **Wait for results**
    - PASS: Continue to next phase
    - FAIL: Debug and fix
    - INCONCLUSIVE: Analyze and decide
+
+### Why Perft Matters for Optimization
+- **Perft exercises the optimized code paths** millions of times
+- **Any bug in move generation** will change the node count
+- **The bench count of 19,191,913** proves correctness
+- **If optimization breaks something**, perft will catch it immediately
+- **Thread-safety issues** may only appear under concurrent perft testing
 
 ---
 
