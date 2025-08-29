@@ -30,8 +30,16 @@ std::chrono::milliseconds calculateEnhancedTimeLimit(const SearchLimits& limits,
     auto remaining = limits.time[stm];
     auto increment = limits.inc[stm];
     
-    // If no time specified, use a default
+    // If no time specified, check if this is a depth-only search
     if (remaining == std::chrono::milliseconds(0)) {
+        // For depth-only searches (go depth N with no time controls),
+        // treat as infinite analysis to allow completion to requested depth
+        // This happens when no wtime/btime and no movetime is specified
+        if (limits.movetime == std::chrono::milliseconds(0)) {
+            // Depth-only search: no time limit, search to specified depth
+            return std::chrono::milliseconds::max();
+        }
+        // Otherwise use a default for safety (shouldn't happen but defensive)
         return std::chrono::milliseconds(5000);  // 5 seconds default
     }
     
