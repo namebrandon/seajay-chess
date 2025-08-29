@@ -1816,17 +1816,22 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
         // Extract full PV from root
         std::vector<Move> pvMoves = pv->extractPV(0);
         if (!pvMoves.empty()) {
-            // Pass all PV moves to the builder
+            // Validate moves and build clean PV
+            std::vector<Move> validPvMoves;
             for (Move move : pvMoves) {
-                // Validate each move before outputting
+                // Validate each move before adding
                 Square from = moveFrom(move);
                 Square to = moveTo(move);
                 if (from < 64 && to < 64 && from != to) {
-                    builder.appendPv(move);
+                    validPvMoves.push_back(move);
                 } else {
-                    // Stop outputting if we hit a corrupted move
+                    // Stop if we hit a corrupted move
                     break;
                 }
+            }
+            // Pass entire PV vector to builder (it will add "pv" once)
+            if (!validPvMoves.empty()) {
+                builder.appendPv(validPvMoves);
             }
         }
     } else if (info.bestMove != Move()) {
