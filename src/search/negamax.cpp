@@ -789,6 +789,12 @@ eval::Score negamax(Board& board,
             bestScore = score;
             bestMove = move;
             
+            // Phase PV2: Update PV at root only
+            if (ply == 0 && pv != nullptr) {
+                // At root, we just have the single best move (no child PV yet)
+                pv->updatePV(0, move, nullptr);
+            }
+            
             // At root, store the best move in SearchInfo
             if (ply == 0) {
                 info.bestMove = move;
@@ -1068,8 +1074,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             beta = eval::Score::infinity();
         }
         
+        // Phase PV2: Pass rootPV to collect principal variation at root
         eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                                   nullptr);  // Phase PV1: Pass nullptr for now
+                                   &rootPV);  // Phase PV2: Collect PV at root
         
         // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
@@ -1087,8 +1094,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 beta = window.beta;
                 
                 // Re-search with widened window
+                // Phase PV2: Pass rootPV for re-search at root
                 score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                              nullptr);  // Phase PV1: Pass nullptr for now
+                              &rootPV);  // Phase PV2: Collect PV at root re-search
                 
                 // Check if we're now using an infinite window
                 if (window.isInfinite()) {

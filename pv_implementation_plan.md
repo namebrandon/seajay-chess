@@ -12,21 +12,24 @@ Implementation of full Principal Variation (PV) display for UCI compliance, usin
 
 ## Implementation Phases
 
-### Phase 1: Basic Infrastructure ✅ READY TO START
-**Status**: Not Started  
+### Phase 1: Basic Infrastructure ✅ COMPLETED
+**Status**: Completed  
 **Expected ELO**: 0 ± 5 (infrastructure only)  
 **SPRT Bounds**: [-5.00, 3.00]  
-**Commit Message**: `feat: Add triangular PV infrastructure (Phase PV1) - bench [count]`
+**Commit**: `2e497c8` - `feat: Add triangular PV infrastructure (Phase PV1) - bench 19191913`
+**Branch**: `feature/20250828-uci-display`
 
 **Tasks**:
-- [ ] Create `/workspace/src/search/principal_variation.h`
-- [ ] Implement TriangularPV class with flattened array
-- [ ] Add cache-aligned memory layout
-- [ ] Include header in negamax.cpp
-- [ ] Add stack-allocated PV (pass nullptr for now)
-- [ ] Verify compilation
-- [ ] Run bench for node count
-- [ ] Commit and push for SPRT testing
+- [x] Create `/workspace/src/search/principal_variation.h`
+- [x] Implement TriangularPV class with flattened array
+- [x] Add cache-aligned memory layout
+- [x] Include header in negamax.cpp
+- [x] Add stack-allocated PV (pass nullptr for now)
+- [x] Verify compilation
+- [x] Run bench for node count (19191913)
+- [x] Commit and push for SPRT testing
+
+**Results**: Awaiting SPRT test results from OpenBench
 
 ---
 
