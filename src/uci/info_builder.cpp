@@ -34,9 +34,16 @@ InfoBuilder& InfoBuilder::appendDepth(int depth, int seldepth) {
 }
 
 InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, ScoreBound bound) {
-    // Convert from negamax (side-to-move perspective) to UCI (White's perspective)
-    // CRITICAL: Only convert the perspective, NOT the internal score value
+    // UCI Protocol requires scores from the side-to-move perspective
+    // Negamax already provides scores from side-to-move perspective
+    // No conversion needed - just pass through the score
     if (score.is_mate_score()) {
+        // Debug: Log the raw score to understand the issue
+        if (false) { // Set to true for debugging
+            std::cerr << "DEBUG: appendScore called with score=" << score.value() 
+                     << " sideToMove=" << (sideToMove == WHITE ? "WHITE" : "BLACK") << std::endl;
+        }
+        
         int mateIn = 0;
         if (score > eval::Score::zero()) {
             mateIn = (eval::Score::mate().value() - score.value() + 1) / 2;
@@ -45,22 +52,18 @@ InfoBuilder& InfoBuilder::appendScore(eval::Score score, Color sideToMove, Score
         }
         return appendMateScore(mateIn, sideToMove);
     } else {
-        // FIXED: Score is already from root's perspective in negamax
-        // Do NOT negate for Black - this was causing -30 ELO regression!
+        // Score is already from side-to-move perspective (correct for UCI)
+        // Do NOT negate for Black - UCI wants side-to-move perspective
         int cp = score.to_cp();
-        // REMOVED the problematic negation:
-        // if (sideToMove == BLACK) {
-        //     cp = -cp;  // This was WRONG and caused regression
-        // }
         return appendCentipawnScore(cp, bound);
     }
 }
 
 InfoBuilder& InfoBuilder::appendMateScore(int mateIn, Color sideToMove) {
     addSpace();
-    // Convert mate score to White's perspective
-    int uciMateIn = (sideToMove == WHITE) ? mateIn : -mateIn;
-    m_stream << "score mate " << uciMateIn;
+    // UCI requires mate scores from side-to-move perspective
+    // mateIn is already from side-to-move perspective, no conversion needed
+    m_stream << "score mate " << mateIn;
     return *this;
 }
 

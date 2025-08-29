@@ -1,0 +1,325 @@
+==========================================
+Five-Engine Position Analysis Report
+Generated: Fri Aug 29 06:51:51 AM CDT 2025
+==========================================
+
+FEN: r1b1k2r/pp3ppp/3Bp3/3p4/6q1/8/1PP2PPP/2R1R1K1 b kq - 5 17
+Side to move: Black
+Search mode: depth = 12
+
+==========================================
+Full Engine Outputs
+==========================================
+
+--- SeaJay ---
+SeaJay Chess Engine v0.10.1-remediated
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+[Time Management] Initial limits: soft=5000ms, hard=15000ms, optimum=5000ms
+info depth 1 seldepth 3 score cp 1100 nodes 39 nps 2785 time 0 hashfull 0 pv c8d7
+info depth 2 seldepth 5 score cp 1508 nodes 173 nps 10812 time 0 moveeff 36.36 tthits 18.92 hashfull 0 pv d5d4 b2b3
+info string Countermoves: updates=21 hits=0 hitRate=0.0% bonus=8000
+info depth 3 seldepth 7 score cp 1089 ebf 3.44 nodes 2225 nps 101136 time 0 moveeff 48.29 tthits 50.13 hashfull 0 pv c8d7 c1a1 a7a5
+info string Countermoves: updates=181 hits=164 hitRate=90.6% bonus=8000
+[Time Management] Depth 3: stability=1.5, adjusted soft=5000ms
+Negamax: Starting search at depth 4
+Root: generated 35 moves, depth=4
+info depth 4 seldepth 9 score cp 1080 ebf 10.56 nodes 4173 nps 160500 time 22 moveeff 48.12 tthits 42.97 hashfull 2 pv c8d7 c1a1 a7a5 c2c3
+info string Countermoves: updates=414 hits=366 hitRate=88.4% bonus=8000
+Negamax: Starting search at depth 5
+Root: generated 35 moves, depth=5
+info depth 5 seldepth 10 score cp 1093 bound [1071,1107] ebf 6.29 nodes 8243 nps 249787 time 32 moveeff 52.28 tthits 50.09 hashfull 2 pv c8d7 c1a1 a7a5 c2c3 g4c4
+info string Countermoves: updates=635 hits=628 hitRate=98.9% bonus=8000
+info string MoveOrdering: totalCutoffs=1196 TT=287 Cap=293 Kill=459 nodes=8243
+info string MoveOrdering cutoffs: TT=24.0% 1stCap=24.5% Killer=38.4% Counter=1.0% Quiet=3.7% BadCap=8.4%
+info string Cutoff by index: [0]=52.3% [1]=21.3% [2]=19.7% [3]=3.3% [4]=1.2% [5+]=1.0% [10+]=1.3%
+info string Bad captures: QxP=435 attempts (6.4% cutoff) RxP=604 attempts (12.1% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+[Time Management] Depth 5: stability=1.3, adjusted soft=5000ms
+Negamax: Starting search at depth 6
+Root: generated 35 moves, depth=6
+info depth 6 seldepth 10 score cp 1086 bound [1062,1098] string unstable ebf 4.65 nodes 14507 nps 329704 time 42 moveeff 53.44 tthits 47.72 hashfull 8 pv c8d7 c1a1 a7a5 c2c3 g4c4 f2f3
+info string Countermoves: updates=1256 hits=1416 hitRate=112.7% bonus=8000
+Negamax: Starting search at depth 7
+Root: generated 35 moves, depth=7
+info depth 7 seldepth 12 score cp 1098 bound [1074,1112] ebf 1.59 nodes 32617 nps 418166 time 74 moveeff 59.69 tthits 46.87 hashfull 12 pv c8d7 c1a1 g4c4 c2c3 f7f6 f2f3 e6e5
+info string Countermoves: updates=2825 hits=3382 hitRate=119.7% bonus=8000
+Negamax: Starting search at depth 8
+Root: generated 35 moves, depth=8
+info depth 8 seldepth 14 score cp 1094 nodes 61440 nps 476279 time 124 hashfull 21 pv c8d7
+info depth 8 seldepth 14 score cp 1094 bound [1067,1105] string unstable ebf 2.26 nodes 65460 nps 488507 time 132 moveeff 60.59 tthits 45.04 hashfull 24 pv c8d7 c2c3 a8c8 f2f3 g4g5
+info string Countermoves: updates=5363 hits=7033 hitRate=131.1% bonus=8000
+Negamax: Starting search at depth 9
+Root: generated 35 moves, depth=9
+info depth 9 seldepth 15 score cp 1098 bound [1078,1118] ebf 2.11 nodes 88957 nps 499758 time 175 moveeff 63.14 tthits 45.25 hashfull 34 pv g4c4 b2b3 c4c6 d6e5 f7f6 e5d4 e6e5 c2c4 c8f5
+info string Countermoves: updates=7086 hits=10366 hitRate=146.3% bonus=8000
+Negamax: Starting search at depth 10
+Root: generated 35 moves, depth=10
+info depth 10 seldepth 16 score cp 1077 nodes 118784 nps 514216 time 231 hashfull 51 pv g4g2
+info depth 10 seldepth 16 score cp 1098 nodes 147456 nps 517389 time 285 hashfull 62 pv c8d7
+info depth 10 seldepth 16 score cp 1098 nodes 180224 nps 530070 time 336 hashfull 73 pv c8d7
+info depth 10 seldepth 16 score cp 1098 bound [1074,1114] string unstable ebf 1.56 nodes 209448 nps 535672 time 390 moveeff 64.78 tthits 38.20 hashfull 88 pv c8d7 c2c3 g4c4 c1a1 f7f6 f2f3 e6e5 g1h1 a7a5 d6e5
+info string Countermoves: updates=14934 hits=24353 hitRate=163.1% bonus=8000
+info string MoveOrdering: totalCutoffs=40977 TT=7356 Cap=16334 Kill=11069 nodes=209448
+info string MoveOrdering cutoffs: TT=18.0% 1stCap=39.9% Killer=27.0% Counter=1.0% Quiet=2.9% BadCap=11.3%
+info string Cutoff by index: [0]=64.8% [1]=15.7% [2]=13.0% [3]=3.8% [4]=1.0% [5+]=1.1% [10+]=0.5%
+info string Bad captures: QxP=11807 attempts (16.8% cutoff) RxP=18095 attempts (14.6% cutoff)
+info string Phase distribution: Opening=0.0% Middle=99.9% Endgame=0.1%
+Negamax: Starting search at depth 11
+Root: generated 35 moves, depth=11
+info depth 11 seldepth 19 score cp 1077 nodes 237568 nps 535063 time 439 hashfull 101 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 266240 nps 537858 time 492 hashfull 123 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 294912 nps 535230 time 549 hashfull 143 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 323584 nps 533966 time 605 hashfull 152 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 352256 nps 535343 time 657 hashfull 173 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 376832 nps 532248 time 705 hashfull 193 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 405504 nps 532856 time 759 hashfull 213 pv g4g2
+info depth 11 seldepth 21 score cp 1077 nodes 434176 nps 530777 time 816 hashfull 227 pv g4g2
+info depth 11 seldepth 21 score cp 1107 nodes 462848 nps 531398 time 866 hashfull 239 pv g4c4
+info depth 11 seldepth 21 score cp 1107 bound [1077,1119] string unstable ebf 2.92 nodes 464209 nps 531739 time 872 moveeff 63.24 tthits 31.67 hashfull 240 pv g4c4 g1h1 c8d7 b2b3 c4c6
+info string Countermoves: updates=34636 hits=59123 hitRate=170.7% bonus=8000
+Negamax: Starting search at depth 12
+Root: generated 35 moves, depth=12
+info depth 12 seldepth 21 score cp 1085 nodes 491520 nps 531372 time 925 hashfull 252 pv g4g2
+info depth 12 seldepth 21 score cp 1085 nodes 520192 nps 530808 time 977 hashfull 265 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 634880 nps 536669 time 1182 hashfull 309 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 745472 nps 537858 time 1383 hashfull 341 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 856064 nps 537391 time 1590 hashfull 381 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 962560 nps 534755 time 1795 hashfull 418 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 1069056 nps 533195 time 2003 hashfull 444 pv g4g2
+info depth 12 seldepth 22 score cp 1085 nodes 1179648 nps 533535 time 2207 hashfull 482 pv g4g2
+info depth 12 seldepth 22 score cp 1118 bound [1077,1119] string unstable ebf 2.81 nodes 1254269 nps 533277 time 2345 moveeff 63.88 tthits 30.82 hashfull 497 pv f7f6 e1d1 c8d7 f2f3 g4c4 d1d5 e6d5 d6b4 c4b4 c1a1 b4b2 a1e1
+info string Countermoves: updates=95247 hits=163650 hitRate=171.8% bonus=8000
+[Time Management] No time for depth 13 (would exceed soft limit)
+info string SEE pruning final: 233766/421038 captures pruned (55.5%) [Conservative mode]
+bestmove f7f6
+
+--- Stockfish ---
+Stockfish 17.1 by the Stockfish developers (see AUTHORS file)
+id name Stockfish 17.1
+id author the Stockfish developers (see AUTHORS file)
+
+option name Debug Log File type string default <empty>
+option name NumaPolicy type string default auto
+option name Threads type spin default 1 min 1 max 1024
+option name Hash type spin default 16 min 1 max 33554432
+option name Clear Hash type button
+option name Ponder type check default false
+option name MultiPV type spin default 1 min 1 max 256
+option name Skill Level type spin default 20 min 0 max 20
+option name Move Overhead type spin default 10 min 0 max 5000
+option name nodestime type spin default 0 min 0 max 10000
+option name UCI_Chess960 type check default false
+option name UCI_LimitStrength type check default false
+option name UCI_Elo type spin default 1320 min 1320 max 3190
+option name UCI_ShowWDL type check default false
+option name SyzygyPath type string default <empty>
+option name SyzygyProbeDepth type spin default 1 min 1 max 100
+option name Syzygy50MoveRule type check default true
+option name SyzygyProbeLimit type spin default 7 min 0 max 7
+option name EvalFile type string default nn-1c0000000000.nnue
+option name EvalFileSmall type string default nn-37f18f62d772.nnue
+uciok
+readyok
+info string Available processors: 0-19
+info string Using 1 thread
+info string NNUE evaluation using nn-1c0000000000.nnue (133MiB, (22528, 3072, 15, 32, 1))
+info string NNUE evaluation using nn-37f18f62d772.nnue (6MiB, (22528, 128, 15, 32, 1))
+info depth 1 seldepth 2 multipv 1 score cp 435 nodes 36 nps 5142 hashfull 0 tbhits 0 time 7 pv g4g6
+info depth 2 seldepth 3 multipv 1 score cp 621 nodes 74 nps 9250 hashfull 0 tbhits 0 time 8 pv g4g6
+info depth 3 seldepth 6 multipv 1 score cp 628 nodes 119 nps 13222 hashfull 0 tbhits 0 time 9 pv g4g6 b2b3 h7h6
+info depth 4 seldepth 6 multipv 1 score cp 710 nodes 213 nps 21300 hashfull 0 tbhits 0 time 10 pv g4g6 c2c4 d5d4 f2f3
+info depth 5 seldepth 6 multipv 1 score cp 628 nodes 271 nps 27100 hashfull 0 tbhits 0 time 10 pv g4g6 c2c4 d5d4 c4c5 d4d3
+info depth 6 seldepth 7 multipv 1 score cp 582 nodes 327 nps 32700 hashfull 0 tbhits 0 time 10 pv g4g6 c1a1 g6c2 h2h3
+info depth 7 seldepth 8 multipv 1 score cp 554 nodes 422 nps 38363 hashfull 0 tbhits 0 time 11 pv g4g6 c1a1 g6f6 h2h3 a7a6
+info depth 8 seldepth 11 multipv 1 score cp 595 nodes 649 nps 59000 hashfull 0 tbhits 0 time 11 pv g4g6 c1a1 g6f6 a1a3 f6b2 c2c3
+info depth 9 seldepth 12 multipv 1 score cp 614 nodes 1541 nps 128416 hashfull 0 tbhits 0 time 12 pv g4g6 c1d1 c8d7 d1d5 g6c2 d5d4
+info depth 10 seldepth 11 multipv 1 score cp 566 nodes 1768 nps 136000 hashfull 0 tbhits 0 time 13 pv g4g6 c1d1 c8d7 d1d5 g6c2 d5c5 c2g6
+info depth 11 seldepth 15 multipv 1 score cp 586 nodes 3089 nps 220642 hashfull 1 tbhits 0 time 14 pv g4g6 c1d1 c8d7 d6a3 d7c6 e1e3 b7b6 e3g3 g6f6 d1d4 e6e5
+info depth 12 seldepth 15 multipv 1 score cp 619 nodes 5144 nps 321500 hashfull 3 tbhits 0 time 16 pv g4g6 c1d1 c8d7 d6a3 b7b6 h2h3 d7c6 d1d3 h7h6
+bestmove g4g6 ponder c1d1
+
+--- Stash ---
+id name Stash v37.13
+id author Morgan Houppin et al. (see AUTHORS file)
+option name Threads type spin default 1 min 1 max 512
+option name Hash type spin default 1 min 1 max 33554432
+option name MoveOverhead type spin default 30 min 1 max 5000
+option name MultiPV type spin default 1 min 1 max 500
+option name UCI_Chess960 type check default false
+option name UCI_ShowWDL type check default false
+option name NormalizeScore type check default true
+option name TimemanForNodes type check default false
+option name Ponder type check default false
+option name Clear Hash type button
+uciok
+readyok
+info depth 1 seldepth 2 multipv 1 score cp 1076 nodes 37 nps 9250 hashfull 0 time 4 pv c8d7
+info depth 2 seldepth 3 multipv 1 score cp 1094 nodes 86 nps 14333 hashfull 0 time 6 pv c8d7 b2b3
+info depth 3 seldepth 4 multipv 1 score cp 1063 nodes 183 nps 30500 hashfull 0 time 6 pv c8d7 b2b3 d5d4
+info depth 4 seldepth 7 multipv 1 score cp 1095 nodes 585 nps 83571 hashfull 1 time 7 pv g4d4 h2h3 d4b2 f2f3
+info depth 5 seldepth 6 multipv 1 score cp 1129 nodes 655 nps 93571 hashfull 1 time 7 pv g4d4 h2h3 a7a5 b2b4 a5b4
+info depth 6 seldepth 9 multipv 1 score cp 1117 nodes 958 nps 136857 hashfull 1 time 7 pv g4d4 h2h4 a7a6 h4h5 d4b2 f2f3
+info depth 7 seldepth 9 multipv 1 score cp 1090 nodes 2472 nps 309000 hashfull 2 time 8 pv g4g5 d6e5 h8g8 e5g3 b7b6 f2f3 h7h6
+info depth 8 seldepth 12 multipv 1 score cp 1182 nodes 3551 nps 443875 hashfull 2 time 8 pv g4g5 d6e5 c8d7 e5c7 b7b6 f2f3 a8c8 c7d6 h7h6
+info depth 9 seldepth 15 multipv 1 score cp 1088 nodes 7496 nps 681454 hashfull 5 time 11 pv g4g5 b2b3 c8d7 h2h3 d7b5 c1a1 h8g8 f2f3 a8c8
+info depth 10 seldepth 15 multipv 1 score cp 1088 nodes 12223 nps 873071 hashfull 8 time 14 pv c8d7 h2h3 g4h4 c2c3 a7a5 c1a1 h4g5 a1d1 h7h5 d1a1
+info depth 11 seldepth 18 multipv 1 score cp 1104 nodes 27557 nps 1252590 hashfull 19 time 22 pv c8d7 b2b3 a8c8 c2c4 c8c6 d6b8 d5c4 b3c4 e8g8 b8a7
+info depth 12 seldepth 16 multipv 1 score cp 1096 nodes 35841 nps 1327444 hashfull 25 time 27 pv c8d7 b2b3 a8c8 h2h3 g4h4 c2c4 c8c6 d6g3 h4g5 h3h4 g5g4 c4d5 c6c1 e1c1 e6d5
+bestmove c8d7 ponder b2b3
+
+--- Komodo ---
+Komodo 14.1 64-bit (C) 2020 Don Dailey, Larry Kaufman and Mark Lefler
+using hardware POPCNT
+info string Licensed to Komodochess.com
+id name Komodo 14.1 64-bit 
+id author Don Dailey, Larry Kaufman, Mark Lefler
+option name Threads type spin default 1 min 1 max 128
+option name Ponder type check default true
+option name Hash type spin default 256 min 1 max 65536
+option name Clear Hash type button
+option name Table Memory type spin default 64 min 1 max 1024
+option name MultiPV type spin default 1 min 1 max 218
+option name OwnBook type check default true
+option name Book File type string default komodo.bin
+option name Book Moves type spin default 1000 min 0 max 1000
+option name Best Book Line type check default false
+option name Log File type string default <empty>
+option name Hash File Name type string default <empty>
+option name Save Hash to File type button
+option name Load Hash from File type button
+option name UCI_Chess960 type check default false
+option name UCI_AnalyseMode type check default false
+option name Use LMR type check default true
+option name Null Move Pruning type check default true
+option name Minimal Reporting type spin default 0 min 0 max 200
+option name Overhead ms type spin default 50 min 0 max 10000
+option name Time Usage type spin default 0 min -9 max 9
+option name Use Syzygy type check default true
+option name SyzygyPath type string default <empty>
+option name Syzygy Probe Depth type spin default 1 min 0 max 99
+option name Syzygy Probe Limit type spin default 6 min 0 max 7
+option name Syzygy 50 Move Rule type check default true
+option name Smart Syzygy type check default false
+option name King Safety type spin default 83 min 0 max 200
+option name Selectivity type spin default 216 min 10 max 250
+option name Reduction type spin default -25 min -500 max 50
+option name Dynamism type spin default 100 min 0 max 400
+option name Contempt type spin default 4 min -250 max 250
+option name White Contempt type check default false
+option name MCTS Hash type spin default 128 min 128 max 32768
+option name Use MCTS type check default false
+option name MCTS Explore type spin default 46 min 1 max 500
+option name Personality type combo default Default var Default var Aggressive var Defensive var Active var Positional var Endgame var Beginner var Human
+option name Armageddon type combo default Off var Off var White Must Win var Black Must Win
+option name Variety type spin default 0 min 0 max 50
+option name Skill type spin default 25 min 0 max 25
+option name Auto Skill type check default false
+uciok
+readyok
+info depth 1 time 3 nodes 0 nps 0
+info depth 1 time 8 nodes 1 score cp 1012 nps 124 tbhits 0 pv d5d4
+info depth 1 time 8 nodes 2 score cp 1025 nps 249 tbhits 0 pv a7a6
+info depth 1 time 8 nodes 3 score cp 1041 nps 374 tbhits 0 pv b7b6
+info depth 1 time 8 nodes 7 score cp 1047 nps 874 tbhits 0 pv c8d7
+info depth 1 time 8 nodes 19 score cp 1053 nps 2374 tbhits 0 pv a7a5
+info depth 2 time 9 nodes 37 nps 4111
+info depth 2 time 9 nodes 74 score cp 974 nps 7400 tbhits 0 pv a7a5 h2h3
+info depth 2 time 11 nodes 135 score cp 983 nps 12272 tbhits 0 pv g4h4 g2g3
+info depth 2 time 11 nodes 170 score cp 1002 nps 15454 tbhits 0 pv g4f5 f2f3
+info depth 2 time 11 nodes 183 score cp 1023 nps 16636 tbhits 0 pv g4g5 h2h3
+info depth 3 time 12 nodes 208 nps 17333
+info depth 3 time 13 nodes 265 score cp 1048 nps 20384 tbhits 0 pv g4g5 h2h3 a7a5
+info depth 4 time 13 nodes 305 nps 23461
+info depth 4 time 13 nodes 588 score cp 1023 nps 42000 tbhits 0 pv g4g5 h2h3 g5f6 e1e5
+info depth 5 time 13 nodes 974 nps 69571
+info depth 5 time 13 nodes 1084 score cp 1030 lowerbound nps 77428 tbhits 0 pv g4g5 c1a1
+info depth 5 time 15 nodes 1652 score cp 1047 nps 110132 tbhits 0 pv g4g5 c1a1 a7a5 d6e5 a5a4
+info depth 6 time 15 nodes 1720 nps 114665
+info depth 6 time 15 nodes 1799 score cp 1036 upperbound nps 119932 tbhits 0 pv g4g5 c1a1
+info depth 6 time 16 nodes 2212 score cp 1027 upperbound nps 138249 tbhits 0 pv g4g5 c1a1
+info depth 6 time 16 nodes 2343 score cp 1013 upperbound nps 146437 tbhits 0 pv g4g5 c1a1
+info depth 6 time 16 nodes 3138 score cp 1060 nps 184588 tbhits 0 pv g4a4 d6e5 f7f6 e5c7 a4c6 c7f4
+info depth 7 time 16 nodes 3168 nps 186353
+info depth 7 time 16 nodes 3326 score cp 1068 lowerbound nps 195647 tbhits 0 pv g4a4 d6e5 f7f6
+info depth 7 time 16 nodes 3946 score cp 1063 upperbound nps 232118 tbhits 0 pv g4a4 b2b3
+info depth 7 time 16 nodes 4527 score cp 1068 nps 266294 tbhits 0 pv g4a4 b2b3 a4c6 d6e5 f7f6 e5d4 a7a5
+info depth 8 time 16 nodes 4561 nps 268294
+info depth 8 time 16 nodes 4879 score cp 1066 nps 287000 tbhits 0 pv g4a4 b2b3 a4c6 d6e5 f7f6 e5d4 a7a5 h2h3
+info depth 8 time 19 nodes 6252 score cp 1075 lowerbound nps 329051 tbhits 0 pv f7f6 c1a1 g4d4
+info depth 8 time 19 nodes 8786 score cp 1093 nps 439300 tbhits 0 pv f7f6 h2h3 g4d4 d6a3 e6e5 c1d1 d4c4 d1d2
+info depth 9 time 19 nodes 8884 nps 444200
+info depth 9 time 21 nodes 10459 score cp 1101 lowerbound nps 498044 tbhits 0 pv f7f6 h2h3 g4d4
+info depth 9 time 21 nodes 10852 score cp 1102 nps 516758 tbhits 0 pv f7f6 h2h3 g4d4 d6a3 e6e5 b2b3 d4b6 c1d1 b6c6
+info depth 9 time 23 nodes 12754 score cp 1131 nps 554521 tbhits 0 pv g4c4 d6e5 f7f6 e5d6 e6e5 e1d1 c4c6 d6a3
+info depth 10 time 23 nodes 12810 nps 556956
+info depth 10 time 23 nodes 13883 score cp 1120 upperbound nps 603608 tbhits 0 pv g4c4 h2h3
+info depth 10 time 25 nodes 16037 score cp 1120 nps 641477 tbhits 0 pv g4c4 h2h3 c4c6 d6a3 f7f6 b2b3 e6e5 c2c4 a7a5 c4d5 c6d5
+info depth 11 time 25 nodes 16071 nps 642837
+info depth 11 time 26 nodes 20126 score cp 1127 lowerbound nps 745408 tbhits 0 pv g4c4 h2h3 c4c6
+info depth 11 time 39 nodes 43603 score cp 1124 upperbound nps 1090076 tbhits 0 pv g4c4 b2b3
+info depth 11 time 39 nodes 44311 score cp 1110 upperbound nps 1107776 tbhits 0 pv g4c4 b2b3
+info depth 11 time 57 nodes 74915 score cp 1127 nps 1314294 tbhits 0 pv f7f6 h2h3 g4d4 d6a3 e6e5 e1d1 d4c4 b2b3 c4c6 c2c3 c8e6
+info depth 12 time 57 nodes 74966 nps 1315189
+info depth 12 time 59 nodes 78272 score cp 1134 lowerbound nps 1326643 tbhits 0 pv f7f6 h2h3 g4d4
+info depth 12 time 78 nodes 115012 score cp 1183 nps 1455848 tbhits 0 pv f7f6 h2h3 g4d4 d6a3 e6e5 e1d1 d4c4 b2b3 c4c6 c2c3 c8e6 g1h1 e8f7 h1h2 a7a5
+info time 78 nodes 115429 nps 1461126
+bestmove f7f6 ponder h2h3
+
+--- Laser ---
+Laser 1.8 beta by Jeffrey An and Michael An
+id name Laser 1.8 beta
+id author Jeffrey An and Michael An
+option name Threads type spin default 1 min 1 max 128
+option name Hash type spin default 16 min 1 max 1048576
+option name Ponder type check default false
+option name MultiPV type spin default 1 min 1 max 256
+option name BufferTime type spin default 300 min 0 max 5000
+option name SyzygyPath type string default <empty>
+option name ScaleMaterial type spin default 100 min 0 max 500
+option name ScaleKingSafety type spin default 100 min 0 max 500
+uciok
+readyok
+info depth 1 seldepth 1 score cp 1238 time 4 nodes 37 nps 9250 tbhits 0 hashfull 0 pv h7h6
+info depth 2 seldepth 2 score cp 1240 time 6 nodes 106 nps 17666 tbhits 0 hashfull 0 pv h7h6 d6e5
+info depth 3 seldepth 3 score cp 1233 time 7 nodes 244 nps 34857 tbhits 0 hashfull 0 pv g4a4 e1e2 c8d7
+info depth 4 seldepth 6 score cp 1234 time 9 nodes 790 nps 87777 tbhits 0 hashfull 1 pv h7h6 h2h3 g4f5 g2g4
+info depth 5 seldepth 6 score cp 1235 time 11 nodes 1774 nps 161272 tbhits 0 hashfull 1 pv h7h6 h2h3 g4a4 d6e5 e8g8
+info depth 6 seldepth 6 score cp 1231 time 16 nodes 5193 nps 324562 tbhits 0 hashfull 3 pv a7a6 h2h3 g4g5 c2c4 d5d4 c1a1
+info depth 7 seldepth 8 score cp 1239 time 26 nodes 12966 nps 498692 tbhits 0 hashfull 7 pv c8d7 h2h3 g4f5 c2c3 d7b5 c1a1 b5d3
+info depth 8 seldepth 9 score cp 1244 time 30 nodes 17259 nps 575300 tbhits 0 hashfull 9 pv c8d7 h2h3 g4f5 c2c4 d7c6 e1e5 f5d3 c4c5
+info depth 9 seldepth 10 score cp 1243 time 34 nodes 22100 nps 650000 tbhits 0 hashfull 13 pv c8d7 h2h3 g4f5 c2c4 d7c6 e1e5 f5d3 c4c5 c6b5
+info depth 10 seldepth 12 score cp 1247 time 64 nodes 55188 nps 862312 tbhits 0 hashfull 40 pv c8d7 b2b3 d7c6 h2h3 g4g6 e1e3 d5d4 e3g3 g6f6 c1e1
+info depth 11 seldepth 16 score cp 1252 time 110 nodes 104932 nps 953927 tbhits 0 hashfull 69 pv c8d7 e1e3 g4a4 c2c3 d7b5 e3f3 a4a2 d6a3 a2c4 c1e1 a8c8
+info depth 12 seldepth 16 score cp 1253 time 168 nodes 164050 nps 976488 tbhits 0 hashfull 110 pv c8d7 c2c3 d7b5 c1d1 g4f5 d1d4 a8c8 d4f4 f5c2 f4b4 a7a6 h2h3
+bestmove c8d7 ponder c2c3
+
+==========================================
+Summary Results
+==========================================
+
+Scores (White's perspective):
+SeaJay:     1118cp
+Stockfish:  619cp
+Stash:      1096cp
+Komodo:     1183cp
+Laser:      1253cp
+
+Best Moves:
+SeaJay:     f7f6 (depth 12)
+Stockfish:  g4g6 (depth 12)
+Stash:      c8d7 (depth 12)
+Komodo:     f7f6 (depth 12)
+Laser:      c8d7 (depth 12)
+
+Performance:
+SeaJay:     1254269 nodes @ 533277 nps
+Stockfish:  5144 nodes @ 321500 nps
+Stash:      35841 nodes @ 1327444 nps
+Komodo:     115012 nodes @ 1455848 nps
+Laser:      164050 nodes @ 976488 nps
+
+==========================================
+End of Report
+==========================================
