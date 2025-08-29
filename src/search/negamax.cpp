@@ -702,17 +702,19 @@ eval::Score negamax(Board& board,
         board.makeMove(move, undo);
         
         // Phase PV3: Create child PV for recursive calls
+        // Only allocate if we're in a PV node and have a parent PV to update
         TriangularPV childPV;
-        TriangularPV* childPVPtr = (pv != nullptr && isPvNode) ? &childPV : nullptr;
         
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
         if (moveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
+            // Pass childPV only if we're in a PV node and have a parent PV
+            TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
             score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
-                            childPVPtr,  // Phase PV3: Pass child PV for PV nodes
+                            firstMoveChildPV,  // Phase PV3: Pass child PV for PV nodes
                             isPvNode);  // Phase P3: First move inherits PV status
         } else {
             // Later moves: use PVS with LMR
@@ -765,9 +767,11 @@ eval::Score negamax(Board& board,
             // If scout search fails high, do full PV re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
+                // For re-search, we need to collect PV if we're in a PV node
+                TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                childPVPtr,  // Phase PV3: Re-search needs PV for PV nodes
+                                reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
                                 isPvNode);  // CRITICAL: Re-search as PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
@@ -797,7 +801,8 @@ eval::Score negamax(Board& board,
             // Phase PV3: Update PV at all depths
             if (pv != nullptr && isPvNode) {
                 // Update PV with best move and child's PV
-                pv->updatePV(ply, move, childPVPtr);
+                // childPV should have been populated by the successful search
+                pv->updatePV(ply, move, &childPV);
             }
             
             // At root, store the best move in SearchInfo
@@ -1667,27 +1672,10 @@ void sendSearchInfo(const SearchData& info) {
         }
     }
     
-    // Phase PV4: Output full principal variation
-    if (pv != nullptr && !pv->isEmpty(0)) {
-        // Extract full PV from root
-        std::vector<Move> pvMoves = pv->extractPV(0);
-        if (!pvMoves.empty()) {
-            std::cout << " pv";
-            for (Move move : pvMoves) {
-                // Validate each move before outputting
-                Square from = moveFrom(move);
-                Square to = moveTo(move);
-                if (from < 64 && to < 64 && from != to) {
-                    std::cout << " " << SafeMoveExecutor::moveToString(move);
-                } else {
-                    // Stop outputting if we hit a corrupted move
-                    break;
-                }
-            }
-        }
-    } else if (info.bestMove != Move()) {
-        // Fallback: Output just the best move if no PV available
-        // Bug #013 fix: Validate move is legal before outputting
+    // Output principal variation (just the best move for now)
+    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
+    if (info.bestMove != Move()) {
+        // Quick validation - check that from and to squares are valid
         Square from = moveFrom(info.bestMove);
         Square to = moveTo(info.bestMove);
         if (from < 64 && to < 64 && from != to) {
@@ -1823,10 +1811,27 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
         builder.appendHashfull(tt->hashfull());
     }
     
-    // Principal variation
-    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
-    if (info.bestMove != Move()) {
-        // Quick validation - check that from and to squares are valid
+    // Phase PV4: Output full principal variation
+    if (pv != nullptr && !pv->isEmpty(0)) {
+        // Extract full PV from root
+        std::vector<Move> pvMoves = pv->extractPV(0);
+        if (!pvMoves.empty()) {
+            // Pass all PV moves to the builder
+            for (Move move : pvMoves) {
+                // Validate each move before outputting
+                Square from = moveFrom(move);
+                Square to = moveTo(move);
+                if (from < 64 && to < 64 && from != to) {
+                    builder.appendPv(move);
+                } else {
+                    // Stop outputting if we hit a corrupted move
+                    break;
+                }
+            }
+        }
+    } else if (info.bestMove != Move()) {
+        // Fallback: Output just the best move if no PV available
+        // Bug #013 fix: Validate move is legal before outputting
         Square from = moveFrom(info.bestMove);
         Square to = moveTo(info.bestMove);
         if (from < 64 && to < 64 && from != to) {
