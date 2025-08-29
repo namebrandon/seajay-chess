@@ -33,19 +33,21 @@ Implementation of full Principal Variation (PV) display for UCI compliance, usin
 
 ---
 
-### Phase 2: Root PV Collection Only
-**Status**: Not Started  
+### Phase 2: Root PV Collection Only ✅ COMPLETED
+**Status**: Completed  
 **Expected ELO**: 0 ± 5 (display change only)  
 **SPRT Bounds**: [-5.00, 3.00]  
-**Commit Message**: `feat: Enable root PV collection (Phase PV2) - bench [count]`
+**Commit**: `af99dd0` - `feat: Enable root PV collection (Phase PV2) - bench 19191913`
 
 **Tasks**:
-- [ ] Update PV only at root (ply == 0)
-- [ ] Collect best move sequence at root
-- [ ] Keep existing single-move UCI output
-- [ ] Verify PV collection works
-- [ ] Run bench for node count
-- [ ] Commit and push for SPRT testing
+- [x] Update PV only at root (ply == 0)
+- [x] Collect best move sequence at root
+- [x] Keep existing single-move UCI output
+- [x] Verify PV collection works
+- [x] Run bench for node count (19191913)
+- [x] Commit and push for SPRT testing
+
+**Results**: Awaiting SPRT test results from OpenBench
 
 ---
 

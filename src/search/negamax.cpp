@@ -700,6 +700,10 @@ eval::Score negamax(Board& board,
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
+        // Phase PV3: Create child PV for recursive calls
+        TriangularPV childPV;
+        TriangularPV* childPVPtr = (pv != nullptr && isPvNode) ? &childPV : nullptr;
+        
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
@@ -707,7 +711,7 @@ eval::Score negamax(Board& board,
             // First move: search with full window as PV node (apply extension if any)
             score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
-                            nullptr,  // Phase PV1: Pass nullptr for now
+                            childPVPtr,  // Phase PV3: Pass child PV for PV nodes
                             isPvNode);  // Phase P3: First move inherits PV status
         } else {
             // Later moves: use PVS with LMR
@@ -745,7 +749,7 @@ eval::Score negamax(Board& board,
             info.pvsStats.scoutSearches++;
             score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr,  // Phase PV1: Pass nullptr for now
+                            nullptr,  // Phase PV3: Scout searches don't need PV
                             false);  // Scout searches are not PV
             
             // If reduced scout fails high, re-search without reduction
@@ -753,7 +757,7 @@ eval::Score negamax(Board& board,
                 info.lmrStats.reSearches++;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                                nullptr,  // Phase PV1: Pass nullptr for now
+                                nullptr,  // Phase PV3: Still a scout search
                                 false);  // Still a scout search
             }
             
@@ -762,7 +766,7 @@ eval::Score negamax(Board& board,
                 info.pvsStats.reSearches++;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                nullptr,  // Phase PV1: Pass nullptr for now
+                                childPVPtr,  // Phase PV3: Re-search needs PV for PV nodes
                                 isPvNode);  // CRITICAL: Re-search as PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
@@ -789,10 +793,10 @@ eval::Score negamax(Board& board,
             bestScore = score;
             bestMove = move;
             
-            // Phase PV2: Update PV at root only
-            if (ply == 0 && pv != nullptr) {
-                // At root, we just have the single best move (no child PV yet)
-                pv->updatePV(0, move, nullptr);
+            // Phase PV3: Update PV at all depths
+            if (pv != nullptr && isPvNode) {
+                // Update PV with best move and child's PV
+                pv->updatePV(ply, move, childPVPtr);
             }
             
             // At root, store the best move in SearchInfo
