@@ -5,7 +5,7 @@
 # Example: ./analyze_position.sh "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" depth 10
 # Example: ./analyze_position.sh "r1b1k2r/pp3ppp/3Bp3/3p4/6q1/8/1PP2PPP/22R1R1K1 b kq - 5 17" time 5 --save-report
 
-SEAJAY="/workspace/build/seajay"
+SEAJAY="/workspace/bin/seajay"
 STASH="/workspace/external/engines/stash-bot/stash"
 KOMODO="/workspace/external/engines/komodo/komodo-14.1-linux"  # Gold standard
 LASER="/workspace/external/engines/laser/laser"
@@ -373,64 +373,71 @@ if [ -n "$DEBUG" ]; then
     echo -e "Laser: ${LASER_INFO_LINE:-No info line found}"
 fi
 
-# Score agreement analysis
+# Principal Variation analysis
 echo
 echo -e "${BOLD}=========================================="
-echo -e "Analysis & Agreement"
+echo -e "Principal Variations (PV)"
 echo -e "==========================================${NC}"
+echo -e "${BOLD}What each engine is considering:${NC}"
+echo
 
-# Check if all engines agree on evaluation (using raw scores)
-if [ -n "$STASH_UCI_SCORE" ] && [ -n "$KOMODO_UCI_SCORE" ] && [ -n "$LASER_UCI_SCORE" ]; then
-    STASH_SIGN=$([ "$STASH_UCI_SCORE" -ge 0 ] && echo "+" || echo "-")
-    KOMODO_SIGN=$([ "$KOMODO_UCI_SCORE" -ge 0 ] && echo "+" || echo "-")
-    LASER_SIGN=$([ "$LASER_UCI_SCORE" -ge 0 ] && echo "+" || echo "-")
-
-    echo -e "${BOLD}Evaluation consensus:${NC}"
-    if [ "$STASH_SIGN" = "$KOMODO_SIGN" ] && [ "$KOMODO_SIGN" = "$LASER_SIGN" ]; then
-        echo -e "  ${GREEN}✓ All reference engines agree on who's better${NC}"
-
-        # Check SeaJay alignment with Komodo (gold standard)
-        if [ -n "$SEAJAY_UCI_SCORE" ]; then
-            SEAJAY_SIGN=$([ "$SEAJAY_UCI_SCORE" -ge 0 ] && echo "+" || echo "-")
-            if [ "$SEAJAY_SIGN" = "$KOMODO_SIGN" ]; then
-                echo -e "  ${GREEN}✓ SeaJay agrees with Komodo (gold standard)${NC}"
+# Function to extract and format PV
+format_pv() {
+    local info_line="$1"
+    local engine_name="$2"
+    
+    # Extract everything after "pv " until the end of line
+    local pv=$(echo "$info_line" | sed -n 's/.*\bpv \(.*\)/\1/p')
+    
+    if [ -n "$pv" ]; then
+        # Split PV into moves and show first 8 moves
+        local moves=($pv)
+        local display_pv=""
+        local max_moves=8
+        local count=0
+        
+        for move in "${moves[@]}"; do
+            if [ $count -lt $max_moves ]; then
+                display_pv="$display_pv $move"
+                ((count++))
             else
-                echo -e "  ${RED}✗ SeaJay disagrees with Komodo!${NC}"
+                display_pv="$display_pv ..."
+                break
             fi
-        fi
-    else
-        echo -e "  ${RED}⚠ Reference engines disagree on who's better!${NC}"
-    fi
-
-    # Calculate score variance
-    if [ -n "$SEAJAY_UCI_SCORE" ] && [ -n "$KOMODO_UCI_SCORE" ]; then
-        # Find min and max scores (using raw scores)
-        MIN_SCORE=$KOMODO_UCI_SCORE
-        MAX_SCORE=$KOMODO_UCI_SCORE
-
-        for score in $SEAJAY_UCI_SCORE $STASH_UCI_SCORE $LASER_UCI_SCORE; do
-            [ "$score" -lt "$MIN_SCORE" ] && MIN_SCORE=$score
-            [ "$score" -gt "$MAX_SCORE" ] && MAX_SCORE=$score
         done
-
-        VARIANCE=$((MAX_SCORE - MIN_SCORE))
-        echo
-        echo -e "${BOLD}Score variance:${NC}"
-        echo -e "  Range: ${MIN_SCORE}cp to ${MAX_SCORE}cp (${VARIANCE}cp spread)"
-
-        if [ "$VARIANCE" -lt 20 ]; then
-            echo -e "  ${GREEN}✓ Excellent agreement${NC}"
-        elif [ "$VARIANCE" -lt 50 ]; then
-            echo -e "  ${GREEN}✓ Good agreement${NC}"
-        elif [ "$VARIANCE" -lt 100 ]; then
-            echo -e "  ${YELLOW}⚠ Some disagreement${NC}"
-        else
-            echo -e "  ${RED}✗ Major disagreement - investigate${NC}"
-        fi
+        
+        echo -e "${BOLD}$engine_name:${NC}$display_pv"
+    else
+        echo -e "${BOLD}$engine_name:${NC} (no PV available)"
     fi
+}
+
+# Display PVs for each engine
+if [ -n "$SEAJAY_INFO_LINE" ]; then
+    format_pv "$SEAJAY_INFO_LINE" "SeaJay"
+else
+    echo -e "${BOLD}SeaJay:${NC} (no PV available)"
 fi
 
-# Move agreement analysis
+if [ -n "$STASH_INFO_LINE" ]; then
+    format_pv "$STASH_INFO_LINE" "Stash"
+else
+    echo -e "${BOLD}Stash:${NC} (no PV available)"
+fi
+
+if [ -n "$KOMODO_INFO_LINE" ]; then
+    format_pv "$KOMODO_INFO_LINE" "Komodo"
+else
+    echo -e "${BOLD}Komodo:${NC} (no PV available)"
+fi
+
+if [ -n "$LASER_INFO_LINE" ]; then
+    format_pv "$LASER_INFO_LINE" "Laser"
+else
+    echo -e "${BOLD}Laser:${NC} (no PV available)"
+fi
+
+# Move consensus analysis
 echo
 echo -e "${BOLD}Move consensus:${NC}"
 # Count how many engines choose each move
@@ -465,22 +472,13 @@ for move in "${!move_count[@]}"; do
     fi
 done
 
-echo
-echo -e "${BOLD}==========================================${NC}"
-echo -e "${BOLD}Key Insights:${NC}"
-echo -e "• All scores are reported as-is from each engine"
-echo -e "• UCI engines report from side-to-move perspective"
-echo -e "• Positive score = side to move is better"
-echo -e "• Komodo is the gold standard for comparison"
-echo -e "• Compare all four engines to identify:"
-echo -e "  - Evaluation function issues"
-echo -e "  - Search depth problems"
-echo -e "  - Move ordering deficiencies"
-echo -e "• Large disagreements suggest bugs to investigate"
+# Optional: show full outputs location if saving
 if [ "$SAVE_REPORT" = true ]; then
-    echo -e "• Full engine outputs saved in: $TEMP_DIR"
+    echo
+    echo -e "${BOLD}==========================================${NC}"
+    echo -e "Full engine outputs saved in: $TEMP_DIR"
+    echo -e "==========================================${NC}"
 fi
-echo -e "==========================================${NC}"
 
 # Save full report if requested
 if [ "$SAVE_REPORT" = true ]; then
