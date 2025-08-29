@@ -1,0 +1,61 @@
+==========================================
+Four-Engine Position Analysis
+==========================================
+
+FEN: r2q1rk1/ppp1bppp/2np1n2/4p3/2B1P3/2NP1Q1P/PPP2PP1/R1B2RK1 b - - 0 9
+Side to move: Black
+Search mode: depth = 14
+Temp directory: /tmp/chess_analysis_20250829_153134_31380
+
+----------------------------------------
+Analyzing position with all engines...
+----------------------------------------
+
+[1/4] Starting SeaJay...
+[2/4] Starting Stash...
+[3/4] Starting Komodo...
+[4/4] Starting Laser...
+Waiting for all engines to complete...
+All engines completed!
+
+----------------------------------------
+Parsing engine outputs...
+----------------------------------------
+
+==========================================
+Engine Results Summary
+==========================================
+
+Scores (as reported by engines):
+----------------------------------------
+SeaJay:         +0.18  Black +0.00-0.20
+Stash:          +0.21  Black +0.20-0.50
+Komodo:         -0.05  White -0.00-0.20
+Laser:          -0.33  White -0.20-0.50
+
+Best Moves:
+----------------------------------------
+SeaJay:      c6d4     (depth 14)
+Stash:       c6d4     (depth 14)
+Komodo:      c6d4     (depth 14)
+Laser:       c6d4     (depth 14)
+
+Performance:
+----------------------------------------
+SeaJay:         1050936 nodes @     477047 nps
+Stash:           111833 nodes @    1620768 nps
+Komodo:          227799 nodes @    1488883 nps
+Laser:           358267 nodes @    1130179 nps
+
+==========================================
+Principal Variations (PV)
+==========================================
+What each engine is considering:
+
+SeaJay: c6d4 f3d1 c7c6 c3e2 d4e6 c4b3 a7a5 c1e3 ...
+Stash: c6d4 f3d1 c7c6 a2a3 d4e6 c1d2 a7a5 c4e6 ...
+Komodo: c6d4 f3d1 c7c6
+Laser: c6d4 f3d1 c7c6 c3e2 d4e6 c4e6 f7e6 e2g3 ...
+
+Move consensus:
+  ✓ Unanimous: c6d4 (all engines)
