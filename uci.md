@@ -60,6 +60,65 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 
 ---
 
+## Lazy Evaluation Options (Phase 2.5.a)
+
+### LazyEval
+**Type:** check  
+**Default:** false  
+**Purpose:** Enables staged lazy evaluation to skip expensive eval when position is decided. Currently experimental.  
+**SPSA:** Not recommended for boolean - test with fixed on/off  
+
+### LazyEvalThreshold ⭐ (High Impact)
+**Type:** spin  
+**Default:** 700  
+**Range:** 100-1000  
+**Purpose:** Material advantage threshold (centipawns) to trigger lazy evaluation. Lower values = more aggressive.  
+**SPSA Input:** `LazyEvalThreshold, int, 700.0, 100.0, 1000.0, 50.0, 0.002`  
+**Expected Impact:** Major NPS/ELO tradeoff parameter  
+**Tuning Notes:** Start with conservative values (600-800), measure NPS gain vs ELO loss  
+
+### LazyEvalStaged
+**Type:** check  
+**Default:** true  
+**Purpose:** Use staged lazy evaluation (material → material+PST → full) vs simple binary lazy eval.  
+**SPSA:** Not recommended - architectural choice  
+**Testing:** Compare staged=true vs staged=false with same threshold  
+
+### LazyEvalPhaseAdjust
+**Type:** check  
+**Default:** true  
+**Purpose:** Adjust lazy eval threshold based on game phase. Opening +100cp (dynamic), Endgame -200cp (material decisive).  
+**SPSA:** Test as secondary parameter with threshold  
+
+#### Example SPSA Workload (Lazy Eval Tuning)
+```
+# Single parameter tuning (recommended first)
+LazyEvalThreshold, int, 700.0, 300.0, 900.0, 50.0, 0.002
+Games: 40000
+Time Control: 10+0.1
+
+# Two-parameter tuning (after finding good threshold)
+LazyEvalThreshold, int, 600.0, 400.0, 800.0, 40.0, 0.002
+LazyEvalPhaseAdjust, check, 1.0, 0.0, 1.0, 0.5, 0.002
+Games: 60000
+Time Control: 10+0.1
+```
+
+#### Testing Strategy
+1. **Phase 1**: Test with LazyEval=false to establish baseline
+2. **Phase 2**: Enable with conservative threshold (700-800)
+3. **Phase 3**: Tune threshold for optimal NPS/ELO balance
+4. **Phase 4**: Test staged vs non-staged approaches
+5. **Phase 5**: Fine-tune phase adjustments
+
+#### Expected Performance
+- **Conservative (700cp)**: 10-15% NPS gain, minimal ELO loss
+- **Moderate (500cp)**: 15-20% NPS gain, 5-10 ELO loss  
+- **Aggressive (300cp)**: 20-30% NPS gain, 10-20 ELO loss
+- **Staged approach**: Better NPS/ELO tradeoff than binary
+
+---
+
 ## Search Options
 
 ### UseAspirationWindows

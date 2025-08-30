@@ -115,6 +115,12 @@ void UCIEngine::handleUCI() {
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
     
+    // Phase 2.5.a: UCI-controlled lazy evaluation options
+    std::cout << "option name LazyEval type check default false" << std::endl;  // Default OFF for safety
+    std::cout << "option name LazyEvalThreshold type spin default 700 min 100 max 1000" << std::endl;
+    std::cout << "option name LazyEvalStaged type check default true" << std::endl;
+    std::cout << "option name LazyEvalPhaseAdjust type check default true" << std::endl;
+    
     // Stage 13 Remediation: Aspiration window and time management options
     std::cout << "option name AspirationWindow type spin default 16 min 5 max 50" << std::endl;
     
@@ -754,6 +760,55 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid Threads value: " << value << std::endl;
+        }
+    }
+    // Phase 2.5.a: Handle LazyEval options
+    else if (optionName == "LazyEval") {
+        if (value == "true") {
+            m_lazyEval = true;
+            eval::LazyEvalConfig::getInstance().enabled = true;
+            std::cerr << "info string Lazy evaluation enabled" << std::endl;
+        } else if (value == "false") {
+            m_lazyEval = false;
+            eval::LazyEvalConfig::getInstance().enabled = false;
+            std::cerr << "info string Lazy evaluation disabled" << std::endl;
+        }
+    }
+    else if (optionName == "LazyEvalThreshold") {
+        try {
+            int threshold = std::stoi(value);
+            if (threshold >= 100 && threshold <= 1000) {
+                m_lazyEvalThreshold = threshold;
+                eval::LazyEvalConfig::getInstance().threshold = threshold;
+                std::cerr << "info string Lazy eval threshold set to: " << threshold << " cp" << std::endl;
+            } else {
+                std::cerr << "info string Invalid LazyEvalThreshold value: " << value 
+                          << " (must be between 100 and 1000)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LazyEvalThreshold value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LazyEvalStaged") {
+        if (value == "true") {
+            m_lazyEvalStaged = true;
+            eval::LazyEvalConfig::getInstance().staged = true;
+            std::cerr << "info string Staged lazy evaluation enabled" << std::endl;
+        } else if (value == "false") {
+            m_lazyEvalStaged = false;
+            eval::LazyEvalConfig::getInstance().staged = false;
+            std::cerr << "info string Staged lazy evaluation disabled (using binary)" << std::endl;
+        }
+    }
+    else if (optionName == "LazyEvalPhaseAdjust") {
+        if (value == "true") {
+            m_lazyEvalPhaseAdjust = true;
+            eval::LazyEvalConfig::getInstance().phaseAdjust = true;
+            std::cerr << "info string Lazy eval phase adjustment enabled" << std::endl;
+        } else if (value == "false") {
+            m_lazyEvalPhaseAdjust = false;
+            eval::LazyEvalConfig::getInstance().phaseAdjust = false;
+            std::cerr << "info string Lazy eval phase adjustment disabled" << std::endl;
         }
     }
     // Stage 15 Day 5: Handle SEEMode option

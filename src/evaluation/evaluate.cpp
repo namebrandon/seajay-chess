@@ -5,7 +5,7 @@
 #include "king_safety.h"  // Phase KS2: King safety evaluation
 #include "../core/board.h"
 #include "../core/bitboard.h"
-#include "../core/move_generation.h"  // MOB2: For mobility calculation
+#include "../core/move_generation.h"  // MOB2: For mobility calculation, Phase 2.5.a: For inCheck
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
 #include <cstdlib>  // PP3b: For std::abs
 
@@ -50,6 +50,77 @@ Score evaluate(const Board& board) {
                 return Score::draw();  // Same colored bishops = draw
             }
         }
+    }
+    
+    // Phase 2.5.a: Lazy evaluation (UCI-controlled, default OFF)
+    const LazyEvalConfig& lazyConfig = LazyEvalConfig::getInstance();
+    
+    if (lazyConfig.enabled) {
+        // Get material difference and PST (cheap to compute)
+        Score materialDiff = material.value(WHITE) - material.value(BLACK);
+        const MgEgScore& pstScore = board.pstScore();
+        Score pstValue = pstScore.mg;
+        
+        // Determine effective threshold based on phase and context
+        int threshold = lazyConfig.threshold;
+        
+        if (lazyConfig.phaseAdjust) {
+            // Quick phase detection (simplified for lazy eval)
+            int totalPieces = material.count(WHITE, KNIGHT) + material.count(WHITE, BISHOP) +
+                            material.count(WHITE, ROOK) + material.count(WHITE, QUEEN) +
+                            material.count(BLACK, KNIGHT) + material.count(BLACK, BISHOP) +
+                            material.count(BLACK, ROOK) + material.count(BLACK, QUEEN);
+            
+            if (totalPieces >= 14) {
+                // Opening: be more conservative (more dynamic)
+                threshold += 100;
+            } else if (totalPieces <= 6) {
+                // Endgame: be more aggressive (material more decisive)
+                threshold -= 200;
+            }
+            // Else middlegame: use base threshold
+            
+            // Adjust for special situations
+            if (inCheck(board)) {
+                threshold -= 200;  // Be more careful when in check
+            }
+        }
+        
+        // Calculate fast material + PST score from side-to-move perspective
+        Score fastScore = materialDiff + pstValue;
+        if (board.sideToMove() == BLACK) {
+            fastScore = -fastScore;
+        }
+        
+        if (lazyConfig.staged) {
+            // Staged lazy evaluation - gradually add more components
+            
+            // Stage 1: Material only (very aggressive threshold)
+            if (std::abs(materialDiff.value()) > threshold + 200) {
+                // Position is heavily decided by material
+                if (board.sideToMove() == BLACK) {
+                    return -materialDiff;
+                }
+                return materialDiff;
+            }
+            
+            // Stage 2: Material + PST (standard threshold)
+            if (std::abs(fastScore.value()) > threshold) {
+                // Position is decided by material + piece placement
+                return fastScore;
+            }
+            
+            // Stage 3 would add basic pawns (threshold - 100)
+            // But for Phase 2.5.a-1, we stop here and fall through to full eval
+            
+        } else {
+            // Simple binary lazy evaluation
+            if (std::abs(fastScore.value()) > threshold) {
+                return fastScore;
+            }
+        }
+        
+        // Fall through to full evaluation if not lazy-evaluated
     }
     
     // Get PST score (Stage 9)

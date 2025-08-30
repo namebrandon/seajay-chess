@@ -87,6 +87,12 @@ private:
     // Multi-threading support (stub for OpenBench compatibility)
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
     
+    // Phase 2.5.a: UCI-controlled lazy evaluation options
+    bool m_lazyEval = false;            // Enable lazy evaluation (default: false for safety)
+    int m_lazyEvalThreshold = 700;      // Material advantage threshold in centipawns
+    bool m_lazyEvalStaged = true;       // Use staged approach vs simple binary
+    bool m_lazyEvalPhaseAdjust = true;  // Adjust thresholds by game phase
+    
     // Stage 13 Remediation: Configurable aspiration window parameters
     int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
     int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window
