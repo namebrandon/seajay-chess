@@ -125,7 +125,50 @@ public:
     static bool s_lutInitialized;
     
 private:
-    void updateBitboards(Square s, Piece p, bool add);
+    // Force inline for hot path - called 60M times during search
+    // Split into add/remove for better optimization
+    inline void addPieceToBitboards(Square s, Piece p) {
+#ifdef DEBUG
+        if (!isValidSquare(s) || p >= NUM_PIECES) return;
+        Color c = colorOf(p);
+        PieceType pt = typeOf(p);
+        if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
+#else
+        Color c = colorOf(p);
+        PieceType pt = typeOf(p);
+#endif
+        Bitboard bb = squareBB(s);
+        m_pieceBB[p] |= bb;
+        m_pieceTypeBB[pt] |= bb;
+        m_colorBB[c] |= bb;
+        m_occupied |= bb;
+    }
+    
+    inline void removePieceFromBitboards(Square s, Piece p) {
+#ifdef DEBUG
+        if (!isValidSquare(s) || p >= NUM_PIECES) return;
+        Color c = colorOf(p);
+        PieceType pt = typeOf(p);
+        if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
+#else
+        Color c = colorOf(p);
+        PieceType pt = typeOf(p);
+#endif
+        Bitboard bb = squareBB(s);
+        m_pieceBB[p] &= ~bb;
+        m_pieceTypeBB[pt] &= ~bb;
+        m_colorBB[c] &= ~bb;
+        m_occupied &= ~bb;
+    }
+    
+    // Keep original interface for compatibility
+    inline void updateBitboards(Square s, Piece p, bool add) {
+        if (add) {
+            addPieceToBitboards(s, p);
+        } else {
+            removePieceFromBitboards(s, p);
+        }
+    }
     void initZobrist();
     void updateZobristKey(Square s, Piece p);
     

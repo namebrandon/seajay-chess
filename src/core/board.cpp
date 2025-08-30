@@ -122,7 +122,7 @@ void Board::setPiece(Square s, Piece p) {
         
         // Additional safety check
         if (oldColor < NUM_COLORS && oldType < NUM_PIECE_TYPES) {
-            updateBitboards(s, oldPiece, false);
+            removePieceFromBitboards(s, oldPiece);
             // Update material tracking
             m_material.remove(oldPiece);
             // Update PST score (Stage 9) - remove old piece value
@@ -143,7 +143,7 @@ void Board::setPiece(Square s, Piece p) {
         
         // Additional safety check
         if (newColor < NUM_COLORS && newType < NUM_PIECE_TYPES) {
-            updateBitboards(s, p, true);
+            addPieceToBitboards(s, p);
             // Update material tracking
             m_material.add(p);
             // Update PST score (Stage 9) - add new piece value
@@ -188,10 +188,10 @@ void Board::movePiece(Square from, Square to) {
     m_mailbox[from] = NO_PIECE;
     
     // Update bitboards
-    updateBitboards(from, p, false);
-    updateBitboards(to, p, true);
+    removePieceFromBitboards(from, p);
+    addPieceToBitboards(to, p);
     if (captured != NO_PIECE) {
-        updateBitboards(to, captured, false);
+        removePieceFromBitboards(to, captured);
     }
     
     // Update Zobrist key (avoiding double XOR)
@@ -202,31 +202,7 @@ void Board::movePiece(Square from, Square to) {
     }
 }
 
-void Board::updateBitboards(Square s, Piece p, bool add) {
-    // Validate inputs
-    if (!isValidSquare(s) || p >= NUM_PIECES) return;
-    
-    // Additional safety for color and type extraction
-    Color c = colorOf(p);
-    PieceType pt = typeOf(p);
-    
-    // Validate derived values
-    if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
-    
-    Bitboard bb = squareBB(s);
-    
-    if (add) {
-        m_pieceBB[p] |= bb;
-        m_pieceTypeBB[pt] |= bb;
-        m_colorBB[c] |= bb;
-        m_occupied |= bb;
-    } else {
-        m_pieceBB[p] &= ~bb;
-        m_pieceTypeBB[pt] &= ~bb;
-        m_colorBB[c] &= ~bb;
-        m_occupied &= ~bb;
-    }
-}
+// updateBitboards implementation moved to header for inlining (Phase 2.3.a optimization)
 
 void Board::initZobrist() {
     if (s_zobristInitialized) return;  // Prevent double initialization
@@ -1311,10 +1287,10 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_mailbox[rookTo] = rook;
         
         // Update bitboards
-        updateBitboards(from, movingPiece, false);
-        updateBitboards(to, movingPiece, true);
-        updateBitboards(rookFrom, rook, false);
-        updateBitboards(rookTo, rook, true);
+        removePieceFromBitboards(from, movingPiece);
+        addPieceToBitboards(to, movingPiece);
+        removePieceFromBitboards(rookFrom, rook);
+        addPieceToBitboards(rookTo, rook);
         
         // Single zobrist update for castling
         updateZobristForCastling(us, kingside);
@@ -1349,9 +1325,9 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_mailbox[capturedSquare] = NO_PIECE;
         
         // Update bitboards
-        updateBitboards(from, movingPiece, false);
-        updateBitboards(to, movingPiece, true);
-        updateBitboards(capturedSquare, capturedPawn, false);
+        removePieceFromBitboards(from, movingPiece);
+        addPieceToBitboards(to, movingPiece);
+        removePieceFromBitboards(capturedSquare, capturedPawn);
         
         // Update zobrist for en passant
         m_zobristKey ^= s_zobristPieces[from][movingPiece];
@@ -1395,11 +1371,11 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_mailbox[to] = promotedPiece;
         
         // Update bitboards
-        updateBitboards(from, movingPiece, false);  // Remove pawn
+        removePieceFromBitboards(from, movingPiece);  // Remove pawn
         if (capturedPiece != NO_PIECE) {
-            updateBitboards(to, capturedPiece, false);  // Remove captured
+            removePieceFromBitboards(to, capturedPiece);  // Remove captured
         }
-        updateBitboards(to, promotedPiece, true);  // Add promoted piece
+        addPieceToBitboards(to, promotedPiece);  // Add promoted piece
         
         // Update zobrist for promotion
         m_zobristKey ^= s_zobristPieces[from][movingPiece];  // Remove pawn
@@ -1453,11 +1429,11 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_mailbox[to] = movingPiece;
         
         // Update bitboards
-        updateBitboards(from, movingPiece, false);
+        removePieceFromBitboards(from, movingPiece);
         if (capturedPiece != NO_PIECE) {
-            updateBitboards(to, capturedPiece, false);
+            removePieceFromBitboards(to, capturedPiece);
         }
-        updateBitboards(to, movingPiece, true);
+        addPieceToBitboards(to, movingPiece);
         
         // Update zobrist
         updateZobristForMove(move, movingPiece, capturedPiece);
@@ -1678,10 +1654,10 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         m_mailbox[rookTo] = rook;
         
         // Restore bitboards
-        updateBitboards(to, movingPiece, false);
-        updateBitboards(from, movingPiece, true);
-        updateBitboards(rookFrom, rook, false);
-        updateBitboards(rookTo, rook, true);
+        removePieceFromBitboards(to, movingPiece);
+        addPieceToBitboards(from, movingPiece);
+        removePieceFromBitboards(rookFrom, rook);
+        addPieceToBitboards(rookTo, rook);
         
         // Material unchanged for castling
         m_evalCacheValid = false;
@@ -1696,9 +1672,9 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         m_mailbox[capturedSquare] = undo.capturedPiece;
         
         // Restore bitboards
-        updateBitboards(to, movingPiece, false);
-        updateBitboards(from, movingPiece, true);
-        updateBitboards(capturedSquare, undo.capturedPiece, true);
+        removePieceFromBitboards(to, movingPiece);
+        addPieceToBitboards(from, movingPiece);
+        addPieceToBitboards(capturedSquare, undo.capturedPiece);
         
         // Restore material for en passant
         m_material.add(undo.capturedPiece);
@@ -1713,10 +1689,10 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         m_mailbox[from] = originalPawn;
         
         // Restore bitboards
-        updateBitboards(to, movingPiece, false);  // Remove promoted piece
-        updateBitboards(from, originalPawn, true);  // Restore pawn
+        removePieceFromBitboards(to, movingPiece);  // Remove promoted piece
+        addPieceToBitboards(from, originalPawn);  // Restore pawn
         if (undo.capturedPiece != NO_PIECE) {
-            updateBitboards(to, undo.capturedPiece, true);  // Restore captured
+            addPieceToBitboards(to, undo.capturedPiece);  // Restore captured
         }
         
         // Restore material for promotion
@@ -1733,10 +1709,10 @@ void Board::unmakeMoveInternal(Move move, const UndoInfo& undo) {
         m_mailbox[from] = movingPiece;
         
         // Restore bitboards
-        updateBitboards(to, movingPiece, false);
-        updateBitboards(from, movingPiece, true);
+        removePieceFromBitboards(to, movingPiece);
+        addPieceToBitboards(from, movingPiece);
         if (undo.capturedPiece != NO_PIECE) {
-            updateBitboards(to, undo.capturedPiece, true);
+            addPieceToBitboards(to, undo.capturedPiece);
         }
         
         // Restore material for normal move
@@ -2138,7 +2114,7 @@ void Board::applyFenData(const FenParseData& parseData) {
         Square sq = static_cast<Square>(i);
         Piece p = m_mailbox[sq];
         if (p != NO_PIECE && p < NUM_PIECES) {  // Added bounds check
-            updateBitboards(sq, p, true);
+            addPieceToBitboards(sq, p);
             m_material.add(p);
         }
     }
