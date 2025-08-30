@@ -277,6 +277,43 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 - Option C: Combine updates to reduce function calls
 - Option D: Template specialization for common cases
 
+**Status**: **IN PROGRESS**
+
+**Phase 2.3.a Results**: ✅ **SUCCESS**
+- **Commit**: de320d6
+- **Changes**: Moved updateBitboards to header for inlining, split into add/remove functions
+- **NPS**: 527K → 567K (7.6% improvement)
+- **ELO**: +10-12 (SPRT confirmed)
+- **Bench**: 19191913
+
+**Phase 2.3.b Results**: ✅ **SUCCESS** 
+- **Commit**: 14e628c
+- **Changes**: Added movePieceInBitboards() for non-captures, prefetch hints
+- **NPS**: 567K → 618K (9% additional, 17.3% total)
+- **ELO**: +3.93 ± 7.82 (SPRT passed [0.00, 5.00])
+- **Bench**: 19191913
+
+**Phase 2.3.c Status**: ❌ **ABANDONED - FAILED PERFT**
+- **Changes Attempted**:
+  - Added `updateCastlingBitboards()` - optimized castling with XOR operations
+  - Added `updateEnPassantBitboards()` - optimized en passant captures  
+  - Added `unmakeEnPassantBitboards()` - optimized en passant unmake
+  
+- **Result**: Bench changed from 19191913 to 18892045 (INCORRECT)
+- **Issue**: Logic error in specialized castling/en-passant functions
+- **Decision**: Reverted all Phase 2.3.c changes, keeping only 2.3.a and 2.3.b
+- **Conclusion**: The specialized functions for castling and en passant moves
+  introduced subtle bugs. The complexity of handling these special moves
+  makes them error-prone for optimization. The gains from 2.3.a and 2.3.b
+  (17.3% NPS improvement, +14 ELO combined) are sufficient.
+
+**Final Phase 2.3 Results**:
+- **Total NPS Gain**: 527K → 618K (17.3% improvement)
+- **Total ELO Gain**: ~14 ELO (10-12 from 2.3.a, 3.93 from 2.3.b)
+- **Commits**: de320d6 (2.3.a), 14e628c (2.3.b)
+- **Branch**: feature/20250829-bitboard-updates
+- **Status**: COMPLETE (2.3.a and 2.3.b merged, 2.3.c abandoned)
+
 #### Phase 2.4: HistoryHeuristic Access Optimization (7.92% runtime)
 **Branch**: `feature/20250829-history-cache`
 **Current**: 73.7M calls consuming 7.92% of runtime
