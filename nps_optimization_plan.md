@@ -330,34 +330,70 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 **Target**: 30-40% evaluation speedup without losing strength
 **Expected NPS Impact**: +50-80K (evaluation is 7.92% of runtime)
 
-##### Phase 2.5.a: Basic Lazy Evaluation (Highest Priority)
-**Goal**: Skip expensive evaluation when position is clearly decided
-**Implementation**:
-- Material-based early exit for won/lost positions
-- Skip detailed eval when material difference > 500cp
-- Return material + PST only for clear advantages
-**Expected**: 15% speedup in tactical positions
-**Risk**: Low - preserves accuracy for close positions
+##### Phase 2.5.a: UCI-Controlled Lazy Evaluation (NEW APPROACH)
+**Goal**: Implement flexible lazy evaluation with UCI options for safe testing
+**Branch**: `feature/20250830-lazy-eval-uci` (separate from other eval optimizations)
+**Rationale**: Lazy evaluation is contentious - UCI control allows A/B testing without risk
 
-##### Phase 2.5.b: Remove Redundant Calculations (Quick Win)
+**Implementation Strategy**:
+1. **Phase 2.5.a-1**: Infrastructure with UCI options (default OFF)
+   - Add `LazyEval` boolean UCI option (default: false)
+   - Add `LazyEvalThreshold` integer UCI option (default: 500, range: 100-1000)
+   - Implement basic material-only early exit when enabled
+   - **Expected**: No regression (feature disabled by default)
+   - **SPRT**: [-3.00, 3.00] to confirm no impact when OFF
+
+2. **Phase 2.5.a-2**: Testing with option enabled
+   - Test with LazyEval=true in OpenBench
+   - Compare NPS gain vs ELO impact
+   - Document tradeoffs for different time controls
+   - **Expected**: 15-25% NPS gain, 0-10 ELO loss
+   - **SPRT**: Multiple tests with different bounds
+
+3. **Phase 2.5.a-3**: Threshold tuning (if base implementation successful)
+   - Test thresholds: 300, 500, 700, 900 centipawns
+   - Find optimal balance for SeaJay
+   - Consider different thresholds for different game phases
+   - **Expected**: Find sweet spot for NPS/ELO tradeoff
+
+**Benefits of UCI Approach**:
+- Safe to merge even if slightly negative ELO (users can disable)
+- Allows real-world testing and feedback
+- Can tune per hardware/time control
+- No risk to existing strength when disabled
+- Enables data collection on effectiveness
+
+**Success Criteria**:
+- Phase 1: Merges with no regression (option OFF)
+- Phase 2: Documents clear NPS/ELO tradeoff
+- Phase 3: Finds optimal threshold if viable
+- Decision: Enable by default only if NPS gain > 20% with < 5 ELO loss
+
+##### Phase 2.5.b: Remove Redundant Calculations (COMPLETED) ✅
 **Goal**: Eliminate duplicate computations
 **Implementation**:
 - Cache game phase detection (currently called 3+ times)
 - Reuse king square lookups throughout eval
 - Eliminate duplicate bitboard operations
 - Store frequently accessed values in locals
-**Expected**: 5-8% speedup
-**Risk**: Very low - pure optimization
+**Results**: 
+- **NPS**: 560K → 575K (2.7% improvement)
+- **Commit**: 38edb70
+- **Status**: Awaiting SPRT results for merge to main
 
-##### Phase 2.5.c: Progressive Lazy Evaluation
-**Goal**: Implement staged evaluation with early exits
+##### Phase 2.5.c: Progressive Lazy Evaluation (UCI-Controlled)
+**Goal**: Implement staged evaluation with early exits (builds on 2.5.a)
+**Prerequisite**: Phase 2.5.a must show promise
 **Implementation**:
+- Extend LazyEval UCI option to support staged evaluation
+- Add `LazyEvalStages` UCI option (1-3 stages)
 - Stage 1: Material + PST + basic pawn structure
 - Stage 2: Add mobility if position unclear
 - Stage 3: Add king safety only if needed
 - Early exit thresholds between stages
-**Expected**: 20% overall evaluation speedup
+**Expected**: 20-30% overall evaluation speedup when enabled
 **Risk**: Medium - needs careful threshold tuning
+**Note**: Only implement if basic lazy eval (2.5.a) shows positive results
 
 ##### Phase 2.5.d: Endgame-Aware Optimization
 **Goal**: Skip irrelevant features based on game phase
@@ -618,10 +654,10 @@ MANDATORY READING BEFORE ANY WORK:
 | 2.4 | HistoryHeuristic Opt | feature/20250829-history-cache | **Complete** | 540K | 560K | ~Neutral |
 | 2.4.a | - Array reordering | - | Complete | 540K | 591K | -4.29 ELO |
 | 2.4.b | - int16_t conversion | - | Complete | 591K | 560K | -0.68 ELO |
-| 2.5 | Evaluation Opt | feature/20250830-eval-speedup | Planned | - | - | - |
-| 2.5.a | - Basic lazy eval | - | Planned | - | - | - |
-| 2.5.b | - Remove redundancy | - | Planned | - | - | - |
-| 2.5.c | - Progressive lazy | - | Planned | - | - | - |
+| 2.5 | Evaluation Opt | feature/20250830-eval-speedup | In Progress | 560K | - | - |
+| 2.5.a | - UCI Lazy Eval | feature/20250830-lazy-eval-uci | Planned | - | - | - |
+| 2.5.b | - Remove redundancy | - | **Complete** | 560K | 575K | Awaiting |
+| 2.5.c | - Progressive lazy (UCI) | - | Planned | - | - | - |
 | 2.5.d | - Endgame-aware | - | Planned | - | - | - |
 | 2.5.e | - SIMD (optional) | - | Planned | - | - | - |
 | 3 | Move Generation | TBD | Pending | - | - | - |
@@ -656,6 +692,17 @@ MANDATORY READING BEFORE ANY WORK:
    - **Critical Achievement**: LazySMP-ready (eliminated catastrophic cache invalidation)
    - **Memory Efficiency**: 50% reduction enables better overall cache usage
 
+3. **Phase 2.5.b - Remove Redundant Calculations** (2025-08-30)
+   - **Commit**: 38edb70
+   - **Changes**: 
+     - Cached game phase detection (3 calls → 1)
+     - Cached king squares (multiple calls → 1)
+     - Cached side to move (4 calls → 1)
+     - Cached isPureEndgame check (2 calls → 1)
+   - **Result**: 2.7% NPS improvement (560K → 575K)
+   - **Status**: Awaiting SPRT test results
+   - **Expected**: Neutral to small positive ELO
+
 ### Phase 1 Profiling Results (2025-08-29):
 
 **Top Hotspots Identified (gprof analysis):**
@@ -688,5 +735,5 @@ MANDATORY READING BEFORE ANY WORK:
 ---
 
 Last Updated: 2025-08-30
-Current Branch: feature/20250829-history-cache (ready to merge)
-Next Branch: feature/20250830-eval-speedup (Phase 2.5)
+Current Branch: feature/20250830-eval-speedup (Phase 2.5 in progress)
+Completed: Phase 2.5.b - Remove redundant calculations (awaiting SPRT)
