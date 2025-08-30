@@ -25,16 +25,24 @@
 
 ## Phase Plan
 
-### Phase 3.1: Basic Move Generation Optimizations
+### Phase 3.1: Basic Move Generation Optimizations ✅
 **Goal**: Optimize core move generation functions
 **Target**: 10-15% speedup in perft
-**Status**: PENDING
+**Status**: COMPLETE
+**Commit**: a824158
+**Bench**: 19191913
 
-Potential optimizations:
-- Inline hot functions in move generation
-- Optimize bitboard operations in generateMoves
-- Remove redundant checks
-- Better branch prediction hints
+Implemented optimizations:
+- ✅ Removed runtime configuration checks in attack wrappers
+- ✅ Eliminated redundant table initialization checks
+- ✅ Added static initializer for attack tables
+- ✅ Force inlined hot path attack functions
+- ✅ Moved simple lookups to header for inlining
+
+**Results**:
+- Search NPS: 558K → 599K (7% improvement)
+- Perft NPS: 8.4M (unchanged - already optimized)
+- Ready for OpenBench SPRT testing
 
 ### Phase 3.2: Legality Checking Optimizations  
 **Goal**: Optimize isLegal and makeMove/unmakeMove

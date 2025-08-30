@@ -204,16 +204,17 @@ public:
         return s_kingAttacks[square];
     }
     
-    // These still call through to wrappers but are marked for inlining
-    __attribute__((always_inline)) inline static Bitboard getBishopAttacks(Square square, Bitboard occupied);
-    __attribute__((always_inline)) inline static Bitboard getRookAttacks(Square square, Bitboard occupied);
-    __attribute__((always_inline)) inline static Bitboard getQueenAttacks(Square square, Bitboard occupied);
+    // These still call through to wrappers - not inlined here, defined in .cpp
+    static Bitboard getBishopAttacks(Square square, Bitboard occupied);
+    static Bitboard getRookAttacks(Square square, Bitboard occupied);
+    static Bitboard getQueenAttacks(Square square, Bitboard occupied);
     static bool couldDiscoverCheck(const Board& board, Square from, Square kingSquare, Color opponent);
     
-private:
-    
-    // Pre-computed attack lookup tables
+public:
+    // Phase 3.1: Made public for static initialization
     static void initializeAttackTables();
+    
+private:
     static bool s_tablesInitialized;
     
     // Knight attack lookup table
