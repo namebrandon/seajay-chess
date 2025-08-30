@@ -1,6 +1,7 @@
 #include "pawn_structure.h"
 #include <cstring>
 #include <bit>  // DP1: For std::popcount
+#include "../core/simd_utils.h"  // Phase 2.5.e-2: SIMD optimizations
 
 namespace seajay {
 
@@ -133,17 +134,8 @@ void PawnStructure::store(uint64_t pawnKey, const PawnEntry& entry) {
 }
 
 Bitboard PawnStructure::getPassedPawns(Color c, Bitboard ourPawns, Bitboard theirPawns) {
-    Bitboard passed = 0ULL;
-    Bitboard pawns = ourPawns;
-    
-    while (pawns) {
-        Square sq = popLsb(pawns);
-        if (isPassed(c, sq, theirPawns)) {
-            passed |= (1ULL << sq);
-        }
-    }
-    
-    return passed;
+    // Phase 2.5.e-2: Use SIMD-optimized version for better performance
+    return simd::getPassedPawnsFast(ourPawns, theirPawns, m_passedPawnMask[c]);
 }
 
 Bitboard PawnStructure::getCandidatePassers(Color c, Bitboard ourPawns, Bitboard theirPawns) {
@@ -178,17 +170,8 @@ bool PawnStructure::isIsolated(Square sq, Bitboard ourPawns) {
 }
 
 Bitboard PawnStructure::getIsolatedPawns(Color c, Bitboard ourPawns) {
-    Bitboard isolated = 0ULL;
-    Bitboard pawns = ourPawns;
-    
-    while (pawns) {
-        Square sq = popLsb(pawns);
-        if (isIsolated(sq, ourPawns)) {
-            isolated |= (1ULL << sq);
-        }
-    }
-    
-    return isolated;
+    // Phase 2.5.e-2: Use SIMD-optimized version for better performance
+    return simd::getIsolatedPawnsFast(ourPawns);
 }
 
 // DP1: Doubled pawn detection implementation
@@ -217,66 +200,14 @@ int PawnStructure::countDoubledOnFile(int file, Bitboard ourPawns) {
 }
 
 Bitboard PawnStructure::getDoubledPawns(Color c, Bitboard ourPawns) {
-    Bitboard doubled = 0ULL;
-    
-    // Process each file
-    for (int file = 0; file < 8; file++) {
-        Bitboard fileMask = FILE_A_BB << file;
-        Bitboard pawnsOnFile = ourPawns & fileMask;
-        
-        int pawnCount = std::popcount(pawnsOnFile);
-        
-        // If more than one pawn on this file, mark all but the base pawn as doubled
-        if (pawnCount > 1) {
-            // Mark all pawns on this file as doubled except the rearmost one
-            // For white, the rearmost is the one with lowest rank
-            // For black, the rearmost is the one with highest rank
-            Bitboard doublePawns = pawnsOnFile;
-            
-            if (c == WHITE) {
-                // Remove the rearmost (lowest rank) pawn
-                Square rearmost = lsb(pawnsOnFile);
-                doublePawns &= ~(1ULL << rearmost);
-            } else {
-                // Remove the rearmost (highest rank) pawn
-                Square rearmost = msb(pawnsOnFile);
-                doublePawns &= ~(1ULL << rearmost);
-            }
-            
-            doubled |= doublePawns;
-        }
-    }
-    
-    return doubled;
+    // Phase 2.5.e-2: Use SIMD-optimized version for better performance
+    return simd::getDoubledPawnsFast(ourPawns, c == WHITE);
 }
 
 // PI1: Pawn island counting implementation
 int PawnStructure::countPawnIslands(Bitboard ourPawns) {
-    if (!ourPawns) return 0;
-    
-    int islands = 0;
-    Bitboard remaining = ourPawns;
-    
-    // Process files from a to h
-    // An island starts when we find pawns after a gap (empty file)
-    bool previousFileHadPawns = false;
-    
-    for (int file = 0; file < 8; ++file) {
-        Bitboard fileMask = fileBB(file);
-        bool currentFileHasPawns = (remaining & fileMask) != 0;
-        
-        if (currentFileHasPawns) {
-            // If previous file had no pawns, this starts a new island
-            if (!previousFileHadPawns) {
-                islands++;
-            }
-            // Otherwise, pawns are connected to previous file's pawns
-        }
-        
-        previousFileHadPawns = currentFileHasPawns;
-    }
-    
-    return islands;
+    // Phase 2.5.e-2: Use SIMD-optimized version for better performance
+    return simd::countPawnIslandsFast(ourPawns);
 }
 
 int PawnStructure::getPawnIslands(Color c, Bitboard ourPawns) {
@@ -396,17 +327,10 @@ bool PawnStructure::isBackward(Color us, Square sq, Bitboard ourPawns, Bitboard 
 }
 
 Bitboard PawnStructure::getBackwardPawns(Color c, Bitboard ourPawns, Bitboard theirPawns) {
-    Bitboard backward = 0ULL;
-    Bitboard pawns = ourPawns;
-    
-    while (pawns) {
-        Square sq = popLsb(pawns);
-        if (isBackward(c, sq, ourPawns, theirPawns)) {
-            backward |= (1ULL << sq);
-        }
-    }
-    
-    return backward;
+    // Phase 2.5.e-2: Use SIMD-optimized version for better performance
+    // First get isolated pawns to avoid double-penalizing them
+    Bitboard isolatedPawns = simd::getIsolatedPawnsFast(ourPawns);
+    return simd::getBackwardPawnsFast(ourPawns, theirPawns, c == WHITE, isolatedPawns);
 }
 
 }

@@ -99,6 +99,240 @@ inline void popcountAllPieces(
     blackCounts[5] = std::popcount(blackPieces[5]);
 }
 
+// ========================= PAWN STRUCTURE SIMD OPTIMIZATIONS =========================
+// Phase 2.5.e-2: Vectorized pawn structure evaluation for improved NPS
+
+// Helper to extract the lowest set bit position
+inline int popLsb(uint64_t& bb) {
+    int sq = __builtin_ctzll(bb);
+    bb &= bb - 1;  // Clear the lowest bit
+    return sq;
+}
+
+// SIMD-optimized isolated pawn detection
+// Processes all files in parallel using bitwise operations
+inline uint64_t getIsolatedPawnsFast(uint64_t ourPawns) {
+    // File masks for adjacent file detection
+    constexpr uint64_t FILE_A = 0x0101010101010101ULL;
+    constexpr uint64_t FILE_H = 0x8080808080808080ULL;
+    constexpr uint64_t NOT_FILE_A = ~FILE_A;
+    constexpr uint64_t NOT_FILE_H = ~FILE_H;
+    
+    uint64_t isolated = 0ULL;
+    
+    // Process each file and check for adjacent file support
+    // This can be vectorized by the compiler with -march=native
+    #pragma GCC unroll 8
+    for (int file = 0; file < 8; ++file) {
+        uint64_t fileMask = FILE_A << file;
+        uint64_t pawnsOnFile = ourPawns & fileMask;
+        
+        if (pawnsOnFile) {
+            uint64_t adjacentFiles = 0ULL;
+            if (file > 0) adjacentFiles |= FILE_A << (file - 1);
+            if (file < 7) adjacentFiles |= FILE_A << (file + 1);
+            
+            // If no pawns on adjacent files, all pawns on this file are isolated
+            if (!(ourPawns & adjacentFiles)) {
+                isolated |= pawnsOnFile;
+            }
+        }
+    }
+    
+    return isolated;
+}
+
+// SIMD-optimized doubled pawn detection
+// Process multiple files simultaneously for better ILP
+inline uint64_t getDoubledPawnsFast(uint64_t ourPawns, bool isWhite) {
+    constexpr uint64_t FILE_A = 0x0101010101010101ULL;
+    uint64_t doubled = 0ULL;
+    
+    // Process 4 files at a time for better instruction-level parallelism
+    #pragma GCC unroll 2
+    for (int i = 0; i < 8; i += 4) {
+        // Process 4 files in parallel
+        uint64_t files[4];
+        int counts[4];
+        
+        // Extract file masks and count pawns
+        for (int j = 0; j < 4 && (i + j) < 8; ++j) {
+            files[j] = ourPawns & (FILE_A << (i + j));
+            counts[j] = std::popcount(files[j]);
+        }
+        
+        // Mark doubled pawns (all but rearmost)
+        for (int j = 0; j < 4 && (i + j) < 8; ++j) {
+            if (counts[j] > 1) {
+                // Find rearmost pawn
+                uint64_t rearmost;
+                if (isWhite) {
+                    // For white, rearmost is lowest bit (lowest rank)
+                    rearmost = files[j] & -files[j];
+                } else {
+                    // For black, rearmost is highest bit (highest rank)
+                    rearmost = 1ULL << (63 - __builtin_clzll(files[j]));
+                }
+                doubled |= files[j] & ~rearmost;
+            }
+        }
+    }
+    
+    return doubled;
+}
+
+// SIMD-optimized backward pawn detection
+// Uses parallel bit operations for efficient detection
+inline uint64_t getBackwardPawnsFast(uint64_t ourPawns, uint64_t theirPawns, 
+                                     bool isWhite, uint64_t isolatedPawns) {
+    constexpr uint64_t FILE_A = 0x0101010101010101ULL;
+    constexpr uint64_t FILE_H = 0x8080808080808080ULL;
+    constexpr uint64_t RANK_2 = 0x000000000000FF00ULL;
+    constexpr uint64_t RANK_7 = 0x00FF000000000000ULL;
+    
+    // Don't double-penalize isolated pawns
+    uint64_t candidates = ourPawns & ~isolatedPawns;
+    
+    // Remove pawns on starting ranks (can't be backward)
+    if (isWhite) {
+        candidates &= ~RANK_2;
+    } else {
+        candidates &= ~RANK_7;
+    }
+    
+    uint64_t backward = 0ULL;
+    uint64_t pawns = candidates;
+    
+    // Process pawns in batches for better cache usage
+    while (pawns) {
+        int sq = popLsb(pawns);
+        int rank = sq / 8;
+        int file = sq % 8;
+        
+        // Check for support from adjacent files
+        uint64_t supportMask = 0ULL;
+        if (file > 0) {
+            // Support from left file
+            uint64_t leftFile = FILE_A << (file - 1);
+            if (isWhite) {
+                // White pawns need support from same rank or behind (lower ranks)
+                for (int r = 0; r <= rank; ++r) {
+                    supportMask |= (1ULL << (r * 8 + file - 1));
+                }
+            } else {
+                // Black pawns need support from same rank or behind (higher ranks)
+                for (int r = rank; r < 8; ++r) {
+                    supportMask |= (1ULL << (r * 8 + file - 1));
+                }
+            }
+        }
+        
+        if (file < 7) {
+            // Support from right file
+            if (isWhite) {
+                for (int r = 0; r <= rank; ++r) {
+                    supportMask |= (1ULL << (r * 8 + file + 1));
+                }
+            } else {
+                for (int r = rank; r < 8; ++r) {
+                    supportMask |= (1ULL << (r * 8 + file + 1));
+                }
+            }
+        }
+        
+        // If no support and front square is attacked, pawn is backward
+        if (!(ourPawns & supportMask)) {
+            // Check if front square is attacked by enemy pawns
+            int frontSq = isWhite ? sq + 8 : sq - 8;
+            if (frontSq >= 0 && frontSq < 64) {
+                uint64_t enemyAttackers = 0ULL;
+                
+                if (isWhite) {
+                    // Check for black pawn attackers
+                    if (file > 0 && frontSq + 7 < 64) {
+                        enemyAttackers |= (1ULL << (frontSq + 7));
+                    }
+                    if (file < 7 && frontSq + 9 < 64) {
+                        enemyAttackers |= (1ULL << (frontSq + 9));
+                    }
+                } else {
+                    // Check for white pawn attackers
+                    if (file < 7 && frontSq - 7 >= 0) {
+                        enemyAttackers |= (1ULL << (frontSq - 7));
+                    }
+                    if (file > 0 && frontSq - 9 >= 0) {
+                        enemyAttackers |= (1ULL << (frontSq - 9));
+                    }
+                }
+                
+                if (theirPawns & enemyAttackers) {
+                    backward |= (1ULL << sq);
+                }
+            }
+        }
+    }
+    
+    return backward;
+}
+
+// SIMD-optimized passed pawn detection using batch processing
+inline uint64_t getPassedPawnsFast(uint64_t ourPawns, uint64_t theirPawns, 
+                                   const uint64_t* passedMasks) {
+    uint64_t passed = 0ULL;
+    uint64_t pawns = ourPawns;
+    
+    // Process pawns in groups for better instruction-level parallelism
+    while (pawns) {
+        // Extract up to 4 pawns at once for parallel processing
+        int sqs[4];
+        int count = 0;
+        
+        for (int i = 0; i < 4 && pawns; ++i) {
+            sqs[i] = popLsb(pawns);
+            count++;
+        }
+        
+        // Check all extracted pawns in parallel
+        for (int i = 0; i < count; ++i) {
+            if (!(theirPawns & passedMasks[sqs[i]])) {
+                passed |= (1ULL << sqs[i]);
+            }
+        }
+    }
+    
+    return passed;
+}
+
+// Optimized pawn island counting using bit manipulation
+inline int countPawnIslandsFast(uint64_t ourPawns) {
+    if (!ourPawns) return 0;
+    
+    constexpr uint64_t FILE_A = 0x0101010101010101ULL;
+    
+    // Create a byte mask of files that have pawns
+    uint8_t fileMask = 0;
+    #pragma GCC unroll 8
+    for (int f = 0; f < 8; ++f) {
+        if (ourPawns & (FILE_A << f)) {
+            fileMask |= (1 << f);
+        }
+    }
+    
+    // Count transitions from 0 to 1 (start of each island)
+    int islands = 0;
+    bool prevFile = false;
+    
+    for (int f = 0; f < 8; ++f) {
+        bool currFile = (fileMask >> f) & 1;
+        if (currFile && !prevFile) {
+            islands++;
+        }
+        prevFile = currFile;
+    }
+    
+    return islands;
+}
+
 } // namespace simd
 } // namespace seajay
 
