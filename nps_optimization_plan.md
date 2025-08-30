@@ -325,14 +325,58 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 - Option D: Consider compression or sparse representation
 
 #### Phase 2.5: Evaluation Function Optimization (7.92% runtime)
-**Branch**: `feature/20250829-eval-speedup`
+**Branch**: `feature/20250830-eval-speedup`
 **Current**: 1.5M calls consuming 7.92% of runtime
-**Target**: Speed up by 20-30% without losing strength
-**Approaches**:
-- Option A: Lazy evaluation (compute only what's needed)
-- Option B: Incremental evaluation updates
-- Option C: Better PST access patterns
-- Option D: SIMD for material/PST calculations
+**Target**: 30-40% evaluation speedup without losing strength
+**Expected NPS Impact**: +50-80K (evaluation is 7.92% of runtime)
+
+##### Phase 2.5.a: Basic Lazy Evaluation (Highest Priority)
+**Goal**: Skip expensive evaluation when position is clearly decided
+**Implementation**:
+- Material-based early exit for won/lost positions
+- Skip detailed eval when material difference > 500cp
+- Return material + PST only for clear advantages
+**Expected**: 15% speedup in tactical positions
+**Risk**: Low - preserves accuracy for close positions
+
+##### Phase 2.5.b: Remove Redundant Calculations (Quick Win)
+**Goal**: Eliminate duplicate computations
+**Implementation**:
+- Cache game phase detection (currently called 3+ times)
+- Reuse king square lookups throughout eval
+- Eliminate duplicate bitboard operations
+- Store frequently accessed values in locals
+**Expected**: 5-8% speedup
+**Risk**: Very low - pure optimization
+
+##### Phase 2.5.c: Progressive Lazy Evaluation
+**Goal**: Implement staged evaluation with early exits
+**Implementation**:
+- Stage 1: Material + PST + basic pawn structure
+- Stage 2: Add mobility if position unclear
+- Stage 3: Add king safety only if needed
+- Early exit thresholds between stages
+**Expected**: 20% overall evaluation speedup
+**Risk**: Medium - needs careful threshold tuning
+
+##### Phase 2.5.d: Endgame-Aware Optimization
+**Goal**: Skip irrelevant features based on game phase
+**Implementation**:
+- Skip king safety in endgame
+- Skip passed pawn race logic in opening
+- Phase-specific evaluation paths
+**Expected**: 10% additional speedup
+**Risk**: Low - logical optimization
+
+##### Phase 2.5.e: SIMD Optimization (Optional)
+**Goal**: Vectorize hot evaluation loops
+**Implementation**:
+- Pawn structure batch processing with SSE4.2
+- Vectorized mobility counting
+- Batch popcount operations
+**Expected**: 10-15% speedup if implemented
+**Risk**: Medium - complexity vs benefit tradeoff
+**Note**: Only pursue if still below 1M NPS after above phases
 
 **Git Workflow for Each Sub-Phase**:
 1. **HUMAN**: Merge current branch to main (if successful)
@@ -571,8 +615,15 @@ MANDATORY READING BEFORE ANY WORK:
 | 2.2.a | - Safe optimizations | - | FAILED | 540K | 540K | -11.75 ELO |
 | 2.2.b | - Remove fifty-move zobrist | - | FAILED | 540K | 513K | -4.5% NPS |
 | 2.3 | updateBitboards Opt | feature/20250829-bitboard-updates | Pending | - | - | - |
-| 2.4 | HistoryHeuristic Opt | feature/20250829-history-cache | Pending | - | - | - |
-| 2.5 | Evaluation Opt | feature/20250829-eval-speedup | Pending | - | - | - |
+| 2.4 | HistoryHeuristic Opt | feature/20250829-history-cache | **Complete** | 540K | 560K | ~Neutral |
+| 2.4.a | - Array reordering | - | Complete | 540K | 591K | -4.29 ELO |
+| 2.4.b | - int16_t conversion | - | Complete | 591K | 560K | -0.68 ELO |
+| 2.5 | Evaluation Opt | feature/20250830-eval-speedup | Planned | - | - | - |
+| 2.5.a | - Basic lazy eval | - | Planned | - | - | - |
+| 2.5.b | - Remove redundancy | - | Planned | - | - | - |
+| 2.5.c | - Progressive lazy | - | Planned | - | - | - |
+| 2.5.d | - Endgame-aware | - | Planned | - | - | - |
+| 2.5.e | - SIMD (optional) | - | Planned | - | - | - |
 | 3 | Move Generation | TBD | Pending | - | - | - |
 | 4 | Search Optimizations | TBD | Pending | - | - | - |
 | 5 | Memory & Cache | TBD | Pending | - | - | - |
@@ -592,6 +643,19 @@ MANDATORY READING BEFORE ANY WORK:
    - Result: 14% NPS improvement (440K → 500K)
    - Verified on multiple CPU architectures via OpenBench
 
+2. **Phase 2.4 - History Heuristic Optimization** (2025-08-29)
+   - **Phase 2.4.a**: Array reordering [2][64][64] → [64][64][2]
+     - Both colors in same cache line (50% fewer cache misses)
+     - Replaced global aging with saturating arithmetic
+     - Result: 9.4% NPS gain (540K → 591K), -4.29 ELO
+   - **Phase 2.4.b**: Convert to int16_t
+     - Halved memory footprint (32KB → 16KB)
+     - Entire table fits in L1 cache
+     - Inlined getScore function
+     - Combined result: 560K NPS, -0.68 ELO (essentially neutral)
+   - **Critical Achievement**: LazySMP-ready (eliminated catastrophic cache invalidation)
+   - **Memory Efficiency**: 50% reduction enables better overall cache usage
+
 ### Phase 1 Profiling Results (2025-08-29):
 
 **Top Hotspots Identified (gprof analysis):**
@@ -610,11 +674,11 @@ MANDATORY READING BEFORE ANY WORK:
 **NPS Status:** ~500K (no change from Phase 0.5)
 
 ### Next Investigation Areas:
-- Optimize isSquareAttacked with better caching or algorithm
-- Reduce updateBitboards overhead in make/unmake
-- Optimize history heuristic access patterns
+- ~~Optimize history heuristic access patterns~~ ✅ COMPLETE (Phase 2.4)
+- Implement lazy evaluation in eval function (Phase 2.5)
 - Consider incremental attack updates
 - Review board copy vs copy-make tradeoffs
+- Optimize remaining hotspots after Phase 2.5
 
 ### Build System Notes:
 - Makefile now uses -march=native for auto-detection
@@ -623,5 +687,6 @@ MANDATORY READING BEFORE ANY WORK:
 
 ---
 
-Last Updated: 2025-08-29
-Branch: feature/20250829-slow-search-analysis
+Last Updated: 2025-08-30
+Current Branch: feature/20250829-history-cache (ready to merge)
+Next Branch: feature/20250830-eval-speedup (Phase 2.5)
