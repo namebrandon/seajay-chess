@@ -68,10 +68,11 @@ public:
     void ageHistory();
     
 private:
-    // History table: [side][from][to]
+    // History table: [from][to][side]
+    // Reordered for better cache locality - both colors for same move are adjacent
     // Cache-aligned for better performance
     // Zero-initialized by default
-    alignas(64) int m_history[2][64][64] = {};
+    alignas(64) int m_history[64][64][2] = {};
 };
 
 } // namespace seajay::search
