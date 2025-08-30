@@ -1183,6 +1183,40 @@ void Board::unmakeMove(Move move, const UndoInfo& undo) {
 #endif
 }
 
+bool Board::tryMakeMove(Move move, UndoInfo& undo) {
+    // Phase 3.2: Lazy legality checking
+    // Make the move and check if it leaves king in check
+    
+#ifdef DEBUG
+    VALIDATE_STATE_GUARD(*this, "tryMakeMove");
+    validateStateIntegrity();
+#endif
+    
+    // Make the move
+    makeMoveInternal(move, undo);
+    
+    // Check if our king is in check after the move (illegal)
+    Color us = ~m_sideToMove;  // We just switched sides
+    Square kingSquare = this->kingSquare(us);
+    
+    if (kingSquare != NO_SQUARE && MoveGenerator::isSquareAttacked(*this, kingSquare, m_sideToMove)) {
+        // Move is illegal - unmake it and return false
+        unmakeMoveInternal(move, undo);
+        
+#ifdef DEBUG
+        validateStateIntegrity();
+#endif
+        return false;
+    }
+    
+#ifdef DEBUG
+    validateStateIntegrity();
+#endif
+    
+    // Move is legal
+    return true;
+}
+
 // Enhanced interface with complete undo info
 void Board::makeMove(Move move, CompleteUndoInfo& undo) {
 #ifdef DEBUG

@@ -57,6 +57,17 @@ public:
      */
     static void generateQuietMoves(const Board& board, MoveList& moves);
     
+    /**
+     * Generate all pseudo-legal moves with lazy legality checking
+     * Phase 3.2 optimization: For use in search where we'll validate during makeMove
+     * This avoids the double make/unmake overhead of generateLegalMoves
+     * 
+     * @param board The current board position
+     * @param moves Output move list to append moves to
+     * @param onlyLegal If true, filters to only legal moves (for compatibility)
+     */
+    static void generateMovesForSearch(const Board& board, MoveList& moves, bool onlyLegal = false);
+    
     // Check and pin detection
     
     /**

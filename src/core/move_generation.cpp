@@ -170,6 +170,32 @@ void MoveGenerator::generateQuietMoves(const Board& board, MoveList& moves) {
     generateCastlingMoves(board, moves);
 }
 
+void MoveGenerator::generateMovesForSearch(const Board& board, MoveList& moves, bool onlyLegal) {
+    // Phase 3.2 optimization: Lazy legality checking for search
+    // The search will validate moves during makeMove, avoiding double validation
+    
+    if (onlyLegal) {
+        // For compatibility - use the standard legal move generation
+        generateLegalMoves(board, moves);
+        return;
+    }
+    
+    // For search usage - generate pseudo-legal moves
+    // The search will handle legality checking when it tries to make the move
+    Color us = board.sideToMove();
+    
+    // Special handling when in check - use optimized check evasion
+    if (inCheck(board, us)) {
+        // When in check, we still need to generate check evasions
+        // as many pseudo-legal moves would be invalid
+        generateCheckEvasions(board, moves);
+    } else {
+        // Not in check - generate all pseudo-legal moves
+        // Search will validate these during makeMove
+        generatePseudoLegalMoves(board, moves);
+    }
+}
+
 // Pawn move generation
 void MoveGenerator::generatePawnMoves(const Board& board, MoveList& moves) {
     generatePawnCaptures(board, moves);

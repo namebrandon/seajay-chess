@@ -24,6 +24,19 @@
 
 namespace seajay::search {
 
+// Phase 3.2: Helper for move generation with lazy legality checking option
+inline MoveList generateLegalMoves(const Board& board) {
+    MoveList moves;
+    MoveGenerator::generateLegalMoves(board, moves);
+    return moves;
+}
+
+inline MoveList generateMovesForSearch(const Board& board, bool checkLegal = false) {
+    MoveList moves;
+    MoveGenerator::generateMovesForSearch(board, moves, checkLegal);
+    return moves;
+}
+
 // Simple move ordering without MVV-LVA (fallback)
 template<typename MoveContainer>
 inline void orderMovesSimple(MoveContainer& moves) noexcept {
@@ -212,19 +225,12 @@ eval::Score negamax(Board& board,
         depth++;
     }
     
-    // Generate all legal moves (needed for checkmate/stalemate check)
-    MoveList moves = generateLegalMoves(board);
+    // Phase 3.2: Generate pseudo-legal moves for lazy validation in search
+    // We still need to know if we have any legal moves for checkmate/stalemate
+    MoveList moves = generateMovesForSearch(board, false);  // Pseudo-legal moves
     
-    // Check for checkmate or stalemate first (has priority over draws)
-    if (moves.empty()) {
-        if (weAreInCheck) {
-            // Checkmate - return mate score (checkmate has priority over draws)
-            return eval::Score(-32000 + ply);
-        } else {
-            // Stalemate - return draw score
-            return eval::Score::draw();
-        }
-    }
+    // Note: We can't check for checkmate/stalemate here yet because we have pseudo-legal moves
+    // We'll check after trying all moves below
     
     // Sub-phase 4B: Establish correct probe order
     // 1. Check repetition FIRST (fastest, most common draw in search)
@@ -540,6 +546,7 @@ eval::Score negamax(Board& board,
     
     // Search all moves
     int moveCount = 0;
+    int legalMoveCount = 0;  // Phase 3.2: Track legal moves for checkmate/stalemate
     
     // Stage 20 Phase B3 Fix: Track quiet moves for butterfly history update
     std::vector<Move> quietMoves;
@@ -694,12 +701,18 @@ eval::Score negamax(Board& board,
             info.moveOrderingStats.endgameNodes++;
         }
         
-        // Push position to search stack BEFORE making the move
-        searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
-        
-        // Make the move
+        // Phase 3.2: Try to make the move with lazy legality checking
         Board::UndoInfo undo;
-        board.makeMove(move, undo);
+        if (!board.tryMakeMove(move, undo)) {
+            // Move is illegal (leaves king in check) - skip it
+            continue;
+        }
+        
+        // Move is legal
+        legalMoveCount++;
+        
+        // Push position to search stack after we know move is legal
+        searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         
         // Phase PV3: Create child PV for recursive calls
         // Only allocate if we're in a PV node and have a parent PV to update
@@ -906,6 +919,17 @@ eval::Score negamax(Board& board,
                     break;  // Beta cutoff - no need to search more moves
                 }
             }
+        }
+    }
+    
+    // Phase 3.2: Check for checkmate/stalemate after trying all moves
+    if (legalMoveCount == 0) {
+        if (weAreInCheck) {
+            // Checkmate - return mate score
+            return eval::Score(-32000 + ply);
+        } else {
+            // Stalemate - return draw score
+            return eval::Score::draw();
         }
     }
     

@@ -276,6 +276,10 @@ public:
     void makeMove(Move move, CompleteUndoInfo& undo);
     void unmakeMove(Move move, const CompleteUndoInfo& undo);
     
+    // Phase 3.2: Lazy legality checking version for search
+    // Returns false if move leaves king in check (illegal)
+    bool tryMakeMove(Move move, UndoInfo& undo);
+    
     // Null move methods for null move pruning
     void makeNullMove(UndoInfo& undo);
     void unmakeNullMove(const UndoInfo& undo);
