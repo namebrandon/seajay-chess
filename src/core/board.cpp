@@ -2,6 +2,7 @@
 #include "board_safety.h"
 #include "bitboard.h"
 #include "move_generation.h"
+#include "simd_utils.h"  // SIMD optimizations for popcount batching
 #include "../evaluation/evaluate.h"
 #include "../evaluation/pst.h"  // For PST::value
 #include "../search/search_info.h"
@@ -1910,14 +1911,21 @@ void Board::unmakeNullMove(const UndoInfo& undo) {
 
 // Calculate non-pawn material for zugzwang detection
 eval::Score Board::nonPawnMaterial(Color c) const {
-    eval::Score value = eval::Score::zero();
+    // Use SIMD-optimized batch popcount for better ILP
+    uint32_t knightCount, bishopCount, rookCount, queenCount;
+    simd::popcountMaterial(
+        pieces(c, KNIGHT), pieces(c, BISHOP),
+        pieces(c, ROOK), pieces(c, QUEEN),
+        knightCount, bishopCount, rookCount, queenCount
+    );
     
-    // Count material for the given color (excluding pawns)
+    // Calculate material value using the counts
     // Using standard piece values from evaluation constants
-    value += std::popcount(pieces(c, KNIGHT)) * eval::Score(320);  // Knight value
-    value += std::popcount(pieces(c, BISHOP)) * eval::Score(330);  // Bishop value
-    value += std::popcount(pieces(c, ROOK)) * eval::Score(500);    // Rook value
-    value += std::popcount(pieces(c, QUEEN)) * eval::Score(900);   // Queen value
+    eval::Score value = eval::Score::zero();
+    value += knightCount * eval::Score(320);  // Knight value
+    value += bishopCount * eval::Score(330);  // Bishop value
+    value += rookCount * eval::Score(500);    // Rook value
+    value += queenCount * eval::Score(900);   // Queen value
     
     return value;
 }
@@ -2201,23 +2209,36 @@ bool Board::computeInsufficientMaterial() const {
     // Simple insufficient material detection
     // K vs K, KN vs K, KB vs K, KB vs KB (same color)
     
-    uint32_t whiteQueens = std::popcount(pieces(WHITE, QUEEN));
-    uint32_t blackQueens = std::popcount(pieces(BLACK, QUEEN));
-    uint32_t whiteRooks = std::popcount(pieces(WHITE, ROOK));
-    uint32_t blackRooks = std::popcount(pieces(BLACK, ROOK));
-    uint32_t whitePawns = std::popcount(pieces(WHITE, PAWN));
-    uint32_t blackPawns = std::popcount(pieces(BLACK, PAWN));
+    // Use SIMD-optimized batch popcount for all piece types
+    uint64_t whitePieces[6] = {
+        pieces(WHITE, PAWN), pieces(WHITE, KNIGHT), pieces(WHITE, BISHOP),
+        pieces(WHITE, ROOK), pieces(WHITE, QUEEN), pieces(WHITE, KING)
+    };
+    uint64_t blackPieces[6] = {
+        pieces(BLACK, PAWN), pieces(BLACK, KNIGHT), pieces(BLACK, BISHOP),
+        pieces(BLACK, ROOK), pieces(BLACK, QUEEN), pieces(BLACK, KING)
+    };
+    
+    uint32_t whiteCounts[6], blackCounts[6];
+    simd::popcountAllPieces(whitePieces, blackPieces, whiteCounts, blackCounts);
+    
+    // Extract individual counts
+    uint32_t whitePawns = whiteCounts[0];
+    uint32_t blackPawns = blackCounts[0];
+    uint32_t whiteKnights = whiteCounts[1];
+    uint32_t blackKnights = blackCounts[1];
+    uint32_t whiteBishops = whiteCounts[2];
+    uint32_t blackBishops = blackCounts[2];
+    uint32_t whiteRooks = whiteCounts[3];
+    uint32_t blackRooks = blackCounts[3];
+    uint32_t whiteQueens = whiteCounts[4];
+    uint32_t blackQueens = blackCounts[4];
     
     // If there are pawns, queens, or rooks, material is sufficient
     if (whiteQueens || blackQueens || whiteRooks || blackRooks || 
         whitePawns || blackPawns) {
         return false;
     }
-    
-    uint32_t whiteBishops = std::popcount(pieces(WHITE, BISHOP));
-    uint32_t blackBishops = std::popcount(pieces(BLACK, BISHOP));
-    uint32_t whiteKnights = std::popcount(pieces(WHITE, KNIGHT));
-    uint32_t blackKnights = std::popcount(pieces(BLACK, KNIGHT));
     
     uint32_t whiteMinor = whiteBishops + whiteKnights;
     uint32_t blackMinor = blackBishops + blackKnights;
