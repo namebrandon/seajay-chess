@@ -253,15 +253,19 @@ Based on Phase 1 profiling, we'll tackle each bottleneck in separate sub-phases:
 - Overall NPS improvement: 15-25% (500K → 600-625K nps)
 - Addresses the #1 performance bottleneck
 
-#### Phase 2.2: makeMoveInternal Optimization (12.83% runtime)
+#### Phase 2.2: makeMoveInternal Optimization - **ABANDONED** ❌
 **Branch**: `feature/20250829-make-unmake-opt`
 **Current**: 14.1M calls consuming 12.83% of runtime
-**Target**: Reduce overhead by 30-40%
-**Approaches**:
-- Option A: Reduce unnecessary state updates
-- Option B: Optimize piece list maintenance
-- Option C: Streamline zobrist key updates
-- Option D: Consider copy-make vs make-unmake tradeoffs
+**Target**: Was targeting 30-40% reduction
+**Status**: **ABANDONED** - Multiple optimization attempts failed
+
+**Results Summary**:
+- **Phase 2.2.a (Safe optimizations)**: -11.75 ELO loss, no NPS gain
+- **Phase 2.2.b (Remove fifty-move zobrist)**: -4.5% NPS decrease
+- **Phase 2.2.c-f**: Deferred due to consistent failures
+
+**Conclusion**: Compiler already highly optimized with -O3 -flto. Small changes 
+cause negative interactions with CPU pipelining, cache behavior, and TT efficiency.
 
 #### Phase 2.3: updateBitboards Optimization (10.57% runtime)
 **Branch**: `feature/20250829-bitboard-updates`
@@ -525,8 +529,10 @@ MANDATORY READING BEFORE ANY WORK:
 | 0 | Baseline Analysis | - | Complete | - | 440K | N/A |
 | 0.5 | Compiler Optimization | (merged) | Complete | 440K | 500K | ✅ PASSED |
 | 1 | Profiling & Hotspots | feature/20250829-slow-search-analysis | Complete | 500K | 500K | Analysis |
-| **2.1** | isSquareAttacked Opt | feature/20250829-attack-detection | **Ready** | 500K | - | - |
-| 2.2 | makeMoveInternal Opt | feature/20250829-make-unmake-opt | Pending | - | - | - |
+| 2.1 | isSquareAttacked Opt | feature/20250829-attack-detection | **Merged** | 500K | 540K | ✅ PASSED |
+| ~~2.2~~ | ~~makeMoveInternal Opt~~ | feature/20250829-make-unmake-opt | **ABANDONED** | 540K | - | ❌ FAILED |
+| 2.2.a | - Safe optimizations | - | FAILED | 540K | 540K | -11.75 ELO |
+| 2.2.b | - Remove fifty-move zobrist | - | FAILED | 540K | 513K | -4.5% NPS |
 | 2.3 | updateBitboards Opt | feature/20250829-bitboard-updates | Pending | - | - | - |
 | 2.4 | HistoryHeuristic Opt | feature/20250829-history-cache | Pending | - | - | - |
 | 2.5 | Evaluation Opt | feature/20250829-eval-speedup | Pending | - | - | - |
