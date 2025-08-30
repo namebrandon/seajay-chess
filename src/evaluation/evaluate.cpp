@@ -52,14 +52,17 @@ Score evaluate(const Board& board) {
         }
     }
     
+    // Get PST score (Stage 9) - moved before lazy eval to avoid duplicate retrieval
+    // PST score is stored from white's perspective in the board
+    const MgEgScore& pstScore = board.pstScore();
+    Score pstValue = pstScore.mg;
+    
     // Phase 2.5.a: Lazy evaluation (UCI-controlled, default OFF)
     const LazyEvalConfig& lazyConfig = LazyEvalConfig::getInstance();
     
     if (lazyConfig.enabled) {
-        // Get material difference and PST (cheap to compute)
+        // Get material difference (already have PST from above)
         Score materialDiff = material.value(WHITE) - material.value(BLACK);
-        const MgEgScore& pstScore = board.pstScore();
-        Score pstValue = pstScore.mg;
         
         // Determine effective threshold based on phase and context
         int threshold = lazyConfig.threshold;
@@ -86,18 +89,17 @@ Score evaluate(const Board& board) {
             }
         }
         
-        // Calculate fast material + PST score from side-to-move perspective
-        Score fastScore = materialDiff + pstValue;
-        if (board.sideToMove() == BLACK) {
-            fastScore = -fastScore;
-        }
+        // Calculate fast score from WHITE's perspective first
+        Score fastScoreWhite = materialDiff + pstValue;
         
         if (lazyConfig.staged) {
             // Staged lazy evaluation - gradually add more components
             
             // Stage 1: Material only (very aggressive threshold)
+            // Check from white's perspective for consistency
             if (std::abs(materialDiff.value()) > threshold + 200) {
                 // Position is heavily decided by material
+                // Return from side-to-move perspective
                 if (board.sideToMove() == BLACK) {
                     return -materialDiff;
                 }
@@ -105,9 +107,13 @@ Score evaluate(const Board& board) {
             }
             
             // Stage 2: Material + PST (standard threshold)
-            if (std::abs(fastScore.value()) > threshold) {
+            // Check from white's perspective, return from side-to-move perspective
+            if (std::abs(fastScoreWhite.value()) > threshold) {
                 // Position is decided by material + piece placement
-                return fastScore;
+                if (board.sideToMove() == BLACK) {
+                    return -fastScoreWhite;
+                }
+                return fastScoreWhite;
             }
             
             // Stage 3 would add basic pawns (threshold - 100)
@@ -115,20 +121,16 @@ Score evaluate(const Board& board) {
             
         } else {
             // Simple binary lazy evaluation
-            if (std::abs(fastScore.value()) > threshold) {
-                return fastScore;
+            if (std::abs(fastScoreWhite.value()) > threshold) {
+                if (board.sideToMove() == BLACK) {
+                    return -fastScoreWhite;
+                }
+                return fastScoreWhite;
             }
         }
         
         // Fall through to full evaluation if not lazy-evaluated
     }
-    
-    // Get PST score (Stage 9)
-    // PST score is stored from white's perspective in the board
-    const MgEgScore& pstScore = board.pstScore();
-    
-    // For Stage 9, we only use middlegame PST values (no tapering yet)
-    Score pstValue = pstScore.mg;
     
     // Phase PP2: Passed pawn evaluation
     // Rank-based bonuses (indexed by relative rank)
