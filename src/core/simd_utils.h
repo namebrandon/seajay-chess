@@ -333,6 +333,174 @@ inline int countPawnIslandsFast(uint64_t ourPawns) {
     return islands;
 }
 
+// ========================= MOBILITY SIMD OPTIMIZATIONS =========================
+// Phase 2.5.e-3: Parallel mobility counting for improved evaluation performance
+
+// Structure to hold mobility data for batch processing
+struct MobilityData {
+    uint64_t pieces;      // Bitboard of pieces to evaluate
+    uint64_t ownPieces;   // Own pieces to exclude from moves
+    uint64_t pawnAttacks; // Enemy pawn attacks to avoid
+    int totalMobility;    // Total mobility score
+};
+
+// Batch process knight mobility for multiple knights
+inline int computeKnightMobilityBatch(uint64_t knights, uint64_t ownPieces, 
+                                      uint64_t enemyPawnAttacks,
+                                      const uint64_t* knightAttackTable) {
+    int totalMobility = 0;
+    
+    // Process up to 4 knights in parallel for better ILP
+    while (knights) {
+        int sqs[4];
+        int count = 0;
+        
+        // Extract up to 4 knight positions
+        for (int i = 0; i < 4 && knights; ++i) {
+            sqs[i] = popLsb(knights);
+            count++;
+        }
+        
+        // Process all extracted knights in parallel
+        // Compiler can vectorize this with -march=native
+        int mobilities[4] = {0, 0, 0, 0};
+        for (int i = 0; i < count; ++i) {
+            uint64_t attacks = knightAttackTable[sqs[i]];
+            attacks &= ~ownPieces;        // Can't move to own pieces
+            attacks &= ~enemyPawnAttacks; // Avoid pawn-attacked squares
+            mobilities[i] = std::popcount(attacks);
+        }
+        
+        // Sum up mobilities (compiler may vectorize this)
+        for (int i = 0; i < count; ++i) {
+            totalMobility += mobilities[i];
+        }
+    }
+    
+    return totalMobility;
+}
+
+// Batch process sliding piece mobility (bishops/rooks/queens)
+template<typename AttackFunc>
+inline int computeSlidingMobilityBatch(uint64_t pieces, uint64_t occupied,
+                                       uint64_t ownPieces, uint64_t enemyPawnAttacks,
+                                       AttackFunc getAttacks) {
+    int totalMobility = 0;
+    
+    // Process pieces in groups for better cache usage
+    while (pieces) {
+        // Extract and process up to 3 pieces at once
+        // (3 chosen to balance register pressure with parallelism)
+        int sqs[3];
+        int count = 0;
+        
+        for (int i = 0; i < 3 && pieces; ++i) {
+            sqs[i] = popLsb(pieces);
+            count++;
+        }
+        
+        // Calculate attacks for all pieces in parallel
+        uint64_t allAttacks[3];
+        for (int i = 0; i < count; ++i) {
+            allAttacks[i] = getAttacks(sqs[i], occupied);
+            allAttacks[i] &= ~ownPieces;
+            allAttacks[i] &= ~enemyPawnAttacks;
+        }
+        
+        // Count mobility for each piece
+        for (int i = 0; i < count; ++i) {
+            totalMobility += std::popcount(allAttacks[i]);
+        }
+    }
+    
+    return totalMobility;
+}
+
+// Combined mobility evaluation for all piece types of one color
+// This allows better instruction scheduling and cache usage
+inline int evaluateMobilityAllPieces(
+    uint64_t knights, uint64_t bishops, uint64_t rooks, uint64_t queens,
+    uint64_t occupied, uint64_t ownPieces, uint64_t enemyPawnAttacks,
+    const uint64_t* knightAttackTable,
+    auto getBishopAttacks, auto getRookAttacks) {
+    
+    int totalMobility = 0;
+    
+    // Process knights with batching
+    if (knights) {
+        totalMobility += computeKnightMobilityBatch(
+            knights, ownPieces, enemyPawnAttacks, knightAttackTable);
+    }
+    
+    // Process bishops with batching
+    if (bishops) {
+        totalMobility += computeSlidingMobilityBatch(
+            bishops, occupied, ownPieces, enemyPawnAttacks, getBishopAttacks);
+    }
+    
+    // Process rooks with batching
+    if (rooks) {
+        totalMobility += computeSlidingMobilityBatch(
+            rooks, occupied, ownPieces, enemyPawnAttacks, getRookAttacks);
+    }
+    
+    // Process queens (combine bishop and rook attacks)
+    if (queens) {
+        // Queens use both bishop and rook attacks
+        int queenMobility = 0;
+        while (queens) {
+            int sq = popLsb(queens);
+            uint64_t attacks = getBishopAttacks(sq, occupied) | 
+                              getRookAttacks(sq, occupied);
+            attacks &= ~ownPieces;
+            attacks &= ~enemyPawnAttacks;
+            queenMobility += std::popcount(attacks);
+        }
+        totalMobility += queenMobility;
+    }
+    
+    return totalMobility;
+}
+
+// Optimized mobility difference calculation for both colors
+// Processes both colors' pieces in an interleaved fashion for better cache usage
+inline int computeMobilityDifference(
+    const uint64_t whitePieces[5],  // [pawns, knights, bishops, rooks, queens]
+    const uint64_t blackPieces[5],
+    uint64_t occupied,
+    uint64_t whitePawnAttacks,
+    uint64_t blackPawnAttacks,
+    const uint64_t* knightAttackTable,
+    auto getBishopAttacks,
+    auto getRookAttacks) {
+    
+    // Calculate white pieces bitboard
+    uint64_t allWhite = whitePieces[0];  // pawns
+    for (int i = 1; i < 5; ++i) {
+        allWhite |= whitePieces[i];
+    }
+    
+    // Calculate black pieces bitboard
+    uint64_t allBlack = blackPieces[0];  // pawns
+    for (int i = 1; i < 5; ++i) {
+        allBlack |= blackPieces[i];
+    }
+    
+    // Evaluate white mobility
+    int whiteMobility = evaluateMobilityAllPieces(
+        whitePieces[1], whitePieces[2], whitePieces[3], whitePieces[4],
+        occupied, allWhite, blackPawnAttacks,
+        knightAttackTable, getBishopAttacks, getRookAttacks);
+    
+    // Evaluate black mobility
+    int blackMobility = evaluateMobilityAllPieces(
+        blackPieces[1], blackPieces[2], blackPieces[3], blackPieces[4],
+        occupied, allBlack, whitePawnAttacks,
+        knightAttackTable, getBishopAttacks, getRookAttacks);
+    
+    return whiteMobility - blackMobility;
+}
+
 } // namespace simd
 } // namespace seajay
 

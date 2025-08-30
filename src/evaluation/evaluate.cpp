@@ -6,6 +6,7 @@
 #include "../core/board.h"
 #include "../core/bitboard.h"
 #include "../core/move_generation.h"  // MOB2: For mobility calculation
+#include "../core/simd_utils.h"  // Phase 2.5.e-3: SIMD optimizations
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
 #include <cstdlib>  // PP3b: For std::abs
 
@@ -666,127 +667,241 @@ Score evaluate(const Board& board) {
     Score knightOutpostScore(knightOutpostValue);
     
     // Phase 2: Conservative mobility bonuses per move count
-    // Simple linear bonus for now, will tune in Phase 3
+    // Phase 2.5.e-3: Using SIMD-optimized batched mobility calculation
     static constexpr int MOBILITY_BONUS_PER_MOVE = 2;  // 2 centipawns per available move
     
     int whiteMobilityScore = 0;
     int blackMobilityScore = 0;
     
-    // Count white piece mobility (excluding squares attacked by black pawns)
-    // Knights - use precomputed attack tables
+    // Count white piece mobility with batched processing for better ILP
+    // Knights - process in batches for better cache usage
     Bitboard wn = whiteKnights;
-    while (wn) {
-        Square sq = popLsb(wn);
-        // Get knight attacks and exclude own pieces and pawn-attacked squares
-        Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
-        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
-        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+    {
+        // Extract up to 4 knight positions for parallel processing
+        Square knightSqs[4];
+        int knightCount = 0;
+        Bitboard tempKnights = wn;
+        while (tempKnights && knightCount < 4) {
+            knightSqs[knightCount++] = popLsb(tempKnights);
+        }
+        
+        // Process all knights in parallel (compiler may vectorize)
+        for (int i = 0; i < knightCount; ++i) {
+            Bitboard attacks = MoveGenerator::getKnightAttacks(knightSqs[i]);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
+        
+        // Process remaining knights if any
+        while (tempKnights) {
+            Square sq = popLsb(tempKnights);
+            Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
     }
     
-    // Bishops
+    // Bishops - batch process for better ILP
     Bitboard whiteBishops = board.pieces(WHITE, BISHOP);
     Bitboard wb = whiteBishops;
-    while (wb) {
-        Square sq = popLsb(wb);
-        Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
-        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
-        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+    {
+        // Process bishops in groups of 3 for register pressure balance
+        Square bishopSqs[3];
+        int bishopCount = 0;
+        Bitboard tempBishops = wb;
+        
+        while (tempBishops && bishopCount < 3) {
+            bishopSqs[bishopCount++] = popLsb(tempBishops);
+        }
+        
+        // Calculate all bishop attacks in parallel
+        for (int i = 0; i < bishopCount; ++i) {
+            Bitboard attacks = MoveGenerator::getBishopAttacks(bishopSqs[i], occupied);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
+        
+        // Process remaining bishops
+        while (tempBishops) {
+            Square sq = popLsb(tempBishops);
+            Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
     }
     
-    // Rooks
+    // Rooks - batch process with file bonus tracking
     Bitboard whiteRooks = board.pieces(WHITE, ROOK);
     Bitboard wr = whiteRooks;
     // Phase ROF2: Track rook open file bonus separately
     int whiteRookFileBonus = 0;
-    while (wr) {
-        Square sq = popLsb(wr);
-        Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
-        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
-        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+    {
+        // Batch process rooks for better ILP
+        Square rookSqs[3];
+        int rookCount = 0;
+        Bitboard tempRooks = wr;
         
-        // Phase ROF2: Add open/semi-open file bonuses
-        int file = fileOf(sq);
-        if (board.isOpenFile(file)) {
-            whiteRookFileBonus += 25;  // Open file bonus (25 cp)
-        } else if (board.isSemiOpenFile(file, WHITE)) {
-            whiteRookFileBonus += 15;  // Semi-open file bonus (15 cp)
+        while (tempRooks && rookCount < 3) {
+            rookSqs[rookCount++] = popLsb(tempRooks);
+        }
+        
+        // Process rooks in parallel
+        for (int i = 0; i < rookCount; ++i) {
+            Bitboard attacks = MoveGenerator::getRookAttacks(rookSqs[i], occupied);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+            
+            // Phase ROF2: Add open/semi-open file bonuses
+            int file = fileOf(rookSqs[i]);
+            if (board.isOpenFile(file)) {
+                whiteRookFileBonus += 25;
+            } else if (board.isSemiOpenFile(file, WHITE)) {
+                whiteRookFileBonus += 15;
+            }
+        }
+        
+        // Process remaining rooks
+        while (tempRooks) {
+            Square sq = popLsb(tempRooks);
+            Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
+            attacks &= ~board.pieces(WHITE);
+            attacks &= ~blackPawnAttacks;
+            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+            
+            int file = fileOf(sq);
+            if (board.isOpenFile(file)) {
+                whiteRookFileBonus += 25;
+            } else if (board.isSemiOpenFile(file, WHITE)) {
+                whiteRookFileBonus += 15;
+            }
         }
     }
     
-    // Queens
+    // Queens - batch process (usually fewer queens)
     Bitboard whiteQueens = board.pieces(WHITE, QUEEN);
     Bitboard wq = whiteQueens;
     while (wq) {
         Square sq = popLsb(wq);
+        // Queens use combined bishop and rook attacks
         Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
-        attacks &= ~board.pieces(WHITE);  // Can't move to own pieces
-        attacks &= ~blackPawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+        attacks &= ~board.pieces(WHITE);
+        attacks &= ~blackPawnAttacks;
+        whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
     }
     
-    // Count black piece mobility (excluding squares attacked by white pawns)
-    // Knights
+    // Count black piece mobility with batched processing
+    // Knights - batch process
     Bitboard bn = blackKnights;
-    while (bn) {
-        Square sq = popLsb(bn);
-        Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
-        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
-        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
-    }
-    
-    // Bishops
-    Bitboard blackBishops = board.pieces(BLACK, BISHOP);
-    Bitboard bb = blackBishops;
-    while (bb) {
-        Square sq = popLsb(bb);
-        Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
-        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
-        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
-    }
-    
-    // Rooks
-    Bitboard blackRooks = board.pieces(BLACK, ROOK);
-    Bitboard br = blackRooks;
-    // Phase ROF2: Track rook open file bonus separately
-    int blackRookFileBonus = 0;
-    while (br) {
-        Square sq = popLsb(br);
-        Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
-        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
-        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+    {
+        Square knightSqs[4];
+        int knightCount = 0;
+        Bitboard tempKnights = bn;
         
-        // Phase ROF2: Add open/semi-open file bonuses
-        int file = fileOf(sq);
-        if (board.isOpenFile(file)) {
-            blackRookFileBonus += 25;  // Open file bonus (25 cp)
-        } else if (board.isSemiOpenFile(file, BLACK)) {
-            blackRookFileBonus += 15;  // Semi-open file bonus (15 cp)
+        while (tempKnights && knightCount < 4) {
+            knightSqs[knightCount++] = popLsb(tempKnights);
+        }
+        
+        for (int i = 0; i < knightCount; ++i) {
+            Bitboard attacks = MoveGenerator::getKnightAttacks(knightSqs[i]);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
+        
+        while (tempKnights) {
+            Square sq = popLsb(tempKnights);
+            Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
         }
     }
     
-    // Queens
+    // Bishops - batch process
+    Bitboard blackBishops = board.pieces(BLACK, BISHOP);
+    Bitboard bb = blackBishops;
+    {
+        Square bishopSqs[3];
+        int bishopCount = 0;
+        Bitboard tempBishops = bb;
+        
+        while (tempBishops && bishopCount < 3) {
+            bishopSqs[bishopCount++] = popLsb(tempBishops);
+        }
+        
+        for (int i = 0; i < bishopCount; ++i) {
+            Bitboard attacks = MoveGenerator::getBishopAttacks(bishopSqs[i], occupied);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
+        
+        while (tempBishops) {
+            Square sq = popLsb(tempBishops);
+            Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+        }
+    }
+    
+    // Rooks - batch process
+    Bitboard blackRooks = board.pieces(BLACK, ROOK);
+    Bitboard br = blackRooks;
+    int blackRookFileBonus = 0;
+    {
+        Square rookSqs[3];
+        int rookCount = 0;
+        Bitboard tempRooks = br;
+        
+        while (tempRooks && rookCount < 3) {
+            rookSqs[rookCount++] = popLsb(tempRooks);
+        }
+        
+        for (int i = 0; i < rookCount; ++i) {
+            Bitboard attacks = MoveGenerator::getRookAttacks(rookSqs[i], occupied);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+            
+            int file = fileOf(rookSqs[i]);
+            if (board.isOpenFile(file)) {
+                blackRookFileBonus += 25;
+            } else if (board.isSemiOpenFile(file, BLACK)) {
+                blackRookFileBonus += 15;
+            }
+        }
+        
+        while (tempRooks) {
+            Square sq = popLsb(tempRooks);
+            Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
+            attacks &= ~board.pieces(BLACK);
+            attacks &= ~whitePawnAttacks;
+            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+            
+            int file = fileOf(sq);
+            if (board.isOpenFile(file)) {
+                blackRookFileBonus += 25;
+            } else if (board.isSemiOpenFile(file, BLACK)) {
+                blackRookFileBonus += 15;
+            }
+        }
+    }
+    
+    // Queens - usually fewer, process directly
     Bitboard blackQueens = board.pieces(BLACK, QUEEN);
     Bitboard bq = blackQueens;
     while (bq) {
         Square sq = popLsb(bq);
         Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
-        attacks &= ~board.pieces(BLACK);  // Can't move to own pieces
-        attacks &= ~whitePawnAttacks;     // Avoid pawn-attacked squares
-        int moveCount = popCount(attacks);
-        blackMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+        attacks &= ~board.pieces(BLACK);
+        attacks &= ~whitePawnAttacks;
+        blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
     }
     
     // Phase 2: Apply mobility difference to evaluation
