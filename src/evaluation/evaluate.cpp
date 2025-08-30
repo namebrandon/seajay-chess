@@ -76,6 +76,27 @@ Score evaluate(const Board& board) {
     Bitboard whitePawns = board.pieces(WHITE, PAWN);
     Bitboard blackPawns = board.pieces(BLACK, PAWN);
     
+    // Phase 2.5.b: Cache frequently used values at the start
+    // Cache game phase once (was being called 3 times)
+    search::GamePhase gamePhase = search::detectGamePhase(board);
+    
+    // Cache king squares once (was being fetched multiple times)
+    Square whiteKingSquare = board.kingSquare(WHITE);
+    Square blackKingSquare = board.kingSquare(BLACK);
+    
+    // Cache side to move (accessed 4 times)
+    Color sideToMove = board.sideToMove();
+    
+    // Cache pure endgame check once (was calculated twice with identical logic)
+    bool isPureEndgame = board.pieces(WHITE, KNIGHT) == 0 &&
+                        board.pieces(WHITE, BISHOP) == 0 &&
+                        board.pieces(WHITE, ROOK) == 0 &&
+                        board.pieces(WHITE, QUEEN) == 0 &&
+                        board.pieces(BLACK, KNIGHT) == 0 &&
+                        board.pieces(BLACK, BISHOP) == 0 &&
+                        board.pieces(BLACK, ROOK) == 0 &&
+                        board.pieces(BLACK, QUEEN) == 0;
+    
     // PPH2: Get cached pawn structure evaluation early
     uint64_t pawnKey = board.pawnZobristKey();
     PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
@@ -180,11 +201,11 @@ Score evaluate(const Board& board) {
             // PP3e: King proximity in endgame only (WHITE)
             // In endgame, passed pawns are stronger if friendly king is close
             // and weaker if enemy king is close  
-            search::GamePhase currentPhase = search::detectGamePhase(board);
-            if (currentPhase == search::GamePhase::ENDGAME) {
+            if (gamePhase == search::GamePhase::ENDGAME) {
                 // Calculate king distances (Manhattan distance)
-                Square whiteKing = board.kingSquare(WHITE);
-                Square blackKing = board.kingSquare(BLACK);
+                // Using cached king squares from Phase 2.5.b
+                Square whiteKing = whiteKingSquare;
+                Square blackKing = blackKingSquare;
                 
                 int friendlyKingDist = std::abs(rankOf(sq) - rankOf(whiteKing)) + 
                                        std::abs(fileOf(sq) - fileOf(whiteKing));
@@ -206,16 +227,7 @@ Score evaluate(const Board& board) {
                 // Rule: The pawn can promote if the enemy king cannot catch it
                 // This uses the "square rule" - if enemy king is outside the square, pawn promotes
                 if (relRank >= 4) {  // Only check for advanced pawns (rank 5+)
-                    // Check if it's a pure pawn endgame (no pieces other than kings and pawns)
-                    bool isPureEndgame = board.pieces(WHITE, KNIGHT) == 0 &&
-                                        board.pieces(WHITE, BISHOP) == 0 &&
-                                        board.pieces(WHITE, ROOK) == 0 &&
-                                        board.pieces(WHITE, QUEEN) == 0 &&
-                                        board.pieces(BLACK, KNIGHT) == 0 &&
-                                        board.pieces(BLACK, BISHOP) == 0 &&
-                                        board.pieces(BLACK, ROOK) == 0 &&
-                                        board.pieces(BLACK, QUEEN) == 0;
-                    
+                    // Using cached isPureEndgame from Phase 2.5.b
                     if (isPureEndgame) {
                         // Calculate if enemy king can catch the pawn using square rule
                         // Distance to promotion square
@@ -227,7 +239,7 @@ Score evaluate(const Board& board) {
                                                           std::abs(fileOf(blackKing) - fileOf(promotionSquare)));
                         
                         // Account for who moves first (if it's white's turn, pawn gets head start)
-                        int moveAdvantage = (board.sideToMove() == WHITE) ? 1 : 0;
+                        int moveAdvantage = (sideToMove == WHITE) ? 1 : 0;
                         
                         // If king can't catch the pawn, it's unstoppable
                         if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage) {
@@ -315,11 +327,11 @@ Score evaluate(const Board& board) {
             // PP3e: King proximity in endgame only (BLACK)
             // In endgame, passed pawns are stronger if friendly king is close
             // and weaker if enemy king is close
-            search::GamePhase currentPhaseBlack = search::detectGamePhase(board);
-            if (currentPhaseBlack == search::GamePhase::ENDGAME) {
+            if (gamePhase == search::GamePhase::ENDGAME) {
                 // Calculate king distances (Manhattan distance)
-                Square whiteKing = board.kingSquare(WHITE);
-                Square blackKing = board.kingSquare(BLACK);
+                // Using cached king squares from Phase 2.5.b
+                Square whiteKing = whiteKingSquare;
+                Square blackKing = blackKingSquare;
                 
                 int friendlyKingDist = std::abs(rankOf(sq) - rankOf(blackKing)) + 
                                        std::abs(fileOf(sq) - fileOf(blackKing));
@@ -341,16 +353,7 @@ Score evaluate(const Board& board) {
                 // Rule: The pawn can promote if the enemy king cannot catch it
                 // This uses the "square rule" - if enemy king is outside the square, pawn promotes
                 if (relRank >= 4) {  // Only check for advanced pawns (rank 5+ relative)
-                    // Check if it's a pure pawn endgame (no pieces other than kings and pawns)
-                    bool isPureEndgame = board.pieces(WHITE, KNIGHT) == 0 &&
-                                        board.pieces(WHITE, BISHOP) == 0 &&
-                                        board.pieces(WHITE, ROOK) == 0 &&
-                                        board.pieces(WHITE, QUEEN) == 0 &&
-                                        board.pieces(BLACK, KNIGHT) == 0 &&
-                                        board.pieces(BLACK, BISHOP) == 0 &&
-                                        board.pieces(BLACK, ROOK) == 0 &&
-                                        board.pieces(BLACK, QUEEN) == 0;
-                    
+                    // Using cached isPureEndgame from Phase 2.5.b
                     if (isPureEndgame) {
                         // Calculate if enemy king can catch the pawn using square rule
                         // Distance to promotion square (for black, promotion is rank 1)
@@ -362,7 +365,7 @@ Score evaluate(const Board& board) {
                                                           std::abs(fileOf(whiteKing) - fileOf(promotionSquare)));
                         
                         // Account for who moves first (if it's black's turn, pawn gets head start)
-                        int moveAdvantage = (board.sideToMove() == BLACK) ? 1 : 0;
+                        int moveAdvantage = (sideToMove == BLACK) ? 1 : 0;
                         
                         // If king can't catch the pawn, it's unstoppable
                         if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage) {
@@ -408,12 +411,11 @@ Score evaluate(const Board& board) {
     }
     
     // Phase scaling: passed pawns are more valuable in endgame
-    // Detect game phase using existing system
-    search::GamePhase phase = search::detectGamePhase(board);
+    // Using cached gamePhase from Phase 2.5.b
     
     // Scale passed pawn bonus based on phase
     // Opening: 50% value, Middlegame: 75% value, Endgame: 150% value
-    switch (phase) {
+    switch (gamePhase) {
         case search::GamePhase::OPENING:
             passedPawnValue = passedPawnValue / 2;  // 50%
             break;
@@ -485,7 +487,7 @@ Score evaluate(const Board& board) {
     }
     
     // Phase scaling for isolated pawns - less penalty in endgame
-    switch (phase) {
+    switch (gamePhase) {
         case search::GamePhase::OPENING:
         case search::GamePhase::MIDDLEGAME:
             // Full penalty in opening and middlegame
@@ -511,7 +513,7 @@ Score evaluate(const Board& board) {
     int blackDoubledCount = popCount(blackDoubled);
     
     // Apply penalties - positive values since we subtract black's penalty
-    int penalty = (phase == search::GamePhase::ENDGAME) ? 
+    int penalty = (gamePhase == search::GamePhase::ENDGAME) ? 
                   std::abs(DOUBLED_PAWN_PENALTY_EG) : std::abs(DOUBLED_PAWN_PENALTY_MG);
     
     // White is penalized for its doubled pawns, black's doubled pawns help white
@@ -556,7 +558,7 @@ Score evaluate(const Board& board) {
     
     // Apply phase-scaled bonus
     int bonus = 0;
-    switch (phase) {
+    switch (gamePhase) {
         case search::GamePhase::OPENING:
         case search::GamePhase::MIDDLEGAME:
             bonus = BISHOP_PAIR_BONUS_MG;
@@ -809,7 +811,7 @@ Score evaluate(const Board& board) {
     Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + knightOutpostScore;
     
     // Return from side-to-move perspective
-    if (board.sideToMove() == WHITE) {
+    if (sideToMove == WHITE) {
         return totalWhite;
     } else {
         return -totalWhite;
@@ -837,6 +839,9 @@ bool verifyMaterialIncremental(const Board& board) {
 // Phase 3: Detailed evaluation breakdown for UCI eval command
 EvalBreakdown evaluateDetailed(const Board& board) {
     EvalBreakdown breakdown;
+    
+    // Cache side to move for Phase 2.5.b optimization
+    Color sideToMove = board.sideToMove();
     
     // Get material from board
     const Material& material = board.material();
@@ -986,7 +991,7 @@ EvalBreakdown evaluateDetailed(const Board& board) {
                      breakdown.kingSafety + breakdown.rookFiles + breakdown.knightOutposts;
     
     // Return from side-to-move perspective
-    if (board.sideToMove() == BLACK) {
+    if (sideToMove == BLACK) {
         breakdown.material = -breakdown.material;
         breakdown.pst = -breakdown.pst;
         breakdown.passedPawns = -breakdown.passedPawns;
