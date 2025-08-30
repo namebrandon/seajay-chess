@@ -736,10 +736,11 @@ MANDATORY READING BEFORE ANY WORK:
 | 2.5.e-1 | -- Popcount batching | - | **Complete** | 477K | 500K | +3 ELO |
 | 2.5.e-2 | -- Pawn structure SIMD | - | **Complete** | 500K | 545K | +3 ELO |
 | 2.5.e-3 | -- Mobility batching | - | **Complete** | 545K | 558K | Neutral-positive |
-| 3 | Move Generation Opt | feature/20250830-movegen-optimization | **COMPLETE** | 558K | ~910K | ✅ PASSED |
-| 3.1 | - Basic optimizations | - | **Complete** | 558K | ~550K | (baseline) |
-| 3.2 | - Lazy legality checking | - | **Complete** | ~550K | ~910K | +56-72 ELO ✅
-| 3.3 | - Attack table opt | - | Planned | - | - | - |
+| 3 | Move Generation Opt | feature/20250830-movegen-optimization | **COMPLETE** | 558K | ~1021K | ✅ PASSED |
+| 3.1 | - Basic optimizations | 73d195d | **Complete** | 558K | ~550K | (baseline) |
+| 3.2 | - Lazy legality checking | b7ceecf | **Complete** | ~550K | ~910K | +56-72 ELO ✅ |
+| 3.3.a | - Magic lookup optimization | 2899e94 | **Complete** | ~910K | ~1021K | Testing |
+| ~~3.3.b~~ | ~~Further magic optimizations~~ | ~~347eadc-b4f1575~~ | **REVERTED** | ~1021K | ~1020K | ❌ Regression |
 | 4 | Search Optimizations | TBD | Pending | - | - | - |
 | 5 | Memory & Cache | TBD | Pending | - | - | - |
 
@@ -830,13 +831,42 @@ MANDATORY READING BEFORE ANY WORK:
 - **Correctness**: All perft tests pass, bench unchanged
 - **Note**: Shows W/B pentanomial imbalance (208W-118B from startpos) but likely due to deeper search amplifying chess's natural first-move advantage
 
+**Phase 3.3.a - Magic Bitboard Lookup Optimization** (2899e94) ✅ **1M NPS ACHIEVED**
+- **Key Changes**: 
+  - Removed redundant initialization checks from hot path
+  - Added always_inline attribute for critical functions
+  - Optimized queen attacks with parallel index computation
+  - Added prefetch hints for cache optimization
+  - Moved initialization to startup (UCIEngine constructor)
+- **Performance**: ~910K → ~1,021K NPS (12% improvement)
+- **Milestone**: **BROKE THE 1M NPS BARRIER!**
+- **Status**: Ready for SPRT testing
+
+**Phase 3.3.b - Further Magic Optimizations** (REVERTED) ❌
+- **Attempted Changes**:
+  - Single-expression index computation for "better pipelining"
+  - Removed prefetch hints thinking they were redundant
+  - Direct inline aliases for attack wrappers
+  - Batch attack detection with `isAnySquareAttacked()`
+- **Result**: Regression in testing
+- **Lessons Learned**:
+  1. **Compiler already optimizes well** - Our "optimizations" fought the compiler
+  2. **Prefetch hints were helping** - Cache effects matter more than we thought
+  3. **Magic bitboards are near-optimal** - Hard to improve on simple table lookups
+  4. **isAnySquareAttacked() bug** - Initially generated ALL attacks (catastrophic)
+  5. **Micro-optimizations can backfire** - Breaking expressions hurt CPU pipelining
+- **Decision**: Reverted to keep only Phase 3.3.a
+
 ### Next Investigation Areas:
 - ~~Optimize history heuristic access patterns~~ ✅ COMPLETE (Phase 2.4)
 - ~~Implement lazy evaluation in eval function~~ ❌ ABANDONED (Phase 2.5.a)
 - ~~Check for redundant legality checks~~ ✅ COMPLETE (Phase 3.2)
-- Consider incremental attack updates
-- Review board copy vs copy-make tradeoffs
-- Optimize attack table lookups (Phase 3.3)
+- ~~Optimize attack table lookups~~ ✅ COMPLETE (Phase 3.3.a)
+- **Phase 4: Search Optimizations** - Next major opportunity
+  - TT access patterns (accessed millions of times)
+  - Move ordering effectiveness
+  - LMR conditions optimization
+  - Repetition detection efficiency
 
 ### Build System Notes:
 - Makefile now uses -march=native for auto-detection
@@ -847,29 +877,35 @@ MANDATORY READING BEFORE ANY WORK:
 
 ## Current Status Summary (2025-08-30)
 
-### 🎉 MAJOR MILESTONE ACHIEVED 🎉
-- **Total NPS Improvement**: 477K → ~910K (91% improvement)
+### 🎉 MAJOR MILESTONE ACHIEVED: 1M+ NPS! 🎉
+- **Total NPS Improvement**: 477K → ~1,021K (114% improvement)
 - **Total ELO Gain**: ~130+ ELO from all optimizations
-- **Nearly at 2x target**: Very close to 1M+ nps goal
+- **TARGET ACHIEVED**: **BROKE 1M NPS BARRIER!** ✅
 
 ### Key Performance Wins:
 1. **Lazy legality checking**: 65% NPS boost, +56-72 ELO (!!)
-2. **SIMD optimizations**: 17% NPS boost, +6-9 ELO
-3. **Compiler optimizations**: 14% NPS boost
+2. **Magic bitboard optimization**: 12% NPS boost (Phase 3.3.a)
+3. **SIMD optimizations**: 17% NPS boost, +6-9 ELO
+4. **Compiler optimizations**: 14% NPS boost
 
-### Latest Results (Phase 3.2):
-- **Performance**: Achieved ~910K NPS (from ~550K)
-- **Strength**: +56.68 ELO with book, +72.08 ELO from startpos
-- **Status**: SPRT PASSED - Ready to merge!
+### Latest Results (Phase 3.3.a):
+- **Performance**: Achieved ~1,021K NPS (from ~910K)
+- **Strength**: Testing in progress
+- **Status**: Ready to merge to main after SPRT confirmation
+
+### Important Lessons from Phase 3.3.b:
+- **Don't fight the compiler** - It often knows better
+- **Cache effects matter** - Prefetch hints can be valuable
+- **Test everything** - Even "obvious" optimizations can regress
+- **Magic bitboards are hard to beat** - Already near-optimal
 
 ### Next Steps:
-1. Merge Phase 3.2 to main (massive success!)
-2. Continue with Phase 3.3 (attack table optimizations)
-3. Target: Break 1M NPS barrier (very close!)
-4. Consider addressing W/B imbalance in future work
+1. Merge Phase 3 (3.1, 3.2, 3.3.a) to main
+2. Move to Phase 4: Search Optimizations
+3. Long-term: Target 1.5M NPS (stretch goal)
 
 ---
 
 Last Updated: 2025-08-30
-Current Branch: feature/20250830-movegen-optimization
-Latest Commits: 73d195d (Phase 3.1), b7ceecf (Phase 3.2)
+Current Branch: feature/20250830-movegen-optimization (reverting to 2899e94)
+Latest Commits: 73d195d (Phase 3.1), b7ceecf (Phase 3.2), 2899e94 (Phase 3.3.a)
