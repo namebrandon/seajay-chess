@@ -330,44 +330,85 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 **Target**: 30-40% evaluation speedup without losing strength
 **Expected NPS Impact**: +50-80K (evaluation is 7.92% of runtime)
 
-##### Phase 2.5.a: UCI-Controlled Lazy Evaluation (NEW APPROACH)
-**Goal**: Implement flexible lazy evaluation with UCI options for safe testing
+##### Phase 2.5.a: UCI-Controlled Staged Lazy Evaluation (EXPERT-REFINED APPROACH)
+**Goal**: Implement staged lazy evaluation with UCI options for safe testing and optimal NPS/ELO tradeoff
 **Branch**: `feature/20250830-lazy-eval-uci` (separate from other eval optimizations)
-**Rationale**: Lazy evaluation is contentious - UCI control allows A/B testing without risk
+**Rationale**: Lazy evaluation is contentious - UCI control allows A/B testing without risk. Staged approach provides better tradeoff than binary on/off.
 
 **Implementation Strategy**:
-1. **Phase 2.5.a-1**: Infrastructure with UCI options (default OFF)
-   - Add `LazyEval` boolean UCI option (default: false)
-   - Add `LazyEvalThreshold` integer UCI option (default: 500, range: 100-1000)
-   - Implement basic material-only early exit when enabled
-   - **Expected**: No regression (feature disabled by default)
+1. **Phase 2.5.a-1**: Infrastructure with Staged UCI Options (default OFF)
+   - Add UCI options:
+     - `LazyEval` boolean (default: false)
+     - `LazyEvalThreshold` integer (default: 700, range: 100-1000) - START CONSERVATIVE
+     - `LazyEvalStaged` boolean (default: true) - Use staged approach
+     - `LazyEvalPhaseAdjust` boolean (default: true) - Adjust by game phase
+   
+   - Implement staged evaluation exits:
+     - **Stage 1**: Material only (threshold + 200cp)
+     - **Stage 2**: Material + PST (threshold)
+     - **Stage 3**: Material + PST + basic pawns (threshold - 100cp)
+     - **Full eval**: If within all thresholds
+   
+   - Phase-dependent thresholds:
+     - Opening: base + 100cp (more dynamic positions)
+     - Middlegame: base threshold
+     - Endgame: base - 200cp (material more decisive)
+   
+   - **IMPORTANT**: Include PST from the start (cheap and valuable)
+   - **Expected**: No regression with default OFF
    - **SPRT**: [-3.00, 3.00] to confirm no impact when OFF
 
-2. **Phase 2.5.a-2**: Testing with option enabled
-   - Test with LazyEval=true in OpenBench
-   - Compare NPS gain vs ELO impact
-   - Document tradeoffs for different time controls
-   - **Expected**: 15-25% NPS gain, 0-10 ELO loss
-   - **SPRT**: Multiple tests with different bounds
+2. **Phase 2.5.a-2**: Testing with Conservative Settings
+   - Start with 700cp threshold (conservative)
+   - Test staged vs non-staged approaches
+   - Measure NPS improvement and ELO impact
+   - Test edge cases:
+     - Positions with advanced passed pawns (6th/7th rank)
+     - King in check situations (reduce threshold by 200cp)
+     - After captures (reduce threshold by 100cp)
+   - **Expected**: 10-15% NPS gain, minimal ELO loss
+   - **SPRT**: [0.00, 5.00] for conservative settings
 
-3. **Phase 2.5.a-3**: Threshold tuning (if base implementation successful)
-   - Test thresholds: 300, 500, 700, 900 centipawns
-   - Find optimal balance for SeaJay
-   - Consider different thresholds for different game phases
-   - **Expected**: Find sweet spot for NPS/ELO tradeoff
+3. **Phase 2.5.a-3**: Threshold Optimization and Context Awareness
+   - Test thresholds: 700cp (conservative), 500cp (moderate), 300cp (aggressive)
+   - Implement context adjustments:
+     - Reduce threshold when in check (-200cp)
+     - Reduce threshold after captures (-100cp)
+     - Reduce threshold with dangerous passed pawns
+     - Consider depth-based adjustments (deeper = lazier)
+   - Add statistics tracking:
+     - Lazy eval trigger count
+     - Full eval call count
+     - Average threshold margin
+   - **Expected**: Find optimal at 15-25% NPS gain, 0-5 ELO loss
+   - **SPRT**: Multiple tests to find sweet spot
 
-**Benefits of UCI Approach**:
-- Safe to merge even if slightly negative ELO (users can disable)
-- Allows real-world testing and feedback
-- Can tune per hardware/time control
-- No risk to existing strength when disabled
+**Critical Implementation Notes** (from expert review):
+- ✅ Negamax perspective handling is correct as planned
+- ✅ Thread-safe for future LazySMP (no global state)
+- ⚠️ Cache evaluation result to avoid duplicate calls
+- ⚠️ Quiescence search should use more aggressive lazy eval
+- ⚠️ Mark lazy eval scores differently in TT to avoid pollution
+- 📊 Test with color-flipped positions to verify symmetry
+
+**Performance Expectations** (expert estimates):
+- Conservative (700cp): 10-15% NPS gain, minimal ELO loss
+- Moderate (500cp): 15-20% NPS gain, 5-10 ELO loss
+- Aggressive (300cp): 20-30% NPS gain, 10-20 ELO loss
+- **Staged approach**: 15-25% NPS gain, 0-5 ELO loss (BEST)
+
+**Benefits of Staged UCI Approach**:
+- Better NPS/ELO tradeoff than binary lazy eval
+- Safe to merge even if slightly negative (users can disable/tune)
+- Allows real-world testing across different hardware
+- Phase-aware thresholds adapt to position type
 - Enables data collection on effectiveness
 
 **Success Criteria**:
 - Phase 1: Merges with no regression (option OFF)
-- Phase 2: Documents clear NPS/ELO tradeoff
-- Phase 3: Finds optimal threshold if viable
-- Decision: Enable by default only if NPS gain > 20% with < 5 ELO loss
+- Phase 2: Achieves 10%+ NPS with conservative settings
+- Phase 3: Optimizes to 15-25% NPS gain with <5 ELO loss
+- Decision: Enable by default only if sweet spot found
 
 ##### Phase 2.5.b: Remove Redundant Calculations (COMPLETED) ✅
 **Goal**: Eliminate duplicate computations
@@ -381,19 +422,24 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 - **Commit**: 38edb70
 - **Status**: Awaiting SPRT results for merge to main
 
-##### Phase 2.5.c: Progressive Lazy Evaluation (UCI-Controlled)
-**Goal**: Implement staged evaluation with early exits (builds on 2.5.a)
-**Prerequisite**: Phase 2.5.a must show promise
+##### Phase 2.5.c: Advanced Lazy Evaluation Extensions
+**Goal**: Extend staged lazy evaluation with more sophisticated features
+**Prerequisite**: Phase 2.5.a staged approach must show positive results
 **Implementation**:
-- Extend LazyEval UCI option to support staged evaluation
-- Add `LazyEvalStages` UCI option (1-3 stages)
-- Stage 1: Material + PST + basic pawn structure
-- Stage 2: Add mobility if position unclear
-- Stage 3: Add king safety only if needed
-- Early exit thresholds between stages
-**Expected**: 20-30% overall evaluation speedup when enabled
-**Risk**: Medium - needs careful threshold tuning
-**Note**: Only implement if basic lazy eval (2.5.a) shows positive results
+- Add more granular stages beyond the basic 3:
+  - Stage 4: Add mobility evaluation
+  - Stage 5: Add basic king safety
+  - Stage 6: Add center control
+- Implement special case handling:
+  - Disable lazy eval with passed pawns on 7th rank
+  - More aggressive in quiescence search
+  - Different TT entry types for lazy vs full eval
+- Add machine learning potential:
+  - Track positions where lazy eval was wrong
+  - Use data to refine thresholds
+**Expected**: Additional 5-10% NPS on top of 2.5.a gains
+**Risk**: Medium - complexity vs benefit tradeoff
+**Note**: Only pursue if 2.5.a achieves target NPS/ELO balance
 
 ##### Phase 2.5.d: Endgame-Aware Optimization
 **Goal**: Skip irrelevant features based on game phase
