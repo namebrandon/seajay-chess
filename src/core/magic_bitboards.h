@@ -298,26 +298,59 @@ inline void ensureMagicsInitialized() {
 } // namespace magic_v2
 
 // Fast attack generation functions using magic bitboards
-inline Bitboard magicRookAttacks(Square sq, Bitboard occupied) {
-    magic_v2::ensureMagicsInitialized();
+// Phase 3.3.a: Force inline and remove redundant initialization checks
+// Also add prefetch hints for better cache performance
+__attribute__((always_inline)) inline Bitboard magicRookAttacks(Square sq, Bitboard occupied) {
+    // Initialization is done once at startup - no need to check every time
     const auto& entry = magic_v2::rookMagics[sq];
+    
+    // Compute index
     occupied &= entry.mask;
     occupied *= entry.magic;
     occupied >>= entry.shift;
+    
+    // Prefetch the attack entry for next access (helps with cache)
+    #ifdef __builtin_prefetch
+    __builtin_prefetch(&entry.attacks[occupied], 0, 1);
+    #endif
+    
     return entry.attacks[occupied];
 }
 
-inline Bitboard magicBishopAttacks(Square sq, Bitboard occupied) {
-    magic_v2::ensureMagicsInitialized();
+__attribute__((always_inline)) inline Bitboard magicBishopAttacks(Square sq, Bitboard occupied) {
+    // Initialization is done once at startup - no need to check every time
     const auto& entry = magic_v2::bishopMagics[sq];
+    
+    // Compute index
     occupied &= entry.mask;
     occupied *= entry.magic;
     occupied >>= entry.shift;
+    
+    // Prefetch the attack entry for next access (helps with cache)
+    #ifdef __builtin_prefetch
+    __builtin_prefetch(&entry.attacks[occupied], 0, 1);
+    #endif
+    
     return entry.attacks[occupied];
 }
 
-inline Bitboard magicQueenAttacks(Square sq, Bitboard occupied) {
-    return magicRookAttacks(sq, occupied) | magicBishopAttacks(sq, occupied);
+__attribute__((always_inline)) inline Bitboard magicQueenAttacks(Square sq, Bitboard occupied) {
+    // Compute both in parallel for better instruction pipelining
+    const auto& rookEntry = magic_v2::rookMagics[sq];
+    const auto& bishopEntry = magic_v2::bishopMagics[sq];
+    
+    // Compute rook index
+    Bitboard rookOcc = occupied & rookEntry.mask;
+    rookOcc *= rookEntry.magic;
+    rookOcc >>= rookEntry.shift;
+    
+    // Compute bishop index
+    Bitboard bishopOcc = occupied & bishopEntry.mask;
+    bishopOcc *= bishopEntry.magic;
+    bishopOcc >>= bishopEntry.shift;
+    
+    // Return combined attacks
+    return rookEntry.attacks[rookOcc] | bishopEntry.attacks[bishopOcc];
 }
 
 } // namespace seajay

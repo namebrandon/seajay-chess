@@ -8,6 +8,7 @@
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
 #include "../search/lmr.h"             // For LMR table initialization
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
+#include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
 #include <iostream>
@@ -19,6 +20,9 @@
 using namespace seajay;
 
 UCIEngine::UCIEngine() : m_quit(false), m_tt() {
+    // Phase 3.3.a: Initialize magic bitboards at startup (removed from hot path)
+    seajay::magic_v2::initMagics();
+    
     // Initialize passed pawn masks (Phase PP2)
     PawnStructure::initPassedPawnMasks();
     
