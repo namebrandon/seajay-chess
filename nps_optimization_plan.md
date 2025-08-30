@@ -410,6 +410,52 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 - Phase 3: Optimizes to 15-25% NPS gain with <5 ELO loss
 - Decision: Enable by default only if sweet spot found
 
+**Documentation Requirements**:
+- **MANDATORY**: Update `/workspace/uci.md` after implementation with:
+  - All new UCI options (LazyEval, LazyEvalThreshold, LazyEvalStaged, LazyEvalPhaseAdjust)
+  - SPSA tuning recommendations for each option
+  - Recommended parameter ranges and defaults
+  - Testing strategies (single vs multi-parameter)
+  - Priority level for SPSA tuning
+  - Example SPSA workload configurations
+- This documentation is critical for OpenBench SPSA testing
+
+**UCI Documentation Template for uci.md**:
+```
+## Lazy Evaluation Options (NEW - Phase 2.5.a)
+
+### LazyEval
+**Type:** check
+**Default:** false
+**Purpose:** Enables staged lazy evaluation to skip expensive eval when position is decided
+**SPSA:** Not recommended for boolean - test with fixed on/off
+
+### LazyEvalThreshold ⭐ (High Impact)
+**Type:** spin
+**Default:** 700
+**Range:** 100-1000
+**Purpose:** Material advantage threshold (centipawns) to trigger lazy evaluation
+**SPSA Input:** `LazyEvalThreshold, int, 700.0, 100.0, 1000.0, 50.0, 0.002`
+**Expected Impact:** Major NPS/ELO tradeoff parameter
+
+### LazyEvalStaged
+**Type:** check
+**Default:** true
+**Purpose:** Use staged lazy evaluation (3 stages) vs simple binary lazy eval
+**SPSA:** Not recommended - architectural choice
+
+### LazyEvalPhaseAdjust
+**Type:** check
+**Default:** true
+**Purpose:** Adjust lazy eval threshold based on game phase (opening/middle/endgame)
+**SPSA:** Test as secondary parameter with threshold
+
+### Example SPSA Workload (Lazy Eval Tuning)
+LazyEvalThreshold, int, 700.0, 300.0, 900.0, 50.0, 0.002
+Games: 40000
+Time Control: 10+0.1
+```
+
 ##### Phase 2.5.b: Remove Redundant Calculations (COMPLETED) ✅
 **Goal**: Eliminate duplicate computations
 **Implementation**:
