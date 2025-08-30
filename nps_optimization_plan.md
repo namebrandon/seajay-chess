@@ -325,6 +325,15 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 - Option D: Consider compression or sparse representation
 
 #### Phase 2.5: Evaluation Function Optimization (7.92% runtime)
+
+**Phase 2.5.a Update (ABANDONED)**: Lazy evaluation was implemented with full UCI control but abandoned due to:
+- ELO loss even with conservative settings (-6.75 ELO at 700cp threshold)
+- Complex interdependencies with search (q-search, null move, futility pruning, TT)
+- Minimal NPS gains (1-4%) on balanced positions
+- Search accuracy more important than raw NPS for engine strength
+- Decision: Focus on optimizations that don't affect search quality
+
+### Phase 2.5: Evaluation Function Optimization (7.92% runtime)
 **Branch**: `feature/20250830-eval-speedup`
 **Current**: 1.5M calls consuming 7.92% of runtime
 **Target**: 30-40% evaluation speedup without losing strength
@@ -655,7 +664,7 @@ MANDATORY READING BEFORE ANY WORK:
 | 2.4.a | - Array reordering | - | Complete | 540K | 591K | -4.29 ELO |
 | 2.4.b | - int16_t conversion | - | Complete | 591K | 560K | -0.68 ELO |
 | 2.5 | Evaluation Opt | feature/20250830-eval-speedup | In Progress | 560K | - | - |
-| 2.5.a | - UCI Lazy Eval | feature/20250830-lazy-eval-uci | Planned | - | - | - |
+| 2.5.a | - UCI Lazy Eval | feature/20250830-lazy-eval-uci | **ABANDONED** | 560K | - | ELO loss, search dependencies |
 | 2.5.b | - Remove redundancy | - | **Complete** | 560K | 575K | Awaiting |
 | 2.5.c | - Progressive lazy (UCI) | - | Planned | - | - | - |
 | 2.5.d | - Endgame-aware | - | Planned | - | - | - |
