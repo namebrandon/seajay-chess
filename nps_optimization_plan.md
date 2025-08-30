@@ -413,15 +413,52 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 **Expected**: 10% additional speedup
 **Risk**: Low - logical optimization
 
-##### Phase 2.5.e: SIMD Optimization (Optional)
-**Goal**: Vectorize hot evaluation loops
-**Implementation**:
-- Pawn structure batch processing with SSE4.2
-- Vectorized mobility counting
-- Batch popcount operations
-**Expected**: 10-15% speedup if implemented
-**Risk**: Medium - complexity vs benefit tradeoff
-**Note**: Only pursue if still below 1M NPS after above phases
+##### Phase 2.5.e: SIMD Optimization (High Priority)
+**Branch**: `feature/20250830-simd-optimization`
+**Goal**: Vectorize hot evaluation and board operations using SSE4.2/AVX2
+**Status**: **IN PROGRESS** - Initial analysis complete
+
+**Implementation Strategy**:
+1. **Phase 2.5.e-1: SSE4.2 Popcount Batching**
+   - Target: Material counting in board.cpp (lines 320-335)
+   - Batch multiple `std::popcount()` calls with SIMD
+   - Use SSE4.2 for local dev, AVX2 path for OpenBench
+   - Runtime CPU detection for optimal instruction set
+   - **Expected**: 2-3x speedup on piece counting
+
+2. **Phase 2.5.e-2: Vectorized Pawn Structure Evaluation**
+   - Process multiple files simultaneously with SIMD
+   - Parallel isolated/doubled/backward pawn detection
+   - Vectorized passed pawn mask operations
+   - **Expected**: 30-40% speedup on pawn evaluation
+
+3. **Phase 2.5.e-3: Parallel Mobility Counting**
+   - SIMD-accelerated bitboard iteration
+   - Batch process multiple pieces' mobility
+   - Vectorized attack generation helpers
+   - **Expected**: 20-30% speedup on mobility evaluation
+
+**Thread Safety & LazySMP Compatibility**:
+- ✅ SIMD operations are inherently thread-safe (register-only)
+- ✅ No shared memory access or synchronization needed
+- ✅ Each thread gets independent SIMD register state
+- ✅ Zero cache coherency issues
+- ✅ Actually improves with multi-threading (better CPU utilization)
+
+**Build System Considerations**:
+- Local dev environment: SSE4.2 only (confirmed via gcc -march=native)
+- OpenBench servers: AVX2/BMI2 available
+- Use runtime CPU detection with function pointers
+- Compile both SSE4.2 and AVX2 paths with preprocessor guards
+
+**Expected Overall Impact**:
+- **10-20% NPS improvement** on evaluation hot paths
+- **No accuracy loss** - exact same results as scalar code
+- **Better than LazyEval** - pure performance gain without search impact
+- **LazySMP-ready** - perfect scaling with thread count
+
+**Risk**: Low-Medium - well-understood optimization technique
+**Priority**: HIGH - Significant NPS gains without ELO risk
 
 **Git Workflow for Each Sub-Phase**:
 1. **HUMAN**: Merge current branch to main (if successful)
