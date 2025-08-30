@@ -1428,12 +1428,18 @@ void Board::makeMoveInternal(Move move, UndoInfo& undo) {
         m_mailbox[from] = NO_PIECE;
         m_mailbox[to] = movingPiece;
         
-        // Update bitboards
-        removePieceFromBitboards(from, movingPiece);
+        // Update bitboards - Phase 2.3.b optimization
         if (capturedPiece != NO_PIECE) {
+            // Capture: need separate operations
+            removePieceFromBitboards(from, movingPiece);
             removePieceFromBitboards(to, capturedPiece);
+            addPieceToBitboards(to, movingPiece);
+        } else {
+            // Non-capture: use optimized move function
+            movePieceInBitboards(from, to, movingPiece);
+            // Update occupied for the move
+            m_occupied ^= squareBB(from) | squareBB(to);
         }
-        addPieceToBitboards(to, movingPiece);
         
         // Update zobrist
         updateZobristForMove(move, movingPiece, capturedPiece);

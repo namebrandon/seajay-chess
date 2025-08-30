@@ -126,7 +126,7 @@ public:
     
 private:
     // Force inline for hot path - called 60M times during search
-    // Split into add/remove for better optimization
+    // Phase 2.3.b: Optimized with better memory access patterns
     inline void addPieceToBitboards(Square s, Piece p) {
 #ifdef DEBUG
         if (!isValidSquare(s) || p >= NUM_PIECES) return;
@@ -134,10 +134,15 @@ private:
         PieceType pt = typeOf(p);
         if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
 #else
-        Color c = colorOf(p);
-        PieceType pt = typeOf(p);
+        // Compute indices once, use multiple times
+        const Color c = colorOf(p);
+        const PieceType pt = typeOf(p);
 #endif
-        Bitboard bb = squareBB(s);
+        // Single bitboard computation
+        const Bitboard bb = squareBB(s);
+        
+        // Update all bitboards - compiler can optimize this better
+        // when operations are grouped together
         m_pieceBB[p] |= bb;
         m_pieceTypeBB[pt] |= bb;
         m_colorBB[c] |= bb;
@@ -151,14 +156,38 @@ private:
         PieceType pt = typeOf(p);
         if (c >= NUM_COLORS || pt >= NUM_PIECE_TYPES) return;
 #else
-        Color c = colorOf(p);
-        PieceType pt = typeOf(p);
+        // Compute indices once, use multiple times
+        const Color c = colorOf(p);
+        const PieceType pt = typeOf(p);
 #endif
-        Bitboard bb = squareBB(s);
-        m_pieceBB[p] &= ~bb;
-        m_pieceTypeBB[pt] &= ~bb;
-        m_colorBB[c] &= ~bb;
-        m_occupied &= ~bb;
+        // Single bitboard computation with complement
+        const Bitboard notBB = ~squareBB(s);
+        
+        // Update all bitboards with single mask
+        // Compiler can potentially vectorize these operations
+        m_pieceBB[p] &= notBB;
+        m_pieceTypeBB[pt] &= notBB;
+        m_colorBB[c] &= notBB;
+        m_occupied &= notBB;
+    }
+    
+    // Phase 2.3.b: Specialized versions for moves (most common operation)
+    // These avoid some redundant updates when moving pieces
+    inline void movePieceInBitboards(Square from, Square to, Piece p) {
+        const Color c = colorOf(p);
+        const PieceType pt = typeOf(p);
+        const Bitboard fromToBB = squareBB(from) | squareBB(to);
+        
+        // Prefetch bitboards to L1 cache for better performance
+        __builtin_prefetch(&m_pieceBB[p], 1, 3);
+        __builtin_prefetch(&m_pieceTypeBB[pt], 1, 3);
+        __builtin_prefetch(&m_colorBB[c], 1, 3);
+        
+        // XOR toggles both squares at once
+        m_pieceBB[p] ^= fromToBB;
+        m_pieceTypeBB[pt] ^= fromToBB;
+        m_colorBB[c] ^= fromToBB;
+        // Occupied doesn't change for non-captures
     }
     
     // Keep original interface for compatibility
