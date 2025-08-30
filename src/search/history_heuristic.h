@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/types.h"
+#include <cstdint>
 
 namespace seajay::search {
 
@@ -20,8 +21,9 @@ namespace seajay::search {
  */
 class HistoryHeuristic {
 public:
-    // Maximum history value before aging is triggered
-    static constexpr int HISTORY_MAX = 8192;
+    // Maximum history value before saturation
+    // Using int16_t now, max safe value is 32767, but we keep 8192 for consistency
+    static constexpr int16_t HISTORY_MAX = 8192;
     
     /**
      * Constructor - initializes empty history table
@@ -59,7 +61,17 @@ public:
      * @param to Destination square of the move
      * @return History score (higher is better)
      */
-    int getScore(Color side, Square from, Square to) const;
+    inline int getScore(Color side, Square from, Square to) const {
+        // Validate inputs only in debug builds
+        #ifndef NDEBUG
+        if (side >= NUM_COLORS || from >= 64 || to >= 64) {
+            return 0;  // Invalid parameters
+        }
+        #endif
+        
+        // Return as int for compatibility with existing code
+        return static_cast<int>(m_history[from][to][side]);
+    }
     
     /**
      * Age all history values by dividing by 2
@@ -70,9 +82,10 @@ public:
 private:
     // History table: [from][to][side]
     // Reordered for better cache locality - both colors for same move are adjacent
+    // Using int16_t to halve memory footprint (16KB instead of 32KB)
     // Cache-aligned for better performance
     // Zero-initialized by default
-    alignas(64) int m_history[64][64][2] = {};
+    alignas(64) int16_t m_history[64][64][2] = {};
 };
 
 } // namespace seajay::search
