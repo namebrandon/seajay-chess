@@ -188,12 +188,26 @@ public:
     static Bitboard getPinRay(const Board& board, Square pinnedSquare, Square kingSquare);
     
     // Attack generation methods (made public for SEE)
-    static Bitboard getPawnAttacks(Square square, Color color);
-    static Bitboard getKnightAttacks(Square square);
-    static Bitboard getBishopAttacks(Square square, Bitboard occupied);
-    static Bitboard getRookAttacks(Square square, Bitboard occupied);
-    static Bitboard getQueenAttacks(Square square, Bitboard occupied);
-    static Bitboard getKingAttacks(Square square);
+    // Phase 3.1: Force inline hot path functions - implementations moved here for inlining
+    __attribute__((always_inline)) inline static Bitboard getPawnAttacks(Square square, Color color) {
+        // Phase 3.1: Tables initialized at startup, no check needed
+        return (color == WHITE) ? s_whitePawnAttacks[square] : s_blackPawnAttacks[square];
+    }
+    
+    __attribute__((always_inline)) inline static Bitboard getKnightAttacks(Square square) {
+        // Phase 3.1: Tables initialized at startup, no check needed
+        return s_knightAttacks[square];
+    }
+    
+    __attribute__((always_inline)) inline static Bitboard getKingAttacks(Square square) {
+        // Phase 3.1: Tables initialized at startup, no check needed
+        return s_kingAttacks[square];
+    }
+    
+    // These still call through to wrappers but are marked for inlining
+    __attribute__((always_inline)) inline static Bitboard getBishopAttacks(Square square, Bitboard occupied);
+    __attribute__((always_inline)) inline static Bitboard getRookAttacks(Square square, Bitboard occupied);
+    __attribute__((always_inline)) inline static Bitboard getQueenAttacks(Square square, Bitboard occupied);
     static bool couldDiscoverCheck(const Board& board, Square from, Square kingSquare, Color opponent);
     
 private:

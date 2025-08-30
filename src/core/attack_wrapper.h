@@ -31,53 +31,47 @@ inline Bitboard rayQueenAttacks(Square sq, Bitboard occupied) {
     return ::seajay::queenAttacks(sq, occupied);
 }
 
-// Wrapper functions that switch between implementations based on runtime config
+// Wrapper functions - optimized for Phase 3.1 (magic bitboards always enabled)
     inline Bitboard getRookAttacks(Square sq, Bitboard occupied) {
-        if (getConfig().useMagicBitboards) {
-            #ifdef DEBUG_MAGIC
-                // In debug mode, validate magic against ray-based
-                Bitboard magic = magicRookAttacks(sq, occupied);
-                Bitboard ray = rayRookAttacks(sq, occupied);
-                assert(magic == ray && "Rook attack mismatch between magic and ray-based");
-                return magic;
-            #else
-                return magicRookAttacks(sq, occupied);
-            #endif
-        } else {
-            return rayRookAttacks(sq, occupied);
-        }
+        // Phase 3.1: Direct call to magic bitboards (79x faster than ray-based)
+        // Runtime check removed since magic bitboards are always enabled
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicRookAttacks(sq, occupied);
+            Bitboard ray = rayRookAttacks(sq, occupied);
+            assert(magic == ray && "Rook attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicRookAttacks(sq, occupied);
+        #endif
     }
     
     inline Bitboard getBishopAttacks(Square sq, Bitboard occupied) {
-        if (getConfig().useMagicBitboards) {
-            #ifdef DEBUG_MAGIC
-                // In debug mode, validate magic against ray-based
-                Bitboard magic = magicBishopAttacks(sq, occupied);
-                Bitboard ray = rayBishopAttacks(sq, occupied);
-                assert(magic == ray && "Bishop attack mismatch between magic and ray-based");
-                return magic;
-            #else
-                return magicBishopAttacks(sq, occupied);
-            #endif
-        } else {
-            return rayBishopAttacks(sq, occupied);
-        }
+        // Phase 3.1: Direct call to magic bitboards (79x faster than ray-based)
+        // Runtime check removed since magic bitboards are always enabled
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicBishopAttacks(sq, occupied);
+            Bitboard ray = rayBishopAttacks(sq, occupied);
+            assert(magic == ray && "Bishop attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicBishopAttacks(sq, occupied);
+        #endif
     }
     
     inline Bitboard getQueenAttacks(Square sq, Bitboard occupied) {
-        if (getConfig().useMagicBitboards) {
-            #ifdef DEBUG_MAGIC
-                // In debug mode, validate magic against ray-based
-                Bitboard magic = magicQueenAttacks(sq, occupied);
-                Bitboard ray = rayQueenAttacks(sq, occupied);
-                assert(magic == ray && "Queen attack mismatch between magic and ray-based");
-                return magic;
-            #else
-                return magicQueenAttacks(sq, occupied);
-            #endif
-        } else {
-            return rayQueenAttacks(sq, occupied);
-        }
+        // Phase 3.1: Direct call to magic bitboards (79x faster than ray-based)
+        // Runtime check removed since magic bitboards are always enabled
+        #ifdef DEBUG_MAGIC
+            // In debug mode, validate magic against ray-based
+            Bitboard magic = magicQueenAttacks(sq, occupied);
+            Bitboard ray = rayQueenAttacks(sq, occupied);
+            assert(magic == ray && "Queen attack mismatch between magic and ray-based");
+            return magic;
+        #else
+            return magicQueenAttacks(sq, occupied);
+        #endif
     }
 
 

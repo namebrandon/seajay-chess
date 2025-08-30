@@ -14,6 +14,16 @@ std::array<Bitboard, 64> MoveGenerator::s_kingAttacks = {};
 std::array<Bitboard, 64> MoveGenerator::s_whitePawnAttacks = {};
 std::array<Bitboard, 64> MoveGenerator::s_blackPawnAttacks = {};
 
+// Phase 3.1: Static initializer to ensure tables are initialized at program startup
+namespace {
+    struct AttackTableInitializer {
+        AttackTableInitializer() {
+            MoveGenerator::initializeAttackTables();
+        }
+    };
+    static AttackTableInitializer s_attackTableInit;
+}
+
 void MoveGenerator::initializeAttackTables() {
     if (s_tablesInitialized) return;  // Already initialized
     
@@ -108,9 +118,7 @@ void MoveGenerator::initializeAttackTables() {
 }
 
 void MoveGenerator::generatePseudoLegalMoves(const Board& board, MoveList& moves) {
-    if (!s_tablesInitialized) {
-        initializeAttackTables();
-    }
+    // Phase 3.1: Tables are now initialized at startup, no check needed
     
     // Generate moves for all piece types
     generatePawnMoves(board, moves);
@@ -513,21 +521,7 @@ void MoveGenerator::generateCastlingMoves(const Board& board, MoveList& moves) {
 }
 
 // Attack generation functions
-Bitboard MoveGenerator::getPawnAttacks(Square square, Color color) {
-    if (!s_tablesInitialized) {
-        initializeAttackTables();
-    }
-    
-    return (color == WHITE) ? s_whitePawnAttacks[square] : s_blackPawnAttacks[square];
-}
-
-Bitboard MoveGenerator::getKnightAttacks(Square square) {
-    if (!s_tablesInitialized) {
-        initializeAttackTables();
-    }
-    
-    return s_knightAttacks[square];
-}
+// Phase 3.1: getPawnAttacks, getKnightAttacks, and getKingAttacks moved to header for inlining
 
 Bitboard MoveGenerator::bishopAttacks(Square square, Bitboard occupied) {
 #ifdef USE_MAGIC_BITBOARDS
@@ -572,13 +566,7 @@ Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
     return seajay::getQueenAttacks(square, occupied);
 }
 
-Bitboard MoveGenerator::getKingAttacks(Square square) {
-    if (!s_tablesInitialized) {
-        initializeAttackTables();
-    }
-    
-    return s_kingAttacks[square];
-}
+// Phase 3.1: getKingAttacks moved to header for inlining
 
 // Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
 bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
