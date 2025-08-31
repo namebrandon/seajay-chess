@@ -1,0 +1,1 @@
+- Always push to remote once we've commited, and make sure our "bench <node-count>" string is in the commit message.

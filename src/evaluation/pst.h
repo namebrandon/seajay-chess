@@ -98,29 +98,29 @@ private:
     // Values are from white's perspective on squares A1-H8
     // These will be defined in pst.cpp with actual values
     static constexpr std::array<std::array<MgEgScore, 64>, 6> s_pstTables = {
-        // Pawn table - stronger advancement bonus in endgame (passed pawns critical)
+        // Pawn table - Phase 2a: Enhanced endgame advancement bonuses for passed pawns
         std::array<MgEgScore, 64>{
             // Rank 1 - pawns should never be here
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 2
+            // Rank 2 - slightly favor central pawns
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
             MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 3
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 4
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(10, 15), MgEgScore(20, 25),
-            MgEgScore(20, 25), MgEgScore(10, 15), MgEgScore(5, 5), MgEgScore(5, 5),
-            // Rank 5
-            MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(20, 30), MgEgScore(30, 40),
-            MgEgScore(30, 40), MgEgScore(20, 30), MgEgScore(10, 15), MgEgScore(10, 15),
-            // Rank 6 - passed pawns more valuable in endgame
-            MgEgScore(20, 35), MgEgScore(20, 35), MgEgScore(30, 50), MgEgScore(40, 60),
-            MgEgScore(40, 60), MgEgScore(30, 50), MgEgScore(20, 35), MgEgScore(20, 35),
+            // Rank 3 - modest central preference
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(10, 15),
+            MgEgScore(10, 15), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(0, 5),
+            // Rank 4 - increased endgame advancement bonus
+            MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(10, 20), MgEgScore(20, 30),
+            MgEgScore(20, 30), MgEgScore(10, 20), MgEgScore(5, 10), MgEgScore(5, 10),
+            // Rank 5 - stronger endgame push incentive
+            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(20, 35), MgEgScore(30, 45),
+            MgEgScore(30, 45), MgEgScore(20, 35), MgEgScore(10, 20), MgEgScore(10, 20),
+            // Rank 6 - passed pawns much more valuable in endgame
+            MgEgScore(20, 40), MgEgScore(20, 40), MgEgScore(30, 55), MgEgScore(40, 70),
+            MgEgScore(40, 70), MgEgScore(30, 55), MgEgScore(20, 40), MgEgScore(20, 40),
             // Rank 7 - near promotion critical in endgame
-            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
-            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
+            MgEgScore(50, 100), MgEgScore(50, 100), MgEgScore(50, 100), MgEgScore(50, 100),
+            MgEgScore(50, 100), MgEgScore(50, 100), MgEgScore(50, 100), MgEgScore(50, 100),
             // Rank 8 - pawns should never be here (promotion)
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
@@ -182,32 +182,32 @@ private:
             MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-20, -10)
         },
         
-        // Rook table - rooks dominate endgames, especially on 7th rank
+        // Rook table - Phase 2a: Enhanced endgame activity, 7th rank dominance
         std::array<MgEgScore, 64>{
-            // Rank 1
+            // Rank 1 - prefer central files for castling flexibility
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10), MgEgScore(10, 15),
             MgEgScore(10, 15), MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 2
-            MgEgScore(-5, 0), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
-            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-5, 0),
-            // Rank 3
-            MgEgScore(-5, 0), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
-            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-5, 0),
-            // Rank 4
+            // Rank 2 - slight activity bonus in endgame
             MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
             MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 5
+            // Rank 3 - encourage activity
             MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
             MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 6
-            MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
-            MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 7 - rooks love the 7th rank, especially in endgames
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
-            // Rank 8
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10),
-            MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
+            // Rank 4 - more activity in endgame
+            MgEgScore(-5, 10), MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(0, 15),
+            MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(-5, 10),
+            // Rank 5 - aggressive placement rewarded
+            MgEgScore(-5, 10), MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(0, 15),
+            MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(0, 15), MgEgScore(-5, 10),
+            // Rank 6 - penetration into enemy territory
+            MgEgScore(-5, 15), MgEgScore(0, 20), MgEgScore(0, 20), MgEgScore(0, 20),
+            MgEgScore(0, 20), MgEgScore(0, 20), MgEgScore(0, 20), MgEgScore(-5, 15),
+            // Rank 7 - rooks dominate on 7th rank in endgames
+            MgEgScore(15, 35), MgEgScore(15, 35), MgEgScore(15, 35), MgEgScore(15, 35),
+            MgEgScore(15, 35), MgEgScore(15, 35), MgEgScore(15, 35), MgEgScore(15, 35),
+            // Rank 8 - back rank, prefer central files
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(5, 15),
+            MgEgScore(5, 15), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5)
         },
         
         // Queen table - queens need more activity in endgames

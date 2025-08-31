@@ -1333,13 +1333,150 @@ MANDATORY READING BEFORE ANY WORK:
 
 ---
 
+## Phase 6: PST Phase Interpolation & Evaluation Tapering ✅ **COMPLETE**
+
+### Phase 6.1: PST Phase Interpolation (COMPLETE)
+**Branch**: `feature/20250831-pst-interpolation`  
+**Status**: **COMPLETE** - Massive success exceeding expectations
+
+#### Implementation Summary
+- **Single phase API**: `phase0to256()` computed once per eval, reused everywhere
+- **PST interpolation**: Linear blend using fixed-point arithmetic (no division)
+- **UCI option**: `UsePSTInterpolation` (default: true, will retire after confirmatory SPRT)
+- **Differentiated endgame values**: All pieces now have distinct MG/EG PST values
+
+#### SPRT Test Results
+- **ELO Gain**: **46.50 ± 18.21** (95% CI) - Far exceeds 5-15 ELO projection!
+- **Games**: 932 (W: 384, L: 260, D: 288)
+- **LLR**: 3.26 (-2.94, 2.94) [0.00, 8.00] - **PASSED** ✅
+- **Test URL**: https://openbench.seajay-chess.dev/test/351/
+- **Bench**: 19191913 (unchanged)
+- **NPS Impact**: <1% (within noise)
+
+### Phase 6.2: Stage 2 PST Deltas (READY TO START)
+**Goal**: Refine piece-specific endgame characteristics
+**Branch**: `feature/20250831-pst-stage2` (create from main after merge)
+
+#### Prioritized Implementation Order
+1. **Pawn/Rook first** (highest EG impact):
+   - Pawns: Stronger centralization, passer posture bonuses
+   - Rooks: Enhanced 7th rank activity (already partially done)
+   - Guard double scaling: Ensure no term is both PST-modified AND phase-scaled
+
+2. **Knights/Bishops/Queen** (conservative deltas):
+   - Knights: Slightly worse in EG (mobility restricted)
+   - Bishops: Slightly more activity needed in EG
+   - Queens: Activity bonuses for endgame
+   - Avoid large swings that destabilize play
+
+### Phase 6.3: Phase-Aware Non-PST Terms (PLANNED)
+
+#### Current State Analysis
+- **King Safety**: Uses stepwise phase (OPENING+MIDDLEGAME → MG values, ENDGAME → EG values)
+  - Location: `src/evaluation/king_safety.cpp`
+  - Optional: Convert to 0-256 continuous taper for consistency
+  - Note: Already phase-aware, just not continuous
+
+#### Implementation Priority
+1. **Passed Pawns**: Taper UP toward endgame (critical for conversion)
+   - Add rank-aware exponential growth
+   - Scale with phase: weak in MG, dominant in EG
+
+2. **King Safety**: Convert to continuous taper (currently stepwise)
+   - Taper DOWN toward endgame
+   - Keep MG pressure strong for attacking positions
+
+3. **Mobility/Open Files**: 
+   - Slight MG emphasis for piece mobility
+   - Increase EG emphasis for rook on open/semi-open files
+   - Rook on 7th rank scaling with phase
+
+4. **Bishop Pair** (not yet implemented):
+   - Slightly stronger in MG than EG
+   - Keep small net gain in EG
+   - Implement after basics work
+
+### Phase 6.4: Optional AB Tests (Behind Flags)
+
+#### Pawn-Aware Phase Adjustment
+```cpp
+// Trial implementation behind UCI flag
+phase += k * (pawnCount - 8);  // Small k value
+```
+- **Risk**: Could introduce tempo artifacts
+- **Testing**: Validate no eval discontinuities
+
+#### Non-Linear Taper (King Safety Only)
+- Sigmoid clamp for smoother transitions
+- Keep everything else linear for simplicity
+- Test impact on tactical positions
+
+### Phase 6.5: Parameter Plumbing (Prep for SPSA)
+
+#### Infrastructure Requirements
+1. **Central parameter table**:
+   - Move all MG/EG PST values to single header/struct
+   - Consistent `MgEgScore(valMg, valEg)` naming
+   - Group phase-scaled weights together
+
+2. **Dump/Load capability**:
+   - UCI command to dump current weights
+   - Load from file for testing
+   - Compile-time initially, runtime later
+
+3. **SPSA-friendly structure**:
+   - All tunable parameters in one place
+   - Clear min/max bounds defined
+   - Consistent scaling across terms
+
+### Phase 6.6: Instrumentation & Testing
+
+#### Development Tools
+1. **EvalTrace** (dev-only):
+   - Dump per-term MG/EG contributions
+   - Show final blended scores
+   - Validate phase calculations
+
+2. **Unit Tests**:
+   - Phase edges (0 and 256) must match pure EG/MG
+   - Curated mid-phase positions
+   - Invariant checking
+
+#### Testing Cadence
+1. **Micro**: Bench and NPS check (<1-2% delta acceptable)
+2. **SPRT**: Short runs (10k-20k games) per PST delta cluster
+3. **Confirmatory**: Longer SPRT after bundling best deltas
+
+### Risk/Performance Guards
+- **O(1) blend only**: Always use incremental `board.pstScore()`
+- **No per-piece loops**: Leverage existing accumulator
+- **Hashing unchanged**: TT doesn't depend on blended eval
+- **Thread-safe**: All new state read-only
+- **Cache-friendly**: Phase computed once, reused
+
+### Success Metrics
+- **Phase 6.1**: ✅ 46.50 ELO gain (3x projection!)
+- **Phase 6.2 Target**: Additional 10-15 ELO from refined deltas
+- **Phase 6.3 Target**: 5-10 ELO from non-PST tapering
+- **Total Target**: 60-75 ELO from complete evaluation tapering
+
+### Deferred for SPSA Tuning
+- Phase weight constants (KNIGHT=1, BISHOP=1, ROOK=2, QUEEN=4)
+- Expected 5-10 additional ELO from optimization
+- Documented in `/workspace/docs/project_docs/deferred_items_tracker.md`
+
+---
+
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization
+Current Branch: feature/20250831-pst-interpolation (ready to merge)
 Latest Commits: 
+- PST Interpolation: 90e2745, 3c66f15, 0132772, 0f4b524, c2eff83, 48b1c11, c450cbf
 - Phase 4.2: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c)
 - Phase 4.3.a: All fixes applied, CMH disabled by default (0132772)
-Next Work: 
-- Phase 4.1.b: Killer fast-path validation (easy 1-2% NPS gain)
-- Phase 4.3.b: History score normalization
-- Phase 4.4: LMR parameter tuning and pruning improvements
-- Consider revisiting CMH at longer time controls or higher ELO
+
+Next Work Priority:
+1. **Immediate**: Merge PST interpolation to main after confirmatory SPRT
+2. **Phase 6.2**: Stage 2 PST deltas (Pawn/Rook first)
+3. **Phase 6.3**: Phase-aware non-PST terms
+4. **Phase 4.1.b**: Killer fast-path validation (easy 1-2% NPS gain)
+5. **Phase 4.4**: LMR parameter tuning and pruning improvements
