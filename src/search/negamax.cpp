@@ -1081,6 +1081,11 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
     eval::Score previousScore = eval::Score::zero();  // Track score for aspiration windows
     
+    // Advance TT generation for new search to enable proper replacement strategy
+    if (tt) {
+        tt->newSearch();
+    }
+    
     // Same iterative deepening loop as original search
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
         info.depth = depth;

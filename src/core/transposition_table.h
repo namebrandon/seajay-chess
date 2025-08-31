@@ -40,7 +40,10 @@ struct alignas(16) TTEntry {
     }
     
     bool isEmpty() const {
-        return key32 == 0 && move == 0;
+        // Use genBound == 0 as the emptiness indicator
+        // This is more robust than checking key32 and move
+        // since stored entries always have a non-zero bound
+        return genBound == 0;
     }
 };
 
