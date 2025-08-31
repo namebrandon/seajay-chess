@@ -1192,6 +1192,20 @@ bool Board::tryMakeMove(Move move, UndoInfo& undo) {
     validateStateIntegrity();
 #endif
     
+    // Minimal preflight checks to prevent illegal moves (fix for ghost king replay bug)
+    Square from = moveFrom(move);
+    Piece movingPiece = pieceAt(from);
+    
+    // Check 1: Verify from-square contains a piece
+    if (movingPiece == NO_PIECE) {
+        return false;  // No piece at from-square
+    }
+    
+    // Check 2: Verify piece belongs to side-to-move
+    if (colorOf(movingPiece) != m_sideToMove) {
+        return false;  // Wrong color piece
+    }
+    
     // Make the move
     makeMoveInternal(move, undo);
     
