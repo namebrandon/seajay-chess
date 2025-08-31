@@ -98,7 +98,7 @@ private:
     // Values are from white's perspective on squares A1-H8
     // These will be defined in pst.cpp with actual values
     static constexpr std::array<std::array<MgEgScore, 64>, 6> s_pstTables = {
-        // Pawn table
+        // Pawn table - stronger advancement bonus in endgame (passed pawns critical)
         std::array<MgEgScore, 64>{
             // Rank 1 - pawns should never be here
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
@@ -110,132 +110,132 @@ private:
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(10, 10),
             MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0),
             // Rank 4
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(20, 20),
-            MgEgScore(20, 20), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(5, 5),
+            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(10, 15), MgEgScore(20, 25),
+            MgEgScore(20, 25), MgEgScore(10, 15), MgEgScore(5, 5), MgEgScore(5, 5),
             // Rank 5
-            MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(20, 20), MgEgScore(30, 30),
-            MgEgScore(30, 30), MgEgScore(20, 20), MgEgScore(10, 10), MgEgScore(10, 10),
-            // Rank 6
-            MgEgScore(20, 20), MgEgScore(20, 20), MgEgScore(30, 30), MgEgScore(40, 40),
-            MgEgScore(40, 40), MgEgScore(30, 30), MgEgScore(20, 20), MgEgScore(20, 20),
-            // Rank 7
-            MgEgScore(50, 50), MgEgScore(50, 50), MgEgScore(50, 50), MgEgScore(50, 50),
-            MgEgScore(50, 50), MgEgScore(50, 50), MgEgScore(50, 50), MgEgScore(50, 50),
+            MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(20, 30), MgEgScore(30, 40),
+            MgEgScore(30, 40), MgEgScore(20, 30), MgEgScore(10, 15), MgEgScore(10, 15),
+            // Rank 6 - passed pawns more valuable in endgame
+            MgEgScore(20, 35), MgEgScore(20, 35), MgEgScore(30, 50), MgEgScore(40, 60),
+            MgEgScore(40, 60), MgEgScore(30, 50), MgEgScore(20, 35), MgEgScore(20, 35),
+            // Rank 7 - near promotion critical in endgame
+            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
+            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
             // Rank 8 - pawns should never be here (promotion)
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
         },
         
-        // Knight table - knights love the center
+        // Knight table - slightly weaker in endgames but edge penalties reduced
         std::array<MgEgScore, 64>{
             // Rank 1
-            MgEgScore(-50, -50), MgEgScore(-40, -40), MgEgScore(-30, -30), MgEgScore(-30, -30),
-            MgEgScore(-30, -30), MgEgScore(-30, -30), MgEgScore(-40, -40), MgEgScore(-50, -50),
+            MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40),
             // Rank 2
-            MgEgScore(-40, -40), MgEgScore(-20, -20), MgEgScore(0, 0), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -20), MgEgScore(-40, -40),
+            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(5, 5),
+            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
             // Rank 3
-            MgEgScore(-30, -30), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 15),
-            MgEgScore(15, 15), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -30),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 12),
+            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 4
-            MgEgScore(-30, -30), MgEgScore(0, 0), MgEgScore(15, 15), MgEgScore(20, 20),
-            MgEgScore(20, 20), MgEgScore(15, 15), MgEgScore(0, 0), MgEgScore(-30, -30),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(15, 12), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 5
-            MgEgScore(-30, -30), MgEgScore(5, 5), MgEgScore(15, 15), MgEgScore(20, 20),
-            MgEgScore(20, 20), MgEgScore(15, 15), MgEgScore(5, 5), MgEgScore(-30, -30),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(15, 12), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 6
-            MgEgScore(-30, -30), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 15),
-            MgEgScore(15, 15), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -30),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 12),
+            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 7
-            MgEgScore(-40, -40), MgEgScore(-20, -20), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -20), MgEgScore(-40, -40),
+            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(0, 0),
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
             // Rank 8
-            MgEgScore(-50, -50), MgEgScore(-40, -40), MgEgScore(-30, -30), MgEgScore(-30, -30),
-            MgEgScore(-30, -30), MgEgScore(-30, -30), MgEgScore(-40, -40), MgEgScore(-50, -50)
+            MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40)
         },
         
-        // Bishop table - bishops like long diagonals
+        // Bishop table - bishops stronger in open endgame positions
         std::array<MgEgScore, 64>{
             // Rank 1
-            MgEgScore(-20, -20), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-10, -10),
-            MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-20, -20),
+            MgEgScore(-20, -10), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-10, -5),
+            MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-20, -10),
             // Rank 2
-            MgEgScore(-10, -10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(-10, -5),
             // Rank 3
-            MgEgScore(-10, -10), MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(10, 15),
+            MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(-10, -5),
             // Rank 4
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 15),
-            MgEgScore(15, 15), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(10, 15), MgEgScore(15, 20),
+            MgEgScore(15, 20), MgEgScore(10, 15), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 5
-            MgEgScore(-10, -10), MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(15, 15),
-            MgEgScore(15, 15), MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(15, 20),
+            MgEgScore(15, 20), MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(-10, -5),
             // Rank 6
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(10, 15),
+            MgEgScore(10, 15), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 7
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 8
-            MgEgScore(-20, -20), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-10, -10),
-            MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-20, -20)
+            MgEgScore(-20, -10), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-10, -5),
+            MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-20, -10)
         },
         
-        // Rook table - rooks like 7th rank and open files
+        // Rook table - rooks dominate endgames, especially on 7th rank
         std::array<MgEgScore, 64>{
             // Rank 1
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0),
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10), MgEgScore(10, 15),
+            MgEgScore(10, 15), MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0),
             // Rank 2
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(-5, 0), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-5, 0),
             // Rank 3
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(-5, 0), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-5, 0),
             // Rank 4
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
+            MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
             // Rank 5
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
+            MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
             // Rank 6
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
-            // Rank 7 - rooks love the 7th rank
-            MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10), MgEgScore(10, 10),
+            MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
+            MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
+            // Rank 7 - rooks love the 7th rank, especially in endgames
+            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
+            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
             // Rank 8
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10),
+            MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
         },
         
-        // Queen table - queens like center control
+        // Queen table - queens need more activity in endgames
         std::array<MgEgScore, 64>{
             // Rank 1
-            MgEgScore(-20, -20), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-5, -5),
-            MgEgScore(-5, -5), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-20, -20),
+            MgEgScore(-20, -5), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-5, 0),
+            MgEgScore(-5, 0), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-20, -5),
             // Rank 2
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 3
-            MgEgScore(-10, -10), MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(5, 10),
+            MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 4
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(5, 10),
+            MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(-5, 0),
             // Rank 5
-            MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-5, -5),
+            MgEgScore(-5, 0), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(5, 10),
+            MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(-5, 0),
             // Rank 6
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(5, 10), MgEgScore(5, 10),
+            MgEgScore(5, 10), MgEgScore(5, 10), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 7
-            MgEgScore(-10, -10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-10, -10),
+            MgEgScore(-10, -5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5),
+            MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(0, 5), MgEgScore(-10, -5),
             // Rank 8
-            MgEgScore(-20, -20), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-5, -5),
-            MgEgScore(-5, -5), MgEgScore(-10, -10), MgEgScore(-10, -10), MgEgScore(-20, -20)
+            MgEgScore(-20, -5), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-5, 0),
+            MgEgScore(-5, 0), MgEgScore(-10, -5), MgEgScore(-10, -5), MgEgScore(-20, -5)
         },
         
         // King table - encourage castling and corner safety in middlegame

@@ -23,6 +23,7 @@ public:
     
     // Configuration options
     bool useMagicBitboards = true;  // Stage 10: Default ON for 79x speedup
+    bool usePSTInterpolation = true; // PST Phase Interpolation: Default ON for smooth evaluation tapering
     
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11

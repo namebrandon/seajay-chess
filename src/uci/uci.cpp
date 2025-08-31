@@ -112,6 +112,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
     std::cout << "option name NullMoveStaticMargin type spin default 120 min 50 max 300" << std::endl;  // Phase A4
     
+    // PST Phase Interpolation option
+    std::cout << "option name UsePSTInterpolation type check default true" << std::endl;
+    
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
@@ -885,6 +888,25 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Null move pruning disabled" << std::endl;
         } else {
             std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    // PST Phase Interpolation: Handle UsePSTInterpolation option
+    else if (optionName == "UsePSTInterpolation") {
+        // Make boolean parsing case-insensitive and accept common variations
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_usePSTInterpolation = true;
+            seajay::getConfig().usePSTInterpolation = true;
+            std::cerr << "info string PST phase interpolation enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_usePSTInterpolation = false;
+            seajay::getConfig().usePSTInterpolation = false;
+            std::cerr << "info string PST phase interpolation disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid UsePSTInterpolation value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
