@@ -11,6 +11,7 @@
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
+#include "../evaluation/pst.h"       // For SPSA PST tuning
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -74,6 +75,9 @@ void UCIEngine::run() {
         else if (command == "eval") {
             handleEval();  // Phase 3: Position evaluation display
         }
+        else if (command == "dumpPST") {
+            handleDumpPST();  // SPSA debug: dump current PST values
+        }
         // Ignore unknown commands (UCI protocol requirement)
     }
 }
@@ -114,6 +118,39 @@ void UCIEngine::handleUCI() {
     
     // PST Phase Interpolation option
     std::cout << "option name UsePSTInterpolation type check default true" << std::endl;
+    
+    // SPSA PST Tuning Options - Simplified approach with zones
+    // Pawn endgame values
+    std::cout << "option name pawn_eg_r3_d type spin default 10 min 0 max 30" << std::endl;
+    std::cout << "option name pawn_eg_r3_e type spin default 10 min 0 max 30" << std::endl;
+    std::cout << "option name pawn_eg_r4_d type spin default 25 min 10 max 50" << std::endl;
+    std::cout << "option name pawn_eg_r4_e type spin default 25 min 10 max 50" << std::endl;
+    std::cout << "option name pawn_eg_r5_d type spin default 40 min 20 max 70" << std::endl;
+    std::cout << "option name pawn_eg_r5_e type spin default 40 min 20 max 70" << std::endl;
+    std::cout << "option name pawn_eg_r6_d type spin default 60 min 30 max 100" << std::endl;
+    std::cout << "option name pawn_eg_r6_e type spin default 60 min 30 max 100" << std::endl;
+    std::cout << "option name pawn_eg_r7_center type spin default 90 min 50 max 150" << std::endl;
+    
+    // Knight endgame values
+    std::cout << "option name knight_eg_center type spin default 15 min 5 max 25" << std::endl;
+    std::cout << "option name knight_eg_extended type spin default 10 min 0 max 20" << std::endl;
+    std::cout << "option name knight_eg_edge type spin default -25 min -40 max -10" << std::endl;
+    std::cout << "option name knight_eg_corner type spin default -40 min -50 max -20" << std::endl;
+    
+    // Bishop endgame values
+    std::cout << "option name bishop_eg_long_diag type spin default 20 min 10 max 35" << std::endl;
+    std::cout << "option name bishop_eg_center type spin default 15 min 5 max 25" << std::endl;
+    std::cout << "option name bishop_eg_edge type spin default -5 min -15 max 5" << std::endl;
+    
+    // Rook endgame values
+    std::cout << "option name rook_eg_7th type spin default 25 min 15 max 40" << std::endl;
+    std::cout << "option name rook_eg_active type spin default 10 min 5 max 20" << std::endl;
+    std::cout << "option name rook_eg_passive type spin default 5 min 0 max 15" << std::endl;
+    
+    // Queen endgame values
+    std::cout << "option name queen_eg_center type spin default 10 min 5 max 20" << std::endl;
+    std::cout << "option name queen_eg_active type spin default 5 min 0 max 15" << std::endl;
+    std::cout << "option name queen_eg_back type spin default -5 min -10 max 5" << std::endl;
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
@@ -955,6 +992,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid CountermoveBonus value: " << value << std::endl;
         }
     }
+    // SPSA PST Tuning Parameters
+    else if (optionName.find("pawn_eg_") == 0 || 
+             optionName.find("knight_eg_") == 0 ||
+             optionName.find("bishop_eg_") == 0 ||
+             optionName.find("rook_eg_") == 0 ||
+             optionName.find("queen_eg_") == 0) {
+        try {
+            int paramValue = std::stoi(value);
+            eval::PST::updateFromUCIParam(optionName, paramValue);
+            std::cerr << "info string PST parameter " << optionName << " set to " << paramValue << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid value for " << optionName << ": " << value << std::endl;
+        }
+    }
     // Phase 3: Move Count Pruning options
     else if (optionName == "MoveCountPruning") {
         m_useMoveCountPruning = (value == "true");
@@ -1156,4 +1207,9 @@ void UCIEngine::handleEval() {
     std::cout << "Side to move: " << (m_board.sideToMove() == WHITE ? "White" : "Black") << std::endl;
     
     std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
+}
+
+void UCIEngine::handleDumpPST() {
+    // Dump current PST values for debugging SPSA tuning
+    eval::PST::dumpTables();
 }
