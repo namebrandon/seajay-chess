@@ -1282,9 +1282,9 @@ MANDATORY READING BEFORE ANY WORK:
 
 **Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
 
-#### Phase 4.3.a - Counter-Move History (IN PROGRESS - FIXING REGRESSION)
-**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), TBD (fix2)
-**Status**: Initial implementation caused -30 to -35 ELO regression, applying fixes
+#### Phase 4.3.a - Counter-Move History (FIXES COMPLETE - AWAITING TEST)
+**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), e665314 (fix2)
+**Status**: All fixes applied, awaiting SPRT confirmation of ELO recovery
 
 **Initial Implementation Issues (Found by Expert Review):**
 1. **Memory miscalculation**: Was actually 67MB, not 32MB as claimed
@@ -1308,16 +1308,16 @@ Initial testing showed -30 to -35 ELO loss. Expert identified these issues:
 3. ✅ **Double decay bug**: Only decay on bonus now, not penalty (was keeping values at zero)
 **Result**: Partial ELO recovery, but still net negative
 
-**Phase 4.3.a-fix2 (In Progress) - Performance Recovery:**
-4. **Depth gating**: Only use CMH at depth >= 4 (reduce noise)
-5. **Decouple countermove positioning**: Always position countermove regardless of bonus
-6. **Pre-compute scores**: Cache scores before sorting (future)
+**Phase 4.3.a-fix2 (e665314) - Performance Recovery:**
+4. ✅ **Depth gating**: Only use CMH at depth >= 4 (reduces early noise)
+5. ✅ **Decouple countermove positioning**: Always position countermove (was gated on bonus)
+6. **Pre-compute scores**: Cache scores before sorting (deferred for future)
 
-**Current Status:**
-- **Memory**: 512KB per thread
-- **NPS**: ~1.03M maintained
-- **ELO**: Recovering from -35 → trending better but still negative
-- **Next**: Implementing fix2 for full recovery
+**Final Status After All Fixes:**
+- **Memory**: 512KB per thread (cache-friendly)
+- **NPS**: ~1.03M maintained (minimal overhead)
+- **ELO**: All fixes applied, expecting full recovery
+- **Testing**: Awaiting SPRT confirmation
 
 ---
 

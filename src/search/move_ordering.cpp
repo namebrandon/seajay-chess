@@ -400,28 +400,63 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         }
     }
     
-    // Now sort the remaining quiet moves by combined history scores
-    // Regular history + counter-move history with weight
+    // Phase 4.3.a-fix3: Pre-compute scores before sorting to reduce comparator overhead
+    // This avoids repeated score calculations during O(n log n) comparisons
     if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
         
         // Convert float weight to integer multiplier (1.5 -> 3/2)
-        // Use integer arithmetic to avoid float operations in hot comparator
         int cmhMultiplier = static_cast<int>(cmhWeight * 2.0f);  // 1.5 * 2 = 3
         
-        std::stable_sort(killerEnd, moves.end(),
-            [&history, &counterMoveHistory, side, prevMove, cmhMultiplier](const Move& a, const Move& b) {
-                // Get regular history scores (already integers)
-                int scoreA = history.getScore(side, moveFrom(a), moveTo(a)) * 2;  // Scale by 2 for division
-                int scoreB = history.getScore(side, moveFrom(b), moveTo(b)) * 2;  // Scale by 2 for division
-                
-                // Add weighted counter-move history scores using integer arithmetic
-                // (cmh * cmhMultiplier) / 2 effectively gives us cmh * originalWeight
-                scoreA += (counterMoveHistory.getScore(prevMove, a) * cmhMultiplier);
-                scoreB += (counterMoveHistory.getScore(prevMove, b) * cmhMultiplier);
-                
-                return scoreA > scoreB;  // Higher scores first
-            });
+        // Pre-compute combined scores for all quiet moves
+        const size_t numQuietMoves = std::distance(killerEnd, moves.end());
+        
+        // Use a small struct to pair moves with their scores
+        struct MoveScore {
+            Move move;
+            int score;
+            bool operator<(const MoveScore& other) const {
+                return score > other.score;  // Higher scores first
+            }
+        };
+        
+        // Stack allocation for small numbers of moves, heap for larger
+        // This avoids heap allocation for typical cases (< 32 quiet moves)
+        constexpr size_t STACK_SIZE = 32;
+        MoveScore stackBuffer[STACK_SIZE];
+        std::vector<MoveScore> heapBuffer;
+        MoveScore* scoreBuffer;
+        
+        if (numQuietMoves <= STACK_SIZE) {
+            scoreBuffer = stackBuffer;
+        } else {
+            heapBuffer.resize(numQuietMoves);
+            scoreBuffer = heapBuffer.data();
+        }
+        
+        // Pre-compute all scores once
+        size_t idx = 0;
+        for (auto it = killerEnd; it != moves.end(); ++it, ++idx) {
+            Move move = *it;
+            Square from = moveFrom(move);
+            Square to = moveTo(move);
+            
+            // Compute combined score once per move
+            int histScore = history.getScore(side, from, to) * 2;  // Scale by 2
+            int cmhScore = counterMoveHistory.getScore(prevMove, move) * cmhMultiplier;
+            
+            scoreBuffer[idx].move = move;
+            scoreBuffer[idx].score = histScore + cmhScore;
+        }
+        
+        // Sort by pre-computed scores
+        std::stable_sort(scoreBuffer, scoreBuffer + numQuietMoves);
+        
+        // Copy sorted moves back
+        idx = 0;
+        for (auto it = killerEnd; it != moves.end(); ++it, ++idx) {
+            *it = scoreBuffer[idx].move;
+        }
     }
 }
 
