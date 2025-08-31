@@ -215,6 +215,11 @@ eval::Score negamax(Board& board,
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
     
+    // Phase 4.2.c: Compute static eval early and preserve it for TT storage
+    // This will be the true static evaluation, not the search score
+    eval::Score staticEval = eval::Score::zero();
+    bool staticEvalComputed = false;
+    
     // Check if we're in check (needed for null move and other decisions)
     bool weAreInCheck = inCheck(board);
     
@@ -345,8 +350,24 @@ eval::Score negamax(Board& board,
                                   << std::hex << ttEntry->move << std::dec << std::endl;
                     }
                 }
+                
+                // Phase 4.2.c: Try to get static eval from TT if available
+                // The evalScore field should contain the true static evaluation
+                if (!staticEvalComputed && ttEntry->evalScore != 0) {
+                    staticEval = eval::Score(ttEntry->evalScore);
+                    staticEvalComputed = true;
+                }
             }
         }
+    }
+    
+    // Phase 4.2.c: Compute static eval if not in check and haven't gotten it from TT
+    // We need this for pruning decisions and to store in TT later
+    if (!staticEvalComputed && !weAreInCheck) {
+        staticEval = board.evaluate();
+        staticEvalComputed = true;
+        // Cache it in search stack for potential reuse
+        searchInfo.setStaticEval(ply, staticEval);
     }
     
     // Stage 21 Phase A4: Null Move Pruning with Static Null Move and Tuning
@@ -356,32 +377,14 @@ eval::Score negamax(Board& board,
     // Phase A4: Static null move pruning (reverse futility) for shallow depths
     // This is a lightweight check before the more expensive null move search
     if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
-        // Only evaluate if we haven't already
-        eval::Score staticEval = eval::Score::zero();
-        
-        // Try to get cached eval first
-        if (ply > 0) {
-            int cachedEval = searchInfo.getStackEntry(ply).staticEval;
-            if (cachedEval != 0) {
-                staticEval = eval::Score(cachedEval);
-            }
-        }
-        
-        // If no cached eval and we're likely to benefit, compute it
-        if (staticEval == eval::Score::zero()) {
-            // Only evaluate if we think we might get a cutoff
-            // Quick material balance check first
-            if (board.material().balance(board.sideToMove()).value() - beta.value() > -200) {
-                staticEval = board.evaluate();
-                searchInfo.setStaticEval(ply, staticEval);
-                
-                // Margin based on depth (tunable)
-                eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
-                
-                if (staticEval - margin >= beta) {
-                    info.nullMoveStats.staticCutoffs++;
-                    return staticEval - margin;  // Return reduced score for safety
-                }
+        // Phase 4.2.c: Use our pre-computed static eval
+        if (staticEvalComputed) {
+            // Margin based on depth (tunable)
+            eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+            
+            if (staticEval - margin >= beta) {
+                info.nullMoveStats.staticCutoffs++;
+                return staticEval - margin;  // Return reduced score for safety
             }
         }
     }
@@ -579,17 +582,17 @@ eval::Score negamax(Board& board,
         if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
             && !isCapture(move) && !isPromotion(move)) {
             
-            // Always get fresh evaluation - no caching issues
-            eval::Score staticEval = board.evaluate();
-            
-            // Conservative margin that works well at depths 1-4
-            // Testing showed this formula optimal: +37.63 Elo
-            int futilityMargin = 150 + 60 * depth;
-            
-            // Prune if current position is so bad that even improving by margin won't help
-            if (staticEval <= alpha - eval::Score(futilityMargin)) {
-                info.futilityPruned++;
-                continue;  // Skip this move
+            // Phase 4.2.c: Use our pre-computed static eval for consistency
+            if (staticEvalComputed) {
+                // Conservative margin that works well at depths 1-4
+                // Testing showed this formula optimal: +37.63 Elo
+                int futilityMargin = 150 + 60 * depth;
+                
+                // Prune if current position is so bad that even improving by margin won't help
+                if (staticEval <= alpha - eval::Score(futilityMargin)) {
+                    info.futilityPruned++;
+                    continue;  // Skip this move
+                }
             }
         }
         
@@ -969,9 +972,10 @@ eval::Score negamax(Board& board,
             }
             
             // Store the entry
-            // For now, use the same score for both score and evalScore
-            // In the future, we might want to store static eval separately
-            tt->store(zobristKey, bestMove, scoreToStore.value(), scoreToStore.value(), 
+            // Phase 4.2.c: Store the TRUE static eval, not the search score
+            // This allows better eval reuse and improving position detection
+            int16_t evalToStore = staticEvalComputed ? staticEval.value() : 0;
+            tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore, 
                      static_cast<uint8_t>(depth), bound);
             info.ttStores++;
         }
