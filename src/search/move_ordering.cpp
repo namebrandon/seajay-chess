@@ -161,6 +161,13 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Phase 4.1.b: Fast-path validation to skip stale killers
+            Square from = moveFrom(killer);
+            Piece piece = board.pieceAt(from);
+            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+                continue;  // Skip stale killer - wrong color or no piece
+            }
+            
             // Validate killer is pseudo-legal in current position (prevents pollution)
             if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
                 continue;  // Skip invalid killer from different position
@@ -205,6 +212,13 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Phase 4.1.b: Fast-path validation to skip stale killers
+            Square from = moveFrom(killer);
+            Piece piece = board.pieceAt(from);
+            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+                continue;  // Skip stale killer - wrong color or no piece
+            }
+            
             // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
             if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
                 continue;  // Skip invalid killer from different position
@@ -264,6 +278,13 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     for (int slot = 0; slot < 2; ++slot) {
         Move killer = killers.getKiller(ply, slot);
         if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Phase 4.1.b: Fast-path validation to skip stale killers
+            Square from = moveFrom(killer);
+            Piece piece = board.pieceAt(from);
+            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+                continue;  // Skip stale killer - wrong color or no piece
+            }
+            
             // PHASE MO2a: Validate killer is pseudo-legal (prevents pollution)
             if (!seajay::MoveGenerator::isPseudoLegal(board, killer)) {
                 continue;  // Skip invalid killer from different position
@@ -284,17 +305,24 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
         if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
-            // PHASE MO2a: Also validate countermove is pseudo-legal
-            if (seajay::MoveGenerator::isPseudoLegal(board, counterMove)) {
-                // Find the countermove in the remaining quiet moves
-                auto it = std::find(killerEnd, moves.end(), counterMove);
-                if (it != moves.end() && it != killerEnd) {
-                    // Move countermove right after killers
-                    std::rotate(killerEnd, it, it + 1);
-                    ++killerEnd;  // History moves go after countermove
-                    
-                    // CM4.1: Track that we found and used a countermove
-                    // This will be picked up by SearchData stats later
+            // Phase 4.1.b: Fast-path validation for countermove
+            Square from = moveFrom(counterMove);
+            Piece piece = board.pieceAt(from);
+            
+            // Only proceed if piece exists and is the right color
+            if (piece != NO_PIECE && colorOf(piece) == board.sideToMove()) {
+                // PHASE MO2a: Also validate countermove is pseudo-legal
+                if (seajay::MoveGenerator::isPseudoLegal(board, counterMove)) {
+                    // Find the countermove in the remaining quiet moves
+                    auto it = std::find(killerEnd, moves.end(), counterMove);
+                    if (it != moves.end() && it != killerEnd) {
+                        // Move countermove right after killers
+                        std::rotate(killerEnd, it, it + 1);
+                        ++killerEnd;  // History moves go after countermove
+                        
+                        // CM4.1: Track that we found and used a countermove
+                        // This will be picked up by SearchData stats later
+                    }
                 }
             }
         }
