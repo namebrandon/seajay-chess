@@ -22,29 +22,41 @@ void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
     
     // ===== PAWN ENDGAME PST PARAMETERS =====
     if (param == "pawn_eg_r3_d") {
-        // Rank 3, D and E files (central pawns)
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_D), Rank(RANK_3)), value);
+        // Rank 3, D file - use updateEndgameValue to control D and its mirror separately
+        updateEndgameValue(PAWN, makeSquare(File(FILE_D), Rank(RANK_3)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_E), Rank(RANK_3)), value);
     }
     else if (param == "pawn_eg_r3_e") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_E), Rank(RANK_3)), value);
+        // Rank 3, E file - Actually controls C and F (the outer center files)
+        updateEndgameValue(PAWN, makeSquare(File(FILE_C), Rank(RANK_3)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_F), Rank(RANK_3)), value);
     }
     else if (param == "pawn_eg_r4_d") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_D), Rank(RANK_4)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_D), Rank(RANK_4)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_E), Rank(RANK_4)), value);
     }
     else if (param == "pawn_eg_r4_e") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_E), Rank(RANK_4)), value);
+        // Actually controls C and F files
+        updateEndgameValue(PAWN, makeSquare(File(FILE_C), Rank(RANK_4)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_F), Rank(RANK_4)), value);
     }
     else if (param == "pawn_eg_r5_d") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_D), Rank(RANK_5)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_D), Rank(RANK_5)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_E), Rank(RANK_5)), value);
     }
     else if (param == "pawn_eg_r5_e") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_E), Rank(RANK_5)), value);
+        // Actually controls C and F files
+        updateEndgameValue(PAWN, makeSquare(File(FILE_C), Rank(RANK_5)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_F), Rank(RANK_5)), value);
     }
     else if (param == "pawn_eg_r6_d") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_D), Rank(RANK_6)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_D), Rank(RANK_6)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_E), Rank(RANK_6)), value);
     }
     else if (param == "pawn_eg_r6_e") {
-        updateEndgameSymmetric(PAWN, makeSquare(File(FILE_E), Rank(RANK_6)), value);
+        // Actually controls C and F files
+        updateEndgameValue(PAWN, makeSquare(File(FILE_C), Rank(RANK_6)), value);
+        updateEndgameValue(PAWN, makeSquare(File(FILE_F), Rank(RANK_6)), value);
     }
     else if (param == "pawn_eg_r7_center") {
         // Rank 7 - all central files get same value
