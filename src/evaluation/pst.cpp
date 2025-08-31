@@ -13,6 +13,10 @@ constexpr int RANK_5 = 4, RANK_6 = 5, RANK_7 = 6, RANK_8 = 7;
 
 // Implementation of SPSA parameter update from UCI
 void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
+    // Clamp value as safety measure (belt-and-suspenders)
+    // Even though UCI should enforce bounds, some GUIs might not
+    value = std::clamp(value, -200, 200);
+    
     // Parse parameter name and update corresponding PST values
     // Using simplified zone-based approach for initial SPSA implementation
     
@@ -131,10 +135,9 @@ void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
     
     // ===== ROOK ENDGAME PST PARAMETERS =====
     else if (param == "rook_eg_7th") {
-        // 7th rank (2nd rank for Black)
+        // 7th rank only - rank mirroring handles Black's 2nd rank automatically
         for (int f = FILE_A; f <= FILE_H; ++f) {
             updateEndgameValue(ROOK, makeSquare(File(f), RANK_7), value);
-            updateEndgameValue(ROOK, makeSquare(File(f), RANK_2), value);
         }
     }
     else if (param == "rook_eg_active") {
@@ -146,11 +149,11 @@ void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
         }
     }
     else if (param == "rook_eg_passive") {
-        // Passive squares (ranks 1, 3, 8)
+        // Passive squares - back rank and rank 3 only
+        // Rank mirroring handles Black's equivalent ranks
         for (int f = FILE_A; f <= FILE_H; ++f) {
             updateEndgameValue(ROOK, makeSquare(File(f), RANK_1), value);
             updateEndgameValue(ROOK, makeSquare(File(f), RANK_3), value);
-            updateEndgameValue(ROOK, makeSquare(File(f), RANK_8), value);
         }
     }
     
@@ -174,10 +177,9 @@ void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
         }
     }
     else if (param == "queen_eg_back") {
-        // Back rank squares
+        // Back rank only - rank mirroring handles Black's back rank
         for (int f = FILE_A; f <= FILE_H; ++f) {
             updateEndgameValue(QUEEN, makeSquare(File(f), RANK_1), value);
-            updateEndgameValue(QUEEN, makeSquare(File(f), RANK_8), value);
         }
     }
 }

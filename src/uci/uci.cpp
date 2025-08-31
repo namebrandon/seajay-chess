@@ -1001,6 +1001,9 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         try {
             int paramValue = std::stoi(value);
             eval::PST::updateFromUCIParam(optionName, paramValue);
+            // CRITICAL: Recalculate PST score for current board position
+            // This ensures evaluation reflects new PST values immediately
+            m_board.recalculatePSTScore();
             std::cerr << "info string PST parameter " << optionName << " set to " << paramValue << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid value for " << optionName << ": " << value << std::endl;

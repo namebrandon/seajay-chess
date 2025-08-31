@@ -122,6 +122,10 @@ public:
         s_pstTables = s_defaultPSTTables;
     }
     
+    // Force recalculation flag for SPSA
+    static bool needsRecalculation() noexcept { return s_needsRecalc; }
+    static void setNeedsRecalculation(bool value) noexcept { s_needsRecalc = value; }
+    
 private:
     // Mutable PST tables for SPSA tuning
     static inline std::array<std::array<MgEgScore, 64>, 6> s_pstTables = {
@@ -293,6 +297,9 @@ private:
             MgEgScore(-30, -10), MgEgScore(-30, -20), MgEgScore(-30, -30), MgEgScore(-30, -50)
         }
     };
+    
+    // Flag for SPSA recalculation
+    static inline bool s_needsRecalc = false;
     
     // Default PST tables for resetting after SPSA tuning (same values as initial)
     static constexpr std::array<std::array<MgEgScore, 64>, 6> s_defaultPSTTables = {
