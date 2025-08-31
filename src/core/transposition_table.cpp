@@ -11,11 +11,13 @@ namespace seajay {
 AlignedBuffer::AlignedBuffer(size_t size) : m_size(size) {
     if (size > 0) {
         // Allocate 64-byte aligned memory for cache line optimization
-        m_data = std::aligned_alloc(64, size);
+        // C standard requires size to be a multiple of alignment
+        size_t alignedSize = (size + 63) & ~size_t(63);  // Round up to multiple of 64
+        m_data = std::aligned_alloc(64, alignedSize);
         if (!m_data) {
             throw std::bad_alloc();
         }
-        // Zero-initialize for consistency
+        // Zero-initialize for consistency (use original size, not aligned size)
         std::memset(m_data, 0, size);
     }
 }
@@ -46,7 +48,9 @@ void AlignedBuffer::resize(size_t newSize) {
         free();
         m_size = newSize;
         if (newSize > 0) {
-            m_data = std::aligned_alloc(64, newSize);
+            // C standard requires size to be a multiple of alignment
+            size_t alignedSize = (newSize + 63) & ~size_t(63);  // Round up to multiple of 64
+            m_data = std::aligned_alloc(64, alignedSize);
             if (!m_data) {
                 m_size = 0;
                 throw std::bad_alloc();
@@ -143,8 +147,9 @@ TTEntry* TranspositionTable::probe(Hash key) {
     TTEntry* entry = &m_entries[idx];
     
     // Check if this is the position we're looking for
+    // CRITICAL FIX: Must check isEmpty() first to avoid false hits on garbage data
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
-    if (entry->key32 == key32) {
+    if (!entry->isEmpty() && entry->key32 == key32) {
         m_stats.hits++;
         return entry;
     }
