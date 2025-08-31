@@ -638,23 +638,22 @@ if (tt && tt->isEnabled()) {
 **Risk**: Low - single line additions
 **Testing**: SPRT [-3.00, 3.00]
 
-##### Phase 4.2.c: Store True Static Eval in TT
-**Current Issue**: `evalScore` is set to search score, not static eval
-**Codex Finding**: This prevents eval reuse and improving detection
-**Implementation**:
-```cpp
-// In negamax, compute staticEval early and preserve it:
-Score staticEval = board.evaluate();
-// ... search logic ...
-// On TT store:
-tt->store(zobristKey, bestMove, scoreToStore.value(), 
-          staticEval.value(),  // <- Store actual static eval, not search score
-          static_cast<uint8_t>(depth), bound);
-```
-**Location**: `src/search/negamax.cpp` - all TT store calls
-**Expected**: 2-3% NPS from eval reuse, better pruning decisions
-**Risk**: Medium - requires careful static eval management
-**Testing**: SPRT [-3.00, 5.00]
+##### Phase 4.2.c: Store True Static Eval in TT ✅ **COMPLETE**
+**Implementation Complete**: 77847cf (initial), 0aa0f4a (expert fixes)
+**What Was Done**:
+- Compute static eval once early in negamax and preserve throughout
+- Store true static eval in TT evalScore field (not search score)
+- Added TT_EVAL_NONE sentinel (-32768) to distinguish "no eval" from legitimate 0
+- Fixed quiescence to avoid storing minus_infinity when in check
+- Fixed ttBound variable shadowing in TT probe section
+**Expert Review Addressed**:
+- Zero-sentinel bug: Now uses proper sentinel value
+- Quiescence pollution: Only stores real static evals
+- Code hygiene: Fixed variable shadowing
+**Results**: 
+- NPS: Maintained at ~1.1M
+- Expected: 2-3% improvement from eval reuse
+- Awaiting SPRT confirmation
 
 ##### Phase 4.2.d: Hash Indexing (OPTIONAL)
 **Current**: Multiplicative hash `(key * 0x9E3779B97F4A7C15ULL) & m_mask`
@@ -1052,7 +1051,7 @@ MANDATORY READING BEFORE ANY WORK:
 | 4 | Search Optimizations | feature/20250830-tt-optimization | **IN PROGRESS** | ~1021K | 1.3-1.5M (target) | - |
 | 4.2.a | - Depth-preferred TT replace | e53f271, 27d9c25 | **Complete** | ~1021K | ~1021K | +10+ ELO ✅ |
 | 4.2.b | - TT prefetching | be6e574 | **Complete** | ~1021K | ~1031K | Testing |
-| 4.2.c | - Store true static eval | - | Ready | - | - | **NEXT** |
+| 4.2.c | - Store true static eval | 77847cf, 0aa0f4a | **Complete** | ~1031K | ~1031K | Awaiting SPRT |
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
 | 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
@@ -1223,18 +1222,18 @@ MANDATORY READING BEFORE ANY WORK:
 - **Testing catches bugs** - Early SPRT revealed the generation issue
 
 ### Next Steps:
-1. **CURRENT**: Wait for Phase 4.2.b SPRT results
-2. **NEXT**: Phase 4.2.c - Store true static eval in TT
-3. Then Phase 4.1.b - Killer fast-path validation
-4. Continue with Phase 4.3 (Counter-move history)
+1. **CURRENT**: Wait for Phase 4.2.c SPRT results (true static eval storage)
+2. **NEXT**: Phase 4.1.b - Killer fast-path validation
+3. Then Phase 4.3.a - Counter-move history
+4. Continue with Phase 4.4 (Pruning and parameter tuning)
 5. Target: 1.3-1.5M NPS after full Phase 4 completion
 
 ### Phase 4 Implementation Status:
 - ✅ **Phase 4.2.a** - Depth-preferred TT replacement (COMPLETE, +10+ ELO)
 - ✅ **Phase 4.2.b** - TT prefetching (COMPLETE, testing)
-- ⏳ **Phase 4.2.c** - Store true static eval in TT (NEXT)
+- ✅ **Phase 4.2.c** - Store true static eval in TT (COMPLETE, awaiting SPRT)
 - ✅ **Phase 4.1.c** - Fix TT isEmpty() bug (COMPLETE)
-- 🔜 **Phase 4.1.b** - Killer fast-path validation
+- 🔜 **Phase 4.1.b** - Killer fast-path validation (NEXT)
 - 🔜 **Phase 4.3.a** - Counter-move history
 - 🔜 **Phase 4.4** - Pruning and parameter tuning
 
@@ -1263,9 +1262,29 @@ MANDATORY READING BEFORE ANY WORK:
 **Results**: ~1% NPS improvement (1021K → 1031K)
 **Expected**: Neutral to slightly positive ELO, helps hide memory latency
 
+#### Phase 4.2.c - Store True Static Eval in TT ✅
+**Commits**: 77847cf (initial), 0aa0f4a (expert fixes)
+**Implementation**:
+- Compute static evaluation once early in negamax and preserve it
+- Store true static eval in TT instead of search score (evalScore field)
+- Added TT_EVAL_NONE sentinel (INT16_MIN) to distinguish "no eval" from legitimate 0
+- Fixed quiescence to not store minus_infinity as static eval when in check
+- Fixed ttBound variable shadowing issue
+**Expert Review Fixes**:
+- Static eval sentinel bug: Zero is legitimate eval, now using TT_EVAL_NONE
+- Quiescence pollution: No longer stores invalid evals when in check
+- Variable shadowing: Fixed ttBound shadowing in TT probe section
+**Results**: 
+- NPS maintained at ~1.1M
+- Expected 2-3% NPS improvement from eval reuse
+- Better pruning decisions from accurate improving detection
+**Status**: Ready for SPRT testing
+
+**Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
+
 ---
 
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization (Phase 4.2 active)
-Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b)
-Next Work: Phase 4.2.c (Store true static eval in TT)
+Current Branch: feature/20250830-tt-optimization (Phase 4.2 complete)
+Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c)
+Next Work: Phase 4.1.b (Killer fast-path validation)

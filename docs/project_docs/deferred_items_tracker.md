@@ -2023,3 +2023,174 @@ if (reduction > 0) {
 - **Stage 20: LMR** ← THEN LMR
 - Stage 21: Aspiration Windows
 - Stage 22: Other optimizations
+
+## Search Stack Static Eval Sentinel Issue (DEFERRED FROM Phase 4.2.c)
+
+**Date Added:** August 31, 2025  
+**Status:** DEFERRED - Lower priority architectural improvement needed  
+**Source:** Expert review of Phase 4.2.c TT static eval storage implementation  
+**Priority:** MEDIUM - Affects improving position detection accuracy  
+
+### The Problem
+
+The search stack uses 0 as a sentinel value to indicate "no static eval stored", but 0 is a legitimate evaluation value. This creates ambiguity that can affect search quality, particularly for improving position detection used in various pruning decisions.
+
+### Current Implementation Issues
+
+1. **Zero-as-Sentinel Ambiguity**
+   ```cpp
+   // In SearchStack structure
+   int staticEval;  // 0 means "unknown" but could also be legitimate eval
+   
+   // In improving position detection
+   if (prevEval != 0 && currEval != 0) {  // Can't distinguish 0 eval from "not set"
+       bool improving = currEval > prevEval;
+   }
+   ```
+
+2. **Impact on Pruning Decisions**
+   - Futility pruning uses improving status to adjust margins
+   - LMR uses improving to determine reduction amounts
+   - Null move pruning may use improving for decisions
+   - When static eval legitimately equals 0, these features malfunction
+
+3. **Comparison with TT Fix**
+   - Same issue existed in TT (fixed in Phase 4.2.c with TT_EVAL_NONE sentinel)
+   - TT now uses INT16_MIN as sentinel, clearly distinguishing from real evals
+   - Search stack still has the ambiguity problem
+
+### Recommended Solution
+
+#### Option 1: Use Sentinel Value (Preferred)
+```cpp
+// In search_info.h or wherever SearchStack is defined
+struct SearchStackEntry {
+    static constexpr int EVAL_NONE = std::numeric_limits<int>::min();
+    
+    int staticEval = EVAL_NONE;  // Clear sentinel value
+    // ... other members
+    
+    bool hasStaticEval() const { 
+        return staticEval != EVAL_NONE; 
+    }
+    
+    void setStaticEval(int eval) {
+        staticEval = eval;  // Can now store 0 legitimately
+    }
+};
+
+// In negamax.cpp for improving detection
+int prevEval = searchInfo.getStackEntry(ply - 2).staticEval;
+int currEval = searchInfo.getStackEntry(ply).staticEval;
+
+if (searchInfo.getStackEntry(ply - 2).hasStaticEval() && 
+    searchInfo.getStackEntry(ply).hasStaticEval()) {
+    bool improving = currEval > prevEval;  // Now reliable even when eval is 0
+    // Use improving for pruning decisions
+}
+```
+
+#### Option 2: Add Explicit Flag
+```cpp
+struct SearchStackEntry {
+    int staticEval = 0;
+    bool staticEvalValid = false;  // Explicit validity flag
+    
+    void setStaticEval(int eval) {
+        staticEval = eval;
+        staticEvalValid = true;
+    }
+    
+    bool hasStaticEval() const { 
+        return staticEvalValid; 
+    }
+};
+```
+
+### Why This Was Deferred
+
+1. **Lower Impact Than Other Fixes**
+   - TT sentinel bug was critical (affected eval reuse)
+   - Quiescence pollution was storing invalid data
+   - This issue is more subtle, affecting edge cases
+
+2. **Requires Broader Changes**
+   - Need to update all places that check/set static eval
+   - Must modify improving detection logic throughout
+   - Risk of introducing bugs in working code
+
+3. **Current Workaround Exists**
+   - Positions with true 0 eval are relatively rare
+   - Most positions have non-zero evaluation
+   - Impact estimated at 1-3 ELO maximum
+
+### Implementation Considerations
+
+1. **Memory Impact**
+   - Sentinel approach: No additional memory
+   - Flag approach: 1 extra byte per search stack entry
+   - Search stack is small (MAX_PLY entries), so impact minimal
+
+2. **Code Changes Required**
+   - Update SearchStack/SearchInfo structure definition
+   - Modify all static eval setters to use new method
+   - Update improving detection in negamax.cpp
+   - Update any other code checking for static eval presence
+   - Add assertions to catch misuse
+
+3. **Testing Requirements**
+   - Verify improving detection works correctly with 0 evals
+   - Test positions with material balance exactly 0
+   - Check pruning decisions in balanced positions
+   - Run SPRT to ensure no regression
+
+### When to Implement
+
+**Recommended Timeline:**
+- After current Phase 4 optimizations are complete and stable
+- Before implementing features that heavily rely on improving detection
+- Could be bundled with other search stack improvements
+
+**Triggers for Implementation:**
+- If profiling shows many positions with 0 eval
+- If new pruning technique needs accurate improving detection
+- As part of general search stack cleanup/refactoring
+
+### Expected Benefits
+
+- **Correctness**: Accurate improving detection in all positions
+- **Reliability**: No edge cases with 0 evaluations
+- **Consistency**: Matches approach used in TT (already fixed)
+- **Future-proofing**: Enables more sophisticated pruning techniques
+- **Estimated ELO**: 1-3 ELO from better pruning decisions
+
+### References
+
+1. **Expert Review**: Phase 4.2.c feedback identified this issue
+2. **TT Fix Example**: See commit 0aa0f4a for similar fix in TT
+3. **Current Code**: 
+   - Search stack: `/workspace/src/search/search_info.h`
+   - Improving detection: `/workspace/src/search/negamax.cpp`
+4. **Similar Engines**: Stockfish uses explicit "value is valid" tracking
+
+### Risk Assessment
+
+**Low Risk:**
+- Well-understood problem with clear solution
+- Similar fix already successful in TT
+- Can be implemented incrementally
+- Easy to test and validate
+
+**Potential Issues:**
+- Must ensure all code paths updated
+- Need to handle uninitialized stack entries
+- Backward compatibility with existing code
+
+### Success Criteria
+
+1. Zero evaluations correctly distinguished from "not set"
+2. Improving detection accurate for all eval values
+3. No performance regression in SPRT testing
+4. Clean, maintainable code matching TT approach
+5. All tests pass including edge cases
+
