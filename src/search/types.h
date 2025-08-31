@@ -86,7 +86,7 @@ struct SearchLimits {
     int countermoveBonus = 0;  // Bonus score for countermoves (0 = disabled)
     
     // Phase 4.3.a: Counter-move history weight
-    float counterMoveHistoryWeight = 1.5f;  // Weight for CMH in move ordering (1.5 default)
+    float counterMoveHistoryWeight = 1.0f;  // Weight for CMH in move ordering (1.0 optimal per testing)
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     bool useMoveCountPruning = true;    // Enable/disable move count pruning
