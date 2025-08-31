@@ -405,8 +405,11 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
         
-        // Convert float weight to integer multiplier (1.5 -> 3/2)
-        int cmhMultiplier = static_cast<int>(cmhWeight * 2.0f);  // 1.5 * 2 = 3
+        // Pure integer arithmetic for CMH weight (avoid float conversion overhead)
+        // cmhWeight of 1.5 becomes 3/2, 1.0 becomes 2/2, etc.
+        // We multiply by 2 first to avoid precision loss
+        int cmhNumerator = static_cast<int>(cmhWeight * 2.0f + 0.5f);  // Round to nearest
+        constexpr int cmhDenominator = 2;
         
         // Pre-compute combined scores for all quiet moves
         const size_t numQuietMoves = std::distance(killerEnd, moves.end());
@@ -414,7 +417,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         // Use a small struct to pair moves with their scores
         struct MoveScore {
             Move move;
-            int score;
+            int32_t score;  // Use int32_t to prevent overflow
             bool operator<(const MoveScore& other) const {
                 return score > other.score;  // Higher scores first
             }
@@ -441,9 +444,12 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
             Square from = moveFrom(move);
             Square to = moveTo(move);
             
-            // Compute combined score once per move
-            int histScore = history.getScore(side, from, to) * 2;  // Scale by 2
-            int cmhScore = counterMoveHistory.getScore(prevMove, move) * cmhMultiplier;
+            // Compute combined score with overflow prevention
+            // History range: [-8192, 8192], scaled by 2 -> [-16384, 16384]
+            // CMH range: [-8192, 8192], scaled by weight -> max [-12288, 12288] at 1.5x
+            // Total max range: [-28672, 28672] which fits in int32_t
+            int32_t histScore = static_cast<int32_t>(history.getScore(side, from, to)) * 2;
+            int32_t cmhScore = (static_cast<int32_t>(counterMoveHistory.getScore(prevMove, move)) * cmhNumerator) / cmhDenominator;
             
             scoreBuffer[idx].move = move;
             scoreBuffer[idx].score = histScore + cmhScore;

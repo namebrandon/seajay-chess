@@ -101,10 +101,15 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     if (depth >= 4 && searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
         // Use counter-move history for enhanced move ordering at sufficient depth
-        // Get CMH weight from search limits
-        float cmhWeight = 1.5f;  // default
+        // Get CMH weight from search limits - should always be available
+        float cmhWeight = 1.5f;  // default fallback (shouldn't be hit)
         if (limits != nullptr) {
             cmhWeight = limits->counterMoveHistoryWeight;
+        } else {
+            // This shouldn't happen in normal search - log if in debug mode
+            #ifdef DEBUG
+            std::cerr << "Warning: SearchLimits not available in orderMoves, using default CMH weight" << std::endl;
+            #endif
         }
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, *searchData->counterMoveHistory,

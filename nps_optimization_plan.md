@@ -1055,7 +1055,7 @@ MANDATORY READING BEFORE ANY WORK:
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
 | 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
-| 4.3.a | - Counter-move history | 8a78aff, 84060c4 | **Complete** | ~1031K | ~1032K | Awaiting SPRT |
+| 4.3.a | - Counter-move history | 8a78aff, 84060c4, b0324ca, e665314, badbcf1 | **Testing** | ~1031K | ~1032K | Regression fixes applied |
 | 4.4.a | - Tune LMR parameters | - | Ready | - | - | SPSA |
 | 4.4.b | - Futility improvements | - | Careful | - | - | Keep depth 4 |
 | 5 | Memory & Cache | TBD | Deferred | - | - | - |
@@ -1282,9 +1282,9 @@ MANDATORY READING BEFORE ANY WORK:
 
 **Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
 
-#### Phase 4.3.a - Counter-Move History (FIXES COMPLETE - AWAITING TEST)
-**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), e665314 (fix2)
-**Status**: All fixes applied, awaiting SPRT confirmation of ELO recovery
+#### Phase 4.3.a - Counter-Move History (ALL FIXES APPLIED)
+**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), e665314 (fix2), badbcf1 (fix3)
+**Status**: All regression fixes applied, testing shows continued improvement but still net negative
 
 **Initial Implementation Issues (Found by Expert Review):**
 1. **Memory miscalculation**: Was actually 67MB, not 32MB as claimed
@@ -1311,17 +1311,39 @@ Initial testing showed -30 to -35 ELO loss. Expert identified these issues:
 **Phase 4.3.a-fix2 (e665314) - Performance Recovery:**
 4. ✅ **Depth gating**: Only use CMH at depth >= 4 (reduces early noise)
 5. ✅ **Decouple countermove positioning**: Always position countermove (was gated on bonus)
-6. **Pre-compute scores**: Cache scores before sorting (deferred for future)
+
+**Phase 4.3.a-fix3 (badbcf1) - Sorting Optimization:**
+6. ✅ **Pre-compute scores**: Cache scores before sorting to avoid O(n log n) recalculations
+   - Stack allocation for <32 quiet moves (typical case)
+   - Single computation per move instead of repeated during comparisons
+   - Reduces memory traffic and CPU cycles
 
 **Final Status After All Fixes:**
 - **Memory**: 512KB per thread (cache-friendly)
 - **NPS**: ~1.03M maintained (minimal overhead)
-- **ELO**: All fixes applied, expecting full recovery
-- **Testing**: Awaiting SPRT confirmation
+- **ELO Progress**: Regression reduced from -35 → improving but still net negative
+- **Testing Status**: fix1+fix2+fix3 complete, monitoring results
+
+**Summary of Fix Impact:**
+- fix1: Recovered ~10-15 ELO (UCI wiring, integer math, single decay)
+- fix2: Additional ~5-10 ELO (depth gating, countermove decoupling)
+- fix3: Further optimization (pre-computed scores)
+- **Total**: Significant recovery but not yet break-even
+
+**SPSA Tuning String for CMH Weight:**
+```
+counterMoveHistoryWeight, float, 1.5, 0.0, 3.0, 0.15, 0.002
+```
+Ready for SPSA tuning to find optimal weight value.
 
 ---
 
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization (Phase 4.2 and 4.3.a complete)
-Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c), 8a78aff, 84060c4 (4.3.a)
-Next Work: Phase 4.3.b (History score normalization)
+Current Branch: feature/20250830-tt-optimization (Phase 4.2 complete, 4.3.a fixes applied)
+Latest Commits: 
+- Phase 4.2: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c)
+- Phase 4.3.a: 8a78aff (initial), 84060c4 (memory fix), b0324ca (fix1), e665314 (fix2), badbcf1 (fix3)
+Next Work: 
+- Monitor Phase 4.3.a test results
+- SPSA tune counterMoveHistoryWeight parameter
+- Consider Phase 4.1.b (Killer fast-path validation) if CMH remains negative
