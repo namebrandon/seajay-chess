@@ -2194,3 +2194,59 @@ struct SearchStackEntry {
 4. Clean, maintainable code matching TT approach
 5. All tests pass including edge cases
 
+## Phase 4.3.a - Counter-Move History (CMH) - DEFERRED
+
+**Date Added:** August 31, 2025  
+**Status:** IMPLEMENTED BUT DISABLED - No ELO gain demonstrated  
+**Source:** Phase 4.3.a implementation and extensive testing  
+**Priority:** LOW - Revisit only after engine reaches higher strength  
+
+### Summary
+
+Counter-Move History was fully implemented with multiple optimization rounds based on expert feedback:
+- Fixed double decay issue (decay only on positive updates)
+- Implemented pure integer arithmetic to avoid float overhead
+- Added overflow prevention with int32_t scoring
+- Increased depth gate from 4 to 6 for better time control performance
+- Tested with weights 0.0, 1.0, and 1.5
+
+### Testing Results
+
+Despite extensive optimization and testing:
+- **Weight 1.5:** -6 ELO regression
+- **Weight 1.0:** +5-7 ELO initially, but ultimately neutral in extended testing
+- **Weight 0.0:** Best performance (CMH disabled)
+- **Depth gate 6:** No improvement over disabled state
+
+### Likely Causes
+
+1. **Time Control Sensitivity:** CMH tables need time to warm up, may only show benefit at longer time controls
+2. **Engine Strength:** At ~2200 ELO, SeaJay may not generate consistent enough move patterns for CMH to learn effectively
+3. **Table Pollution:** Fast time controls don't provide enough samples for meaningful statistics
+4. **Implementation Overhead:** Even with optimizations, overhead exceeds benefit at current strength
+
+### Future Considerations
+
+**When to Revisit:**
+- When engine reaches 2400+ ELO
+- When testing at longer time controls (60+0 or slower)
+- After improving base move ordering accuracy
+- If implementing SMP (CMH benefits from cross-thread learning)
+
+**Implementation Notes:**
+- Code is complete and working in move_ordering.cpp and countermove_history.h
+- UCI parameter counterMoveHistoryWeight defaults to 0.0 (disabled)
+- Can be re-enabled for testing via UCI: `setoption name CounterMoveHistoryWeight value 1.0`
+- All optimizations from expert review are implemented and can be reactivated
+
+### Technical Details Preserved
+
+The implementation includes:
+- Proper integer arithmetic (3/2 scaling for 1.5x weight)
+- Overflow prevention with int32_t intermediate values
+- Depth gating at depth >= 6
+- Double decay fix (only on positive updates)
+- Pre-computed scoring for efficiency
+
+All code remains in place for future testing when conditions are more favorable.
+
