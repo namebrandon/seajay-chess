@@ -6,6 +6,7 @@
 #include "killer_moves.h"
 #include "history_heuristic.h"
 #include "countermoves.h"
+#include "countermove_history.h"
 #include <chrono>
 #include <cstdint>
 
@@ -346,6 +347,11 @@ struct SearchData {
     // PERFORMANCE FIX: Changed from embedded to pointer (was 16KB embedded)
     CounterMoves* counterMoves = nullptr;
     int countermoveBonus = 0;  // CM3.3: Bonus value from UCI
+    
+    // Phase 4.3.a: Counter-move history heuristic
+    // Tracks history scores for move pairs (previous move -> current move)
+    // PERFORMANCE: Pointer to thread-local storage (32MB per thread)
+    CounterMoveHistory* counterMoveHistory = nullptr;
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;

@@ -21,6 +21,7 @@
 #include <iterator>
 #include <cassert>
 #include <vector>
+#include <memory>
 
 namespace seajay::search {
 
@@ -90,9 +91,16 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
     // Stage 23, CM3.2: Countermove lookup (no bonus yet)
+    // Phase 4.3.a: Counter-move history for better move ordering
     static MvvLvaOrdering mvvLva;
-    if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
-        // CM3.2: Use new overload with countermoves (bonus=0 for this phase)
+    if (searchData != nullptr && searchData->killers && searchData->history && 
+        searchData->counterMoves && searchData->counterMoveHistory) {
+        // Phase 4.3.a: Use counter-move history for enhanced move ordering
+        mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
+                                    *searchData->counterMoves, *searchData->counterMoveHistory,
+                                    prevMove, ply, countermoveBonus);
+    } else if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
+        // Fallback to basic countermoves without history
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, prevMove, ply, countermoveBonus);
     } else {
@@ -916,6 +924,18 @@ eval::Score negamax(Board& board,
                             if (prevMove != NO_MOVE) {
                                 info.counterMoves->update(prevMove, move);
                                 info.counterMoveStats.updates++;  // Track shadow mode updates
+                                
+                                // Phase 4.3.a: Update counter-move history
+                                if (info.counterMoveHistory) {
+                                    info.counterMoveHistory->update(board.sideToMove(), prevMove, move, depth);
+                                    
+                                    // Penalize quiet moves that were tried but didn't cause cutoff
+                                    for (const Move& quietMove : quietMoves) {
+                                        if (quietMove != move) {  // Don't penalize the cutoff move itself
+                                            info.counterMoveHistory->updateFailed(board.sideToMove(), prevMove, quietMove, depth);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -1003,10 +1023,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     HistoryHeuristic historyHeuristic;
     CounterMoves counterMovesTable;
     
+    // Phase 4.3.a: Allocate counter-move history on heap
+    // Note: This is 32MB per thread, allocated on heap to avoid stack overflow
+    std::unique_ptr<CounterMoveHistory> counterMoveHistoryPtr = std::make_unique<CounterMoveHistory>();
+    
     // Connect pointers to stack-allocated objects
     info.killers = &killerMoves;
     info.history = &historyHeuristic;
     info.counterMoves = &counterMovesTable;
+    info.counterMoveHistory = counterMoveHistoryPtr.get();
     
     // Phase PV1: Stack-allocate triangular PV array for future use
     // Currently passing nullptr to maintain existing behavior
@@ -1461,10 +1486,14 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     HistoryHeuristic historyHeuristic;
     CounterMoves counterMovesTable;
     
+    // Phase 4.3.a: Allocate counter-move history on heap
+    std::unique_ptr<CounterMoveHistory> counterMoveHistoryPtr = std::make_unique<CounterMoveHistory>();
+    
     // Connect pointers to stack-allocated objects
     info.killers = &killerMoves;
     info.history = &historyHeuristic;
     info.counterMoves = &counterMovesTable;
+    info.counterMoveHistory = counterMoveHistoryPtr.get();
     
     // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
     info.rootSideToMove = board.sideToMove();

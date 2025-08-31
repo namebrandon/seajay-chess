@@ -328,6 +328,94 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
 }
 
+// Phase 4.3.a: Order moves with counter-move history
+void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
+                                          const KillerMoves& killers, 
+                                          const HistoryHeuristic& history,
+                                          const CounterMoves& counterMoves,
+                                          const CounterMoveHistory& counterMoveHistory,
+                                          Move prevMove, int ply, int countermoveBonus) const {
+    // Nothing to order if empty or single move
+    if (moves.size() <= 1) {
+        return;
+    }
+    
+    // First do standard MVV-LVA ordering for captures
+    orderMoves(board, moves);
+    
+    // Find where quiet moves start (after captures/promotions)
+    auto quietStart = std::find_if(moves.begin(), moves.end(),
+        [](const Move& move) {
+            return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+        });
+    
+    if (quietStart == moves.end()) {
+        // No quiet moves, nothing more to do
+        return;
+    }
+    
+    // First, move killer moves to the front of quiet moves
+    auto killerEnd = quietStart;
+    for (int slot = 0; slot < 2; ++slot) {
+        Move killer = killers.getKiller(ply, slot);
+        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+            // Phase 4.1.b: Fast-path validation to skip obviously stale killers
+            Square from = moveFrom(killer);
+            Piece piece = board.pieceAt(from);
+            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+                continue;  // Skip stale killer - wrong color or no piece
+            }
+            
+            // Find this killer in the quiet moves section
+            auto it = std::find(killerEnd, moves.end(), killer);
+            if (it != moves.end() && it != killerEnd) {
+                // Move killer to front of quiet moves
+                std::rotate(killerEnd, it, it + 1);
+                ++killerEnd;  // Next killer goes after this one
+            }
+        }
+    }
+    
+    // Position countermove after killers
+    if (countermoveBonus > 0 && prevMove != NO_MOVE) {
+        Move counterMove = counterMoves.getCounterMove(prevMove);
+        
+        if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
+            // Fast-path validation for countermove
+            Square from = moveFrom(counterMove);
+            Piece piece = board.pieceAt(from);
+            
+            if (piece != NO_PIECE && colorOf(piece) == board.sideToMove()) {
+                // Find this countermove in the quiet moves section (after killers)
+                auto it = std::find(killerEnd, moves.end(), counterMove);
+                if (it != moves.end() && it != killerEnd) {
+                    // Move countermove to position after killers
+                    std::rotate(killerEnd, it, it + 1);
+                    ++killerEnd;  // Update end of special moves
+                }
+            }
+        }
+    }
+    
+    // Now sort the remaining quiet moves by combined history scores
+    // Regular history + counter-move history
+    if (killerEnd != moves.end()) {
+        Color side = board.sideToMove();
+        std::stable_sort(killerEnd, moves.end(),
+            [&history, &counterMoveHistory, side, prevMove](const Move& a, const Move& b) {
+                // Get regular history scores
+                int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
+                int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
+                
+                // Add counter-move history scores
+                scoreA += counterMoveHistory.getScore(side, prevMove, a);
+                scoreB += counterMoveHistory.getScore(side, prevMove, b);
+                
+                return scoreA > scoreB;  // Higher scores first
+            });
+    }
+}
+
 // Template implementation for integrating with existing code
 // OPTIMIZED: No heap allocation, in-place sorting
 template<typename MoveContainer>

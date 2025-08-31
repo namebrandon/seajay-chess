@@ -7,6 +7,7 @@
 #include "killer_moves.h"  // Stage 19: Killer moves integration
 #include "history_heuristic.h"  // Stage 20: History heuristic integration
 #include "countermoves.h"  // Stage 23: Countermove heuristic integration
+#include "countermove_history.h"  // Phase 4.3.a: Counter-move history
 #include <algorithm>
 #include <cassert>
 #include <array>
@@ -119,6 +120,14 @@ public:
                               const KillerMoves& killers, 
                               const HistoryHeuristic& history,
                               const CounterMoves& counterMoves,
+                              Move prevMove, int ply, int countermoveBonus) const;
+    
+    // Phase 4.3.a: Order moves with counter-move history
+    void orderMovesWithHistory(const Board& board, MoveList& moves,
+                              const KillerMoves& killers, 
+                              const HistoryHeuristic& history,
+                              const CounterMoves& counterMoves,
+                              const CounterMoveHistory& counterMoveHistory,
                               Move prevMove, int ply, int countermoveBonus) const;
     
     // Score a single move (exposed for testing)
