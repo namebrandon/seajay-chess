@@ -1051,8 +1051,8 @@ MANDATORY READING BEFORE ANY WORK:
 | ~~3.3.b~~ | ~~Further magic optimizations~~ | ~~347eadc-b4f1575~~ | **REVERTED** | ~1021K | ~1020K | ❌ Regression |
 | 4 | Search Optimizations | feature/20250830-tt-optimization | **IN PROGRESS** | ~1021K | 1.3-1.5M (target) | - |
 | 4.2.a | - Depth-preferred TT replace | e53f271, 27d9c25 | **Complete** | ~1021K | ~1021K | +10+ ELO ✅ |
-| 4.2.b | - TT prefetching | - | **In Progress** | - | - | **PRIORITY 2** |
-| 4.2.c | - Store true static eval | - | Ready | - | - | **PRIORITY 3** |
+| 4.2.b | - TT prefetching | be6e574 | **Complete** | ~1021K | ~1031K | Testing |
+| 4.2.c | - Store true static eval | - | Ready | - | - | **NEXT** |
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
 | 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
@@ -1196,11 +1196,11 @@ MANDATORY READING BEFORE ANY WORK:
 
 ---
 
-## Current Status Summary (2025-08-30)
+## Current Status Summary (2025-08-31)
 
 ### 🎉 MAJOR MILESTONE ACHIEVED: 1M+ NPS! 🎉
-- **Total NPS Improvement**: 477K → ~1,021K (114% improvement)
-- **Total ELO Gain**: ~130+ ELO from all optimizations
+- **Total NPS Improvement**: 477K → ~1,031K (116% improvement)
+- **Total ELO Gain**: ~140+ ELO from all optimizations
 - **TARGET ACHIEVED**: **BROKE 1M NPS BARRIER!** ✅
 
 ### Key Performance Wins:
@@ -1208,47 +1208,64 @@ MANDATORY READING BEFORE ANY WORK:
 2. **Magic bitboard optimization**: 12% NPS boost (Phase 3.3.a)
 3. **SIMD optimizations**: 17% NPS boost, +6-9 ELO
 4. **Compiler optimizations**: 14% NPS boost
+5. **TT optimizations**: +10+ ELO (Phase 4.2.a), small NPS gain (4.2.b)
 
-### Latest Results (Phase 3.3.a):
-- **Performance**: Achieved ~1,021K NPS (from ~910K)
-- **Strength**: Testing in progress
-- **Status**: Ready to merge to main after SPRT confirmation
+### Latest Phase 4.2 Results:
+- **Phase 4.2.a (Depth-preferred)**: +10+ ELO gain after bug fixes ✅
+- **Phase 4.2.b (Prefetching)**: 1% NPS improvement, testing in progress
+- **Critical Fixes**: Generation advancement and isEmpty() bugs resolved
+- **Status**: Phase 4.2.c ready to implement (store true static eval)
 
-### Important Lessons from Phase 3.3.b:
-- **Don't fight the compiler** - It often knows better
-- **Cache effects matter** - Prefetch hints can be valuable
-- **Test everything** - Even "obvious" optimizations can regress
-- **Magic bitboards are hard to beat** - Already near-optimal
+### Key Lessons from Phase 4.2:
+- **Generation advancement is CRITICAL** - Must call tt->newSearch()
+- **Edge cases matter** - isEmpty() bug could cause rare corruption
+- **Prefetching helps** - Small but measurable NPS gains
+- **Testing catches bugs** - Early SPRT revealed the generation issue
 
-### Next Steps (Updated per Codex Review):
-1. **IMMEDIATE**: Start with Phase 4.2.a - Depth-preferred TT replacement (HIGHEST IMPACT)
-2. Follow with Phase 4.2.b and 4.2.c - TT prefetching and static eval storage
-3. Implement Phase 4.1 quick wins (killer validation, TT bug fix)
-4. Continue with Phase 4.3-4.5 based on test results
-5. Target: 1.3-1.5M NPS after Phase 4 completion
+### Next Steps:
+1. **CURRENT**: Wait for Phase 4.2.b SPRT results
+2. **NEXT**: Phase 4.2.c - Store true static eval in TT
+3. Then Phase 4.1.b - Killer fast-path validation
+4. Continue with Phase 4.3 (Counter-move history)
+5. Target: 1.3-1.5M NPS after full Phase 4 completion
 
-### Phase 4 Priority Order (Revised):
-1. **Phase 4.2.a** - Depth-preferred TT replacement ← **START HERE**
-2. **Phase 4.2.b** - TT prefetching at probe sites
-3. **Phase 4.2.c** - Store true static eval in TT
-4. **Phase 4.1.b** - Killer fast-path validation (easy win)
-5. **Phase 4.1.c** - Fix TT isEmpty() bug (correctness)
-6. **Phase 4.3.a** - Counter-move history
-7. **Phase 4.4** - Pruning and parameter tuning (careful testing)
+### Phase 4 Implementation Status:
+- ✅ **Phase 4.2.a** - Depth-preferred TT replacement (COMPLETE, +10+ ELO)
+- ✅ **Phase 4.2.b** - TT prefetching (COMPLETE, testing)
+- ⏳ **Phase 4.2.c** - Store true static eval in TT (NEXT)
+- ✅ **Phase 4.1.c** - Fix TT isEmpty() bug (COMPLETE)
+- 🔜 **Phase 4.1.b** - Killer fast-path validation
+- 🔜 **Phase 4.3.a** - Counter-move history
+- 🔜 **Phase 4.4** - Pruning and parameter tuning
 
 ---
 
-### Phase 4.2.a - Depth-Preferred TT Replacement (2025-08-31) ✅ **SUCCESS**
+### Phase 4.2 - Transposition Table Optimizations (2025-08-31) 🔥 **MAJOR SUCCESS**
+
+#### Phase 4.2.a - Depth-Preferred TT Replacement ✅
 **Commits**: e53f271 (initial), 27d9c25 (critical fixes)
-**Critical Bug Fixes**:
-- Fixed generation advancement (tt->newSearch() was never called)
-- Fixed isEmpty() edge case (now uses genBound == 0)
-**Results**: +10+ ELO gain (early SPRT very positive)
-**Key Learning**: Generation advancement is critical for TT replacement strategies
+**Critical Bug Fixes Found and Fixed**:
+1. **Generation advancement bug**: tt->newSearch() existed but was NEVER called
+   - Impact: All entries stayed at generation 0, breaking replacement logic
+   - Fix: Added tt->newSearch() call at start of searchIterativeTest()
+2. **isEmpty() edge case**: Used (key32==0 && move==0) which could misclassify
+   - Impact: Rare TT corruption possible
+   - Fix: Now uses genBound==0 as empty indicator (more robust)
+**Results**: +10+ ELO gain (SPRT showing strong positive signal)
+**Key Learning**: Generation advancement is CRITICAL - without it, depth-preferred replacement doesn't work
+
+#### Phase 4.2.b - TT Prefetching ✅
+**Commit**: be6e574
+**Implementation**:
+- Added prefetch() method to TranspositionTable class
+- Prefetch before probe in negamax, quiescence, and perft
+- Uses __builtin_prefetch with read-only, low temporal locality hints
+**Results**: ~1% NPS improvement (1021K → 1031K)
+**Expected**: Neutral to slightly positive ELO, helps hide memory latency
 
 ---
 
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization (Phase 4.2 in progress)
-Latest Commits: e53f271, 27d9c25 (Phase 4.2.a with fixes)
-Next Work: Phase 4.2.b (TT Prefetching)
+Current Branch: feature/20250830-tt-optimization (Phase 4.2 active)
+Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b)
+Next Work: Phase 4.2.c (Store true static eval in TT)
