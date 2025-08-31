@@ -82,6 +82,7 @@ uint64_t Perft::perftTTInternal(Board& board, int depth, TranspositionTable& tt)
     
     // Probe TT first
     Hash key = board.zobristKey();
+    tt.prefetch(key);  // Prefetch TT entry to hide memory latency
     TTEntry* entry = tt.probe(key);
     
     // Check if we have a cached result for this exact depth

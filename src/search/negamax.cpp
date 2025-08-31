@@ -265,6 +265,7 @@ eval::Score negamax(Board& board,
         TTEntry* ttEntry = nullptr;
         if (tt && tt->isEnabled()) {
             Hash zobristKey = board.zobristKey();
+            tt->prefetch(zobristKey);  // Prefetch TT entry to hide memory latency
             ttEntry = tt->probe(zobristKey);
             info.ttProbes++;
             

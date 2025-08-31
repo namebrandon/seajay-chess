@@ -61,7 +61,13 @@ eval::Score quiescence(
     eval::Score ttScore = eval::Score::zero();
     Move ttMove = NO_MOVE;  // Deliverable 2.3: Track TT move for ordering
     
-    if (tt.isEnabled() && (ttEntry = tt.probe(board.zobristKey())) != nullptr) {
+    if (tt.isEnabled()) {
+        Hash zobristKey = board.zobristKey();
+        tt.prefetch(zobristKey);  // Prefetch TT entry to hide memory latency
+        ttEntry = tt.probe(zobristKey);
+    }
+    
+    if (ttEntry != nullptr) {
         // We have a TT hit
         if (!ttEntry->isEmpty() && ttEntry->key32 == (board.zobristKey() >> 32)) {
             // Only accept depth 0 entries (quiescence-specific)

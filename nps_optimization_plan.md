@@ -1049,13 +1049,13 @@ MANDATORY READING BEFORE ANY WORK:
 | 3.2 | - Lazy legality checking | b7ceecf | **Complete** | ~550K | ~910K | +56-72 ELO ✅ |
 | 3.3.a | - Magic lookup optimization | 2899e94 | **Complete** | ~910K | ~1021K | Testing |
 | ~~3.3.b~~ | ~~Further magic optimizations~~ | ~~347eadc-b4f1575~~ | **REVERTED** | ~1021K | ~1020K | ❌ Regression |
-| 4 | Search Optimizations | feature/20250830-search-* | **PLANNED** | ~1021K | 1.3-1.5M (target) | - |
-| 4.2.a | - Depth-preferred TT replace | - | Ready | - | - | **PRIORITY 1** |
-| 4.2.b | - TT prefetching | - | Ready | - | - | **PRIORITY 2** |
+| 4 | Search Optimizations | feature/20250830-tt-optimization | **IN PROGRESS** | ~1021K | 1.3-1.5M (target) | - |
+| 4.2.a | - Depth-preferred TT replace | e53f271, 27d9c25 | **Complete** | ~1021K | ~1021K | +10+ ELO ✅ |
+| 4.2.b | - TT prefetching | - | **In Progress** | - | - | **PRIORITY 2** |
 | 4.2.c | - Store true static eval | - | Ready | - | - | **PRIORITY 3** |
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
-| 4.1.c | - Fix TT isEmpty() bug | - | Ready | - | - | Correctness |
+| 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
 | 4.3.a | - Counter-move history | - | Ready | - | - | - |
 | 4.4.a | - Tune LMR parameters | - | Ready | - | - | SPSA |
 | 4.4.b | - Futility improvements | - | Careful | - | - | Keep depth 4 |
@@ -1238,7 +1238,17 @@ MANDATORY READING BEFORE ANY WORK:
 
 ---
 
-Last Updated: 2025-08-30
-Current Branch: feature/20250830-movegen-optimization (ready to merge)
-Latest Commits: 73d195d (Phase 3.1), b7ceecf (Phase 3.2), 2899e94 (Phase 3.3.a)
-Next Branch: feature/20250830-search-bugfixes (Phase 4.1)
+### Phase 4.2.a - Depth-Preferred TT Replacement (2025-08-31) ✅ **SUCCESS**
+**Commits**: e53f271 (initial), 27d9c25 (critical fixes)
+**Critical Bug Fixes**:
+- Fixed generation advancement (tt->newSearch() was never called)
+- Fixed isEmpty() edge case (now uses genBound == 0)
+**Results**: +10+ ELO gain (early SPRT very positive)
+**Key Learning**: Generation advancement is critical for TT replacement strategies
+
+---
+
+Last Updated: 2025-08-31
+Current Branch: feature/20250830-tt-optimization (Phase 4.2 in progress)
+Latest Commits: e53f271, 27d9c25 (Phase 4.2.a with fixes)
+Next Work: Phase 4.2.b (TT Prefetching)

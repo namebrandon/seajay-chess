@@ -129,6 +129,14 @@ public:
     // Utility
     size_t hashfull() const;  // Returns permille (0-1000) of entries used
     
+    // Prefetch hint for upcoming probe
+    void prefetch(Hash key) const {
+        if (m_enabled && m_entries) {
+            size_t idx = index(key);
+            __builtin_prefetch(&m_entries[idx], 0, 1);
+        }
+    }
+    
 private:
     AlignedBuffer m_buffer;
     TTEntry* m_entries;
