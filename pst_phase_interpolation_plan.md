@@ -298,13 +298,97 @@ Already implemented as `Board::m_pstScore` (MgEgScore). No new fields or loops a
 - **ELO**: +46.50 ELO (significantly exceeding expectations)
 - **Stability**: Rock-solid with 932 games played
 
-### Next Steps
+### Next Steps & Strategic Refinements
 
-#### Phase 2: Enhanced Endgame Differentiation (Ready to Start)
-Now that Phase 1 has passed SPRT testing with excellent results, we can proceed with:
-1. King endgame centralization tables
-2. Material imbalance adjustments
-3. Passed pawn phase-based scaling
+Based on the exceptional Phase 1 results (46.50 ELO gain), here's the refined roadmap:
+
+#### Lock In Strategy
+1. **Default on**: `UsePSTInterpolation` enabled by default (already done)
+2. **Retire toggle**: After one confirmatory SPRT, remove the UCI option
+3. **Single phase API**: Centralize `phase0to256(board)` computed once per eval, reused everywhere ✅
+
+#### Phase 2: Stage 2 PST Deltas (Ready to Start)
+**Priority Order (based on impact)**:
+
+##### 2a. Pawn/Rook First (Highest Impact)
+- **Pawns**: 
+  - Add modest EG-heavier deltas for centralization
+  - Enhance passer posture bonuses
+  - Tapered blending already in place
+- **Rooks**: 
+  - Further enhance 7th rank activity (partially done)
+  - Increase open file bonuses in endgame
+- **Critical**: Guard double scaling - audit to ensure no term is both PST-modified AND separately phase-scaled
+
+##### 2b. Knights/Bishops/Queen (Conservative)
+- **Knights**: Slightly worse in EG (mobility restricted)
+- **Bishops**: Conservative EG differentiation for activity
+- **Queens**: Slightly more activity bonuses in EG
+- **Approach**: Avoid large swings that could destabilize play
+
+#### Phase 3: Phase-Aware Non-PST Terms
+
+##### Current State Analysis
+- **King Safety**: Currently stepwise (OPENING+MIDDLEGAME → MG, ENDGAME → EG)
+  - Location: `src/evaluation/king_safety.cpp`
+  - Optional tidy-up: Convert to 0-256 continuous blend for consistency
+  - Not required for correctness but improves smoothness
+
+##### Implementation Priority
+1. **Passed Pawns**: Taper UP toward EG (critical for conversion)
+   - Add rank-aware exponential growth
+   - Currently static - high impact opportunity
+
+2. **King Safety**: Taper DOWN toward EG
+   - Keep MG pressure strong
+   - Convert from stepwise to continuous (optional)
+
+3. **Mobility/Open Files**:
+   - Slight MG emphasis for general mobility
+   - Increase EG emphasis for rook on open/semi-open files
+   - Rook on 7th rank scaling
+
+4. **Bishop Pair** (future):
+   - Not yet implemented in SeaJay
+   - Slightly stronger in MG than EG
+   - Add after basics work
+
+#### Phase 4: Optional AB Tests (Behind Flags)
+
+##### Pawn-Aware Phase
+- Trial `phase += k*(pawnCount-8)` with small k
+- Validate no tempo artifacts
+- UCI flag for safe testing
+
+##### Non-Linear Taper
+- Sigmoid clamp for king safety only
+- Keep everything else linear
+- Test on tactical positions
+
+#### Phase 5: Parameter Plumbing (Prep for SPSA)
+
+##### Infrastructure Requirements
+1. **Central table**: Move all MG/EG PST values and phase-scaled weights to single header/struct
+2. **Dump/load**: UCI command to dump/load weights (compile-time initially)
+3. **Naming discipline**: Consistent `MgEgScore(valMg, valEg)` for SPSA-friendliness
+
+#### Phase 6: Instrumentation
+
+##### Development Tools
+1. **EvalTrace** (dev-only): Dump per-term MG/EG and final blended scores
+2. **Invariants**: Unit tests for phase edges (0 and 256 must match pure EG/MG)
+
+#### Testing Cadence
+1. **Micro**: Bench and NPS check (<1-2% delta)
+2. **SPRT**: Short runs (10k-20k) per cluster of PST deltas
+   - Bounds: [0.0, 8.0] or [1.0, 10.0] depending on expected gain
+3. **Confirmatory**: One longer SPRT after bundling best deltas
+
+#### Risk/Performance Guards
+- **O(1) blend only**: Always use incremental `board.pstScore()` ✅
+- **No per-piece loops**: Already achieved ✅
+- **Hashing**: TT doesn't depend on blended eval ✅
+- **SMP**: All new state read-only ✅
 
 #### Deferred for SPSA Tuning
 - Phase weight constants (KNIGHT=1, BISHOP=1, ROOK=2, QUEEN=4)
