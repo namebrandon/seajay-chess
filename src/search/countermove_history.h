@@ -8,24 +8,30 @@
 namespace seajay::search {
 
 /**
- * Counter-Move History Heuristic
+ * Counter-Move History Heuristic (Optimized Version)
  * 
- * This extends the history heuristic concept by tracking successful move pairs.
- * Instead of just tracking individual moves, we track how successful a move is
- * when played in response to a specific previous move.
+ * Tracks historical success of move sequences (prevMove -> currentMove).
+ * Uses a 3D table indexed by [prevTo][from][to] for memory efficiency.
  * 
- * The table is indexed by [color][prevFrom][prevTo][from][to] and stores
- * a score indicating how often that move sequence has been successful.
+ * Memory usage: 64 * 64 * 64 * sizeof(int16_t) = 512 KB per thread
  * 
- * Memory usage: 2 * 64 * 64 * 64 * 64 * sizeof(int16_t) = 32MB
- * 
- * Thread-safety: Each thread should have its own instance (thread-local)
- * or use atomic operations for updates.
+ * Features:
+ * - Local exponential decay instead of global aging
+ * - Saturating arithmetic to prevent overflow
+ * - Aligned scoring with HistoryHeuristic
+ * - Thread-safe (each thread has its own instance)
  */
 class CounterMoveHistory {
 public:
-    // Maximum history value before saturation (same as HistoryHeuristic)
+    // Maximum history value (same as HistoryHeuristic for consistency)
     static constexpr int16_t HISTORY_MAX = 8192;
+    
+    // Maximum bonus/penalty per update (aligned with HistoryHeuristic)
+    static constexpr int MAX_BONUS = 800;
+    static constexpr int MAX_PENALTY = 400;
+    
+    // Decay shift (entry >> 6 = ~1.6% decay per update)
+    static constexpr int DECAY_SHIFT = 6;
     
     /**
      * Constructor - initializes empty history table
@@ -43,131 +49,112 @@ public:
     
     /**
      * Update history score for a move pair that caused a beta cutoff
-     * @param side Color of the moving side
      * @param prevMove The previous move played
      * @param move The current move that caused the cutoff
      * @param depth Current search depth (used for bonus calculation)
      */
-    void update(Color side, Move prevMove, Move move, int depth) {
+    void update(Move prevMove, Move move, int depth) {
         if (prevMove == NO_MOVE || move == NO_MOVE) {
             return;
         }
         
-        // Don't track captures or promotions in history
+        // Don't track captures or promotions
         if (isCapture(move) || isPromotion(move)) {
             return;
         }
         
-        const Square prevFrom = moveFrom(prevMove);
         const Square prevTo = moveTo(prevMove);
         const Square from = moveFrom(move);
         const Square to = moveTo(move);
         
         // Validate squares
-        if (prevFrom >= 64 || prevTo >= 64 || from >= 64 || to >= 64 || side >= NUM_COLORS) {
+        if (prevTo >= 64 || from >= 64 || to >= 64) {
             return;
         }
         
-        // Calculate bonus based on depth (same formula as HistoryHeuristic)
-        int bonus = depth * depth;
+        // Calculate bonus (capped for consistency with HistoryHeuristic)
+        const int bonus = std::min(depth * depth * 2, MAX_BONUS);
         
-        // Saturating add with automatic aging
-        int16_t& entry = m_history[side][prevFrom][prevTo][from][to];
-        int newValue = static_cast<int>(entry) + bonus;
+        int16_t& entry = m_history[prevTo][from][to];
         
-        if (newValue >= HISTORY_MAX) {
-            // Age all values when we hit the max
-            ageHistory();
-            entry = HISTORY_MAX / 2;  // Set this entry to half max after aging
-        } else {
-            entry = static_cast<int16_t>(newValue);
-        }
+        // Apply local decay before update (prevents saturation buildup)
+        entry -= entry >> DECAY_SHIFT;
+        
+        // Saturating add with clamping
+        const int newValue = static_cast<int>(entry) + bonus;
+        entry = static_cast<int16_t>(std::clamp(newValue, 
+                                                 -static_cast<int>(HISTORY_MAX), 
+                                                 static_cast<int>(HISTORY_MAX)));
     }
     
     /**
      * Reduce history score for a move pair that was tried but didn't cause cutoff
-     * @param side Color of the moving side
      * @param prevMove The previous move played
      * @param move The current move that failed
      * @param depth Current search depth (used for penalty calculation)
      */
-    void updateFailed(Color side, Move prevMove, Move move, int depth) {
+    void updateFailed(Move prevMove, Move move, int depth) {
         if (prevMove == NO_MOVE || move == NO_MOVE) {
             return;
         }
         
-        // Don't track captures or promotions in history
+        // Don't track captures or promotions
         if (isCapture(move) || isPromotion(move)) {
             return;
         }
         
-        const Square prevFrom = moveFrom(prevMove);
         const Square prevTo = moveTo(prevMove);
         const Square from = moveFrom(move);
         const Square to = moveTo(move);
         
         // Validate squares
-        if (prevFrom >= 64 || prevTo >= 64 || from >= 64 || to >= 64 || side >= NUM_COLORS) {
+        if (prevTo >= 64 || from >= 64 || to >= 64) {
             return;
         }
         
-        // Calculate penalty based on depth (same formula as HistoryHeuristic)
-        int penalty = depth * depth;
+        // Calculate penalty (capped and smaller than bonus)
+        const int penalty = std::min(depth * depth, MAX_PENALTY);
         
-        // Saturating subtract
-        int16_t& entry = m_history[side][prevFrom][prevTo][from][to];
-        int newValue = static_cast<int>(entry) - penalty;
-        entry = static_cast<int16_t>(std::max(newValue, -static_cast<int>(HISTORY_MAX)));
+        int16_t& entry = m_history[prevTo][from][to];
+        
+        // Apply local decay before update
+        entry -= entry >> DECAY_SHIFT;
+        
+        // Saturating subtract with clamping
+        const int newValue = static_cast<int>(entry) - penalty;
+        entry = static_cast<int16_t>(std::clamp(newValue, 
+                                                 -static_cast<int>(HISTORY_MAX), 
+                                                 static_cast<int>(HISTORY_MAX)));
     }
     
     /**
      * Get the history score for a move pair
-     * @param side Color of the moving side
      * @param prevMove The previous move played
      * @param move The current move to score
      * @return History score (higher is better)
      */
-    inline int getScore(Color side, Move prevMove, Move move) const {
+    inline int getScore(Move prevMove, Move move) const {
         if (prevMove == NO_MOVE || move == NO_MOVE) {
             return 0;
         }
         
-        const Square prevFrom = moveFrom(prevMove);
         const Square prevTo = moveTo(prevMove);
         const Square from = moveFrom(move);
         const Square to = moveTo(move);
         
         // Validate inputs
-        if (prevFrom >= 64 || prevTo >= 64 || from >= 64 || to >= 64 || side >= NUM_COLORS) {
+        if (prevTo >= 64 || from >= 64 || to >= 64) {
             return 0;
         }
         
-        return static_cast<int>(m_history[side][prevFrom][prevTo][from][to]);
-    }
-    
-    /**
-     * Age all history values by dividing by 2
-     * Called automatically when any value reaches HISTORY_MAX
-     */
-    void ageHistory() {
-        for (int color = 0; color < NUM_COLORS; ++color) {
-            for (int pf = 0; pf < 64; ++pf) {
-                for (int pt = 0; pt < 64; ++pt) {
-                    for (int f = 0; f < 64; ++f) {
-                        for (int t = 0; t < 64; ++t) {
-                            m_history[color][pf][pt][f][t] /= 2;
-                        }
-                    }
-                }
-            }
-        }
+        return static_cast<int>(m_history[prevTo][from][to]);
     }
     
 private:
-    // History table: [color][prevFrom][prevTo][from][to]
-    // Using int16_t to keep memory reasonable (32MB total)
+    // History table: [prevTo][from][to]
+    // Reduced from 67MB to 512KB by dropping [color] and [prevFrom]
     // Cache-aligned for better performance
-    alignas(64) int16_t m_history[2][64][64][64][64];
+    alignas(64) int16_t m_history[64][64][64];
 };
 
 } // namespace seajay::search

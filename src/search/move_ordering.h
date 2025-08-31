@@ -128,7 +128,8 @@ public:
                               const HistoryHeuristic& history,
                               const CounterMoves& counterMoves,
                               const CounterMoveHistory& counterMoveHistory,
-                              Move prevMove, int ply, int countermoveBonus) const;
+                              Move prevMove, int ply, int countermoveBonus,
+                              float cmhWeight = 1.5f) const;
     
     // Score a single move (exposed for testing)
     static int scoreMove(const Board& board, Move move) noexcept;

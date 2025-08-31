@@ -8,6 +8,7 @@
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "lmr.h"            // Stage 18: Late Move Reductions
 #include "principal_variation.h"     // PV tracking infrastructure
+#include "countermove_history.h"     // Phase 4.3.a: Counter-move history
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -96,9 +97,15 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     if (searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
         // Phase 4.3.a: Use counter-move history for enhanced move ordering
+        // Get CMH weight from search limits (if available)
+        float cmhWeight = 1.5f;  // default
+        if (searchData != nullptr) {
+            // Access through SearchData's limits if available
+            // For now use default, TODO: wire through SearchLimits
+        }
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, *searchData->counterMoveHistory,
-                                    prevMove, ply, countermoveBonus);
+                                    prevMove, ply, countermoveBonus, cmhWeight);
     } else if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
         // Fallback to basic countermoves without history
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
@@ -925,14 +932,14 @@ eval::Score negamax(Board& board,
                                 info.counterMoves->update(prevMove, move);
                                 info.counterMoveStats.updates++;  // Track shadow mode updates
                                 
-                                // Phase 4.3.a: Update counter-move history
+                                // Phase 4.3.a: Update counter-move history (simplified interface)
                                 if (info.counterMoveHistory) {
-                                    info.counterMoveHistory->update(board.sideToMove(), prevMove, move, depth);
+                                    info.counterMoveHistory->update(prevMove, move, depth);
                                     
                                     // Penalize quiet moves that were tried but didn't cause cutoff
                                     for (const Move& quietMove : quietMoves) {
                                         if (quietMove != move) {  // Don't penalize the cutoff move itself
-                                            info.counterMoveHistory->updateFailed(board.sideToMove(), prevMove, quietMove, depth);
+                                            info.counterMoveHistory->updateFailed(prevMove, quietMove, depth);
                                         }
                                     }
                                 }

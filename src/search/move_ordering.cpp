@@ -334,7 +334,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                                           const HistoryHeuristic& history,
                                           const CounterMoves& counterMoves,
                                           const CounterMoveHistory& counterMoveHistory,
-                                          Move prevMove, int ply, int countermoveBonus) const {
+                                          Move prevMove, int ply, int countermoveBonus,
+                                          float cmhWeight) const {
     // Nothing to order if empty or single move
     if (moves.size() <= 1) {
         return;
@@ -398,18 +399,19 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     }
     
     // Now sort the remaining quiet moves by combined history scores
-    // Regular history + counter-move history
+    // Regular history + counter-move history with weight
     if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
+        
         std::stable_sort(killerEnd, moves.end(),
-            [&history, &counterMoveHistory, side, prevMove](const Move& a, const Move& b) {
+            [&history, &counterMoveHistory, side, prevMove, cmhWeight](const Move& a, const Move& b) {
                 // Get regular history scores
-                int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
-                int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
+                float scoreA = static_cast<float>(history.getScore(side, moveFrom(a), moveTo(a)));
+                float scoreB = static_cast<float>(history.getScore(side, moveFrom(b), moveTo(b)));
                 
-                // Add counter-move history scores
-                scoreA += counterMoveHistory.getScore(side, prevMove, a);
-                scoreB += counterMoveHistory.getScore(side, prevMove, b);
+                // Add weighted counter-move history scores (simplified interface)
+                scoreA += counterMoveHistory.getScore(prevMove, a) * cmhWeight;
+                scoreB += counterMoveHistory.getScore(prevMove, b) * cmhWeight;
                 
                 return scoreA > scoreB;  // Higher scores first
             });

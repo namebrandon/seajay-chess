@@ -6,7 +6,6 @@
 #include "killer_moves.h"
 #include "history_heuristic.h"
 #include "countermoves.h"
-#include "countermove_history.h"
 #include <chrono>
 #include <cstdint>
 
@@ -19,6 +18,9 @@
 #include <cmath>
 
 namespace seajay::search {
+
+// Forward declarations
+class CounterMoveHistory;
 
 // Stage 15: SEE pruning modes (moved from quiescence.h to avoid circular dependency)
 enum class SEEPruningMode {
@@ -82,6 +84,9 @@ struct SearchLimits {
     
     // Stage 23 CM3.3: Countermove heuristic bonus
     int countermoveBonus = 0;  // Bonus score for countermoves (0 = disabled)
+    
+    // Phase 4.3.a: Counter-move history weight
+    float counterMoveHistoryWeight = 1.5f;  // Weight for CMH in move ordering (1.5 default)
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     bool useMoveCountPruning = true;    // Enable/disable move count pruning
