@@ -96,9 +96,10 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Phase 4.3.a: Counter-move history for better move ordering
     static MvvLvaOrdering mvvLva;
     
-    // Phase 4.3.a-fix2: Depth gating - only use CMH at depth >= 4 to avoid noise
+    // Phase 4.3.a-fix2: Depth gating - only use CMH at depth >= 6 to avoid noise
     // At shallow depths, the CMH table is "cold" and adds more noise than signal
-    if (depth >= 4 && searchData != nullptr && searchData->killers && searchData->history && 
+    // Increased from 4 to 6 for better performance at fast time controls
+    if (depth >= 6 && searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
         // Use counter-move history for enhanced move ordering at sufficient depth
         // Get CMH weight from search limits - should always be available
