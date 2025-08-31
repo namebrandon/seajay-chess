@@ -88,16 +88,19 @@ template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
                       const SearchData* searchData = nullptr, int ply = 0,
                       Move prevMove = NO_MOVE, int countermoveBonus = 0,
-                      const SearchLimits* limits = nullptr) noexcept {
+                      const SearchLimits* limits = nullptr, int depth = 0) noexcept {
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
     // Stage 23, CM3.2: Countermove lookup (no bonus yet)
     // Phase 4.3.a: Counter-move history for better move ordering
     static MvvLvaOrdering mvvLva;
-    if (searchData != nullptr && searchData->killers && searchData->history && 
+    
+    // Phase 4.3.a-fix2: Depth gating - only use CMH at depth >= 4 to avoid noise
+    // At shallow depths, the CMH table is "cold" and adds more noise than signal
+    if (depth >= 4 && searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
-        // Phase 4.3.a: Use counter-move history for enhanced move ordering
+        // Use counter-move history for enhanced move ordering at sufficient depth
         // Get CMH weight from search limits
         float cmhWeight = 1.5f;  // default
         if (limits != nullptr) {
@@ -541,7 +544,8 @@ eval::Score negamax(Board& board,
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
     // CM3.3: Pass prevMove and bonus for countermove ordering
-    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits);
+    // Phase 4.3.a-fix2: Pass depth for CMH gating
+    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {

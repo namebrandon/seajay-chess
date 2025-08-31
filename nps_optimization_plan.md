@@ -1282,9 +1282,9 @@ MANDATORY READING BEFORE ANY WORK:
 
 **Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
 
-#### Phase 4.3.a - Counter-Move History ✅ COMPLETE
-**Commits**: 8a78aff (initial), 84060c4 (critical fixes)
-**Implementation**: Successfully added counter-move history heuristic with expert-recommended optimizations
+#### Phase 4.3.a - Counter-Move History (IN PROGRESS - FIXING REGRESSION)
+**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), TBD (fix2)
+**Status**: Initial implementation caused -30 to -35 ELO regression, applying fixes
 
 **Initial Implementation Issues (Found by Expert Review):**
 1. **Memory miscalculation**: Was actually 67MB, not 32MB as claimed
@@ -1292,31 +1292,32 @@ MANDATORY READING BEFORE ANY WORK:
 3. **Inconsistent scoring**: Different scales vs HistoryHeuristic
 4. **Unnecessary complexity**: Color dimension was redundant
 
-**Critical Fixes Applied:**
+**Critical Fixes Applied (84060c4):**
 1. **Memory reduction**: 67MB → 512KB (130x reduction!)
-   - Changed from `[color][prevFrom][prevTo][from][to]` to `[prevTo][from][to]`
-   - Dropped color (implicit from ply) and prevFrom (less important)
 2. **Local decay instead of global aging**
-   - Uses `entry >> 6` (~1.6% decay) per update
-   - Saturating arithmetic with clamping to ±8192
-   - No more cache thrashing from global scans
 3. **Aligned scoring with HistoryHeuristic**
-   - Max bonus: 800, max penalty: 400
-   - Same HISTORY_MAX (8192) for consistency
 4. **Added UCI weight option**
-   - `counterMoveHistoryWeight` (default 1.5)
-   - Formula: `history + cmh * weight`
-   - Ready for SPSA tuning
 5. **Improved compile times**
-   - Forward declaration in types.h
-   - Include only where needed
 
-**Results:**
-- **Memory**: 512KB per thread (excellent for cache)
-- **NPS**: Maintained at ~1.03M
-- **Bench**: 19191913 (unchanged)
-- **Expected ELO**: 5-10 (typical for CMH)
-- **Status**: Awaiting SPRT with bounds [0.00, 5.00]
+**Regression Analysis - Expert Feedback Validated:**
+Initial testing showed -30 to -35 ELO loss. Expert identified these issues:
+
+**Phase 4.3.a-fix1 (b0324ca) - Critical Fixes:**
+1. ✅ **CMH weight not wired**: Fixed hardcoded 1.5f → uses limits->counterMoveHistoryWeight
+2. ✅ **Float arithmetic in comparator**: Switched to integer math (3x speedup in comparator)
+3. ✅ **Double decay bug**: Only decay on bonus now, not penalty (was keeping values at zero)
+**Result**: Partial ELO recovery, but still net negative
+
+**Phase 4.3.a-fix2 (In Progress) - Performance Recovery:**
+4. **Depth gating**: Only use CMH at depth >= 4 (reduce noise)
+5. **Decouple countermove positioning**: Always position countermove regardless of bonus
+6. **Pre-compute scores**: Cache scores before sorting (future)
+
+**Current Status:**
+- **Memory**: 512KB per thread
+- **NPS**: ~1.03M maintained
+- **ELO**: Recovering from -35 → trending better but still negative
+- **Next**: Implementing fix2 for full recovery
 
 ---
 

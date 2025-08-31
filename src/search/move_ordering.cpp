@@ -377,8 +377,10 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         }
     }
     
-    // Position countermove after killers
-    if (countermoveBonus > 0 && prevMove != NO_MOVE) {
+    // Phase 4.3.a-fix2: Position countermove after killers regardless of bonus
+    // The countermove positioning is valuable even when countermoveBonus=0
+    // This decoupling prevents silent feature disable when UCI option is 0
+    if (prevMove != NO_MOVE) {
         Move counterMove = counterMoves.getCounterMove(prevMove);
         
         if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
