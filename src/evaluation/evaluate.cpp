@@ -1035,7 +1035,14 @@ EvalBreakdown evaluateDetailed(const Board& board) {
     
     // Get PST score
     const MgEgScore& pstScore = board.pstScore();
-    breakdown.pst = pstScore.mg;
+    if (seajay::getConfig().usePSTInterpolation) {
+        int phase = phase0to256(board);
+        int invPhase = 256 - phase;
+        int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
+        breakdown.pst = Score(blendedPst);
+    } else {
+        breakdown.pst = pstScore.mg;
+    }
     
     // Passed pawn evaluation
     static constexpr int PASSED_PAWN_BONUS[8] = {

@@ -8,6 +8,7 @@
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
 #include "../search/lmr.h"             // For LMR table initialization
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
+#include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
@@ -17,6 +18,7 @@
 #include <random>
 #include <algorithm>
 #include <thread>
+#include <cmath>
 
 using namespace seajay;
 
@@ -999,7 +1001,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
              optionName.find("rook_eg_") == 0 ||
              optionName.find("queen_eg_") == 0) {
         try {
-            int paramValue = std::stoi(value);
+            // OpenBench may send floats for integer parameters (e.g., 90.6).
+            // Round to nearest int instead of truncating to avoid downward bias.
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                // Fallback to integer parsing when value has no decimal point
+                paramValue = std::stoi(value);
+            }
             eval::PST::updateFromUCIParam(optionName, paramValue);
             // CRITICAL: Recalculate PST score for current board position
             // This ensures evaluation reflects new PST values immediately
