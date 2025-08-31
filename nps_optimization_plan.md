@@ -1055,7 +1055,7 @@ MANDATORY READING BEFORE ANY WORK:
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
 | 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
-| 4.3.a | - Counter-move history | 8a78aff, 84060c4, b0324ca, e665314, badbcf1 | **Testing** | ~1031K | ~1032K | Regression fixes applied |
+| 4.3.a | - Counter-move history | 0132772 | **DISABLED** | ~1031K | ~1031K | ❌ No ELO gain |
 | 4.4.a | - Tune LMR parameters | - | Ready | - | - | SPSA |
 | 4.4.b | - Futility improvements | - | Careful | - | - | Keep depth 4 |
 | 5 | Memory & Cache | TBD | Deferred | - | - | - |
@@ -1282,9 +1282,9 @@ MANDATORY READING BEFORE ANY WORK:
 
 **Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
 
-#### Phase 4.3.a - Counter-Move History (ALL FIXES APPLIED)
-**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), e665314 (fix2), badbcf1 (fix3)
-**Status**: All regression fixes applied, testing shows continued improvement but still net negative
+#### Phase 4.3.a - Counter-Move History ❌ **DISABLED**
+**Commits**: 8a78aff (initial), 84060c4 (critical fixes), b0324ca (fix1), e665314 (fix2), badbcf1 (fix3), b695ebc (fix4), c2eff83 (weight=1.0), 0f4b524 (depth=6), 0132772 (disabled)
+**Status**: **COMPLETE BUT DISABLED** - No ELO gain demonstrated despite extensive optimization
 
 **Initial Implementation Issues (Found by Expert Review):**
 1. **Memory miscalculation**: Was actually 67MB, not 32MB as claimed
@@ -1299,51 +1299,47 @@ MANDATORY READING BEFORE ANY WORK:
 4. **Added UCI weight option**
 5. **Improved compile times**
 
-**Regression Analysis - Expert Feedback Validated:**
-Initial testing showed -30 to -35 ELO loss. Expert identified these issues:
+**All Expert-Recommended Fixes Applied:**
+1. ✅ **fix1 (b0324ca)**: UCI weight wiring, integer math, single decay fix
+2. ✅ **fix2 (e665314)**: Depth gating at 4, countermove decoupling
+3. ✅ **fix3 (badbcf1)**: Pre-computed scores optimization
+4. ✅ **fix4 (b695ebc)**: Pure integer arithmetic, overflow prevention
+5. ✅ **Weight tuning (c2eff83)**: Changed default from 1.5 to 1.0
+6. ✅ **Depth adjustment (0f4b524)**: Increased gate from 4 to 6
 
-**Phase 4.3.a-fix1 (b0324ca) - Critical Fixes:**
-1. ✅ **CMH weight not wired**: Fixed hardcoded 1.5f → uses limits->counterMoveHistoryWeight
-2. ✅ **Float arithmetic in comparator**: Switched to integer math (3x speedup in comparator)
-3. ✅ **Double decay bug**: Only decay on bonus now, not penalty (was keeping values at zero)
-**Result**: Partial ELO recovery, but still net negative
+**Final Testing Results:**
+- **Weight 1.5**: -6 ELO regression
+- **Weight 1.0**: +5-7 ELO initially, ultimately neutral in extended testing
+- **Weight 0.0**: Best performance (CMH disabled)
+- **Depth gate 6**: No improvement over disabled state
 
-**Phase 4.3.a-fix2 (e665314) - Performance Recovery:**
-4. ✅ **Depth gating**: Only use CMH at depth >= 4 (reduces early noise)
-5. ✅ **Decouple countermove positioning**: Always position countermove (was gated on bonus)
+**Decision (0132772):**
+- Set counterMoveHistoryWeight default to 0.0 (disabled)
+- Code remains in place for future testing
+- Can be re-enabled via UCI for experimentation
+- Documented in deferred_items_tracker.md
 
-**Phase 4.3.a-fix3 (badbcf1) - Sorting Optimization:**
-6. ✅ **Pre-compute scores**: Cache scores before sorting to avoid O(n log n) recalculations
-   - Stack allocation for <32 quiet moves (typical case)
-   - Single computation per move instead of repeated during comparisons
-   - Reduces memory traffic and CPU cycles
+**Likely Reasons for No Gain:**
+1. **Time Control Sensitivity**: CMH needs longer TCs to warm up
+2. **Engine Strength**: At ~2200 ELO, SeaJay may lack consistent patterns
+3. **Table Pollution**: Fast TCs don't provide enough samples
+4. **Implementation Overhead**: Even optimized, overhead exceeds benefit
 
-**Final Status After All Fixes:**
-- **Memory**: 512KB per thread (cache-friendly)
-- **NPS**: ~1.03M maintained (minimal overhead)
-- **ELO Progress**: Regression reduced from -35 → improving but still net negative
-- **Testing Status**: fix1+fix2+fix3 complete, monitoring results
-
-**Summary of Fix Impact:**
-- fix1: Recovered ~10-15 ELO (UCI wiring, integer math, single decay)
-- fix2: Additional ~5-10 ELO (depth gating, countermove decoupling)
-- fix3: Further optimization (pre-computed scores)
-- **Total**: Significant recovery but not yet break-even
-
-**SPSA Tuning String for CMH Weight:**
-```
-counterMoveHistoryWeight, float, 1.5, 0.0, 3.0, 0.15, 0.002
-```
-Ready for SPSA tuning to find optimal weight value.
+**When to Revisit:**
+- When engine reaches 2400+ ELO
+- When testing at 60+0 or slower time controls
+- After improving base move ordering accuracy
+- If implementing SMP (cross-thread learning)
 
 ---
 
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization (Phase 4.2 complete, 4.3.a fixes applied)
+Current Branch: feature/20250830-tt-optimization
 Latest Commits: 
 - Phase 4.2: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c)
-- Phase 4.3.a: 8a78aff (initial), 84060c4 (memory fix), b0324ca (fix1), e665314 (fix2), badbcf1 (fix3)
+- Phase 4.3.a: All fixes applied, CMH disabled by default (0132772)
 Next Work: 
-- Monitor Phase 4.3.a test results
-- SPSA tune counterMoveHistoryWeight parameter
-- Consider Phase 4.1.b (Killer fast-path validation) if CMH remains negative
+- Phase 4.1.b: Killer fast-path validation (easy 1-2% NPS gain)
+- Phase 4.3.b: History score normalization
+- Phase 4.4: LMR parameter tuning and pruning improvements
+- Consider revisiting CMH at longer time controls or higher ELO
