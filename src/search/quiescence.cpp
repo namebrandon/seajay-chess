@@ -165,8 +165,10 @@ eval::Score quiescence(
     
     // Stand-pat evaluation (skip if in check - must make a move)
     eval::Score staticEval;
+    bool staticEvalComputed = false;  // Track if we have a real static eval
     if (!isInCheck) {
         staticEval = eval::evaluate(board);
+        staticEvalComputed = true;
         
         // Beta cutoff on stand-pat
         if (staticEval >= beta) {
@@ -412,8 +414,10 @@ eval::Score quiescence(
                         
                         // Store with depth 0 (quiescence) and LOWER bound
                         // Note: 'move' is the best move that caused the beta cutoff
+                        // Only store real static eval, not minus_infinity when in check
+                        int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
                         tt.store(board.zobristKey(), move, scoreToStore.value(), 
-                                staticEval.value(), 0, Bound::LOWER);
+                                evalToStore, 0, Bound::LOWER);
                     }
                     
                     return score;
@@ -449,8 +453,10 @@ eval::Score quiescence(
         
         // Store with depth 0 for quiescence and the best move found
         // Even for UPPER bounds (fail-low), storing the best move helps move ordering
+        // Only store real static eval, not minus_infinity when in check
+        int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
         tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
-                staticEval.value(), 0, bound);
+                evalToStore, 0, bound);
     }
     
     return bestScore;

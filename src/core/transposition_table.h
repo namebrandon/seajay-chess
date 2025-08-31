@@ -5,8 +5,13 @@
 #include <cstdint>
 #include <memory>
 #include <atomic>
+#include <limits>
 
 namespace seajay {
+
+// Sentinel value for "no static eval stored" in TT
+// Using INT16_MIN (-32768) which is extremely unlikely as a real eval
+constexpr int16_t TT_EVAL_NONE = std::numeric_limits<int16_t>::min();
 
 // Bound types for transposition table entries
 enum class Bound : uint8_t {

@@ -281,7 +281,7 @@ eval::Score negamax(Board& board,
                 // Check if the stored depth is sufficient
                 if (ttEntry->depth >= depth) {
                     eval::Score ttScore(ttEntry->score);
-                    Bound ttBound = ttEntry->bound();
+                    ttBound = ttEntry->bound();  // Update outer variable, don't shadow
                     
                     // Sub-phase 4D: Mate Score Adjustment
                     // Adjust mate scores relative to current ply
@@ -353,7 +353,7 @@ eval::Score negamax(Board& board,
                 
                 // Phase 4.2.c: Try to get static eval from TT if available
                 // The evalScore field should contain the true static evaluation
-                if (!staticEvalComputed && ttEntry->evalScore != 0) {
+                if (!staticEvalComputed && ttEntry->evalScore != TT_EVAL_NONE) {
                     staticEval = eval::Score(ttEntry->evalScore);
                     staticEvalComputed = true;
                 }
@@ -974,7 +974,7 @@ eval::Score negamax(Board& board,
             // Store the entry
             // Phase 4.2.c: Store the TRUE static eval, not the search score
             // This allows better eval reuse and improving position detection
-            int16_t evalToStore = staticEvalComputed ? staticEval.value() : 0;
+            int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
             tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore, 
                      static_cast<uint8_t>(depth), bound);
             info.ttStores++;
