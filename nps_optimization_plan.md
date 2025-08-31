@@ -524,32 +524,340 @@ cause negative interactions with CPU pipelining, cache behavior, and TT efficien
 
 ---
 
-### Phase 4: Evaluation Function Optimization
-**Goal**: Speed up position evaluation
+### Phase 4: Search-Specific Optimizations
+**Goal**: Fix critical bugs and optimize search efficiency for 25-50% improvement
+**Branch Prefix**: `feature/20250830-search-`
+**Expected Total Gain**: 25-35% NPS (conservative), 40-50% NPS (optimistic), 30-75 ELO
 
-**Investigation areas**:
-- Check for redundant calculations
-- Profile PST lookups
-- Optimize material counting
-- Review pawn structure caching
+#### Overview of Critical Issues (Updated per Codex Review)
+1. **~~CRITICAL BUG~~**: TT move ordering is CORRECT (already ordered first) ✅
+2. **Major Issue**: TT uses naive always-replace (throws away deep analysis) 🔥
+3. **Major Issue**: TT stores search score instead of static eval (prevents reuse) 🔥
+4. **Missing Feature**: No counter-move history (proven 2-3% improvement)
+5. **Conservative Pruning**: Futility at depth 4 (intentional - prior regressions at higher depths)
+6. **~~Simple LMR~~**: Already uses logarithmic formula (just needs tuning) ✅
 
----
+#### Key Codex Findings
+- **TT move ordering works correctly** - moves TT move to front after MVV-LVA
+- **LMR already logarithmic** - uses log(depth)*log(moves) with UCI parameters
+- **Futility depth 4 is intentional** - testing showed regressions beyond depth 4
+- **Static eval not stored in TT** - major optimization opportunity
+- **No TT prefetching** - easy win for memory latency hiding
+- **TT isEmpty() has bug** - affects perft and hashfull reporting
 
-### Phase 5: Search-Specific Optimizations
-**Goal**: Reduce overhead in search loop
+#### Phase 4.1: Quick Wins and Validation
+**Branch**: `feature/20250830-search-quickwins`
+**Goal**: Small optimizations and validation of current implementation
 
-**Investigation areas**:
-- Profile TT access patterns
-- Check move ordering effectiveness
-- Review LMR conditions
-- Optimize repetition detection
+##### Phase 4.1.a: Verify TT Move Ordering ✅
+**Status**: VERIFICATION ONLY - Codex confirms TT move is already ordered first
+**Current Reality**: TT move IS correctly moved to front after MVV-LVA ordering
+**Location**: `src/search/negamax.cpp` - `orderMoves()` helper
+**Action**: No code change needed - verify with profiling
+**Expected**: No change (already optimal)
+**Note**: Original plan incorrectly identified this as a bug
 
----
+##### Phase 4.1.b: Killer Move Fast-Path Validation
+**Current Issue**: Full pseudo-legal validation is expensive for stale killers
+**Implementation**:
+```cpp
+// Before calling isPseudoLegal, add quick check:
+if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
+    Square from = moveFrom(killer);
+    Piece piece = board.pieceAt(from);
+    if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+        continue; // Skip stale killer
+    }
+    // Only now call isPseudoLegal
+}
+```
+**Location**: `src/search/move_ordering.cpp`
+**Expected**: 1-2% NPS improvement on positions with stale killers
+**Risk**: Low - adds safety check before expensive validation
+**Testing**: SPRT [-3.00, 3.00]
 
-### Phase 6: Memory and Cache Optimization
+##### Phase 4.1.c: Fix TT isEmpty() Bug
+**Current Issue**: `isEmpty()` checks `(key32 == 0 && move == 0)` but perft stores with `move=0`
+**Impact**: Incorrect hashfull reporting, potential perft TT issues
+**Implementation**:
+- Use `genBound == 0` as empty indicator (reserve generation 0)
+- Or add dedicated occupied flag
+**Expected**: Correct TT statistics, no NPS change
+**Risk**: Low - fixes correctness issue
+**Testing**: Verify perft results unchanged
+
+#### Phase 4.2: Transposition Table Optimization (HIGHEST PRIORITY)
+**Branch**: `feature/20250830-tt-optimization`
+**Goal**: Modern TT implementation for major gains
+**Dependencies**: None - these are the highest impact changes
+
+##### Phase 4.2.a: Depth-Preferred Replacement
+**Current Issue**: Always-replace strategy loses valuable deep searches
+**Codex Confirmation**: Current code unconditionally overwrites entries
+**Implementation**:
+```cpp
+void TranspositionTable::store(Hash key, Move move, int16_t score, int16_t evalScore,
+                               uint8_t depth, Bound bound) {
+    if (!m_enabled) return;
+    m_stats.stores++;
+    size_t idx = index(key);
+    TTEntry* e = &m_entries[idx];
+    uint32_t k32 = static_cast<uint32_t>(key >> 32);
+    
+    if (!e->isEmpty() && e->key32 != k32) m_stats.collisions++;
+    
+    const bool canReplace = e->isEmpty()
+                         || e->generation() != m_generation
+                         || depth >= e->depth;  // depth-preferred
+    if (canReplace) {
+        e->save(k32, move, score, evalScore, depth, bound, m_generation);
+    }
+}
+```
+**Location**: `src/core/transposition_table.cpp`
+**Expected**: 5-8% strength gain, minimal NPS impact
+**Risk**: Medium - changes TT behavior significantly
+**Testing**: SPRT [0.00, 8.00]
+
+##### Phase 4.2.b: TT Prefetching at Probe Sites
+**Goal**: Hide memory latency by prefetching TT entries before probe
+**Codex Recommendation**: Add at all probe sites in hot paths
+**Implementation**:
+```cpp
+// In negamax.cpp and quiescence.cpp, before tt->probe():
+if (tt && tt->isEnabled()) {
+    Hash key = board.zobristKey();
+    // Need to expose index() or add prefetch method to TT class
+    __builtin_prefetch(&tt->m_entries[tt->index(key)], 0, 1);
+    TTEntry* ttEntry = tt->probe(key);
+    // ...
+}
+```
+**Locations**: `src/search/negamax.cpp`, `src/search/quiescence.cpp`
+**Expected**: 2-4% NPS improvement (memory latency hiding)
+**Risk**: Low - single line additions
+**Testing**: SPRT [-3.00, 3.00]
+
+##### Phase 4.2.c: Store True Static Eval in TT
+**Current Issue**: `evalScore` is set to search score, not static eval
+**Codex Finding**: This prevents eval reuse and improving detection
+**Implementation**:
+```cpp
+// In negamax, compute staticEval early and preserve it:
+Score staticEval = board.evaluate();
+// ... search logic ...
+// On TT store:
+tt->store(zobristKey, bestMove, scoreToStore.value(), 
+          staticEval.value(),  // <- Store actual static eval, not search score
+          static_cast<uint8_t>(depth), bound);
+```
+**Location**: `src/search/negamax.cpp` - all TT store calls
+**Expected**: 2-3% NPS from eval reuse, better pruning decisions
+**Risk**: Medium - requires careful static eval management
+**Testing**: SPRT [-3.00, 5.00]
+
+##### Phase 4.2.d: Hash Indexing (OPTIONAL)
+**Current**: Multiplicative hash `(key * 0x9E3779B97F4A7C15ULL) & m_mask`
+**Codex Note**: Current method is fine on modern CPUs
+**Alternative**: XOR folding `(key ^ (key >> 32)) & m_mask`
+**Decision**: Benchmark first - only change if measurable improvement
+**Expected**: 0-1% NPS (may be no change)
+**Risk**: Low but may not help
+**Testing**: Microbenchmark before implementing
+
+##### Phase 4.2.d: Bucket System (Advanced)
+**Goal**: Reduce collision rate with 4-entry buckets
+**Implementation**: Store 4 entries per index, always-replace within bucket
+**Expected**: 5-10% strength gain
+**Risk**: High - significant code changes
+**Testing**: SPRT [0.00, 10.00]
+**Note**: Consider deferring if earlier phases succeed
+
+#### Phase 4.3: Move Ordering Improvements
+**Branch**: `feature/20250830-move-ordering`
+**Goal**: Better move ordering for improved alpha-beta efficiency
+**Dependencies**: Phase 4.1.a must be complete (TT move fix)
+
+##### Phase 4.3.a: Counter-Move History
+**Current Issue**: Only basic counter-moves, no history
+**Implementation**:
+```cpp
+// Track history for move pairs
+int16_t m_counterHistory[2][64][64][64][64];  // [color][prevFrom][prevTo][from][to]
+// Update like regular history but based on previous move
+```
+**Memory**: ~32MB (acceptable for strength gain)
+**Thread Safety**: Thread-local or atomic updates
+**Expected**: 2-3% improvement, 5-10 ELO
+**Risk**: Medium - memory usage
+**Testing**: SPRT [0.00, 5.00]
+
+##### Phase 4.3.b: History Score Normalization
+**Current Issue**: Raw history values can overflow/dominate
+**Implementation**:
+- Periodic scaling when values get large
+- Butterfly boards for better indexing
+- Gravity decay on old entries
+**Expected**: 1-2% improvement
+**Risk**: Low
+**Testing**: SPRT [-3.00, 3.00]
+
+##### Phase 4.3.c: Improved SEE Usage
+**Goal**: Use SEE more effectively in move ordering
+**Implementation**:
+- Cache SEE results during move generation
+- Use SEE for quiet moves too (with threshold)
+- Skip SEE for obvious cases
+**Expected**: 2-3% improvement
+**Risk**: Medium - SEE is expensive
+**Testing**: SPRT [0.00, 5.00]
+
+#### Phase 4.4: Search Pruning Enhancements
+**Branch**: `feature/20250830-search-pruning`
+**Goal**: More aggressive pruning without losing strength
+**Dependencies**: Phases 4.1-4.3 should be complete for accurate testing
+
+##### Phase 4.4.a: LMR Parameter Tuning
+**Codex Finding**: LMR ALREADY uses logarithmic table with log(depth)*log(moves)
+**Current Reality**: Implementation in `src/search/lmr.cpp` is already optimal
+**Location**: `src/search/lmr.h/.cpp` - uses reduction table with UCI parameters
+**Implementation**:
+- Tune existing UCI parameters via SPSA:
+  - `LMRBase`, `LMRDivisor`, `LMRPVReduction`, `LMRImprovingReduction`
+- Consider different reductions for:
+  - Capture vs quiet moves
+  - Passed pawn pushes
+  - Checks and check evasions
+**Expected**: 3-5 ELO from better tuning
+**Risk**: Low - just parameter optimization
+**Testing**: SPSA tuning over many games
+
+##### Phase 4.4.b: Futility Pruning (CAREFUL)
+**Codex Warning**: SeaJay intentionally caps at depth ≤ 4 due to prior regressions
+**Current Issue**: Conservative but stable
+**Implementation Approach**:
+- Keep current depth 4 limit unless SPRT proves otherwise
+- Focus on improving margins and conditions:
+  - Add "improving" position detection using stored static eval
+  - Different margins for PV vs non-PV nodes
+  - Skip futility for moves giving check
+- Only extend to depth 5-6 if extensive testing shows gains
+**Expected**: 1-3% fewer nodes (conservative approach)
+**Risk**: High if extending depth - prior tests showed regressions
+**Testing**: SPRT [0.00, 5.00] with very careful validation
+
+##### Phase 4.4.c: Move Count Pruning Tuning
+**Goal**: Optimize the moveCountPruningLimit array
+**Implementation**:
+- SPSA tuning of limits per depth
+- Consider position type (quiet/tactical)
+- Different limits for PV/non-PV nodes
+**Expected**: 2-3% improvement, 3-5 ELO
+**Risk**: Low - just parameter tuning
+**Testing**: SPSA with multiple iterations
+
+##### Phase 4.4.d: Singular Extensions (Advanced)
+**Goal**: Extend when one move is clearly best
+**Dependencies**: Requires working TT (Phase 4.2)
+**Implementation**:
+- If TT suggests move is singular, search deeper
+- Use reduced depth search to verify singularity
+**Expected**: 10-15 ELO when properly tuned
+**Risk**: High - complex implementation
+**Testing**: SPRT [0.00, 10.00]
+
+#### Phase 4.5: Minor Optimizations
+**Branch**: `feature/20250830-search-minor`
+**Goal**: Collection of smaller optimizations
+**Dependencies**: Can be done anytime after Phase 4.1
+
+##### Phase 4.5.a: Smart Repetition Detection
+**Implementation**:
+- Only check after reversible moves
+- Small hash table for recent positions
+- Cache repetition status
+**Expected**: 2-3% NPS improvement
+**Risk**: Low
+**Testing**: SPRT [-3.00, 3.00]
+
+##### Phase 4.5.b: Search Stack Optimization
+**Implementation**:
+- Cache-align search stack
+- Group hot data in same cache line
+- Reduce SearchInfo size
+**Expected**: 1-2% NPS improvement
+**Risk**: Low
+**Testing**: SPRT [-3.00, 3.00]
+
+##### Phase 4.5.c: Adaptive Time Management
+**Implementation**:
+- Variable node count check frequency
+- More aggressive aspiration windows
+- Better sudden change detection
+**Expected**: Better time usage, 2-3 ELO
+**Risk**: Low
+**Testing**: SPRT [-3.00, 3.00]
+
+#### Implementation Sequence (Updated per Codex Review)
+
+1. **Phase 4.2** - TT Optimization (HIGHEST PRIORITY - DO FIRST)
+   - 4.2.a: Depth-preferred replacement ← **BIGGEST WIN**
+   - 4.2.b: TT prefetching at probe sites
+   - 4.2.c: Store true static eval in TT
+   - 4.2.d: Hash indexing (only if benchmarks show improvement)
+   - 4.2.e: Bucket system (defer - complex change)
+
+2. **Phase 4.1** - Quick Wins (EASY GAINS)
+   - 4.1.a: Verify TT ordering (no change needed)
+   - 4.1.b: Killer fast-path validation
+   - 4.1.c: Fix TT isEmpty() bug
+
+3. **Phase 4.3** - Move Ordering (MEDIUM PRIORITY)
+   - 4.3.a: Counter-move history
+   - 4.3.b: History normalization
+   - 4.3.c: Better SEE usage
+
+4. **Phase 4.4** - Pruning (CAREFUL TESTING)
+   - 4.4.a: Better LMR formula
+   - 4.4.b: Extended futility
+   - 4.4.c: SPSA tuning
+   - 4.4.d: Singular extensions (advanced)
+
+5. **Phase 4.5** - Minor Optimizations (CLEANUP)
+   - Can be interleaved with other phases
+
+#### Success Metrics (Updated per Codex)
+
+**After Phase 4.2 (TT - HIGHEST PRIORITY)**:
+- 10-15% improvement from depth-preferred replacement and eval storage
+- 15-25 ELO gain
+- Modern TT implementation with proper eval reuse
+
+**After Phase 4.1 (Quick Wins)**:
+- 1-3% NPS improvement from killer validation
+- Clean TT statistics from isEmpty() fix
+- Baseline validation complete
+
+**After Phase 4.3 (Move Ordering)**:
+- Additional 5-8% improvement
+- 10-15 ELO gain
+- State-of-art move ordering
+
+**After Phase 4.4 (Pruning)**:
+- Fewer nodes searched (not just NPS)
+- 20-30 ELO gain
+- Stronger play at same time control
+
+**Total Expected Gains**:
+- **NPS**: 1.02M → 1.3-1.5M (25-50% improvement)
+- **ELO**: +50-75 total
+- **Ready for**: LazySMP implementation
+
+### Phase 5: Memory and Cache Optimization
 **Goal**: Improve cache usage and memory access patterns
+**Note**: Many opportunities addressed in Phase 4
 
-**Investigation areas**:
+**Remaining areas**:
 - Reduce Board class size
 - Optimize data structure alignment
 - Improve memory locality
@@ -741,8 +1049,17 @@ MANDATORY READING BEFORE ANY WORK:
 | 3.2 | - Lazy legality checking | b7ceecf | **Complete** | ~550K | ~910K | +56-72 ELO ✅ |
 | 3.3.a | - Magic lookup optimization | 2899e94 | **Complete** | ~910K | ~1021K | Testing |
 | ~~3.3.b~~ | ~~Further magic optimizations~~ | ~~347eadc-b4f1575~~ | **REVERTED** | ~1021K | ~1020K | ❌ Regression |
-| 4 | Search Optimizations | TBD | Pending | - | - | - |
-| 5 | Memory & Cache | TBD | Pending | - | - | - |
+| 4 | Search Optimizations | feature/20250830-search-* | **PLANNED** | ~1021K | 1.3-1.5M (target) | - |
+| 4.2.a | - Depth-preferred TT replace | - | Ready | - | - | **PRIORITY 1** |
+| 4.2.b | - TT prefetching | - | Ready | - | - | **PRIORITY 2** |
+| 4.2.c | - Store true static eval | - | Ready | - | - | **PRIORITY 3** |
+| 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
+| 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
+| 4.1.c | - Fix TT isEmpty() bug | - | Ready | - | - | Correctness |
+| 4.3.a | - Counter-move history | - | Ready | - | - | - |
+| 4.4.a | - Tune LMR parameters | - | Ready | - | - | SPSA |
+| 4.4.b | - Futility improvements | - | Careful | - | - | Keep depth 4 |
+| 5 | Memory & Cache | TBD | Deferred | - | - | - |
 
 ---
 
@@ -857,16 +1174,20 @@ MANDATORY READING BEFORE ANY WORK:
   5. **Micro-optimizations can backfire** - Breaking expressions hurt CPU pipelining
 - **Decision**: Reverted to keep only Phase 3.3.a
 
-### Next Investigation Areas:
+### Next Investigation Areas (Phase 4 - IN PROGRESS):
 - ~~Optimize history heuristic access patterns~~ ✅ COMPLETE (Phase 2.4)
 - ~~Implement lazy evaluation in eval function~~ ❌ ABANDONED (Phase 2.5.a)
 - ~~Check for redundant legality checks~~ ✅ COMPLETE (Phase 3.2)
 - ~~Optimize attack table lookups~~ ✅ COMPLETE (Phase 3.3.a)
-- **Phase 4: Search Optimizations** - Next major opportunity
-  - TT access patterns (accessed millions of times)
-  - Move ordering effectiveness
-  - LMR conditions optimization
-  - Repetition detection efficiency
+
+**Phase 4 Critical Discoveries (Codex-Validated):**
+- **✅ TT move ordering is CORRECT** - Already ordered first (no bug)
+- **🔥 TT replacement is naive** - Always-replace loses deep analysis (Phase 4.2.a)
+- **🔥 Static eval not stored in TT** - Prevents reuse and improving detection (Phase 4.2.c)
+- **🔥 No TT prefetching** - Missing easy memory latency optimization (Phase 4.2.b)
+- **Missing counter-move history** - Proven technique not implemented (Phase 4.3.a)
+- **✅ LMR already logarithmic** - Just needs parameter tuning (Phase 4.4.a)
+- **Futility depth 4 intentional** - Prior tests showed regressions at higher depths
 
 ### Build System Notes:
 - Makefile now uses -march=native for auto-detection
@@ -899,13 +1220,25 @@ MANDATORY READING BEFORE ANY WORK:
 - **Test everything** - Even "obvious" optimizations can regress
 - **Magic bitboards are hard to beat** - Already near-optimal
 
-### Next Steps:
-1. Merge Phase 3 (3.1, 3.2, 3.3.a) to main
-2. Move to Phase 4: Search Optimizations
-3. Long-term: Target 1.5M NPS (stretch goal)
+### Next Steps (Updated per Codex Review):
+1. **IMMEDIATE**: Start with Phase 4.2.a - Depth-preferred TT replacement (HIGHEST IMPACT)
+2. Follow with Phase 4.2.b and 4.2.c - TT prefetching and static eval storage
+3. Implement Phase 4.1 quick wins (killer validation, TT bug fix)
+4. Continue with Phase 4.3-4.5 based on test results
+5. Target: 1.3-1.5M NPS after Phase 4 completion
+
+### Phase 4 Priority Order (Revised):
+1. **Phase 4.2.a** - Depth-preferred TT replacement ← **START HERE**
+2. **Phase 4.2.b** - TT prefetching at probe sites
+3. **Phase 4.2.c** - Store true static eval in TT
+4. **Phase 4.1.b** - Killer fast-path validation (easy win)
+5. **Phase 4.1.c** - Fix TT isEmpty() bug (correctness)
+6. **Phase 4.3.a** - Counter-move history
+7. **Phase 4.4** - Pruning and parameter tuning (careful testing)
 
 ---
 
 Last Updated: 2025-08-30
-Current Branch: feature/20250830-movegen-optimization (reverting to 2899e94)
+Current Branch: feature/20250830-movegen-optimization (ready to merge)
 Latest Commits: 73d195d (Phase 3.1), b7ceecf (Phase 3.2), 2899e94 (Phase 3.3.a)
+Next Branch: feature/20250830-search-bugfixes (Phase 4.1)

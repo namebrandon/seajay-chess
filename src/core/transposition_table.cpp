@@ -120,8 +120,18 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         m_stats.collisions++;
     }
     
-    // Always-replace strategy: simply overwrite
-    entry->save(key32, move, score, evalScore, depth, bound, m_generation);
+    // Depth-preferred replacement strategy
+    // Replace if:
+    // 1. Entry is empty
+    // 2. Entry is from a different generation (old search)
+    // 3. New search is at least as deep as existing entry
+    const bool canReplace = entry->isEmpty()
+                         || entry->generation() != m_generation
+                         || depth >= entry->depth;
+    
+    if (canReplace) {
+        entry->save(key32, move, score, evalScore, depth, bound, m_generation);
+    }
 }
 
 TTEntry* TranspositionTable::probe(Hash key) {
