@@ -117,8 +117,9 @@ public:
         
         int16_t& entry = m_history[prevTo][from][to];
         
-        // Apply local decay before update
-        entry -= entry >> DECAY_SHIFT;
+        // FIX: Don't apply decay on penalty updates - only on bonuses
+        // This prevents double decay which was keeping values near zero
+        // entry -= entry >> DECAY_SHIFT;  // REMOVED - was causing double decay
         
         // Saturating subtract with clamping
         const int newValue = static_cast<int>(entry) - penalty;

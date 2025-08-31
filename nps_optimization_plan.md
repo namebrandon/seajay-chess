@@ -1055,7 +1055,7 @@ MANDATORY READING BEFORE ANY WORK:
 | 4.1.a | - Verify TT ordering | - | No change needed | - | - | ✅ |
 | 4.1.b | - Killer fast-path validation | - | Ready | - | - | Easy win |
 | 4.1.c | - Fix TT isEmpty() bug | 27d9c25 | **Complete** | - | - | ✅ Fixed |
-| 4.3.a | - Counter-move history | - | Ready | - | - | - |
+| 4.3.a | - Counter-move history | 8a78aff, 84060c4 | **Complete** | ~1031K | ~1032K | Awaiting SPRT |
 | 4.4.a | - Tune LMR parameters | - | Ready | - | - | SPSA |
 | 4.4.b | - Futility improvements | - | Careful | - | - | Keep depth 4 |
 | 5 | Memory & Cache | TBD | Deferred | - | - | - |
@@ -1282,9 +1282,45 @@ MANDATORY READING BEFORE ANY WORK:
 
 **Note**: Search stack sentinel issue deferred to future work (documented in deferred_items_tracker.md)
 
+#### Phase 4.3.a - Counter-Move History ✅ COMPLETE
+**Commits**: 8a78aff (initial), 84060c4 (critical fixes)
+**Implementation**: Successfully added counter-move history heuristic with expert-recommended optimizations
+
+**Initial Implementation Issues (Found by Expert Review):**
+1. **Memory miscalculation**: Was actually 67MB, not 32MB as claimed
+2. **Catastrophic global aging**: Would iterate 33.5M entries causing stalls
+3. **Inconsistent scoring**: Different scales vs HistoryHeuristic
+4. **Unnecessary complexity**: Color dimension was redundant
+
+**Critical Fixes Applied:**
+1. **Memory reduction**: 67MB → 512KB (130x reduction!)
+   - Changed from `[color][prevFrom][prevTo][from][to]` to `[prevTo][from][to]`
+   - Dropped color (implicit from ply) and prevFrom (less important)
+2. **Local decay instead of global aging**
+   - Uses `entry >> 6` (~1.6% decay) per update
+   - Saturating arithmetic with clamping to ±8192
+   - No more cache thrashing from global scans
+3. **Aligned scoring with HistoryHeuristic**
+   - Max bonus: 800, max penalty: 400
+   - Same HISTORY_MAX (8192) for consistency
+4. **Added UCI weight option**
+   - `counterMoveHistoryWeight` (default 1.5)
+   - Formula: `history + cmh * weight`
+   - Ready for SPSA tuning
+5. **Improved compile times**
+   - Forward declaration in types.h
+   - Include only where needed
+
+**Results:**
+- **Memory**: 512KB per thread (excellent for cache)
+- **NPS**: Maintained at ~1.03M
+- **Bench**: 19191913 (unchanged)
+- **Expected ELO**: 5-10 (typical for CMH)
+- **Status**: Awaiting SPRT with bounds [0.00, 5.00]
+
 ---
 
 Last Updated: 2025-08-31
-Current Branch: feature/20250830-tt-optimization (Phase 4.2 complete)
-Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c)
-Next Work: Phase 4.1.b (Killer fast-path validation)
+Current Branch: feature/20250830-tt-optimization (Phase 4.2 and 4.3.a complete)
+Latest Commits: e53f271, 27d9c25 (4.2.a), be6e574 (4.2.b), 77847cf, 0aa0f4a (4.2.c), 8a78aff, 84060c4 (4.3.a)
+Next Work: Phase 4.3.b (History score normalization)

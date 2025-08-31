@@ -87,7 +87,8 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
                       const SearchData* searchData = nullptr, int ply = 0,
-                      Move prevMove = NO_MOVE, int countermoveBonus = 0) noexcept {
+                      Move prevMove = NO_MOVE, int countermoveBonus = 0,
+                      const SearchLimits* limits = nullptr) noexcept {
     // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
     // Stage 19, Phase A2: Use killer moves if available
     // Stage 20, Phase B2: Use history heuristic for quiet moves
@@ -97,11 +98,10 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     if (searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
         // Phase 4.3.a: Use counter-move history for enhanced move ordering
-        // Get CMH weight from search limits (if available)
+        // Get CMH weight from search limits
         float cmhWeight = 1.5f;  // default
-        if (searchData != nullptr) {
-            // Access through SearchData's limits if available
-            // For now use default, TODO: wire through SearchLimits
+        if (limits != nullptr) {
+            cmhWeight = limits->counterMoveHistoryWeight;
         }
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, *searchData->counterMoveHistory,
@@ -541,7 +541,7 @@ eval::Score negamax(Board& board,
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
     // CM3.3: Pass prevMove and bonus for countermove ordering
-    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus);
+    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits);
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {

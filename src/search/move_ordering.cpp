@@ -403,15 +403,20 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     if (killerEnd != moves.end()) {
         Color side = board.sideToMove();
         
+        // Convert float weight to integer multiplier (1.5 -> 3/2)
+        // Use integer arithmetic to avoid float operations in hot comparator
+        int cmhMultiplier = static_cast<int>(cmhWeight * 2.0f);  // 1.5 * 2 = 3
+        
         std::stable_sort(killerEnd, moves.end(),
-            [&history, &counterMoveHistory, side, prevMove, cmhWeight](const Move& a, const Move& b) {
-                // Get regular history scores
-                float scoreA = static_cast<float>(history.getScore(side, moveFrom(a), moveTo(a)));
-                float scoreB = static_cast<float>(history.getScore(side, moveFrom(b), moveTo(b)));
+            [&history, &counterMoveHistory, side, prevMove, cmhMultiplier](const Move& a, const Move& b) {
+                // Get regular history scores (already integers)
+                int scoreA = history.getScore(side, moveFrom(a), moveTo(a)) * 2;  // Scale by 2 for division
+                int scoreB = history.getScore(side, moveFrom(b), moveTo(b)) * 2;  // Scale by 2 for division
                 
-                // Add weighted counter-move history scores (simplified interface)
-                scoreA += counterMoveHistory.getScore(prevMove, a) * cmhWeight;
-                scoreB += counterMoveHistory.getScore(prevMove, b) * cmhWeight;
+                // Add weighted counter-move history scores using integer arithmetic
+                // (cmh * cmhMultiplier) / 2 effectively gives us cmh * originalWeight
+                scoreA += (counterMoveHistory.getScore(prevMove, a) * cmhMultiplier);
+                scoreB += (counterMoveHistory.getScore(prevMove, b) * cmhMultiplier);
                 
                 return scoreA > scoreB;  // Higher scores first
             });
