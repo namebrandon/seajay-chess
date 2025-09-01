@@ -233,9 +233,9 @@ private:
             // Rank 6
             MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
             MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 7 - SPSA: rooks on 7th = 20
-            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
-            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
+            // Rank 7 - A3 tweak: small EG boost (20 -> 24)
+            MgEgScore(10, 24), MgEgScore(10, 24), MgEgScore(10, 24), MgEgScore(10, 24),
+            MgEgScore(10, 24), MgEgScore(10, 24), MgEgScore(10, 24), MgEgScore(10, 24),
             // Rank 8
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10),
             MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)

@@ -954,11 +954,47 @@ Score evaluate(const Board& board) {
     
     // Phase ROF2: Calculate rook file bonus score
     Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
+
+    // Phase A3: Tiny bonus for king proximity to own rook in endgames only
+    Score rookKingProximityScore = Score(0);
+    if (gamePhase == search::GamePhase::ENDGAME) {
+        auto kingDist = [](Square k, Square r) {
+            int dr = std::abs(rankOf(k) - rankOf(r));
+            int df = std::abs(fileOf(k) - fileOf(r));
+            return dr + df;  // Manhattan distance
+        };
+        // White
+        int wBonus = 0;
+        Bitboard wrBB = board.pieces(WHITE, ROOK);
+        if (wrBB) {
+            int best = 99;
+            Bitboard t = wrBB;
+            while (t) {
+                Square rsq = popLsb(t);
+                best = std::min(best, kingDist(whiteKingSquare, rsq));
+            }
+            // Tiny bonus: closer king-rook gets up to ~6 cp
+            wBonus = std::max(0, 6 - best);
+        }
+        // Black
+        int bBonus = 0;
+        Bitboard brBB = board.pieces(BLACK, ROOK);
+        if (brBB) {
+            int best = 99;
+            Bitboard t = brBB;
+            while (t) {
+                Square rsq = popLsb(t);
+                best = std::min(best, kingDist(blackKingSquare, rsq));
+            }
+            bBonus = std::max(0, 6 - best);
+        }
+        rookKingProximityScore = Score(wBonus - bBonus);
+    }
     
     // Calculate total evaluation from white's perspective
     // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files + knight outposts
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {
