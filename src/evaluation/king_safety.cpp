@@ -8,10 +8,11 @@ namespace seajay::eval {
 // Initialize static parameters
 // Reduced values - 4ku's seem too high for our implementation
 KingSafety::KingSafetyParams KingSafety::s_params = {
-    .directShieldMg = 10,    // Reduced from 33
-    .directShieldEg = -3,    // Reduced from -10
-    .advancedShieldMg = 8,   // Reduced from 25
-    .advancedShieldEg = -2,  // Reduced from -7
+    // Phase A1: modest MG weight increases to better recognize basic king shields
+    .directShieldMg = 16,    // was 10; still far below 4ku values
+    .directShieldEg = -3,    // unchanged (endgame king safety less important)
+    .advancedShieldMg = 12,  // was 8; modest bump
+    .advancedShieldEg = -2,  // unchanged
     .enableScoring = 1       // Phase KS3: ENABLED
 };
 
