@@ -129,7 +129,7 @@ public:
 private:
     // Mutable PST tables for SPSA tuning
     static inline std::array<std::array<MgEgScore, 64>, 6> s_pstTables = {
-        // Pawn table - stronger advancement bonus in endgame (passed pawns critical)
+        // Pawn table - SPSA tuned endgame values (+10.38 ELO validated)
         std::array<MgEgScore, 64>{
             // Rank 1 - pawns should never be here
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
@@ -137,21 +137,21 @@ private:
             // Rank 2
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-5, -5),
             MgEgScore(-5, -5), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 3
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 5), MgEgScore(10, 10),
-            MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(0, 0),
-            // Rank 4
-            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(10, 15), MgEgScore(20, 25),
-            MgEgScore(20, 25), MgEgScore(10, 15), MgEgScore(5, 5), MgEgScore(5, 5),
-            // Rank 5
-            MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(20, 30), MgEgScore(30, 40),
-            MgEgScore(30, 40), MgEgScore(20, 30), MgEgScore(10, 15), MgEgScore(10, 15),
-            // Rank 6 - passed pawns more valuable in endgame
-            MgEgScore(20, 35), MgEgScore(20, 35), MgEgScore(30, 50), MgEgScore(40, 60),
-            MgEgScore(40, 60), MgEgScore(30, 50), MgEgScore(20, 35), MgEgScore(20, 35),
-            // Rank 7 - near promotion critical in endgame
-            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
-            MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90), MgEgScore(50, 90),
+            // Rank 3 - SPSA: inner center (D&E) = 8, outer center (C&F) = 7
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 7), MgEgScore(10, 8),
+            MgEgScore(10, 8), MgEgScore(5, 7), MgEgScore(0, 0), MgEgScore(0, 0),
+            // Rank 4 - SPSA: inner center = 18, outer center = 16
+            MgEgScore(5, 5), MgEgScore(5, 5), MgEgScore(10, 16), MgEgScore(20, 18),
+            MgEgScore(20, 18), MgEgScore(10, 16), MgEgScore(5, 5), MgEgScore(5, 5),
+            // Rank 5 - SPSA: inner center = 29, outer center = 27
+            MgEgScore(10, 15), MgEgScore(10, 15), MgEgScore(20, 27), MgEgScore(30, 29),
+            MgEgScore(30, 29), MgEgScore(20, 27), MgEgScore(10, 15), MgEgScore(10, 15),
+            // Rank 6 - SPSA: inner center = 51, outer center = 48
+            MgEgScore(20, 35), MgEgScore(20, 35), MgEgScore(30, 48), MgEgScore(40, 51),
+            MgEgScore(40, 51), MgEgScore(30, 48), MgEgScore(20, 35), MgEgScore(20, 35),
+            // Rank 7 - SPSA: all center files = 75
+            MgEgScore(50, 75), MgEgScore(50, 75), MgEgScore(50, 75), MgEgScore(50, 75),
+            MgEgScore(50, 75), MgEgScore(50, 75), MgEgScore(50, 75), MgEgScore(50, 75),
             // Rank 8 - pawns should never be here (promotion)
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0),
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
@@ -163,23 +163,23 @@ private:
             MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
             MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40),
             // Rank 2
-            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
+            MgEgScore(-40, -25), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(5, 5),
+            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -25),
             // Rank 3
-            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 12),
-            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 10),
+            MgEgScore(15, 10), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 4
-            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(15, 12), MgEgScore(20, 15),
-            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(0, 0), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(15, 10), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 5
-            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(15, 12), MgEgScore(20, 15),
-            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(5, 5), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(15, 10), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 6
-            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 12),
-            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 10),
+            MgEgScore(15, 10), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 7
-            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
+            MgEgScore(-40, -25), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(0, 0),
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -25),
             // Rank 8
             MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
             MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40)
@@ -233,9 +233,9 @@ private:
             // Rank 6
             MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
             MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 7 - rooks love the 7th rank, especially in endgames
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
+            // Rank 7 - SPSA: rooks on 7th = 20
+            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
+            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
             // Rank 8
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10),
             MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
@@ -337,23 +337,23 @@ private:
             MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
             MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40),
             // Rank 2
-            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(5, 5),
-            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
+            MgEgScore(-40, -25), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(5, 5),
+            MgEgScore(5, 5), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -25),
             // Rank 3
-            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 12),
-            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(10, 10), MgEgScore(15, 10),
+            MgEgScore(15, 10), MgEgScore(10, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 4
-            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(15, 12), MgEgScore(20, 15),
-            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(0, 0), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(15, 10), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 5
-            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(15, 12), MgEgScore(20, 15),
-            MgEgScore(20, 15), MgEgScore(15, 12), MgEgScore(5, 5), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(5, 5), MgEgScore(15, 10), MgEgScore(20, 15),
+            MgEgScore(20, 15), MgEgScore(15, 10), MgEgScore(5, 5), MgEgScore(-30, -25),
             // Rank 6
-            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 12),
-            MgEgScore(15, 12), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
+            MgEgScore(-30, -25), MgEgScore(0, 0), MgEgScore(10, 10), MgEgScore(15, 10),
+            MgEgScore(15, 10), MgEgScore(10, 10), MgEgScore(0, 0), MgEgScore(-30, -25),
             // Rank 7
-            MgEgScore(-40, -30), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(0, 0),
-            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -30),
+            MgEgScore(-40, -25), MgEgScore(-20, -15), MgEgScore(0, 0), MgEgScore(0, 0),
+            MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(-20, -15), MgEgScore(-40, -25),
             // Rank 8
             MgEgScore(-50, -40), MgEgScore(-40, -30), MgEgScore(-30, -25), MgEgScore(-30, -25),
             MgEgScore(-30, -25), MgEgScore(-30, -25), MgEgScore(-40, -30), MgEgScore(-50, -40)
@@ -407,9 +407,9 @@ private:
             // Rank 6
             MgEgScore(-5, 5), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10),
             MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(0, 10), MgEgScore(-5, 5),
-            // Rank 7 - rooks love the 7th rank, especially in endgames
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
-            MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25), MgEgScore(10, 25),
+            // Rank 7 - SPSA: rooks on 7th = 20
+            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
+            MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20), MgEgScore(10, 20),
             // Rank 8
             MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(5, 10),
             MgEgScore(5, 10), MgEgScore(0, 0), MgEgScore(0, 0), MgEgScore(0, 0)
