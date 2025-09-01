@@ -4,6 +4,8 @@
 #include "../search/search.h"
 #include "../search/negamax.h"
 #include "../search/types.h"
+#include "../search/game_phase.h"  // Phase A2: coarse phase detection
+#include "../core/bitboard.h"      // Phase A2: popCount for phase(0-256)
 #include "../search/move_ordering.h"  // Stage 15: For SEE integration
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
 #include "../search/lmr.h"             // For LMR table initialization
@@ -120,6 +122,9 @@ void UCIEngine::handleUCI() {
     
     // PST Phase Interpolation option
     std::cout << "option name UsePSTInterpolation type check default true" << std::endl;
+    
+    // Phase A2: Phase visibility toggle for eval
+    std::cout << "option name ShowPhaseInfo type check default true" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
@@ -1243,6 +1248,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid EndgameStability value: " << value << std::endl;
         }
     }
+    else if (optionName == "ShowPhaseInfo") {
+        if (value == "true") {
+            m_showPhaseInfo = true;
+            std::cerr << "info string ShowPhaseInfo enabled" << std::endl;
+        } else if (value == "false") {
+            m_showPhaseInfo = false;
+            std::cerr << "info string ShowPhaseInfo disabled" << std::endl;
+        }
+    }
     // Ignore unknown options (UCI requirement)
 }
 
@@ -1307,6 +1321,24 @@ void UCIEngine::handleEval() {
     // Display perspective info for clarity
     std::cout << "\n(All values shown from White's perspective per UCI standard)" << std::endl;
     std::cout << "Side to move: " << (m_board.sideToMove() == WHITE ? "White" : "Black") << std::endl;
+    
+    // Phase A2: Print phase information if enabled
+    if (m_showPhaseInfo) {
+        // Compute 0-256 phase (same method as evaluate.cpp)
+        constexpr int PHASE_WEIGHT[6] = { 0, 1, 1, 2, 4, 0 };
+        constexpr int TOTAL_PHASE = 24;
+        int phase = 0;
+        phase += seajay::popCount(m_board.pieces(KNIGHT)) * PHASE_WEIGHT[KNIGHT];
+        phase += seajay::popCount(m_board.pieces(BISHOP)) * PHASE_WEIGHT[BISHOP];
+        phase += seajay::popCount(m_board.pieces(ROOK))   * PHASE_WEIGHT[ROOK];
+        phase += seajay::popCount(m_board.pieces(QUEEN))  * PHASE_WEIGHT[QUEEN];
+        int phase256 = std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE, 0, 256);
+        auto gp = search::detectGamePhase(m_board);
+        const char* gpName = (gp == search::GamePhase::OPENING) ? "OPENING" :
+                             (gp == search::GamePhase::MIDDLEGAME) ? "MIDDLEGAME" : "ENDGAME";
+        std::cout << "Phase (0-256):        " << std::setw(7) << phase256 << std::endl;
+        std::cout << "Game Phase:            " << gpName << std::endl;
+    }
     
     std::cout << "\n+---+---+---+---+---+---+---+---+" << std::endl;
 }

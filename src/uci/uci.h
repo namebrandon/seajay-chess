@@ -69,6 +69,9 @@ private:
     // PST Phase Interpolation parameters
     bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation
     
+    // Phase A2: Debug visibility for phase info in UCI eval
+    bool m_showPhaseInfo = true;        // Print phase (0-256) and coarse GamePhase in eval
+    
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     
