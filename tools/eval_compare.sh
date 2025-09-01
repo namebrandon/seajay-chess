@@ -4,12 +4,12 @@ set -euo pipefail
 
 # Eval compare harness
 # - Builds Release (unless --no-build)
-# - Runs UCI 'eval' breakdown on two reference FENs
+# - Runs UCI 'eval' breakdown on reference FENs
 # - Prints concise summaries for quick human review
 #
 # Usage:
 #   tools/eval_compare.sh [--no-build] [--engine ./bin/seajay] \
-#       [--fen1 "<FEN>"] [--fen2 "<FEN>"]
+#       [--fen1 "<FEN>"] [--fen2 "<FEN>"] [--fen3 "<FEN>"]
 #
 # Notes:
 # - Build process follows docs/BUILD_SYSTEM.md (CMake via build.sh Release)
@@ -21,6 +21,7 @@ DO_BUILD=1
 # Defaults from the remediation plan
 FEN1='r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/1R2R1K1 w kq - 2 17'
 FEN2='8/5p2/2R2Pk1/5r1p/5P1P/5KP1/8/8 b - - 26 82'
+FEN3='rnbqkbnr/ppppp3/8/8/8/5N2/PPPPPPPP/RNBQ1BKR w KQ - 0 1'
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,6 +39,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fen2)
       FEN2="$2"
+      shift 2
+      ;;
+    --fen3)
+      FEN3="$2"
       shift 2
       ;;
     -h|--help)
@@ -100,5 +105,8 @@ echo "== Eval Compare: Example Game 1 Endgame Choice =="
 run_eval "$FEN2"
 
 echo
-echo "Done. Use --no-build to skip rebuild; customize with --engine/--fen1/--fen2."
+echo "== Eval Compare: King Safety Sanity (expect KS ~ +48 for White) =="
+run_eval "$FEN3"
 
+echo
+echo "Done. Use --no-build to skip rebuild; customize with --engine/--fen1/--fen2/--fen3."
