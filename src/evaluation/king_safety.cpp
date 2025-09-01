@@ -1,9 +1,31 @@
 #include "king_safety.h"
 #include "../core/board.h"
 #include "../core/bitboard.h"
-#include "../search/game_phase.h"  // Phase KS3: For phase tapering
+#include <algorithm>  // For std::clamp
 
 namespace seajay::eval {
+
+// Forward declaration of phase calculation from evaluate.cpp
+// We use the same phase calculation for consistency across evaluation
+inline int computePhase(const Board& board) noexcept {
+    // Material weights for phase calculation
+    constexpr int PHASE_WEIGHT[6] = { 0, 1, 1, 2, 4, 0 };  // P,N,B,R,Q,K
+    constexpr int TOTAL_PHASE = 24;
+    
+    // Count non-pawn material
+    int phase = 0;
+    phase += popCount(board.pieces(KNIGHT)) * PHASE_WEIGHT[KNIGHT];
+    phase += popCount(board.pieces(BISHOP)) * PHASE_WEIGHT[BISHOP];
+    phase += popCount(board.pieces(ROOK))   * PHASE_WEIGHT[ROOK];
+    phase += popCount(board.pieces(QUEEN))  * PHASE_WEIGHT[QUEEN];
+    
+    // Pawn-aware adjustment
+    int pawnCount = popCount(board.pieces(PAWN));
+    int pawnAdjustment = (16 - pawnCount) * 3;
+    phase = std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE - pawnAdjustment, 0, 256);
+    
+    return phase;  // 256 = full MG, 0 = full EG
+}
 
 // Initialize static parameters
 // Reduced values - 4ku's seem too high for our implementation
@@ -34,27 +56,19 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     int directCount = popCount(directShield);
     int advancedCount = popCount(advancedShield);
     
-    // Phase KS3: Implement phase-based scoring
-    // Detect game phase for proper tapering
-    search::GamePhase phase = search::detectGamePhase(board);
+    // Phase-aware continuous scoring (replacing stepwise approach)
+    // King safety tapers DOWN toward endgame (more important in MG)
+    int phase = computePhase(board);  // 256 = full MG, 0 = full EG
+    int invPhase = 256 - phase;
     
-    int rawScore = 0;
+    // Calculate MG and EG scores separately
+    int mgScore = directCount * s_params.directShieldMg + 
+                  advancedCount * s_params.advancedShieldMg;
+    int egScore = directCount * s_params.directShieldEg + 
+                  advancedCount * s_params.advancedShieldEg;
     
-    // Apply phase-appropriate values
-    switch (phase) {
-        case search::GamePhase::OPENING:
-        case search::GamePhase::MIDDLEGAME:
-            // Use middlegame values (king safety more important)
-            rawScore = directCount * s_params.directShieldMg + 
-                      advancedCount * s_params.advancedShieldMg;
-            break;
-            
-        case search::GamePhase::ENDGAME:
-            // Use endgame values (king safety less important, can be negative)
-            rawScore = directCount * s_params.directShieldEg + 
-                      advancedCount * s_params.advancedShieldEg;
-            break;
-    }
+    // Continuous interpolation with fixed-point arithmetic
+    int rawScore = (mgScore * phase + egScore * invPhase + 128) >> 8;
     
     // Phase KS3: enableScoring is now 1, so scoring is active
     int finalScore = rawScore * s_params.enableScoring;
