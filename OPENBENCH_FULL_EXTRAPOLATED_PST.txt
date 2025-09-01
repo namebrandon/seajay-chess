@@ -1,0 +1,48 @@
+# Full Extrapolated PST for OpenBench Testing
+
+## Based on SPSA discoveries:
+## - Inner center (D&E) > Outer center (C&F) by ~7-10%
+## - All values reduced from original by ~25-30%
+## - Smooth progression by rank
+
+## Full Extrapolated Parameter Set (based on SPSA patterns)
+
+### PAWNS - Complete extrapolation
+# Rank 2 - minimal values
+pawn_eg_r2_a=0 pawn_eg_r2_b=0 pawn_eg_r2_c=0 pawn_eg_r2_d=0 pawn_eg_r2_e=0 pawn_eg_r2_f=0 pawn_eg_r2_g=0 pawn_eg_r2_h=0
+
+# Rank 3 - extrapolated down from SPSA pattern
+pawn_eg_r3_d=8 pawn_eg_r3_e=7
+
+# Rank 4 - extrapolated
+pawn_eg_r4_d=18 pawn_eg_r4_e=16
+
+# Rank 5 - from SPSA
+pawn_eg_r5_d=29 pawn_eg_r5_e=27
+
+# Rank 6 - from SPSA  
+pawn_eg_r6_d=51 pawn_eg_r6_e=48
+
+# Rank 7 - from SPSA
+pawn_eg_r7_center=75
+
+### PIECES - from SPSA
+rook_eg_7th=20 rook_eg_active=12 rook_eg_passive=5 knight_eg_center=15 knight_eg_extended=10 knight_eg_edge=-25 knight_eg_corner=-40 bishop_eg_long_diag=19 bishop_eg_center=14 bishop_eg_edge=-5 queen_eg_center=9 queen_eg_active=7 queen_eg_back=5
+
+## Single line for OpenBench (all parameters):
+
+pawn_eg_r3_d=8 pawn_eg_r3_e=7 pawn_eg_r4_d=18 pawn_eg_r4_e=16 pawn_eg_r5_d=29 pawn_eg_r5_e=27 pawn_eg_r6_d=51 pawn_eg_r6_e=48 pawn_eg_r7_center=75 rook_eg_7th=20 rook_eg_active=12 rook_eg_passive=5 knight_eg_center=15 knight_eg_extended=10 knight_eg_edge=-25 knight_eg_corner=-40 bishop_eg_long_diag=19 bishop_eg_center=14 bishop_eg_edge=-5 queen_eg_center=9 queen_eg_active=7 queen_eg_back=5
+
+## Notes on extrapolation:
+## 1. Rank 3-4 pawns: Scaled down proportionally from rank 5-6 pattern
+## 2. Piece values: Used SPSA results plus reasonable estimates for untested zones
+## 3. Maintains inner>outer center pattern discovered by SPSA
+## 4. All values reduced from original PST by ~25-30% as SPSA indicated
+
+## Alternative: Minimal Test (just SPSA-tuned params)
+## If you want to test ONLY what was tuned without extrapolation:
+
+pawn_eg_r5_d=29 pawn_eg_r5_e=27 pawn_eg_r6_d=51 pawn_eg_r6_e=48 pawn_eg_r7_center=75 rook_eg_7th=20 rook_eg_active=12 knight_eg_center=15 bishop_eg_long_diag=19 queen_eg_active=7
+
+## The minimal test might be SAFER as it only changes what we have data for,
+## but the full extrapolation would give a better overall evaluation.

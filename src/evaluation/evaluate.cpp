@@ -36,6 +36,24 @@ inline int phase0to256(const Board& board) noexcept {
     return std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE, 0, 256);
 }
 
+// Pawn-aware phase calculation - adjusts phase based on pawn count
+// More pawns suggest earlier game phase, fewer pawns suggest endgame
+inline int phase0to256PawnAware(const Board& board) noexcept {
+    // Start with basic material phase
+    int phase = phase0to256(board);
+    
+    // Count total pawns (both sides)
+    int pawnCount = popCount(board.pieces(PAWN));
+    
+    // Adjust phase based on pawn count deviation from normal (16 pawns = starting position)
+    // Each missing pawn pair pushes us 6 units toward endgame
+    // Each extra pawn (rare) pushes us toward middlegame
+    int pawnAdjustment = (16 - pawnCount) * 3;  // 3 units per missing pawn
+    
+    // Apply adjustment and clamp to valid range
+    return std::clamp(phase - pawnAdjustment, 0, 256);
+}
+
 Score evaluate(const Board& board) {
     // Get material from board
     const Material& material = board.material();
@@ -84,8 +102,8 @@ Score evaluate(const Board& board) {
     Score pstValue;
     if (seajay::getConfig().usePSTInterpolation) {
         // PST Phase Interpolation - calculate phase and interpolate mg/eg values
-        int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
-        int invPhase = 256 - phase;      // Inverse phase for endgame weight
+        int phase = phase0to256PawnAware(board);  // Use pawn-aware phase for consistency
+        int invPhase = 256 - phase;               // Inverse phase for endgame weight
         
         // Fixed-point blend with rounding (shift by 8 to divide by 256)
         int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
@@ -446,22 +464,20 @@ Score evaluate(const Board& board) {
         }
     }
     
-    // Phase scaling: passed pawns are more valuable in endgame
-    // Using cached gamePhase from Phase 2.5.b
+    // Phase-aware passed pawn evaluation with continuous interpolation
+    // Passed pawns become exponentially more valuable toward endgame
+    // Using pawn-aware phase for better endgame detection
+    int phase = phase0to256PawnAware(board);  // 256 = full MG, 0 = full EG
     
-    // Scale passed pawn bonus based on phase
-    // Opening: 50% value, Middlegame: 75% value, Endgame: 150% value
-    switch (gamePhase) {
-        case search::GamePhase::OPENING:
-            passedPawnValue = passedPawnValue / 2;  // 50%
-            break;
-        case search::GamePhase::MIDDLEGAME:
-            passedPawnValue = (passedPawnValue * 3) / 4;  // 75%
-            break;
-        case search::GamePhase::ENDGAME:
-            passedPawnValue = (passedPawnValue * 3) / 2;  // 150%
-            break;
-    }
+    // Tapered scaling: passed pawns taper UP toward endgame
+    // MG weight: 50% of base value (phase/256 * 0.5)
+    // EG weight: 150% of base value ((256-phase)/256 * 1.5)
+    // Formula: value * (0.5 * phase/256 + 1.5 * (256-phase)/256)
+    // Simplifies to: value * (128 + 256 - phase) / 256
+    // Further simplifies to: value * (384 - phase) / 256
+    
+    // Apply continuous phase scaling with fixed-point arithmetic
+    passedPawnValue = (passedPawnValue * (384 - phase) + 128) >> 8;  // +128 for rounding
     
     // Convert passed pawn value to Score
     Score passedPawnScore(passedPawnValue);
@@ -1036,7 +1052,7 @@ EvalBreakdown evaluateDetailed(const Board& board) {
     // Get PST score
     const MgEgScore& pstScore = board.pstScore();
     if (seajay::getConfig().usePSTInterpolation) {
-        int phase = phase0to256(board);
+        int phase = phase0to256PawnAware(board);  // Use pawn-aware phase for consistency
         int invPhase = 256 - phase;
         int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
         breakdown.pst = Score(blendedPst);

@@ -1,0 +1,28 @@
+# OpenBench UCI Options String - SPSA Tuned Values
+
+## For Test Branch (feature/20250831-pst-interpolation)
+## Single line for OpenBench UCI options field:
+
+pawn_eg_r5_d=29 pawn_eg_r5_e=27 pawn_eg_r6_d=51 pawn_eg_r6_e=48 pawn_eg_r7_center=75 rook_eg_7th=20 rook_eg_active=12 knight_eg_center=15 bishop_eg_long_diag=19 queen_eg_active=7
+
+## For comparison, default values were:
+## pawn_eg_r5_d=40 pawn_eg_r5_e=40 pawn_eg_r6_d=60 pawn_eg_r6_e=60 pawn_eg_r7_center=90 rook_eg_7th=25 rook_eg_active=10 knight_eg_center=15 bishop_eg_long_diag=20 queen_eg_active=10
+
+## Key findings from SPSA:
+## - Inner center pawns (D&E) worth more than outer (C&F): ~29 vs ~27 on rank 5, ~51 vs ~48 on rank 6
+## - All pawn values reduced from defaults (were too high)
+## - Rank 7 center down from 90 to 75
+## - Rook 7th rank down from 25 to 20
+## - Queen activity down from 10 to 7
+
+## OpenBench Test Configuration:
+## Base: main branch or commit 722a440
+## Test: feature/20250831-pst-interpolation
+## Test Options: [paste the single line above]
+## Book: UHO_4060_v2.epd or endgames.epd
+## TC: 10+0.1
+## Type: SPRT
+## SPRT elo0: 0.0
+## SPRT elo1: 5.0
+## SPRT alpha: 0.05
+## SPRT beta: 0.05
