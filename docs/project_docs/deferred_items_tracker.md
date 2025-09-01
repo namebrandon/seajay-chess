@@ -2311,3 +2311,80 @@ Would require:
 3. SPSA tuning session with 40,000-50,000 games
 4. Validation that interpolation still works correctly with new weights
 
+## PV Tracking in Quiescence Search (DEFERRED)
+
+**Date Added:** September 1, 2025  
+**Status:** DEFERRED - Nice-to-have quality improvement  
+**Source:** Code review and discussion during futility pruning work  
+**Priority:** LOW - No strength impact, only usability improvement  
+
+### Summary
+
+SeaJay currently does NOT track the Principal Variation (PV) in quiescence search. When entering quiescence from a PV node, tactical sequences found (like forcing captures or checks) are not added to the PV display.
+
+### Current State
+
+- **Negamax** has PV tracking via `TriangularPV* pv` parameter
+- **Quiescence** does NOT have a PV parameter
+- When negamax calls quiescence at depth 0, the PV cannot be extended
+- Tactical sequences in quiescence are not visible to users
+
+### Implementation Required
+
+```cpp
+// Add PV parameter to quiescence function signature
+eval::Score quiescence(
+    Board& board,
+    int ply,
+    eval::Score alpha,
+    eval::Score beta,
+    SearchInfo& searchInfo,
+    SearchData& data,
+    const SearchLimits& limits,
+    TranspositionTable& tt,
+    TriangularPV* pv,      // ADD THIS
+    bool isPvNode,         // ADD THIS
+    int checkPly,
+    bool inPanicMode)
+
+// Update PV when finding best move in quiescence
+if (score > alpha) {
+    alpha = score;
+    if (pv && isPvNode) {
+        pv->updatePV(ply, move);
+    }
+}
+
+// Update negamax call to quiescence to pass PV
+return quiescence(board, ply, alpha, beta, searchInfo, info, limits, *tt, 
+                  pv, isPvNode, 0, inPanicMode);
+```
+
+### Benefits
+
+- **Complete PV reporting**: Shows tactical continuations beyond last full-width move
+- **Better debugging**: Can see what tactical sequence engine is planning
+- **User experience**: More informative output in GUIs
+- **Standard practice**: Most strong engines track PV through quiescence
+
+### Why Deferred
+
+1. **Zero strength impact**: This is purely cosmetic/informational
+2. **Current PV adequate**: Main search PV shows the critical moves
+3. **Low priority**: Many higher-impact features to implement first
+4. **Small overhead**: Minor performance cost for PV updates
+
+### When to Implement
+
+- When polishing the engine for release
+- If users request more detailed PV output
+- When debugging tactical issues becomes difficult
+- As part of general code cleanup/standardization
+
+### Expected Effort
+
+- 1-2 hours to implement and test
+- Simple mechanical changes to function signatures
+- Need to update all quiescence call sites
+- Testing to ensure PV correctly concatenates search and quiescence moves
+
