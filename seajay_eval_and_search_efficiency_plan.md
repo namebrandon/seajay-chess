@@ -27,12 +27,16 @@ Scope: Evaluation correctness (priority) and search efficiency (instrument + inv
 
 ## Test Harness & Reference Positions
 
-- Use tools/analyze_position.sh and UCI `eval` to capture eval breakdowns.
-- Include these two positions in all local sanity checks:
-  1) Example Game 2 critical FEN (before the divergence):
-     - `r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/1R2R1K1 w kq - 2 17`
-  2) Example Game 1 critical endgame choice (before exchange):
-     - `8/5p2/2R2Pk1/5r1p/5P1P/5KP1/8/8 b - - 26 82`
+- Use tools/eval_compare.sh to build (or `--no-build`) and run UCI `eval` on reference FENs.
+  - Shows true King Safety and phase info (A2) in the breakdown.
+  - Defaults:
+    - FEN1: Example Game 2 (middlegame)
+    - FEN2: Example Game 1 (endgame choice)
+    - FEN3: King Safety sanity (expect KS ~ +48 for White)
+- Include these in local sanity checks:
+  1) Example Game 2: `r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/1R2R1K1 w kq - 2 17`
+  2) Example Game 1: `8/5p2/2R2Pk1/5r1p/5P1P/5KP1/8/8 b - - 26 82`
+  3) KS sanity FEN: `rnbqkbnr/ppppp3/8/8/8/5N2/PPPPPPPP/RNBQ1BKR w KQ - 0 1`
 - Store local outputs (eval breakdown, PVs, bestmoves) in per-phase notes.
 
 ## OpenBench Configuration Template
@@ -40,7 +44,7 @@ Scope: Evaluation correctness (priority) and search efficiency (instrument + inv
 - Dev Branch: the phase branch (see each phase)
 - Base Branch: `main`
 - Time Control: start with `10+0.1`; use `60+0.6` for endgame-heavy phases
-- Book: `UHO_4060_v2.epd`
+- Book: `UHO_4060_v2.epd` (general). For endgame-centric phases (e.g., A3), prefer `external/endgames.epd`.
 - Bounds (nELO): per phase; see guidance bullets
 - Description: short, clear phase description
 
@@ -57,7 +61,7 @@ OB Test Request Template (assistant will fill):
 - Branch: <feature/…>
 - Commit: <full-40-char-sha>
 - Base: main
-- TC/Book: 10+0.1 (or 60+0.6) / UHO_4060_v2.epd
+- TC/Book: 10+0.1 (or 60+0.6) / UHO_4060_v2.epd (or external/endgames.epd for endgame phases)
 - Bounds: [L, U] (nELO)
 - Expected: <e.g., neutral, small positive>
 - Rationale: <1–2 sentences>
@@ -94,6 +98,10 @@ bench <nodes>`
 - OpenBench: Optional (infra only). Bounds: `[-5.00, 3.00]`
 - STOP → Validate locally that breakdowns are captured and stable run-to-run.
 
+Status: COMPLETED
+- Script present (`tools/eval_compare.sh`) with KS sanity FEN (FEN3) and phase info in output.
+- UCI eval breakdown shows King Safety (A0 support commit) and phase (A2).
+
 ### Phase A1 — King Safety Sanity (Weight Audit; No New Terms)
 - Goal: Address the clear underweighting of king safety visible in Example Game 2 without architectural churn.
 - Implementation (hot path awareness):
@@ -107,6 +115,11 @@ bench <nodes>`
 - OpenBench: Bounds `[0.00, 5.00]` at 10+0.1; if noisy, re-run at 60+0.6.
 - STOP → Proceed only if non-negative and subjectively reduces egregious choices.
 
+Status: COMPLETED — Tentative OB PASS
+- Branch: `feature/20250901-eval-king-safety-sanity`
+- Commit (weights): 002f6e7cb6e7ab7d421e877e75ecfd360c58967a
+- OB (human): LLR 1.41 @ 2500 games, ≈ +12 ELO (tentative pass).
+
 ### Phase A2 — PST Phase Consistency Audit (Infrastructure)
 - Goal: Align PST tapering (continuous 0–256) with phase-dependent terms to reduce inconsistencies near phase boundaries.
 - Implementation:
@@ -117,6 +130,10 @@ bench <nodes>`
 bench <nodes>`
 - OpenBench: Optional. Bounds `[-5.00, 3.00]`.
 - STOP → Confirm Example Game 2 is treated as middlegame by both systems.
+
+Status: COMPLETED
+- Added UCI option `ShowPhaseInfo` (default true) and eval prints phase (0–256) and coarse GamePhase.
+- Commit: 9eaa3dc4c542bb471d811de3f49964a111a52aaf
 
 ### Phase A3 — Endgame Sensibility Guardrails (Minimal)
 - Goal: Improve endgame decisions where simplifications to inferior rook endgames occur.
@@ -129,6 +146,11 @@ bench <nodes>`
 bench <nodes>`
 - OpenBench: Bounds `[0.00, 5.00]` at 60+0.6 (endgame heavy).
 - STOP → Proceed only if non-negative; verify Example Game 1 behavior improves locally.
+
+Status: IMPLEMENTED — OB PENDING
+- PST: Rook 7th-rank EG values +4 (20→24); tiny EG-only king–rook proximity bonus (≤6cp).
+- Commit: 99fe2427bd60fac99b70a97711c6e68f42ffab1d
+- Recommended OB: Book `external/endgames.epd`, TC 60+0.6, Bounds [0.00, 5.00].
 
 ### Phase A4 — Quiet-Prophylaxis Nudges (Micro)
 - Goal: Make quiet king-safety-preserving moves (like h2h3) slightly more competitive without broader complexity.

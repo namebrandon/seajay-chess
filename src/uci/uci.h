@@ -71,6 +71,8 @@ private:
     
     // Phase A2: Debug visibility for phase info in UCI eval
     bool m_showPhaseInfo = true;        // Print phase (0-256) and coarse GamePhase in eval
+    // B0: One-shot search summary toggle
+    bool m_showSearchStats = false;     // Print search summary after go
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth

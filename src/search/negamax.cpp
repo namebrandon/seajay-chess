@@ -736,6 +736,11 @@ eval::Score negamax(Board& board,
         // Phase 3.2: Try to make the move with lazy legality checking
         Board::UndoInfo undo;
         if (!board.tryMakeMove(move, undo)) {
+            // B0: Count illegal pseudo-legal moves
+            if (legalMoveCount == 0) {
+                info.illegalPseudoBeforeFirst++;
+            }
+            info.illegalPseudoTotal++;
             // Move is illegal (leaves king in check) - skip it
             continue;
         }
@@ -1482,6 +1487,32 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         std::cout << std::endl;
     }
     
+    // B0: One-shot search summary (low overhead)
+    if (limits.showSearchStats or limits.showPVSStats) {
+        double ttHitRate = info.ttProbes > 0 ? (100.0 * info.ttHits / (double)info.ttProbes) : 0.0;
+        double pvsReRate = info.pvsStats.scoutSearches > 0 ? (100.0 * info.pvsStats.reSearches / (double)info.pvsStats.scoutSearches) : 0.0;
+        double nullRate = info.nullMoveStats.attempts > 0 ? (100.0 * info.nullMoveStats.cutoffs / (double)info.nullMoveStats.attempts) : 0.0;
+        std::cout << "info string SearchStats: depth=" << info.depth
+                  << " seldepth=" << info.seldepth
+                  << " nodes=" << info.nodes
+                  << " nps=" << info.nps()
+                  << " tt: probes=" << info.ttProbes
+                  << " hits=" << info.ttHits
+                  << " hit%=" << std::fixed << std::setprecision(1) << ttHitRate
+                  << " cutoffs=" << info.ttCutoffs
+                  << " stores=" << info.ttStores
+                  << " coll=" << info.ttCollisions
+                  << " pvs: scout=" << info.pvsStats.scoutSearches
+                  << " re%=" << std::fixed << std::setprecision(1) << pvsReRate
+                  << " null: att=" << info.nullMoveStats.attempts
+                  << " cut=" << info.nullMoveStats.cutoffs
+                  << " cut%=" << std::fixed << std::setprecision(1) << nullRate
+                  << " prune: fut=" << info.futilityPruned
+                  << " mcp=" << info.moveCountPruned
+                  << " illegal: first=" << info.illegalPseudoBeforeFirst
+                  << " total=" << info.illegalPseudoTotal
+                  << std::endl;
+    }
     return bestMove;
 }
 

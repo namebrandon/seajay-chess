@@ -125,6 +125,8 @@ void UCIEngine::handleUCI() {
     
     // Phase A2: Phase visibility toggle for eval
     std::cout << "option name ShowPhaseInfo type check default true" << std::endl;
+    // B0: One-shot search summary at end of go
+    std::cout << "option name SearchStats type check default false" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
@@ -531,6 +533,8 @@ void UCIEngine::search(const SearchParams& params) {
     
     // Stage 22 Phase P3.5: Pass PVS statistics output flag
     limits.showPVSStats = m_showPVSStats;
+    // B0: One-shot search summary toggle
+    limits.showSearchStats = m_showSearchStats;
     
     // Stage 23 CM3.3: Pass countermove bonus to search
     limits.countermoveBonus = m_countermoveBonus;
@@ -1255,6 +1259,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_showPhaseInfo = false;
             std::cerr << "info string ShowPhaseInfo disabled" << std::endl;
+        }
+    }
+    else if (optionName == "SearchStats") {
+        if (value == "true") {
+            m_showSearchStats = true;
+            std::cerr << "info string SearchStats enabled" << std::endl;
+        } else if (value == "false") {
+            m_showSearchStats = false;
+            std::cerr << "info string SearchStats disabled" << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

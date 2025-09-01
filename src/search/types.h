@@ -81,6 +81,8 @@ struct SearchLimits {
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool showPVSStats = false;  // Show PVS statistics after each depth
+    // B0: One-shot search summary at end of search
+    bool showSearchStats = false;  // Print summary stats at end
     
     // Stage 23 CM3.3: Countermove heuristic bonus
     int countermoveBonus = 0;  // Bonus score for countermoves (0 = disabled)
@@ -357,6 +359,10 @@ struct SearchData {
     // Tracks history scores for move pairs (previous move -> current move)
     // PERFORMANCE: Pointer to thread-local storage (32MB per thread)
     CounterMoveHistory* counterMoveHistory = nullptr;
+
+    // B0: Legality telemetry (lazy legality path)
+    uint64_t illegalPseudoBeforeFirst = 0;  // Pseudo-legal moves rejected before first legal
+    uint64_t illegalPseudoTotal = 0;        // Total pseudo-legal moves rejected
     
     // Stage 13, Deliverable 5.2b: Cache for time checks
     mutable uint64_t m_timeCheckCounter = 0;
