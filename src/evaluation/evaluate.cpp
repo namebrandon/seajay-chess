@@ -1135,9 +1135,14 @@ EvalBreakdown evaluateDetailed(const Board& board) {
     bool blackBishopPair = (material.count(BLACK, BISHOP) >= 2);
     breakdown.bishopPair = Score((whiteBishopPair ? 50 : 0) - (blackBishopPair ? 50 : 0));
     
-    // Simplified mobility, king safety, etc. (set to 0 for now)
+    // Simplified mobility placeholder (not calculated here)
     breakdown.mobility = Score(0);
-    breakdown.kingSafety = Score(0);
+    // King safety: compute using same function as main evaluate()
+    {
+        Score whiteKingSafety = KingSafety::evaluate(board, WHITE);
+        Score blackKingSafety = KingSafety::evaluate(board, BLACK);
+        breakdown.kingSafety = whiteKingSafety - blackKingSafety;
+    }
     breakdown.rookFiles = Score(0);
     breakdown.knightOutposts = Score(0);
     
