@@ -2250,3 +2250,64 @@ The implementation includes:
 
 All code remains in place for future testing when conditions are more favorable.
 
+## PST Phase Interpolation - Phase Weight Tuning (DEFERRED)
+
+**Date Added:** August 31, 2025  
+**Status:** DEFERRED - Phase 1 implementation complete and working  
+**Source:** PST phase interpolation implementation (feature/20250831-pst-interpolation)  
+**Priority:** MEDIUM - Could provide additional 5-10 ELO  
+
+### Summary
+
+PST phase interpolation has been successfully implemented with:
+- Continuous phase calculation using material weights (N=1, B=1, R=2, Q=4)
+- Fixed-point arithmetic interpolation between mg/eg values
+- Differentiated endgame PST values for all piece types
+- UCI option UsePSTInterpolation (default: true)
+
+### SPSA Tuning Opportunities
+
+**Phase Weights for Material-Based Calculation:**
+```cpp
+// Current implementation (not tuned)
+constexpr int PHASE_WEIGHT[6] = { 0, 1, 1, 2, 4, 0 };  // P, N, B, R, Q, K
+```
+
+**Tuning Parameters:**
+- Knight weight: Currently 1, range [1-3]
+- Bishop weight: Currently 1, range [1-3]  
+- Rook weight: Currently 2, range [2-5]
+- Queen weight: Currently 4, range [3-6]
+
+**SPSA Configuration for OpenBench:**
+```
+KnightPhaseWeight, int, 1.0, 1.0, 3.0, 0.5, 0.002
+BishopPhaseWeight, int, 1.0, 1.0, 3.0, 0.5, 0.002
+RookPhaseWeight, int, 2.0, 2.0, 5.0, 0.5, 0.002
+QueenPhaseWeight, int, 4.0, 3.0, 6.0, 0.5, 0.002
+```
+
+### Why Deferred
+
+1. **Phase 1 Already Successful:** Initial implementation with default weights expected to pass SPRT
+2. **Diminishing Returns:** Fine-tuning weights provides smaller gains than implementing new features
+3. **Testing Resources:** Better to use OpenBench for testing new features first
+4. **Current Weights Reasonable:** Based on traditional material values, likely close to optimal
+
+### When to Implement
+
+**Recommended Timeline:**
+- After core search/evaluation features are complete
+- When looking for incremental improvements via tuning
+- Could be combined with other SPSA tuning sessions
+
+**Expected Gain:** 5-10 ELO from optimal phase weights
+
+### Implementation Notes
+
+Would require:
+1. Making phase weights configurable via UCI
+2. Modifying phase0to256() function to use UCI parameters
+3. SPSA tuning session with 40,000-50,000 games
+4. Validation that interpolation still works correctly with new weights
+

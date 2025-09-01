@@ -7,10 +7,34 @@
 #include "../core/bitboard.h"
 #include "../core/move_generation.h"  // MOB2: For mobility calculation
 #include "../core/simd_utils.h"  // Phase 2.5.e-3: SIMD optimizations
+#include "../core/engine_config.h"  // PST Phase Interpolation: For UCI options
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
 #include <cstdlib>  // PP3b: For std::abs
+#include <algorithm>  // For std::clamp
 
 namespace seajay::eval {
+
+// PST Phase Interpolation - Phase calculation (continuous, fast)
+// Returns phase value from 0 (pure endgame) to 256 (pure middlegame)
+inline int phase0to256(const Board& board) noexcept {
+    // Material weights for phase calculation
+    // P=0 (pawns don't affect phase), N=1, B=1, R=2, Q=4, K=0
+    constexpr int PHASE_WEIGHT[6] = { 0, 1, 1, 2, 4, 0 };
+    
+    // Maximum phase = 2*(N+N+B+B+R+R+Q) = 2*(1+1+1+1+2+2+4) = 24
+    constexpr int TOTAL_PHASE = 24;
+    
+    // Count non-pawn material
+    int phase = 0;
+    phase += popCount(board.pieces(KNIGHT)) * PHASE_WEIGHT[KNIGHT];
+    phase += popCount(board.pieces(BISHOP)) * PHASE_WEIGHT[BISHOP];
+    phase += popCount(board.pieces(ROOK))   * PHASE_WEIGHT[ROOK];
+    phase += popCount(board.pieces(QUEEN))  * PHASE_WEIGHT[QUEEN];
+    
+    // Scale to [0,256] with rounding
+    // 256 = full middlegame, 0 = pure endgame
+    return std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE, 0, 256);
+}
 
 Score evaluate(const Board& board) {
     // Get material from board
@@ -57,8 +81,19 @@ Score evaluate(const Board& board) {
     // PST score is stored from white's perspective in the board
     const MgEgScore& pstScore = board.pstScore();
     
-    // For Stage 9, we only use middlegame PST values (no tapering yet)
-    Score pstValue = pstScore.mg;
+    Score pstValue;
+    if (seajay::getConfig().usePSTInterpolation) {
+        // PST Phase Interpolation - calculate phase and interpolate mg/eg values
+        int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
+        int invPhase = 256 - phase;      // Inverse phase for endgame weight
+        
+        // Fixed-point blend with rounding (shift by 8 to divide by 256)
+        int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
+        pstValue = Score(blendedPst);
+    } else {
+        // Original behavior - use only middlegame PST values (no tapering)
+        pstValue = pstScore.mg;
+    }
     
     // Phase PP2: Passed pawn evaluation
     // Rank-based bonuses (indexed by relative rank)
@@ -1000,7 +1035,14 @@ EvalBreakdown evaluateDetailed(const Board& board) {
     
     // Get PST score
     const MgEgScore& pstScore = board.pstScore();
-    breakdown.pst = pstScore.mg;
+    if (seajay::getConfig().usePSTInterpolation) {
+        int phase = phase0to256(board);
+        int invPhase = 256 - phase;
+        int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
+        breakdown.pst = Score(blendedPst);
+    } else {
+        breakdown.pst = pstScore.mg;
+    }
     
     // Passed pawn evaluation
     static constexpr int PASSED_PAWN_BONUS[8] = {

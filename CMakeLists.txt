@@ -117,6 +117,8 @@ set(EVAL_SOURCES
     src/evaluation/evaluate.h
     src/evaluation/material.h
     src/evaluation/types.h
+    src/evaluation/pst.h
+    src/evaluation/pst.cpp
     src/evaluation/pawn_structure.cpp
     src/evaluation/pawn_structure.h
     src/evaluation/king_safety.cpp

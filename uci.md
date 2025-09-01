@@ -152,6 +152,17 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 
 ---
 
+## Evaluation Options
+
+### UsePSTInterpolation
+**Type:** check  
+**Default:** true  
+**Purpose:** Enables phase-based interpolation between middlegame and endgame PST values. Provides smooth evaluation transitions as material comes off the board.  
+**SPSA:** Not tunable - generally beneficial (provides 5-15 ELO)  
+**Note:** Phase calculation uses material weights: Knight=1, Bishop=1, Rook=2, Queen=4  
+
+---
+
 ## Move Ordering
 
 ### CountermoveBonus ⭐
@@ -160,6 +171,14 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 **Range:** 0-20000  
 **Purpose:** History bonus for countermoves that cause cutoffs.  
 **SPSA Input:** `CountermoveBonus, int, 8000.0, 4000.0, 16000.0, 500.0, 0.002`  
+
+### CounterMoveHistoryWeight
+**Type:** float  
+**Default:** 0.0  
+**Range:** 0.0-2.0  
+**Purpose:** Weight for counter-move history in move ordering. Currently disabled (0.0) as testing showed no benefit at fast time controls.  
+**SPSA:** Not recommended at current strength level  
+**Note:** May provide benefit at longer time controls (60+0) or when engine reaches 2400+ ELO  
 
 ---
 

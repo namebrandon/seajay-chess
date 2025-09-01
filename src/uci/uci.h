@@ -66,6 +66,9 @@ private:
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     int m_nullMoveStaticMargin = 90;   // Margin for static null move pruning - reduced from 120
     
+    // PST Phase Interpolation parameters
+    bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation
+    
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     
@@ -117,6 +120,7 @@ private:
     void handleBench(const std::vector<std::string>& tokens);
     void handleSetOption(const std::vector<std::string>& tokens);  // Stage 14, Deliverable 1.8
     void handleEval();  // Phase 3: UCI eval command for position analysis
+    void handleDumpPST();  // SPSA debug: dump current PST values
     
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);
