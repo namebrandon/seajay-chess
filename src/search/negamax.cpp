@@ -13,6 +13,7 @@
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
+#include "../core/engine_config.h"    // Phase 4: Runtime configuration
 #include "../evaluation/evaluate.h"
 #include "../uci/info_builder.h"     // Phase 5: Structured info building
 #include "quiescence.h"  // Stage 14: Quiescence search
@@ -601,17 +602,19 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Phase 2.1 FINAL: Futility Pruning - Optimal at Depth 4
-        // Testing showed depth 4 is optimal for SeaJay's current strength
-        // Attempts to extend to depth 6 caused regressions (see test history)
-        if (!isPvNode && depth <= 4 && depth > 0 && !weAreInCheck && moveCount > 1
+        // Phase 2.1 FINAL: Futility Pruning - Now with UCI control (Phase 4 investigation)
+        // Default settings match the tested optimal configuration (+37.63 ELO)
+        // UCI options allow runtime adjustment for testing different depths and margins
+        const auto& config = seajay::getConfig();
+        if (config.useFutilityPruning && !isPvNode && depth <= config.futilityMaxDepth 
+            && depth > 0 && !weAreInCheck && moveCount > 1
             && !isCapture(move) && !isPromotion(move)) {
             
             // Phase 4.2.c: Use our pre-computed static eval for consistency
             if (staticEvalComputed) {
-                // Conservative margin that works well at depths 1-4
-                // Testing showed this formula optimal: +37.63 Elo
-                int futilityMargin = 150 + 60 * depth;
+                // Margin formula now controlled via UCI: base + scale * depth
+                // Default: 150 + 60 * depth (proven optimal at depth 4)
+                int futilityMargin = config.futilityBase + config.futilityScale * depth;
                 
                 // Prune if current position is so bad that even improving by margin won't help
                 if (staticEval <= alpha - eval::Score(futilityMargin)) {

@@ -193,6 +193,12 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MiddlegameStability type spin default 6 min 3 max 10" << std::endl;
     std::cout << "option name EndgameStability type spin default 8 min 4 max 12" << std::endl;
     
+    // Futility Pruning options (Phase 4 investigation)
+    std::cout << "option name FutilityPruning type check default true" << std::endl;
+    std::cout << "option name FutilityMaxDepth type spin default 4 min 0 max 10" << std::endl;
+    std::cout << "option name FutilityBase type spin default 150 min 50 max 500" << std::endl;
+    std::cout << "option name FutilityScale type spin default 60 min 20 max 200" << std::endl;
+    
     // Important notice about evaluation scoring
     std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
     
@@ -947,6 +953,88 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid UsePSTInterpolation value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    // Futility Pruning options (Phase 4 investigation)
+    else if (optionName == "FutilityPruning") {
+        // Boolean parsing with case-insensitive support
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            seajay::getConfig().useFutilityPruning = true;
+            std::cerr << "info string Futility pruning enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            seajay::getConfig().useFutilityPruning = false;
+            std::cerr << "info string Futility pruning disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid FutilityPruning value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityMaxDepth") {
+        try {
+            // SPSA-compatible: handle float values from OpenBench
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                // Fallback for integer strings
+                paramValue = std::stoi(value);
+            }
+            
+            if (paramValue >= 0 && paramValue <= 10) {
+                seajay::getConfig().futilityMaxDepth = paramValue;
+                std::cerr << "info string FutilityMaxDepth set to " << paramValue << std::endl;
+            } else {
+                std::cerr << "info string Invalid FutilityMaxDepth value: " << paramValue << " (must be 0-10)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityMaxDepth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityBase") {
+        try {
+            // SPSA-compatible: handle float values from OpenBench
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                // Fallback for integer strings
+                paramValue = std::stoi(value);
+            }
+            
+            if (paramValue >= 50 && paramValue <= 500) {
+                seajay::getConfig().futilityBase = paramValue;
+                std::cerr << "info string FutilityBase set to " << paramValue << std::endl;
+            } else {
+                std::cerr << "info string Invalid FutilityBase value: " << paramValue << " (must be 50-500)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityBase value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityScale") {
+        try {
+            // SPSA-compatible: handle float values from OpenBench
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                // Fallback for integer strings
+                paramValue = std::stoi(value);
+            }
+            
+            if (paramValue >= 20 && paramValue <= 200) {
+                seajay::getConfig().futilityScale = paramValue;
+                std::cerr << "info string FutilityScale set to " << paramValue << std::endl;
+            } else {
+                std::cerr << "info string Invalid FutilityScale value: " << paramValue << " (must be 20-200)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityScale value: " << value << std::endl;
         }
     }
     // Stage 21 Phase A4: Handle NullMoveStaticMargin option

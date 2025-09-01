@@ -25,6 +25,12 @@ public:
     bool useMagicBitboards = true;  // Stage 10: Default ON for 79x speedup
     bool usePSTInterpolation = true; // PST Phase Interpolation: Default ON for smooth evaluation tapering
     
+    // Futility Pruning configuration (Phase 4 investigation)
+    bool useFutilityPruning = true;     // Enable/disable futility pruning
+    int futilityMaxDepth = 4;           // Maximum depth for futility pruning (default: 4, tested optimal)
+    int futilityBase = 150;             // Base margin for futility pruning
+    int futilityScale = 60;             // Scale factor per depth for futility margin
+    
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
