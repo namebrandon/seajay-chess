@@ -95,6 +95,12 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 **Purpose:** Shows Principal Variation Search statistics.  
 **SPSA:** Not tunable - debug option  
 
+### SearchStats
+**Type:** check  
+**Default:** false  
+**Purpose:** Prints a one‑shot summary at the end of `go`, including TT probes/hits/hit%, TT cutoffs/stores/collisions, PVS scout/re‑search rate, null‑move attempts/cutoffs/cut%, pruning counts (futility/move‑count), and lazy‑legality rejections (before first legal/total). Visibility only; does not affect search.  
+**SPSA:** Not tunable - debug/visibility option  
+
 ---
 
 ## Late Move Reductions (LMR)
@@ -160,6 +166,12 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 **Purpose:** Enables phase-based interpolation between middlegame and endgame PST values. Provides smooth evaluation transitions as material comes off the board.  
 **SPSA:** Not tunable - generally beneficial (provides 5-15 ELO)  
 **Note:** Phase calculation uses material weights: Knight=1, Bishop=1, Rook=2, Queen=4  
+
+### ShowPhaseInfo
+**Type:** check  
+**Default:** true  
+**Purpose:** Prints phase details during `uci -> eval`: continuous phase (0–256) and coarse GamePhase (OPENING/MIDDLEGAME/ENDGAME). Visibility only; does not affect evaluation.  
+**SPSA:** Not tunable - debug/visibility option  
 
 ---
 

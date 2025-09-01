@@ -147,10 +147,11 @@ bench <nodes>`
 - OpenBench: Bounds `[0.00, 5.00]` at 60+0.6 (endgame heavy).
 - STOP → Proceed only if non-negative; verify Example Game 1 behavior improves locally.
 
-Status: IMPLEMENTED — OB PENDING
+Status: COMPLETED — OB INCONCLUSIVE (within noise)
 - PST: Rook 7th-rank EG values +4 (20→24); tiny EG-only king–rook proximity bonus (≤6cp).
 - Commit: 99fe2427bd60fac99b70a97711c6e68f42ffab1d
-- Recommended OB: Book `external/endgames.epd`, TC 60+0.6, Bounds [0.00, 5.00].
+- OB (endgames.epd 60+0.6): Elo -3.02 ± 4.95, LLR -1.93 in [ -2.94, 2.94 ] (bounds [0.00, 5.00]); Games 5874 (W:1293 L:1344 D:3237). Considered neutral/no harm.
+- Link: https://openbench.seajay-chess.dev/test/374/
 
 ### Phase A4 — Quiet-Prophylaxis Nudges (Micro)
 - Goal: Make quiet king-safety-preserving moves (like h2h3) slightly more competitive without broader complexity.
