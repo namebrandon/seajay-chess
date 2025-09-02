@@ -646,39 +646,8 @@ eval::Score negamax(Board& board,
             quietMoves.push_back(move);
         }
         
-        // Phase 2.1 FINAL: Futility Pruning - Now with UCI control (Phase 4 investigation)
-        // Default settings match the tested optimal configuration (+37.63 ELO)
-        // UCI options allow runtime adjustment for testing different depths and margins
-        const auto& config = seajay::getConfig();
-        if (config.useFutilityPruning && !isPvNode && depth <= config.futilityMaxDepth 
-            && depth > 0 && !weAreInCheck && moveCount > 1
-            && !isCapture(move) && !isPromotion(move)) {
-            
-            // Phase 4.2.c: Use our pre-computed static eval for consistency
-            if (staticEvalComputed) {
-                // Phase 1.1 FIXED: Capped margin growth for practical deep pruning
-                // Linear scaling up to depth 4, then capped to prevent excessive margins
-                // depth 1: 150, 2: 300, 3: 450, 4: 600, 5+: 600 (capped)
-                // This allows pruning at deeper depths without being too aggressive
-                // Test: Progressive margin that grows more slowly at deeper depths
-                // depth 1: 150, 2: 300, 3: 450, 4: 600, 5: 700, 6: 775, 7: 825
-                int futilityMargin;
-                if (depth <= 4) {
-                    futilityMargin = config.futilityBase * depth;
-                } else {
-                    // Slower growth after depth 4
-                    futilityMargin = config.futilityBase * 4 + (depth - 4) * (config.futilityBase / 2);
-                }
-                
-                // Prune if current position is so bad that even improving by margin won't help
-                if (staticEval <= alpha - eval::Score(futilityMargin)) {
-                    info.futilityPruned++;
-                    int b = SearchData::PruneBreakdown::bucketForDepth(depth);
-                    info.pruneBreakdown.futility[b]++;
-                    continue;  // Skip this move
-                }
-            }
-        }
+        // NOTE: Futility pruning moved to AFTER legality check
+        // See implementation after tryMakeMove() succeeds
         
         // Phase 3.1 CONSERVATIVE: Move Count Pruning (Late Move Pruning)
         // Only prune at depths 3+ to avoid tactical blindness at shallow depths
@@ -741,13 +710,8 @@ eval::Score negamax(Board& board,
         }
         
         // Singular Extension: DISABLED - Implementation needs redesign
-        // The current implementation using excluded moves doesn't match how
-        // successful engines (Laser, Stockfish) implement it. They iterate
-        // through moves and test each one, rather than doing a single recursive
-        // call with exclusion. This needs to be reimplemented properly.
-        // 
-        // For now, we'll just use check extensions which are proven to work.
-        int extension = 0;
+        // Extension calculation moved earlier for effective-depth futility
+        // int extension = 0;  // Now calculated before futility pruning
         
         // TODO: Reimplement singular extensions properly:
         // 1. Loop through all moves except TT move
@@ -809,6 +773,78 @@ eval::Score negamax(Board& board,
         
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
+        
+        // Calculate extension for this move (currently just check extension)
+        int extension = 0;
+        // Check extension could be added here if needed
+        
+        // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
+        // Following notes: Apply after confirming legality but before recursion
+        const auto& config = seajay::getConfig();
+        bool canPruneFutility = (depth <= 6) ? (legalMoveCount > 1) : (legalMoveCount >= 1);
+        
+        // Check if this is a special move that shouldn't be pruned
+        bool isKillerMove = info.killers->isKiller(ply, move);
+        bool isCounterMove = (prevMove != NO_MOVE && 
+                             info.counterMoves->getCounterMove(board.sideToMove(), prevMove) == move);
+        
+        if (config.useFutilityPruning && !isPvNode && depth > 0 && !weAreInCheck
+            && canPruneFutility && !isCapture(move) && !isPromotion(move)
+            && staticEvalComputed && move != ttMove 
+            && !isKillerMove && !isCounterMove) {
+            
+            // Calculate what reduction this move would get from LMR
+            int reduction = 0;
+            if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth && legalMoveCount > 1) {
+                bool captureMove = false;  // Already checked it's not a capture
+                bool givesCheck = false;
+                bool pvNode = isPvNode;
+                
+                if (shouldReduceMove(move, depth, moveCount, captureMove,
+                                    weAreInCheck, givesCheck, pvNode,
+                                    *info.killers, *info.history,
+                                    *info.counterMoves, prevMove,
+                                    ply, board.sideToMove(),
+                                    info.lmrParams)) {
+                    bool improving = false;
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+                }
+            }
+            
+            // Calculate effective depth: eff = depth - 1 - reduction + extension
+            int effectiveDepth = depth - 1 - reduction + extension;
+            
+            // Apply futility at effective depth
+            if (effectiveDepth <= config.futilityMaxDepth) {
+                // Handle leaf-like positions (eff <= 0)
+                if (effectiveDepth <= 0) {
+                    // Very shallow effective depth - use minimal margin
+                    if (staticEval <= alpha - eval::Score(100)) {
+                        board.unmakeMove(move, undo);
+                        info.futilityPruned++;
+                        continue;
+                    }
+                } else {
+                    // Normal futility with progressive margins
+                    int futilityMargin;
+                    if (effectiveDepth <= 4) {
+                        futilityMargin = config.futilityBase * effectiveDepth;
+                    } else {
+                        // Cap growth after 4 plies as requested
+                        futilityMargin = config.futilityBase * 4 + (effectiveDepth - 4) * (config.futilityBase / 2);
+                    }
+                    
+                    if (staticEval <= alpha - eval::Score(futilityMargin)) {
+                        board.unmakeMove(move, undo);
+                        info.futilityPruned++;
+                        // Track by effective depth for telemetry
+                        int b = SearchData::PruneBreakdown::bucketForDepth(effectiveDepth);
+                        info.pruneBreakdown.futility[b]++;
+                        continue;
+                    }
+                }
+            }
+        }
         
         // Phase PV3: Create child PV for recursive calls
         // Only allocate if we're in a PV node and have a parent PV to update
