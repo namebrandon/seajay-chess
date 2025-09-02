@@ -15,26 +15,47 @@ SeaJay currently searches 10-20x more nodes than comparable engines at the same 
 
 This plan outlines a systematic approach to reduce node explosion while maintaining tactical strength.
 
-## Phase 1 Implementation Results (2025-09-02)
+## Implementation Results (2025-09-02)
 
-### Test Results Summary
-**Baseline (before changes):** 332,267 nodes at depth 10 (starting position)
+### Phase 1: Critical Fixes - COMPLETED
+**Commits:** 
+- cbaba15: Phase 1 implementation (futility extension, reverse futility, delta pruning)
+- dac0030: B1 fix (PV-first-legal)
 
-**After Phase 1 changes:** 332,267 nodes at depth 10 (starting position)
-- Node reduction: 0% on balanced positions
-- Node reduction: <1% on imbalanced positions
+**Test Results:**
+- **Baseline:** 332,267 nodes at depth 10 (starting position)
+- **After Phase 1:** 332,267 nodes (0% reduction on balanced positions)
+- **Key Finding:** Pruning techniques exist but are too conservative
 
-### Key Findings
-1. **Futility pruning extension (Phase 1.1):** Minimal impact due to restrictive gating conditions
-2. **Reverse futility enhancement (Phase 1.2):** Feature already existed; improvements marginal
-3. **Delta pruning enhancement (Phase 1.3):** Feature already existed; made more aggressive
+### Diagnostic Analysis - COMPLETED
 
-### Conclusion
-Phase 1 revealed that SeaJay already had most pruning techniques implemented. The main issue is not missing techniques but overly conservative parameters and restrictive gating. Future phases should focus on:
-- Loosening non-critical guards
-- Implementing PV-first-legal to reduce PV node prevalence
-- Using effective depth (depth - reduction) for pruning decisions
-- Adding more sophisticated pruning like razoring and probcut
+**Node Explosion Root Causes Identified:**
+1. **TT Performance:** 35.8% hit rate (low but not catastrophic for 16MB)
+   - TT move cutoffs: 23.3% (should be 30-40%)
+   - Default Hash size too small (16MB vs typical 64-128MB)
+   
+2. **Move Ordering Breakdown:**
+   - Killers: 47.0% (good!)
+   - TT moves: 23.3% (low)
+   - First captures: 26.6% (reasonable)
+   - Quiet moves: 2.3% (normal - quiets rarely cause cutoffs)
+
+3. **Pruning Limitations:**
+   - Futility concentrated at depths 1-3 (confirmed by telemetry)
+   - Heavy gating prevents deeper pruning
+   - Margins too conservative at deeper depths
+
+4. **Search Efficiency:**
+   - PVS re-search: 5.3% (acceptable, slightly high)
+   - Null move cutoff: 38.5% (acceptable)
+
+### Updated Understanding
+
+The 6-20x node explosion is **multi-factorial**, not a single issue:
+- Under-pruning at deeper depths due to restrictive gating
+- Insufficient LMR on late quiets
+- TT underutilization (but not broken)
+- Missing advanced pruning techniques (razoring, probcut)
 
 ## Current Telemetry Capabilities
 
@@ -181,9 +202,66 @@ null: att=1000 cut=200 cut%=20.0  // Low cutoff rate
 **Actual Impact:** Delta pruning was already implemented, we made it more aggressive
 **Note:** The engine already had sophisticated delta pruning with phase-aware margins (200/100/50cp). We enhanced the coarse filter and made per-move pruning more aggressive for minor captures.
 
-### Phase 2: Parameter Tuning (3-5 days)
+## Prioritized Next Steps (2025-09-02)
 
-#### 2.1 Move Count Pruning Enhancement
+### Priority 1: Quick TT Improvements (Low risk, immediate benefit)
+1. **Increase default Hash size** (TESTING NOW)
+   - Change default from 16MB to 64-128MB
+   - Expected impact: 5-10% hit rate improvement, 10-20% node reduction
+   - Test: SPRT with Hash=8 vs Hash=64
+
+2. **Fix qsearch TT move ordering**
+   - Don't let queen promotions override TT move
+   - Move TT move to absolute front in qsearch
+   - Expected impact: Increase TT cutoff share from 23% to 30%+
+
+### Priority 2: Effective Depth Pruning (Higher impact)
+1. **Use (depth - reduction) for futility decisions**
+   - Apply futility at effective depth for LMR moves
+   - Makes futility work near leaves where it's most useful
+   - Expected impact: 15-25% node reduction on late moves
+
+2. **Extended futility with victim value**
+   - Formula: `staticEval + bestVictimValue + margin < alpha`
+   - Enables deeper futility when no capture can save position
+   - Expected impact: 10-15% additional pruning at depths 4-7
+
+### Priority 3: Missing Pruning Techniques
+1. **Razoring (depths 1-2)**
+   - Drop to qsearch when `staticEval + margin < alpha` at shallow depths
+   - Conservative margins (300cp at d=1, 500cp at d=2)
+   - Expected impact: 5-10% node reduction
+
+2. **Probcut (depths 5+)**
+   - Shallow search predicts fail-high → cut
+   - Only for non-PV nodes with good eval
+   - Expected impact: 5-10% at deeper depths
+
+### Priority 4: LMR Calibration
+1. **More aggressive late quiet reductions**
+   - Increase reduction for moves 15+ with bad history
+   - Add history-based reduction adjustments
+   - Monitor re-search rate to avoid inflation
+
+2. **Singular extensions** (opposite of reductions)
+   - Extend singular moves that are much better than alternatives
+   - Helps with tactical accuracy
+
+### Testing Strategy
+- Each change needs SPRT validation
+- Test incrementally, not as bundles (learned from Phase 1)
+- Use telemetry to verify pruning is actually happening
+- Monitor tactical suite to ensure no blindness
+
+### Success Metrics
+- Target: Reduce nodes from 332k to <100k at depth 10
+- Maintain tactical strength (same bench positions solved)
+- Keep PVS re-search rate under 8%
+- Improve TT hit rate to 45-55%
+
+### Phase 2: Parameter Tuning (DEFERRED)
+
+#### 2.1 Move Count Pruning Enhancement (Now part of Priority 2)
 - Extend MCP to depth 10 with adjusted limits
 - Add UCI options for SPSA tuning:
 ```cpp

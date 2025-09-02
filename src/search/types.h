@@ -119,6 +119,9 @@ struct SearchData {
     uint64_t nodes = 0;           // Total nodes searched
     uint64_t betaCutoffs = 0;     // Total beta cutoffs
     uint64_t betaCutoffsFirst = 0; // Beta cutoffs on first move (move ordering efficiency)
+    
+    // Diagnostic: Cutoff position distribution  
+    uint64_t cutoffsByPosition[5] = {0, 0, 0, 0, 0};  // [move1, move2, move3, moves4-10, moves11+]
     uint64_t totalMoves = 0;       // Total moves examined
     
     // Transposition table statistics

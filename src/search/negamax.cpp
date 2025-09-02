@@ -777,6 +777,9 @@ eval::Score negamax(Board& board,
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
+        // Track beta cutoff position for move ordering analysis
+        bool isCutoffMove = false;
+        
         // Phase B1: Use legalMoveCount to determine if this is the first LEGAL move
         if (legalMoveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
@@ -901,6 +904,15 @@ eval::Score negamax(Board& board,
                     info.betaCutoffs++;  // Track beta cutoffs
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
+                    }
+                    
+                    // Diagnostic: Track cutoff position distribution
+                    if (legalMoveCount <= 3) {
+                        info.cutoffsByPosition[legalMoveCount - 1]++;
+                    } else if (legalMoveCount <= 10) {
+                        info.cutoffsByPosition[3]++;  // Moves 4-10
+                    } else {
+                        info.cutoffsByPosition[4]++;  // Moves 11+
                     }
                     
                     // Track detailed move ordering statistics
