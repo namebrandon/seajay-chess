@@ -786,7 +786,7 @@ eval::Score negamax(Board& board,
         // Check if this is a special move that shouldn't be pruned
         bool isKillerMove = info.killers->isKiller(ply, move);
         bool isCounterMove = (prevMove != NO_MOVE && 
-                             info.counterMoves->getCounterMove(board.sideToMove(), prevMove) == move);
+                             info.counterMoves->getCounterMove(prevMove) == move);
         
         if (config.useFutilityPruning && !isPvNode && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
