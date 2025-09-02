@@ -785,10 +785,12 @@ eval::Score negamax(Board& board,
         
         // Check if this is a special move that shouldn't be pruned
         bool isKillerMove = info.killers->isKiller(ply, move);
-        bool isCounterMove = (prevMove != NO_MOVE && 
-                             info.counterMoves->getCounterMove(prevMove) == move);
+        bool isCounterMove = (prevMove != NO_MOVE &&
+                              info.counterMoves->getCounterMove(prevMove) == move);
+        // Determine whether the CHILD would be a PV node: at a PV parent, only the first legal move is PV
+        bool childIsPV = (isPvNode && legalMoveCount == 1);
         
-        if (config.useFutilityPruning && !isPvNode && depth > 0 && !weAreInCheck
+        if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
             && !isKillerMove && !isCounterMove) {
@@ -839,7 +841,7 @@ eval::Score negamax(Board& board,
                         info.futilityPruned++;
                         // Track by effective depth for telemetry
                         int b = SearchData::PruneBreakdown::bucketForDepth(effectiveDepth);
-                        info.pruneBreakdown.futility[b]++;
+                        info.pruneBreakdown.futilityEff[b]++;
                         continue;
                     }
                 }
@@ -1636,6 +1638,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " high=" << info.aspiration.failHigh
                   << " fut_b=[" << info.pruneBreakdown.futility[0] << "," << info.pruneBreakdown.futility[1]
                   << "," << info.pruneBreakdown.futility[2] << "," << info.pruneBreakdown.futility[3] << "]"
+                  << " fut_eff_b=[" << info.pruneBreakdown.futilityEff[0] << "," << info.pruneBreakdown.futilityEff[1]
+                  << "," << info.pruneBreakdown.futilityEff[2] << "," << info.pruneBreakdown.futilityEff[3] << "]"
                   << " mcp_b=[" << info.pruneBreakdown.moveCount[0] << "," << info.pruneBreakdown.moveCount[1]
                   << "," << info.pruneBreakdown.moveCount[2] << "," << info.pruneBreakdown.moveCount[3] << "]"
                   << " illegal: first=" << info.illegalPseudoBeforeFirst

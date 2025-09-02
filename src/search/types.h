@@ -343,10 +343,11 @@ struct SearchData {
 
     // B0: Pruning breakdown by depth buckets (1-3, 4-6, 7-9, 10+)
     struct PruneBreakdown {
-        uint64_t futility[4] = {0,0,0,0};
+        uint64_t futility[4] = {0,0,0,0};      // Nominal-depth futility (legacy pre-legal block)
+        uint64_t futilityEff[4] = {0,0,0,0};   // Effective-depth futility (post-legal LMR-aware)
         uint64_t moveCount[4] = {0,0,0,0};
         void reset() {
-            for (int i = 0; i < 4; ++i) { futility[i] = 0; moveCount[i] = 0; }
+            for (int i = 0; i < 4; ++i) { futility[i] = 0; futilityEff[i] = 0; moveCount[i] = 0; }
         }
         static int bucketForDepth(int depth) {
             if (depth <= 3) return 0; if (depth <= 6) return 1; if (depth <= 9) return 2; return 3;
