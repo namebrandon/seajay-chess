@@ -284,6 +284,7 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 **Values:** off, testing, shadow, production  
 **Purpose:** SEE integration mode for move ordering.  
 **SPSA:** Not tunable - combo option  
+**Note:** SPRT testing shows -7 ELO with production mode. SEE calculation overhead exceeds ordering benefit at current implementation.
 
 ### SEEPruning
 **Type:** combo  
@@ -291,6 +292,7 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 **Values:** off, conservative, aggressive  
 **Purpose:** SEE-based pruning aggressiveness in quiescence.  
 **SPSA:** Not tunable - combo option  
+**Note:** SPRT testing shows +28.6 ELO for conservative vs off. Aggressive mode shows no additional benefit  
 
 ---
 
