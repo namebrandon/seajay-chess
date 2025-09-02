@@ -321,6 +321,9 @@ eval::Score negamax(Board& board,
     }
 
     // Probe TT even at root (after draw detection if any)
+    // IMPORTANT: At root (ply==0) we DO NOT ALLOW hard returns from TT.
+    // We only use TT info to tighten bounds and seed ordering, then we still
+    // generate moves and search at least one move to establish bestMove/PV.
     {
         TTEntry* ttEntry = nullptr;
         if (tt && tt->isEnabled()) {
@@ -340,15 +343,37 @@ eval::Score negamax(Board& board,
                     else if (tts.value() <= -MATE_BOUND) tts = eval::Score(tts.value() + ply);
 
                     if (ttBound == Bound::EXACT) {
-                        info.ttCutoffs++;
-                        return tts;
+                        if (ply > 0) {
+                            info.ttCutoffs++;
+                            return tts;  // non-root: safe to cutoff
+                        } else {
+                            // root: tighten alpha around exact score but do not return
+                            if (tts > alpha) alpha = tts;
+                            if (tts < beta)  beta = tts;
+                            // keep window valid at root
+                            if (alpha >= beta) alpha = eval::Score(beta.value() - 1);
+                        }
                     } else if (ttBound == Bound::LOWER) {
-                        if (tts >= beta) { info.ttCutoffs++; return tts; }
+                        if (ply > 0 && tts >= beta) {
+                            info.ttCutoffs++;
+                            return tts;  // non-root: beta cutoff
+                        }
                         if (tts > alpha) alpha = tts;
                     } else if (ttBound == Bound::UPPER) {
-                        if (tts <= alpha) { info.ttCutoffs++; return tts; }
+                        if (ply > 0 && tts <= alpha) {
+                            info.ttCutoffs++;
+                            return tts;  // non-root: alpha cutoff
+                        }
                         if (tts < beta) beta = tts;
-                        if (alpha >= beta) { info.ttCutoffs++; return alpha; }
+                        if (alpha >= beta) {
+                            if (ply > 0) {
+                                info.ttCutoffs++;
+                                return alpha;  // non-root: window closed
+                            } else {
+                                // root: keep window valid
+                                alpha = eval::Score(beta.value() - 1);
+                            }
+                        }
                     }
                 }
 
