@@ -129,7 +129,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name SearchStats type check default false" << std::endl;
     
     // Phase R1/R2: Razoring options
-    std::cout << "option name UseRazoring type check default false" << std::endl;
+    std::cout << "option name UseRazoring type check default true" << std::endl;
     std::cout << "option name RazorMargin1 type spin default 300 min 100 max 800" << std::endl;
     std::cout << "option name RazorMargin2 type spin default 500 min 200 max 1200" << std::endl;
     

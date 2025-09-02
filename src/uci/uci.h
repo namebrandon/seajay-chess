@@ -75,7 +75,7 @@ private:
     bool m_showSearchStats = false;     // Print search summary after go
     
     // Phase R1: Razoring parameters
-    bool m_useRazoring = false;         // Enable/disable razoring (default false for safety)
+    bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
     int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)
     int m_razorMargin2 = 500;           // Razoring margin for depth 2 (in centipawns)
     
