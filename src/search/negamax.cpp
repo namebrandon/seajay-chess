@@ -660,7 +660,15 @@ eval::Score negamax(Board& board,
                 // Linear scaling up to depth 4, then capped to prevent excessive margins
                 // depth 1: 150, 2: 300, 3: 450, 4: 600, 5+: 600 (capped)
                 // This allows pruning at deeper depths without being too aggressive
-                int futilityMargin = config.futilityBase * std::min(depth, 4);
+                // Test: Progressive margin that grows more slowly at deeper depths
+                // depth 1: 150, 2: 300, 3: 450, 4: 600, 5: 700, 6: 775, 7: 825
+                int futilityMargin;
+                if (depth <= 4) {
+                    futilityMargin = config.futilityBase * depth;
+                } else {
+                    // Slower growth after depth 4
+                    futilityMargin = config.futilityBase * 4 + (depth - 4) * (config.futilityBase / 2);
+                }
                 
                 // Prune if current position is so bad that even improving by margin won't help
                 if (staticEval <= alpha - eval::Score(futilityMargin)) {
