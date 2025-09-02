@@ -548,9 +548,9 @@ eval::Score negamax(Board& board,
         info.nullMoveStats.zugzwangAvoids++;
     }
     
-    // Phase R1: Razoring - Conservative implementation
+    // Phase R2: Razoring with Tactical Awareness
     // Apply razoring at shallow depths (1-2) when static eval is far below alpha
-    // This drops to quiescence search instead of doing a full search
+    // Phase R2 adds tactical guards to prevent pruning in sharp positions
     if (limits.useRazoring && 
         !isPvNode && 
         !weAreInCheck && 
@@ -561,8 +561,27 @@ eval::Score negamax(Board& board,
         // Increment attempt counter
         info.razoring.attempts++;
         
+        // Phase R2: Check for tactical moves (SEE >= 0 captures)
+        bool hasTacticalMoves = false;
+        MoveList captures;
+        MoveGenerator::generateCaptures(board, captures);
+        
+        for (size_t i = 0; i < captures.size(); ++i) {
+            Move move = captures[i];
+            if (isCapture(move) && seeGE(board, move, 0)) {
+                hasTacticalMoves = true;
+                info.razoring.tacticalSkips++;  // Track when tactical guard triggers
+                break;
+            }
+        }
+        
         // Select margin based on depth
         int razorMargin = (depth == 1) ? limits.razorMargin1 : limits.razorMargin2;
+        
+        // Phase R2: Apply stronger margin if tactical moves exist
+        if (hasTacticalMoves) {
+            razorMargin += 150;  // Add tactical bonus to be more conservative
+        }
         
         // Check if static eval + margin is still below alpha
         if (staticEval + eval::Score(razorMargin) <= alpha) {
@@ -588,11 +607,22 @@ eval::Score negamax(Board& board,
                 info.razoring.depthBuckets[depth - 1]++;
                 info.razoringCutoffs++;  // Legacy counter
                 
-                // Store in TT as upper bound
-                uint64_t zobristKey = board.zobristKey();
-                tt->store(zobristKey, NO_MOVE, qScore.value(), TT_EVAL_NONE, 
-                         static_cast<uint8_t>(depth), Bound::UPPER);
-                info.ttStores++;
+                // Phase R2: Improved TT storage with mate score adjustment
+                if (tt && tt->isEnabled()) {
+                    uint64_t zobristKey = board.zobristKey();
+                    int16_t scoreToStore = qScore.value();
+                    
+                    // Adjust mate scores before storing
+                    if (qScore.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = qScore.value() + ply;  // Adjust mate score
+                    } else if (qScore.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = qScore.value() - ply;  // Adjust mated score
+                    }
+                    
+                    tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE, 
+                             static_cast<uint8_t>(depth), Bound::UPPER);
+                    info.ttStores++;
+                }
                 
                 return qScore;
             }
@@ -1688,6 +1718,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " cut=" << info.razoring.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) 
                   << (info.razoring.attempts > 0 ? 100.0 * info.razoring.cutoffs / info.razoring.attempts : 0.0)
+                  << " tact=" << info.razoring.tacticalSkips
                   << " razor_b=[" << info.razoring.depthBuckets[0] << "," << info.razoring.depthBuckets[1] << "]"
                   << " asp: att=" << info.aspiration.attempts
                   << " low=" << info.aspiration.failLow

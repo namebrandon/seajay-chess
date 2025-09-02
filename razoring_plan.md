@@ -3,13 +3,14 @@
 Author: SeaJay Development Team  
 Date: 2025-09-02  
 Branch: feature/20250902-pruning-optimization  
-Status: Active Implementation
+Status: Phase R2 Implementation
 
 ## Executive Summary
 
 Razoring is a shallow-depth pruning technique that drops to quiescence search when the static evaluation is far below alpha. This is a well-understood, low-risk optimization that complements our successful futility pruning improvements.
 
-**Expected Impact:** 5-10% node reduction with minimal tactical risk when properly guarded.
+**Phase R1 Results:** -5 ELO loss (minor) - likely due to lack of tactical guards  
+**Phase R2 Goal:** Add tactical awareness to prevent pruning in sharp positions
 
 ## Technical Design
 
@@ -82,30 +83,67 @@ if (!isPvNode && !weAreInCheck && depth <= 2) {
 - Monitor: razor cutoff rate, PVS re-search rate
 - Success criteria: Positive ELO, no tactical regression
 
-### Phase R2: Tactical Awareness (If R1 passes)
-**Goal:** Add SEE-based guard for tactical positions
+### Phase R2: Tactical Awareness (CURRENT IMPLEMENTATION)
+**Goal:** Add SEE-based guard for tactical positions to address Phase R1's minor ELO loss
 
+**Implementation Details:**
+
+1. **Tactical Guard Implementation**
 ```cpp
-// Check for tactical presence
+// Generate captures only to check for tactical presence
+MoveList caps;
+MoveGenerator::generateCaptures(board, caps);
+
+// Check if any capture has SEE >= 0
 bool hasTacticalMoves = false;
-if (depth <= 2 && !isPvNode && !weAreInCheck) {
-    // Quick check for SEE >= 0 captures
-    hasTacticalMoves = hasNonLosingCaptures(board);
+for (const Move& m : caps) {
+    if (isCapture(m) && seajay::seeGE(board, m, 0)) {
+        hasTacticalMoves = true;
+        break;
+    }
 }
 
-// Razoring with tactical guard
-if (!isPvNode && !weAreInCheck && depth <= 2 && !hasTacticalMoves) {
-    // ... razoring logic
+// Apply stronger margin if tactical moves exist
+int razorMargin = (depth == 1) ? limits.razorMargin1 : limits.razorMargin2;
+if (hasTacticalMoves) {
+    razorMargin += 150;  // Add tactical bonus
 }
-// OR: use stronger margin if tactical
-int razorMargin = (depth == 1) ? 300 : 500;
-if (hasTacticalMoves) razorMargin += 150;
 ```
 
+2. **TT Storage Improvements**
+```cpp
+// Wrap TT store with enable check
+if (tt && tt->isEnabled()) {
+    // Adjust mate scores before storing
+    int16_t scoreToStore = qScore.value();
+    if (qScore >= MATE_BOUND - MAX_PLY) {
+        scoreToStore = qScore.value() + ply;  // Adjust mate score
+    } else if (qScore <= -MATE_BOUND + MAX_PLY) {
+        scoreToStore = qScore.value() - ply;  // Adjust mated score
+    }
+    
+    tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+             static_cast<uint8_t>(depth), Bound::UPPER);
+}
+```
+
+3. **UCI Options Visibility**
+Add to handleUci() options output:
+```cpp
+std::cout << "option name UseRazoring type check default false" << std::endl;
+std::cout << "option name RazorMargin1 type spin default 300 min 100 max 800" << std::endl;
+std::cout << "option name RazorMargin2 type spin default 500 min 200 max 1200" << std::endl;
+```
+
+4. **Optional Safety Refinements**
+- **Endgame guard:** Increase margins by +100cp when non-pawn material < ENDGAME_THRESHOLD
+- **SEE threshold:** Use seeGE(move, +50) for stricter tactical detection if needed
+- **Telemetry:** Track razorTacticalSkips when tactical guard triggers
+
 **Testing:**
-- SPRT bounds: [-3.00, 3.00] nELO (safety check)
+- SPRT bounds: [0.00, 5.00] nELO (expect positive after tactical guards)
 - Focus on tactical test positions
-- Monitor for missed tactics
+- Monitor razor cutoff rate changes with tactical guard
 
 ### Phase R3: Phase-Aware Margins (If R1-R2 pass)
 **Goal:** Optimize margins based on game phase

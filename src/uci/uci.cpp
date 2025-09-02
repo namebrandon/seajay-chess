@@ -128,6 +128,11 @@ void UCIEngine::handleUCI() {
     // B0: One-shot search summary at end of go
     std::cout << "option name SearchStats type check default false" << std::endl;
     
+    // Phase R1/R2: Razoring options
+    std::cout << "option name UseRazoring type check default false" << std::endl;
+    std::cout << "option name RazorMargin1 type spin default 300 min 100 max 800" << std::endl;
+    std::cout << "option name RazorMargin2 type spin default 500 min 200 max 1200" << std::endl;
+    
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
     std::cout << "option name pawn_eg_r3_d type spin default 8 min 0 max 30" << std::endl;
