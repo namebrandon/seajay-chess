@@ -295,7 +295,9 @@ eval::Score negamax(Board& board,
     // 2. Check fifty-move rule SECOND (less common)
     // 3. Only THEN probe TT (after all draw conditions)
     
-    // Never check draws or probe TT at root
+    // Never check draws below was guarding ply>0.
+    // For robustness, do a minimal ROOT draw check too, before probing TT, to avoid
+    // returning a TT score in a terminal draw while not having a best move.
     if (ply > 0) {
         // PERFORMANCE OPTIMIZATION: Strategic draw checking
         bool shouldCheckDraw = false;
@@ -317,6 +319,20 @@ eval::Score negamax(Board& board,
         // Check for draws when necessary
         if (shouldCheckDraw && board.isDrawInSearch(searchInfo, ply)) {
             return eval::Score::draw();  // Draw score
+        }
+    }
+
+    // Minimal root draw handling (Option B support): if root position is a draw,
+    // return draw score but also ensure a legal move is available for UCI output.
+    if (ply == 0) {
+        if (board.isDrawInSearch(searchInfo, ply)) {
+            MoveList legalRoot;
+            MoveGenerator::generateLegalMoves(board, legalRoot);
+            if (!legalRoot.empty()) {
+                info.bestMove = legalRoot[0];
+                info.bestScore = eval::Score::draw();
+            }
+            return eval::Score::draw();
         }
     }
 
@@ -1071,7 +1087,19 @@ eval::Score negamax(Board& board,
                      static_cast<uint8_t>(depth), bound);
             info.ttStores++;
     }
-    
+
+    // Root safety net: ensure we always have a move to play.
+    // In rare edge cases (e.g., tightened TT window + pruning), bestMove may remain NO_MOVE.
+    if (ply == 0 && bestMove == NO_MOVE) {
+        MoveList legalRoot;
+        MoveGenerator::generateLegalMoves(board, legalRoot);
+        if (!legalRoot.empty()) {
+            bestMove = legalRoot[0];
+            info.bestMove = bestMove;
+            // bestScore may be uninformative; keep as-is (fail-soft). UCI will still have a move.
+        }
+    }
+
     return bestScore;
 }
 
