@@ -337,6 +337,26 @@ struct SearchData {
     
     // Phase 3: Move count pruning statistics (conservative version)
     uint64_t moveCountPruned = 0;       // Moves pruned by move count pruning
+
+    // B0: Pruning breakdown by depth buckets (1-3, 4-6, 7-9, 10+)
+    struct PruneBreakdown {
+        uint64_t futility[4] = {0,0,0,0};
+        uint64_t moveCount[4] = {0,0,0,0};
+        void reset() {
+            for (int i = 0; i < 4; ++i) { futility[i] = 0; moveCount[i] = 0; }
+        }
+        static int bucketForDepth(int depth) {
+            if (depth <= 3) return 0; if (depth <= 6) return 1; if (depth <= 9) return 2; return 3;
+        }
+    } pruneBreakdown;
+
+    // B0: Aspiration window telemetry across iterations
+    struct AspirationStats {
+        uint64_t attempts = 0;  // Total re-search attempts (sum of window.attempts)
+        uint64_t failLow = 0;   // Iterations that failed low at least once
+        uint64_t failHigh = 0;  // Iterations that failed high at least once
+        void reset() { attempts = failLow = failHigh = 0; }
+    } aspiration;
     
     // Phase 4: Razoring statistics
     uint64_t razoringCutoffs = 0;       // Positions cut off by razoring
@@ -441,6 +461,8 @@ struct SearchData {
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
+        pruneBreakdown.reset();  // B0: Reset prune breakdown
+        aspiration.reset();      // B0: Reset aspiration stats
         razoringCutoffs = 0;  // Phase 4: Reset razoring counter
         if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate

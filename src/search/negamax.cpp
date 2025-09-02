@@ -623,6 +623,8 @@ eval::Score negamax(Board& board,
                 // Prune if current position is so bad that even improving by margin won't help
                 if (staticEval <= alpha - eval::Score(futilityMargin)) {
                     info.futilityPruned++;
+                    int b = SearchData::PruneBreakdown::bucketForDepth(depth);
+                    info.pruneBreakdown.futility[b]++;
                     continue;  // Skip this move
                 }
             }
@@ -681,6 +683,8 @@ eval::Score negamax(Board& board,
             
             if (moveCount > limit) {
                 info.moveCountPruned++;
+                int b = SearchData::PruneBreakdown::bucketForDepth(depth);
+                info.pruneBreakdown.moveCount[b]++;
                 continue;  // Skip this move
             }
             } // End of else block for countermove check
@@ -1206,6 +1210,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 // Update fail direction if needed
                 failedHigh = (score >= beta);
             }
+            // B0: Aggregate aspiration telemetry after re-search loop
+            info.aspiration.attempts += static_cast<uint64_t>(window.attempts);
+            if (window.failedLow) info.aspiration.failLow++;
+            if (window.failedHigh) info.aspiration.failHigh++;
         }
         
         board.setSearchMode(false);
@@ -1515,6 +1523,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
                   << " prune: fut=" << info.futilityPruned
                   << " mcp=" << info.moveCountPruned
+                  << " asp: att=" << info.aspiration.attempts
+                  << " low=" << info.aspiration.failLow
+                  << " high=" << info.aspiration.failHigh
+                  << " fut_b=[" << info.pruneBreakdown.futility[0] << "," << info.pruneBreakdown.futility[1]
+                  << "," << info.pruneBreakdown.futility[2] << "," << info.pruneBreakdown.futility[3] << "]"
+                  << " mcp_b=[" << info.pruneBreakdown.moveCount[0] << "," << info.pruneBreakdown.moveCount[1]
+                  << "," << info.pruneBreakdown.moveCount[2] << "," << info.pruneBreakdown.moveCount[3] << "]"
                   << " illegal: first=" << info.illegalPseudoBeforeFirst
                   << " total=" << info.illegalPseudoTotal
                   << std::endl;
