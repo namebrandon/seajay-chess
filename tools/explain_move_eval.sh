@@ -59,25 +59,31 @@ trap cleanup EXIT
   echo "quit"
 } | "$ENGINE" >"$tmp" 2>&1 || true
 
-extract_eval() {
+extract_two_evals() {
   awk '
-    BEGIN{show=0}
-    /\+--- Evaluation Breakdown/ {show=1}
-    show && /Piece-Square Tables:/ {print $NF}
-    show && /Total:/ {print $NF; exit}
+    /\+--- Evaluation Breakdown/ {block++}
+    block==1 && /Piece-Square Tables:/ {print "BASE_PST " $NF}
+    block==1 && /Total:/ {print "BASE_TOT " $NF}
+    block==2 && /Piece-Square Tables:/ {print "AFTER_PST " $NF}
+    block==2 && /Total:/ {print "AFTER_TOT " $NF}
   ' "$tmp"
 }
 
-readarray -t vals < <(extract_eval)
-if [[ ${#vals[@]} -ne 4 ]]; then
+declare -A M
+while read -r k v; do
+  [[ -n "${k:-}" ]] || continue
+  M[$k]="$v"
+done < <(extract_two_evals)
+
+base_pst=${M[BASE_PST]:-}
+base_total=${M[BASE_TOT]:-}
+after_pst=${M[AFTER_PST]:-}
+after_total=${M[AFTER_TOT]:-}
+
+if [[ -z "${base_pst}" || -z "${base_total}" || -z "${after_pst}" || -z "${after_total}" ]]; then
   echo "ERROR: Failed to parse eval output" >&2
   exit 1
 fi
-
-base_pst=${vals[0]}
-base_total=${vals[1]}
-after_pst=${vals[2]}
-after_total=${vals[3]}
 
 to_int() {
   local s="$1"
@@ -98,4 +104,3 @@ echo "Move:  $MOVE"
 echo
 printf "Piece-Square Tables:  base=%4s  after=%4s  delta=%+d cp\n" "$base_pst" "$after_pst" "$dp"
 printf "Total (White persp):  base=%4s  after=%4s  delta=%+d cp\n" "$base_total" "$after_total" "$dt"
-
