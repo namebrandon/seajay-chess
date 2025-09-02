@@ -548,9 +548,9 @@ eval::Score negamax(Board& board,
         info.nullMoveStats.zugzwangAvoids++;
     }
     
-    // Phase R2: Razoring with Tactical Awareness
+    // Phase R2.1: Razoring with Enhanced Safety Guards
     // Apply razoring at shallow depths (1-2) when static eval is far below alpha
-    // Phase R2 adds tactical guards to prevent pruning in sharp positions
+    // Phase R2.1: Complete skip when tactical, endgame guard, TT context guard
     if (limits.useRazoring && 
         !isPvNode && 
         !weAreInCheck && 
@@ -561,73 +561,87 @@ eval::Score negamax(Board& board,
         // Increment attempt counter
         info.razoring.attempts++;
         
-        // Phase R2: Check for tactical moves (SEE >= 0 captures)
-        bool hasTacticalMoves = false;
-        MoveList captures;
-        MoveGenerator::generateCaptures(board, captures);
-        
-        for (size_t i = 0; i < captures.size(); ++i) {
-            Move move = captures[i];
-            if (isCapture(move) && seeGE(board, move, 0)) {
-                hasTacticalMoves = true;
-                info.razoring.tacticalSkips++;  // Track when tactical guard triggers
-                break;
-            }
+        // Phase R2.1: TT context guard - skip if TT suggests we won't fail low
+        if (ttBound == Bound::LOWER && ttScore > alpha - eval::Score(50)) {
+            info.razoring.ttContextSkips++;
+            // Don't razor - TT suggests this position won't fail low
         }
-        
-        // Select margin based on depth
-        int razorMargin = (depth == 1) ? limits.razorMargin1 : limits.razorMargin2;
-        
-        // Phase R2: Apply stronger margin if tactical moves exist
-        if (hasTacticalMoves) {
-            razorMargin += 150;  // Add tactical bonus to be more conservative
+        // Phase R2.1: Endgame guard - 1300cp NPM threshold (matches quiescence)
+        else if (board.nonPawnMaterial(board.sideToMove()).value() < 1300 || 
+                 board.nonPawnMaterial(~board.sideToMove()).value() < 1300) {
+            info.razoring.endgameSkips++;
+            // Don't razor in endgames - zugzwang risk
         }
-        
-        // Check if static eval + margin is still below alpha
-        if (staticEval + eval::Score(razorMargin) <= alpha) {
-            // Run quiescence search with scout window
-            eval::Score qScore = quiescence(
-                board, 
-                ply, 
-                0,                    // qsearch depth starts at 0
-                alpha,                // alpha
-                alpha + eval::Score(1), // alpha+1 (scout window)
-                searchInfo, 
-                info, 
-                limits, 
-                *tt, 
-                0,                    // initialAlpha (not used in scout)
-                false                 // panicMode
-            );
+        else {
+            // Phase R2.1: Check for tactical moves (SEE >= 0 captures)
+            bool hasTacticalMoves = false;
+            MoveList captures;
+            MoveGenerator::generateCaptures(board, captures);
             
-            // If quiescence still fails low, we can return
-            if (qScore <= alpha) {
-                // Update telemetry
-                info.razoring.cutoffs++;
-                info.razoring.depthBuckets[depth - 1]++;
-                info.razoringCutoffs++;  // Legacy counter
-                
-                // Phase R2: Improved TT storage with mate score adjustment
-                if (tt && tt->isEnabled()) {
-                    uint64_t zobristKey = board.zobristKey();
-                    int16_t scoreToStore = qScore.value();
-                    
-                    // Adjust mate scores before storing
-                    if (qScore.value() >= MATE_BOUND - MAX_PLY) {
-                        scoreToStore = qScore.value() + ply;  // Adjust mate score
-                    } else if (qScore.value() <= -MATE_BOUND + MAX_PLY) {
-                        scoreToStore = qScore.value() - ply;  // Adjust mated score
-                    }
-                    
-                    tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE, 
-                             static_cast<uint8_t>(depth), Bound::UPPER);
-                    info.ttStores++;
+            for (size_t i = 0; i < captures.size(); ++i) {
+                Move move = captures[i];
+                if (isCapture(move) && seeGE(board, move, 0)) {
+                    hasTacticalMoves = true;
+                    info.razoring.tacticalSkips++;  // Track when tactical guard triggers
+                    break;
                 }
-                
-                return qScore;
             }
-        }
-    }
+            
+            // Phase R2.1: Option A - Skip razoring entirely if tactical moves exist
+            if (hasTacticalMoves) {
+                // Skip razoring at this node - too dangerous
+            }
+            else {
+                // Select margin based on depth
+                int razorMargin = (depth == 1) ? limits.razorMargin1 : limits.razorMargin2;
+                
+                // Check if static eval + margin is still below alpha
+                if (staticEval + eval::Score(razorMargin) <= alpha) {
+                    // Run quiescence search with scout window
+                    eval::Score qScore = quiescence(
+                        board, 
+                        ply, 
+                        0,                    // qsearch depth starts at 0
+                        alpha,                // alpha
+                        alpha + eval::Score(1), // alpha+1 (scout window)
+                        searchInfo, 
+                        info, 
+                        limits, 
+                        *tt, 
+                        0,                    // initialAlpha (not used in scout)
+                        false                 // panicMode
+                    );
+                    
+                    // If quiescence still fails low, we can return
+                    if (qScore <= alpha) {
+                        // Update telemetry
+                        info.razoring.cutoffs++;
+                        info.razoring.depthBuckets[depth - 1]++;
+                        info.razoringCutoffs++;  // Legacy counter
+                        
+                        // Phase R2: Improved TT storage with mate score adjustment
+                        if (tt && tt->isEnabled()) {
+                            uint64_t zobristKey = board.zobristKey();
+                            int16_t scoreToStore = qScore.value();
+                            
+                            // Adjust mate scores before storing
+                            if (qScore.value() >= MATE_BOUND - MAX_PLY) {
+                                scoreToStore = qScore.value() + ply;  // Adjust mate score
+                            } else if (qScore.value() <= -MATE_BOUND + MAX_PLY) {
+                                scoreToStore = qScore.value() - ply;  // Adjust mated score
+                            }
+                            
+                            tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE, 
+                                     static_cast<uint8_t>(depth), Bound::UPPER);
+                            info.ttStores++;
+                        }
+                        
+                        return qScore;
+                    }  // if (qScore <= alpha)
+                }  // if (staticEval + razorMargin <= alpha)
+            }  // else (not tactical)
+        }  // else (not endgame, not TT skip)
+    }  // if razoring enabled
     
     // Phase 4.1: Razoring - DISABLED (OLD VERSION)
     // Testing showed -39.45 Elo loss, likely due to:
@@ -1718,7 +1732,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " cut=" << info.razoring.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) 
                   << (info.razoring.attempts > 0 ? 100.0 * info.razoring.cutoffs / info.razoring.attempts : 0.0)
-                  << " tact=" << info.razoring.tacticalSkips
+                  << " skips(tact=" << info.razoring.tacticalSkips
+                  << ",tt=" << info.razoring.ttContextSkips
+                  << ",eg=" << info.razoring.endgameSkips << ")"
                   << " razor_b=[" << info.razoring.depthBuckets[0] << "," << info.razoring.depthBuckets[1] << "]"
                   << " asp: att=" << info.aspiration.attempts
                   << " low=" << info.aspiration.failLow

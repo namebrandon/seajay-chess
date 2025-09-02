@@ -367,13 +367,18 @@ struct SearchData {
         void reset() { attempts = failLow = failHigh = 0; }
     } aspiration;
     
-    // Phase R1/R2: Razoring statistics
+    // Phase R1/R2/R2.1: Razoring statistics
     struct RazoringStats {
         uint64_t attempts = 0;           // Total razoring attempts
         uint64_t cutoffs = 0;            // Successful razoring cutoffs
         std::array<uint64_t, 2> depthBuckets = {0, 0};  // Cutoffs by depth [d1, d2]
         uint64_t tacticalSkips = 0;      // Phase R2: Times tactical guard triggered
-        void reset() { attempts = cutoffs = tacticalSkips = 0; depthBuckets = {0, 0}; }
+        uint64_t ttContextSkips = 0;     // Phase R2.1: TT LOWER bound near alpha
+        uint64_t endgameSkips = 0;       // Phase R2.1: Low material positions
+        void reset() { 
+            attempts = cutoffs = tacticalSkips = ttContextSkips = endgameSkips = 0; 
+            depthBuckets = {0, 0}; 
+        }
     } razoring;
     uint64_t razoringCutoffs = 0;       // Legacy counter (kept for compatibility)
     
