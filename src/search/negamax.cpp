@@ -834,15 +834,16 @@ eval::Score negamax(Board& board,
                                 false);  // Still a scout search
             }
             
-            // If scout search fails high, do full PV re-search
+            // If scout search fails high, do full window re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
-                // For re-search, we need to collect PV if we're in a PV node
+                // B1 Fix: Only the first legal move should be a PV node
+                // Re-searches after scout failures are NOT PV nodes
                 TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
                                 reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
-                                isPvNode);  // CRITICAL: Re-search as PV node!
+                                false);  // B1 Fix: Re-search is NOT a PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
