@@ -74,6 +74,11 @@ private:
     // B0: One-shot search summary toggle
     bool m_showSearchStats = false;     // Print search summary after go
     
+    // Phase R1: Razoring parameters
+    bool m_useRazoring = false;         // Enable/disable razoring (default false for safety)
+    int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)
+    int m_razorMargin2 = 500;           // Razoring margin for depth 2 (in centipawns)
+    
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     

@@ -548,7 +548,58 @@ eval::Score negamax(Board& board,
         info.nullMoveStats.zugzwangAvoids++;
     }
     
-    // Phase 4.1: Razoring - DISABLED
+    // Phase R1: Razoring - Conservative implementation
+    // Apply razoring at shallow depths (1-2) when static eval is far below alpha
+    // This drops to quiescence search instead of doing a full search
+    if (limits.useRazoring && 
+        !isPvNode && 
+        !weAreInCheck && 
+        depth <= 2 && 
+        depth >= 1 &&
+        std::abs(alpha.value()) < MATE_BOUND - MAX_PLY) {
+        
+        // Increment attempt counter
+        info.razoring.attempts++;
+        
+        // Select margin based on depth
+        int razorMargin = (depth == 1) ? limits.razorMargin1 : limits.razorMargin2;
+        
+        // Check if static eval + margin is still below alpha
+        if (staticEval + eval::Score(razorMargin) <= alpha) {
+            // Run quiescence search with scout window
+            eval::Score qScore = quiescence(
+                board, 
+                ply, 
+                0,                    // qsearch depth starts at 0
+                alpha,                // alpha
+                alpha + eval::Score(1), // alpha+1 (scout window)
+                searchInfo, 
+                info, 
+                limits, 
+                *tt, 
+                0,                    // initialAlpha (not used in scout)
+                false                 // panicMode
+            );
+            
+            // If quiescence still fails low, we can return
+            if (qScore <= alpha) {
+                // Update telemetry
+                info.razoring.cutoffs++;
+                info.razoring.depthBuckets[depth - 1]++;
+                info.razoringCutoffs++;  // Legacy counter
+                
+                // Store in TT as upper bound
+                uint64_t zobristKey = board.zobristKey();
+                tt->store(zobristKey, NO_MOVE, qScore.value(), TT_EVAL_NONE, 
+                         static_cast<uint8_t>(depth), Bound::UPPER);
+                info.ttStores++;
+                
+                return qScore;
+            }
+        }
+    }
+    
+    // Phase 4.1: Razoring - DISABLED (OLD VERSION)
     // Testing showed -39.45 Elo loss, likely due to:
     // 1. Interaction with our existing pruning techniques
     // 2. SeaJay's evaluation may not be accurate enough for razoring
@@ -1633,6 +1684,11 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
                   << " prune: fut=" << info.futilityPruned
                   << " mcp=" << info.moveCountPruned
+                  << " razor: att=" << info.razoring.attempts
+                  << " cut=" << info.razoring.cutoffs
+                  << " cut%=" << std::fixed << std::setprecision(1) 
+                  << (info.razoring.attempts > 0 ? 100.0 * info.razoring.cutoffs / info.razoring.attempts : 0.0)
+                  << " razor_b=[" << info.razoring.depthBuckets[0] << "," << info.razoring.depthBuckets[1] << "]"
                   << " asp: att=" << info.aspiration.attempts
                   << " low=" << info.aspiration.failLow
                   << " high=" << info.aspiration.failHigh

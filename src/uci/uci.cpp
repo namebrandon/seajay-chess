@@ -515,6 +515,11 @@ void UCIEngine::search(const SearchParams& params) {
     limits.useNullMove = m_useNullMove;
     limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
     
+    // Phase R1: Pass razoring options
+    limits.useRazoring = m_useRazoring;
+    limits.razorMargin1 = m_razorMargin1;
+    limits.razorMargin2 = m_razorMargin2;
+    
     // Stage 13 Remediation: Pass aspiration window parameters
     limits.aspirationWindow = m_aspirationWindow;
     limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
@@ -1268,6 +1273,42 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_showSearchStats = false;
             std::cerr << "info string SearchStats disabled" << std::endl;
+        }
+    }
+    // Phase R1: Razoring options
+    else if (optionName == "UseRazoring") {
+        if (value == "true") {
+            m_useRazoring = true;
+            std::cerr << "info string Razoring enabled" << std::endl;
+        } else if (value == "false") {
+            m_useRazoring = false;
+            std::cerr << "info string Razoring disabled" << std::endl;
+        }
+    }
+    else if (optionName == "RazorMargin1") {
+        try {
+            int margin = std::stoi(value);
+            if (margin >= 100 && margin <= 800) {
+                m_razorMargin1 = margin;
+                std::cerr << "info string RazorMargin1 set to " << margin << " cp" << std::endl;
+            } else {
+                std::cerr << "info string RazorMargin1 out of range: " << value << " (must be 100-800)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid RazorMargin1 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "RazorMargin2") {
+        try {
+            int margin = std::stoi(value);
+            if (margin >= 200 && margin <= 1200) {
+                m_razorMargin2 = margin;
+                std::cerr << "info string RazorMargin2 set to " << margin << " cp" << std::endl;
+            } else {
+                std::cerr << "info string RazorMargin2 out of range: " << value << " (must be 200-1200)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid RazorMargin2 value: " << value << std::endl;
         }
     }
     // Ignore unknown options (UCI requirement)

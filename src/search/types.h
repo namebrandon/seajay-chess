@@ -102,6 +102,11 @@ struct SearchLimits {
     int moveCountHistoryBonus = 6;      // Extra moves for good history
     int moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
     
+    // Phase R1: Razoring parameters (conservative implementation)
+    bool useRazoring = false;            // Enable/disable razoring (default false for safety)
+    int razorMargin1 = 300;              // Razoring margin for depth 1 (in centipawns)
+    int razorMargin2 = 500;              // Razoring margin for depth 2 (in centipawns)
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -362,8 +367,14 @@ struct SearchData {
         void reset() { attempts = failLow = failHigh = 0; }
     } aspiration;
     
-    // Phase 4: Razoring statistics
-    uint64_t razoringCutoffs = 0;       // Positions cut off by razoring
+    // Phase R1: Razoring statistics
+    struct RazoringStats {
+        uint64_t attempts = 0;           // Total razoring attempts
+        uint64_t cutoffs = 0;            // Successful razoring cutoffs
+        std::array<uint64_t, 2> depthBuckets = {0, 0};  // Cutoffs by depth [d1, d2]
+        void reset() { attempts = cutoffs = 0; depthBuckets = {0, 0}; }
+    } razoring;
+    uint64_t razoringCutoffs = 0;       // Legacy counter (kept for compatibility)
     
     // Stage 19: Killer moves for move ordering
     // PERFORMANCE FIX: Changed from embedded to pointer to reduce SearchData size from 42KB to 1KB
@@ -467,7 +478,8 @@ struct SearchData {
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
         pruneBreakdown.reset();  // B0: Reset prune breakdown
         aspiration.reset();      // B0: Reset aspiration stats
-        razoringCutoffs = 0;  // Phase 4: Reset razoring counter
+        razoring.reset();        // Phase R1: Reset razoring stats
+        razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
         if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations
