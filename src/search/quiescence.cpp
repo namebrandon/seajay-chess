@@ -177,13 +177,20 @@ eval::Score quiescence(
             return staticEval;
         }
         
-        // Deliverable 3.2 & 3.4: Basic delta pruning pre-check
-        // If we're so far behind that even the best possible capture won't help, we can return early
-        // This is a coarse filter - we still do per-move delta pruning later
-        // Only do this aggressive pruning if we're really far behind (queen value + margin)
-        if (staticEval + eval::Score(900 + deltaMargin) < alpha) {
+        // Phase 1.3: Enhanced delta pruning pre-check
+        // More aggressive pruning when position is hopeless
+        // Use queen value (975) as base, adjusted for game phase
+        const int QUEEN_VALUE = 975;
+        int coarseDeltaMargin = QUEEN_VALUE;
+        
+        // Be more aggressive in endgame where evaluations are more accurate
+        if (isEndgame) {
+            coarseDeltaMargin = 600;  // Rook + minor piece
+        }
+        
+        if (staticEval + eval::Score(coarseDeltaMargin) < alpha) {
             data.deltasPruned++;
-            return staticEval;  // Position is hopeless even with best capture
+            return alpha;  // Fail-hard alpha cutoff
         }
         
         // Update alpha with stand-pat score
@@ -299,8 +306,14 @@ eval::Score quiescence(
             PieceType captured = (capturedPiece != NO_PIECE) ? typeOf(capturedPiece) : NO_PIECE_TYPE;
             int captureValue = (captured != NO_PIECE_TYPE) ? VICTIM_VALUES[captured] : 0;
             
-            // Standard delta pruning formula: can this capture possibly improve alpha?
-            if (staticEval + eval::Score(captureValue + deltaMargin) < alpha) {
+            // Phase 1.3: Enhanced per-move delta pruning
+            // More aggressive margin, especially for minor captures
+            int adjustedMargin = deltaMargin;
+            if (captureValue <= 325) {  // Minor piece or less
+                adjustedMargin = deltaMargin / 2;  // Tighter margin for small captures
+            }
+            
+            if (staticEval + eval::Score(captureValue + adjustedMargin) < alpha) {
                 data.deltasPruned++;
                 continue;  // Skip this capture - it can't improve our position enough
             }

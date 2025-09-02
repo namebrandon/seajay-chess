@@ -202,7 +202,7 @@ void UCIEngine::handleUCI() {
     
     // Futility Pruning options (Phase 4 investigation)
     std::cout << "option name FutilityPruning type check default true" << std::endl;
-    std::cout << "option name FutilityMaxDepth type spin default 4 min 0 max 10" << std::endl;
+    std::cout << "option name FutilityMaxDepth type spin default 7 min 0 max 10" << std::endl;
     std::cout << "option name FutilityBase type spin default 150 min 50 max 500" << std::endl;
     std::cout << "option name FutilityScale type spin default 60 min 20 max 200" << std::endl;
     

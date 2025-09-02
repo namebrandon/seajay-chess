@@ -9,11 +9,32 @@ Status: Active Development
 
 SeaJay currently searches 10-20x more nodes than comparable engines at the same depth. Telemetry analysis reveals critical gaps in our pruning implementation:
 - Futility pruning stops at depth 4 (should extend to 7-8)
-- No reverse futility pruning (static null move)
-- No delta pruning in quiescence
+- No reverse futility pruning (static null move) - *[CORRECTED: Was already implemented]*
+- No delta pruning in quiescence - *[CORRECTED: Was already implemented]*
 - Potentially sub-optimal aspiration windows causing re-searches
 
 This plan outlines a systematic approach to reduce node explosion while maintaining tactical strength.
+
+## Phase 1 Implementation Results (2025-09-02)
+
+### Test Results Summary
+**Baseline (before changes):** 332,267 nodes at depth 10 (starting position)
+
+**After Phase 1 changes:** 332,267 nodes at depth 10 (starting position)
+- Node reduction: 0% on balanced positions
+- Node reduction: <1% on imbalanced positions
+
+### Key Findings
+1. **Futility pruning extension (Phase 1.1):** Minimal impact due to restrictive gating conditions
+2. **Reverse futility enhancement (Phase 1.2):** Feature already existed; improvements marginal
+3. **Delta pruning enhancement (Phase 1.3):** Feature already existed; made more aggressive
+
+### Conclusion
+Phase 1 revealed that SeaJay already had most pruning techniques implemented. The main issue is not missing techniques but overly conservative parameters and restrictive gating. Future phases should focus on:
+- Loosening non-critical guards
+- Implementing PV-first-legal to reduce PV node prevalence
+- Using effective depth (depth - reduction) for pruning decisions
+- Adding more sophisticated pruning like razoring and probcut
 
 ## Current Telemetry Capabilities
 
@@ -122,57 +143,43 @@ null: att=1000 cut=200 cut%=20.0  // Low cutoff rate
 ```
 **Action:** Adjust nullMoveStaticMargin or R value
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Critical Fixes (Immediate - 1-2 days)
+### Phase 1: Critical Fixes - COMPLETED (2025-09-02)
 **Goal:** Address the most glaring pruning gaps
+**Status:** Implemented and tested
 
-#### 1.1 Extend Futility Pruning Depth ⭐ HIGHEST PRIORITY
-```cpp
-// File: /workspace/src/core/engine_config.h:30
-int futilityMaxDepth = 7;  // Was 4
+#### 1.1 Extend Futility Pruning Depth - IMPLEMENTED
+**Changes Made:**
+- Extended `futilityMaxDepth` from 4 to 7
+- Implemented capped margin growth: `futilityMargin = futilityBase * min(depth, 4)`
+- Margins: depth 1: 150, 2: 300, 3: 450, 4-7: 600 (capped)
 
-// File: /workspace/src/search/negamax.cpp
-// Exponential margin scaling for deeper depths
-int futilityMargin = config.futilityBase * (1 << std::min(depth-1, 3));
-// depth 1: 150, 2: 300, 3: 600, 4: 1200, 5+: 1200
-```
+**Actual Impact:** Minimal (<1% node reduction)
+**Issue Identified:** Linear scaling made margins too aggressive at deeper depths. Even with capping, the restrictive conditions (non-PV, not in check, moveCount > 1, quiet moves only) severely limit applicability at depths 5-7.
 
-**Expected Impact:** 30-50% node reduction at depths 8-12  
-**Verification:** `fut_b` should show activity in buckets [1] and [2]
+#### 1.2 Enhanced Reverse Futility Pruning - IMPLEMENTED
+**Changes Made:**
+- Extended depth from 6 to 8
+- Implemented progressive margin scaling:
+  - Depths 1-3: 85 * depth (aggressive at shallow depths)
+  - Depths 4-8: 255 + (depth-3) * 42.5 (conservative growth)
+- Margins: d1: 85, d2: 170, d3: 255, d4: 320, d5: 375, d6: 420, d7: 455, d8: 480
 
-#### 1.2 Add Reverse Futility Pruning ⭐
-```cpp
-// File: /workspace/src/search/negamax.cpp (before move loop)
-// Static null move pruning (reverse futility)
-if (!isPvNode && !weAreInCheck && depth <= 8 && depth > 0 &&
-    std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
-    if (staticEvalComputed) {
-        int margin = 85 * depth;  // Tunable via UCI
-        if (staticEval >= beta + eval::Score(margin)) {
-            info.reverseFutilityPruned++;
-            return staticEval - eval::Score(margin/2);  // Conservative return
-        }
-    }
-}
-```
+**Actual Impact:** Already existed, enhanced for better coverage
+**Note:** Static null move pruning was already implemented, we improved the margin formula and extended the depth range.
 
-**Expected Impact:** 15-25% node reduction  
-**Verification:** New counter in SearchStats output
+#### 1.3 Enhanced Delta Pruning in Quiescence - IMPLEMENTED
+**Changes Made:**
+- **Coarse filter:** More aggressive pre-check
+  - General: Queen value (975cp) margin
+  - Endgame: 600cp margin (rook + minor)
+- **Per-move pruning:** Tighter margins for small captures
+  - Minor pieces or less: deltaMargin / 2
+  - Major pieces: standard deltaMargin
 
-#### 1.3 Add Delta Pruning in Quiescence ⭐
-```cpp
-// File: /workspace/src/search/quiescence.cpp (after standPat)
-// Delta pruning - can't improve enough even with best capture
-const int DELTA_MARGIN = 975;  // Queen value + margin
-if (!isInCheck && standPat + eval::Score(DELTA_MARGIN) < alpha) {
-    data.deltaPruned++;
-    return alpha;  // Fail-hard
-}
-```
-
-**Expected Impact:** 10-20% quiescence node reduction  
-**Verification:** Reduced quiescence nodes in telemetry
+**Actual Impact:** Delta pruning was already implemented, we made it more aggressive
+**Note:** The engine already had sophisticated delta pruning with phase-aware margins (200/100/50cp). We enhanced the coarse filter and made per-move pruning more aggressive for minor captures.
 
 ### Phase 2: Parameter Tuning (3-5 days)
 

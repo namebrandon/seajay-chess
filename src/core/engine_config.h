@@ -27,8 +27,8 @@ public:
     
     // Futility Pruning configuration (SPSA-tuned for 1.1M NPS)
     bool useFutilityPruning = true;     // Enable/disable futility pruning
-    int futilityMaxDepth = 4;           // Maximum depth for futility pruning (default: 4, tested optimal)
-    int futilityBase = 202;             // Base margin for futility pruning (SPSA-tuned from 150)
+    int futilityMaxDepth = 7;           // Maximum depth for futility pruning (extended from 4 to 7 for Phase 1.1)
+    int futilityBase = 150;             // Base margin for futility pruning (reset to original for exponential scaling)
     int futilityScale = 79;             // Scale factor per depth for futility margin (SPSA-tuned from 60)
     
     // Future options can be added here

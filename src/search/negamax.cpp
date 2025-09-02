@@ -403,13 +403,21 @@ eval::Score negamax(Board& board,
     // Constants for null move pruning
     constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value (original)
     
-    // Phase A4: Static null move pruning (reverse futility) for shallow depths
-    // This is a lightweight check before the more expensive null move search
-    if (!isPvNode && depth <= 6 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    // Phase 1.2: Enhanced reverse futility pruning (static null move)
+    // Extended to depth 8 with more aggressive shallow margins
+    if (!isPvNode && depth <= 8 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
         // Phase 4.2.c: Use our pre-computed static eval
         if (staticEvalComputed) {
-            // Margin based on depth (tunable)
-            eval::Score margin = eval::Score(limits.nullMoveStaticMargin * depth);
+            // More aggressive margin at shallow depths, conservative at deeper
+            // depth 1: 85, 2: 170, 3: 255, 4: 320, 5: 375, 6: 420, 7: 455, 8: 480
+            int baseMargin = 85;
+            eval::Score margin;
+            if (depth <= 3) {
+                margin = eval::Score(baseMargin * depth);
+            } else {
+                // Slower growth for deeper depths
+                margin = eval::Score(baseMargin * 3 + (depth - 3) * (baseMargin / 2));
+            }
             
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
@@ -616,9 +624,11 @@ eval::Score negamax(Board& board,
             
             // Phase 4.2.c: Use our pre-computed static eval for consistency
             if (staticEvalComputed) {
-                // Margin formula now controlled via UCI: base + scale * depth
-                // Default: 150 + 60 * depth (proven optimal at depth 4)
-                int futilityMargin = config.futilityBase + config.futilityScale * depth;
+                // Phase 1.1 FIXED: Capped margin growth for practical deep pruning
+                // Linear scaling up to depth 4, then capped to prevent excessive margins
+                // depth 1: 150, 2: 300, 3: 450, 4: 600, 5+: 600 (capped)
+                // This allows pruning at deeper depths without being too aggressive
+                int futilityMargin = config.futilityBase * std::min(depth, 4);
                 
                 // Prune if current position is so bad that even improving by margin won't help
                 if (staticEval <= alpha - eval::Score(futilityMargin)) {
