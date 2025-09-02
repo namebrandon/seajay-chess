@@ -98,19 +98,12 @@ Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Squa
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
-    // Using 4ku's original mask including e1/e8
-    // But with reduced values to avoid over-rewarding
-    
+    // Use shared masks from header for castled/near-castled positions
     Bitboard kingBit = 1ULL << kingSquare;
-    
     if (side == WHITE) {
-        // 4ku's original mask
-        constexpr Bitboard WHITE_REASONABLE = 0xC3D7ULL;
-        return (kingBit & WHITE_REASONABLE) != 0;
-    } else {  // BLACK
-        // Mirror of white's mask
-        constexpr Bitboard BLACK_REASONABLE = 0xD7C3000000000000ULL;
-        return (kingBit & BLACK_REASONABLE) != 0;
+        return (kingBit & REASONABLE_KING_SQUARES_WHITE) != 0;
+    } else {
+        return (kingBit & REASONABLE_KING_SQUARES_BLACK) != 0;
     }
 }
 
@@ -158,28 +151,24 @@ bool KingSafety::hasAirSquares(const Board& board, Color side, Square kingSquare
     Bitboard friendlyPawns = board.pieces(side, PAWN);
     
     if (side == WHITE) {
-        // For white, check if pawns on files near king have moved forward
-        // Creating luft typically means h2-h3 or g2-g3 when castled kingside
-        // or a2-a3, b2-b3 when castled queenside
-        
-        if (file > 4) {  // Kingside (files f, g, h)
-            // Check for pawns on g3 or h3 (moved from g2/h2)
-            Bitboard luftPawns = friendlyPawns & ((1ULL << G3) | (1ULL << H3));
+        // For white, recognize typical luft pawn advances near the king
+        if (file > 4) {  // Kingside (f,g,h files)
+            // f2-f3, g2-g3, h2-h3
+            Bitboard luftPawns = friendlyPawns & ((1ULL << F3) | (1ULL << G3) | (1ULL << H3));
             return luftPawns != 0;
-        } else if (file < 3) {  // Queenside (files a, b, c)
-            // Check for pawns on a3 or b3 (moved from a2/b2)
-            Bitboard luftPawns = friendlyPawns & ((1ULL << A3) | (1ULL << B3));
+        } else if (file < 3) {  // Queenside (a,b,c files)
+            // a2-a3, b2-b3, c2-c3
+            Bitboard luftPawns = friendlyPawns & ((1ULL << A3) | (1ULL << B3) | (1ULL << C3));
             return luftPawns != 0;
         }
     } else {  // BLACK
-        // For black, check if pawns have moved creating luft
         if (file > 4) {  // Kingside
-            // Check for pawns on g6 or h6 (moved from g7/h7)
-            Bitboard luftPawns = friendlyPawns & ((1ULL << G6) | (1ULL << H6));
+            // f7-f6, g7-g6, h7-h6
+            Bitboard luftPawns = friendlyPawns & ((1ULL << F6) | (1ULL << G6) | (1ULL << H6));
             return luftPawns != 0;
         } else if (file < 3) {  // Queenside
-            // Check for pawns on a6 or b6 (moved from a7/b7)
-            Bitboard luftPawns = friendlyPawns & ((1ULL << A6) | (1ULL << B6));
+            // a7-a6, b7-b6, c7-c6
+            Bitboard luftPawns = friendlyPawns & ((1ULL << A6) | (1ULL << B6) | (1ULL << C6));
             return luftPawns != 0;
         }
     }
