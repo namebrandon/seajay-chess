@@ -237,12 +237,15 @@ null: att=1000 cut=200 cut%=20.0  // Low cutoff rate
    - Problem is restrictive gating and conservative margins
    - Need to make more nodes eligible for pruning
 
-## Current Status (2025-09-02 End of Day)
+## Current Status (2025-09-02 - Updated with SPRT Success)
 
 - **Branch:** feature/20250902-pruning-optimization
-- **Latest Commit:** ee04682 (root TT fixes, awaiting SPRT validation)
-- **Node Count:** Still ~332k at depth 10 (6-20x too high)
-- **Next Focus:** Actual search optimizations, not infrastructure
+- **Latest Commit:** c162d9a (progressive futility margins + root TT fixes)
+- **Node Count:** Reduced from 332k to 312k at depth 10 (6% improvement)
+- **SPRT Result:** **PASSED! +18.26 ± 9.04 ELO**
+  - Test #396: https://openbench.seajay-chess.dev/test/396/
+  - LLR: 2.97 (passed [0.00, 5.00] bounds)
+  - Games: 3428 (W: 1273, L: 1093, D: 1062)
 
 ## Prioritized Next Steps (Updated)
 
@@ -472,6 +475,35 @@ option name ShowPruningBreakdown type check default false  // Add for detailed v
    - TT is working adequately
    - Focus on actual search logic
 
-## Key Insight
+## Key Insights (Validated by SPRT)
 
-The 6-20x node explosion is not from missing features but from **overly conservative pruning parameters and restrictive gating**. The solution is to make existing techniques more aggressive, not to add more techniques.
+1. **Root TT fixes created cascading improvements** - Proper bound propagation from root made existing pruning 6% more effective
+2. **Progressive futility margins help** - The slower growth formula (depths 5-7: +75cp per depth) maintains safety while extending pruning
+3. **The 6-20x node explosion has multiple causes** - Not just conservative parameters, but also poor bound propagation (now partially fixed)
+
+## What Worked (Confirmed +18.26 ELO)
+
+1. **Root node TT handling fixes:**
+   - Preventing TT cutoffs before move generation at root
+   - Ensuring bestMove is always set for iterative deepening
+   - Maintaining valid search windows throughout
+
+2. **Progressive futility margin scaling:**
+   - Linear growth depths 1-4 (150cp per depth)
+   - Slower growth depths 5-7 (+75cp per depth)
+   - Prevents tactical blindness while extending pruning depth
+
+3. **Improved bound propagation:**
+   - Tighter alpha/beta windows from proper root handling
+   - Better TT entries leading to more accurate staticEval
+   - 38.8% TT hit rate (up from 35.8%)
+
+## What Still Needs Work
+
+Despite the improvements, telemetry still shows `fut_b=[59525,72,0,0]` - almost no pruning at depths 7+. The reasons:
+
+1. **Restrictive gating conditions** - `moveCount > 1` prevents first move pruning
+2. **LMR interaction** - Futility checks happen at nominal depth, not effective depth after reductions
+3. **Missing techniques** - No razoring, probcut, or history-based pruning
+
+The 6% node reduction and +18 ELO prove the approach is working, but there's still significant room for improvement.
