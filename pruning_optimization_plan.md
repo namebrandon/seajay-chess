@@ -21,11 +21,30 @@ This plan outlines a systematic approach to reduce node explosion while maintain
 **Commits:** 
 - cbaba15: Phase 1 implementation (futility extension, reverse futility, delta pruning)
 - dac0030: B1 fix (PV-first-legal)
+- 9d4009f: Added diagnostic telemetry for cutoff position tracking
 
 **Test Results:**
 - **Baseline:** 332,267 nodes at depth 10 (starting position)
 - **After Phase 1:** 332,267 nodes (0% reduction on balanced positions)
+- **SPRT Result:** Neutral (as expected for correctness fixes)
 - **Key Finding:** Pruning techniques exist but are too conservative
+
+### Root TT Optimization Attempt - REVERTED
+**Commits (Problematic):**
+- c61adff: Enable root TT store/probe, defer move gen - **CAUSED -238 ELO REGRESSION**
+  - Bug: Allowed TT cutoffs before move generation, breaking checkmate/stalemate detection
+  - Bug: Allowed early returns at root, breaking iterative deepening
+
+**Fix Commits:**
+- 5cc9049: Disallow hard TT cutoffs at ply 0; maintain valid search window
+- ee04682: Add root draw check; add fallback to ensure bestMove always set
+- **Status:** Fixes appear correct but need SPRT validation
+
+### Hash Size Investigation - COMPLETED
+**SPRT Test:** Hash=8MB vs Hash=64MB
+- **Result:** -0.41 ± 10.21 ELO (essentially neutral)
+- **Conclusion:** Hash size is NOT the primary bottleneck
+- **Decision:** Skip TT size changes, focus on actual search optimizations
 
 ### Diagnostic Analysis - COMPLETED
 
@@ -202,20 +221,46 @@ null: att=1000 cut=200 cut%=20.0  // Low cutoff rate
 **Actual Impact:** Delta pruning was already implemented, we made it more aggressive
 **Note:** The engine already had sophisticated delta pruning with phase-aware margins (200/100/50cp). We enhanced the coarse filter and made per-move pruning more aggressive for minor captures.
 
-## Prioritized Next Steps (2025-09-02)
+## Lessons Learned
 
-### Priority 1: Quick TT Improvements (Low risk, immediate benefit)
-1. **Increase default Hash size** (TESTING NOW)
-   - Change default from 16MB to 64-128MB
-   - Expected impact: 5-10% hit rate improvement, 10-20% node reduction
-   - Test: SPRT with Hash=8 vs Hash=64
+1. **Deferred Move Generation is Dangerous**
+   - Must ensure moves are generated before any checkmate/stalemate check
+   - Never allow TT cutoffs before verifying legal moves exist
+   - Root position requires special handling - never return early
 
-2. **Fix qsearch TT move ordering**
+2. **Hash Size Has Limited Impact**
+   - Increasing from 8MB to 64MB gave neutral result
+   - The 6-20x node explosion has deeper causes than TT capacity
+
+3. **Existing Pruning is Too Conservative**
+   - Futility, reverse futility, and delta pruning all exist
+   - Problem is restrictive gating and conservative margins
+   - Need to make more nodes eligible for pruning
+
+## Current Status (2025-09-02 End of Day)
+
+- **Branch:** feature/20250902-pruning-optimization
+- **Latest Commit:** ee04682 (root TT fixes, awaiting SPRT validation)
+- **Node Count:** Still ~332k at depth 10 (6-20x too high)
+- **Next Focus:** Actual search optimizations, not infrastructure
+
+## Prioritized Next Steps (Updated)
+
+### Priority 1: ~~Quick TT Improvements~~ (SKIP - tested, minimal impact)
+1. ~~Increase default Hash size~~ - TESTED: Neutral result
+2. **Fix qsearch TT move ordering** - Still worth trying but lower priority
    - Don't let queen promotions override TT move
    - Move TT move to absolute front in qsearch
    - Expected impact: Increase TT cutoff share from 23% to 30%+
 
-### Priority 2: Effective Depth Pruning (Higher impact)
+### Priority 1 (NEW): Razoring - Simple & Proven
+**Start Here** - Low risk, well-understood technique
+1. **Razoring (depths 1-2)**
+   - Drop to qsearch when `staticEval + margin < alpha` at shallow depths
+   - Conservative margins (300cp at d=1, 500cp at d=2)
+   - Expected impact: 5-10% node reduction
+
+### Priority 2: Effective Depth Pruning
 1. **Use (depth - reduction) for futility decisions**
    - Apply futility at effective depth for LMR moves
    - Makes futility work near leaves where it's most useful
@@ -226,22 +271,17 @@ null: att=1000 cut=200 cut%=20.0  // Low cutoff rate
    - Enables deeper futility when no capture can save position
    - Expected impact: 10-15% additional pruning at depths 4-7
 
-### Priority 3: Missing Pruning Techniques
-1. **Razoring (depths 1-2)**
-   - Drop to qsearch when `staticEval + margin < alpha` at shallow depths
-   - Conservative margins (300cp at d=1, 500cp at d=2)
-   - Expected impact: 5-10% node reduction
-
-2. **Probcut (depths 5+)**
-   - Shallow search predicts fail-high → cut
-   - Only for non-PV nodes with good eval
-   - Expected impact: 5-10% at deeper depths
-
-### Priority 4: LMR Calibration
+### Priority 3: LMR Calibration
 1. **More aggressive late quiet reductions**
    - Increase reduction for moves 15+ with bad history
    - Add history-based reduction adjustments
    - Monitor re-search rate to avoid inflation
+
+### Priority 4: Advanced Techniques (Later)
+1. **Probcut (depths 5+)**
+   - Shallow search predicts fail-high → cut
+   - Only for non-PV nodes with good eval
+   - Expected impact: 5-10% at deeper depths
 
 2. **Singular extensions** (opposite of reductions)
    - Extend singular moves that are much better than alternatives
@@ -411,12 +451,27 @@ option name SearchStats type check default false  // Already exists
 option name ShowPruningBreakdown type check default false  // Add for detailed view
 ```
 
-## Next Immediate Steps
+## Next Session Action Plan
 
-1. Run baseline telemetry sweep (30 minutes)
-2. Implement Phase 1.1 (extend futility depth)
-3. Test node reduction on standard positions
-4. If successful, continue with 1.2 and 1.3
-5. Bundle test on OpenBench
+1. **Wait for SPRT results** on root TT fixes (commits 5cc9049, ee04682)
+   - If passes: Good, move forward
+   - If fails: Debug and fix the root handling
 
-The key is to be systematic: measure, implement, verify, test. The telemetry gives us unprecedented visibility into what's actually happening in the search.
+2. **Implement Razoring** (Priority 1)
+   - Simple, proven technique
+   - Low risk of tactical blindness
+   - Quick to test via SPRT
+
+3. **Focus on making existing pruning less conservative**
+   - Loosen gating conditions
+   - Use effective depth for LMR moves
+   - Add victim value to futility
+
+4. **Avoid infrastructure changes**
+   - Hash size doesn't help
+   - TT is working adequately
+   - Focus on actual search logic
+
+## Key Insight
+
+The 6-20x node explosion is not from missing features but from **overly conservative pruning parameters and restrictive gating**. The solution is to make existing techniques more aggressive, not to add more techniques.
