@@ -21,6 +21,10 @@ public:
         int advancedShieldMg = 25;  // Middlegame value
         int advancedShieldEg = -7;   // Endgame value
         
+        // Phase A4: Prophylaxis bonus for king with air squares (luft)
+        int airSquareBonusMg = 2;   // Small nudge for prophylactic moves
+        int airSquareBonusEg = 0;   // Not important in endgame
+        
         // Phase KS1: Set to 0 for infrastructure phase
         // Will be enabled in Phase KS3
         int enableScoring = 0;  // Multiplier: 0 = disabled, 1 = enabled
@@ -33,6 +37,9 @@ public:
     // Helper functions for shield detection
     static Bitboard getShieldPawns(const Board& board, Color side, Square kingSquare);
     static Bitboard getAdvancedShieldPawns(const Board& board, Color side, Square kingSquare);
+    
+    // Phase A4: Check for air squares (luft) created by pawn moves
+    static bool hasAirSquares(const Board& board, Color side, Square kingSquare);
     
     // Check if king is in a reasonable position (castled or near-castled)
     static bool isReasonableKingPosition(Square kingSquare, Color side);

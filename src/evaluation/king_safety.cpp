@@ -13,6 +13,8 @@ KingSafety::KingSafetyParams KingSafety::s_params = {
     .directShieldEg = -3,    // unchanged (endgame king safety less important)
     .advancedShieldMg = 12,  // was 8; modest bump
     .advancedShieldEg = -2,  // unchanged
+    .airSquareBonusMg = 2,   // Phase A4: tiny bonus for prophylaxis
+    .airSquareBonusEg = 0,   // Not relevant in endgame
     .enableScoring = 1       // Phase KS3: ENABLED
 };
 
@@ -41,6 +43,9 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     
     int rawScore = 0;
     
+    // Phase A4: Check for air squares (prophylaxis)
+    bool hasLuft = hasAirSquares(board, side, kingSquare);
+    
     // Apply phase-appropriate values
     switch (phase) {
         case search::GamePhase::OPENING:
@@ -48,12 +53,17 @@ Score KingSafety::evaluate(const Board& board, Color side) {
             // Use middlegame values (king safety more important)
             rawScore = directCount * s_params.directShieldMg + 
                       advancedCount * s_params.advancedShieldMg;
+            // Phase A4: Add tiny bonus for air squares in middlegame
+            if (hasLuft) {
+                rawScore += s_params.airSquareBonusMg;
+            }
             break;
             
         case search::GamePhase::ENDGAME:
             // Use endgame values (king safety less important, can be negative)
             rawScore = directCount * s_params.directShieldEg + 
                       advancedCount * s_params.advancedShieldEg;
+            // Phase A4: Air squares not relevant in endgame
             break;
     }
     
@@ -132,6 +142,49 @@ Bitboard KingSafety::getShieldZone(Square kingSquare, Color side) {
             return 0x7000000000000ULL;
         }
     }
+}
+
+bool KingSafety::hasAirSquares(const Board& board, Color side, Square kingSquare) {
+    // Phase A4: Check if king has "air" squares (luft) created by pawn moves
+    // This detects moves like h2-h3, g2-g3 (for white) that create escape squares
+    // We're looking for friendly pawns that have moved forward from the king's zone
+    
+    // Only check for castled positions
+    if (!isReasonableKingPosition(kingSquare, side)) {
+        return false;
+    }
+    
+    int file = fileOf(kingSquare);
+    Bitboard friendlyPawns = board.pieces(side, PAWN);
+    
+    if (side == WHITE) {
+        // For white, check if pawns on files near king have moved forward
+        // Creating luft typically means h2-h3 or g2-g3 when castled kingside
+        // or a2-a3, b2-b3 when castled queenside
+        
+        if (file > 4) {  // Kingside (files f, g, h)
+            // Check for pawns on g3 or h3 (moved from g2/h2)
+            Bitboard luftPawns = friendlyPawns & ((1ULL << G3) | (1ULL << H3));
+            return luftPawns != 0;
+        } else if (file < 3) {  // Queenside (files a, b, c)
+            // Check for pawns on a3 or b3 (moved from a2/b2)
+            Bitboard luftPawns = friendlyPawns & ((1ULL << A3) | (1ULL << B3));
+            return luftPawns != 0;
+        }
+    } else {  // BLACK
+        // For black, check if pawns have moved creating luft
+        if (file > 4) {  // Kingside
+            // Check for pawns on g6 or h6 (moved from g7/h7)
+            Bitboard luftPawns = friendlyPawns & ((1ULL << G6) | (1ULL << H6));
+            return luftPawns != 0;
+        } else if (file < 3) {  // Queenside
+            // Check for pawns on a6 or b6 (moved from a7/b7)
+            Bitboard luftPawns = friendlyPawns & ((1ULL << A6) | (1ULL << B6));
+            return luftPawns != 0;
+        }
+    }
+    
+    return false;
 }
 
 } // namespace seajay::eval
