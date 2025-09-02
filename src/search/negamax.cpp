@@ -588,7 +588,7 @@ eval::Score negamax(Board& board,
             continue;
         }
         
-        moveCount++;
+        // Phase B1: Don't increment moveCount here - wait until we know move is legal
         info.totalMoves++;  // Track total moves examined
         
         // Phase 2: Track current root move for UCI currmove output
@@ -747,6 +747,7 @@ eval::Score negamax(Board& board,
         
         // Move is legal
         legalMoveCount++;
+        moveCount++;  // Phase B1: Increment moveCount only after confirming legality
         
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
@@ -758,7 +759,8 @@ eval::Score negamax(Board& board,
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
         
-        if (moveCount == 1) {
+        // Phase B1: Use legalMoveCount to determine if this is the first LEGAL move
+        if (legalMoveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
             // Pass childPV only if we're in a PV node and have a parent PV
             TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
