@@ -129,6 +129,33 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
                                     *searchData->counterMoves, prevMove, ply, countermoveBonus);
     }
 
+    // Root-specific quiet move tweaks: prefer checks and central pawn pushes
+    if (ply == 0 && !moves.empty()) {
+        // Find where quiet moves start (after captures/promotions)
+        auto quietStart = std::find_if(moves.begin(), moves.end(),
+            [](const Move& m) { return !isPromotion(m) && !isCapture(m) && !isEnPassant(m); });
+        if (quietStart != moves.end()) {
+            auto scoreQuiet = [&board](const Move& m) -> int {
+                int score = 0;
+                // Penalize king moves at the root
+                Piece fromPiece = board.pieceAt(moveFrom(m));
+                if (fromPiece != NO_PIECE && typeOf(fromPiece) == KING) {
+                    score -= 200;
+                }
+                // Central pawn push bonus (d4/e4/d5/e5)
+                Square to = moveTo(m);
+                if (to == 27 || to == 28 || to == 35 || to == 36) {
+                    if (fromPiece != NO_PIECE && typeOf(fromPiece) == PAWN) {
+                        score += 120;
+                    }
+                }
+                return score;
+            };
+            std::stable_sort(quietStart, moves.end(),
+                [&](const Move& a, const Move& b) { return scoreQuiet(a) > scoreQuiet(b); });
+        }
+    }
+
     // Sub-phase 4E: TT Move Ordering
     // Put TT move first AFTER all other ordering (only do this once!)
     if (ttMove != NO_MOVE) {
@@ -259,12 +286,9 @@ eval::Score negamax(Board& board,
         depth++;
     }
     
-    // Phase 3.2: Generate pseudo-legal moves for lazy validation in search
-    // We still need to know if we have any legal moves for checkmate/stalemate
-    MoveList moves = generateMovesForSearch(board, false);  // Pseudo-legal moves
-    
-    // Note: We can't check for checkmate/stalemate here yet because we have pseudo-legal moves
-    // We'll check after trying all moves below
+    // Phase 3.2: We'll generate pseudo-legal moves later, after TT/null pruning
+    // Declare here to preserve scope; fill later before use
+    MoveList moves;
     
     // Sub-phase 4B: Establish correct probe order
     // 1. Check repetition FIRST (fastest, most common draw in search)
@@ -294,94 +318,58 @@ eval::Score negamax(Board& board,
         if (shouldCheckDraw && board.isDrawInSearch(searchInfo, ply)) {
             return eval::Score::draw();  // Draw score
         }
-        
-        // NOW probe TT (after draw detection)
+    }
+
+    // Probe TT even at root (after draw detection if any)
+    {
         TTEntry* ttEntry = nullptr;
         if (tt && tt->isEnabled()) {
             Hash zobristKey = board.zobristKey();
-            tt->prefetch(zobristKey);  // Prefetch TT entry to hide memory latency
+            tt->prefetch(zobristKey);
             ttEntry = tt->probe(zobristKey);
             info.ttProbes++;
-            
+
             if (ttEntry && ttEntry->key32 == (zobristKey >> 32)) {
                 info.ttHits++;
-                
-                // Sub-phase 4C: Use TT for Cutoffs
-                // Check if the stored depth is sufficient
+
                 if (ttEntry->depth >= depth) {
-                    eval::Score ttScore(ttEntry->score);
-                    ttBound = ttEntry->bound();  // Update outer variable, don't shadow
-                    
-                    // Sub-phase 4D: Mate Score Adjustment
-                    // Adjust mate scores relative to current ply
-                    if (ttScore.value() >= MATE_BOUND) {
-                        // Positive mate score - we're winning
-                        // Adjust distance to mate from current position
-                        ttScore = eval::Score(ttScore.value() - ply);
-                    } else if (ttScore.value() <= -MATE_BOUND) {
-                        // Negative mate score - we're losing
-                        // Adjust distance to mate from current position
-                        ttScore = eval::Score(ttScore.value() + ply);
-                    }
-                    
-                    // Handle different bound types
+                    eval::Score tts(ttEntry->score);
+                    ttBound = ttEntry->bound();
+
+                    if (tts.value() >= MATE_BOUND)      tts = eval::Score(tts.value() - ply);
+                    else if (tts.value() <= -MATE_BOUND) tts = eval::Score(tts.value() + ply);
+
                     if (ttBound == Bound::EXACT) {
-                        // Exact score - we can return immediately
                         info.ttCutoffs++;
-                        return ttScore;
+                        return tts;
                     } else if (ttBound == Bound::LOWER) {
-                        // Lower bound (fail-high) - score >= ttScore
-                        if (ttScore >= beta) {
-                            info.ttCutoffs++;
-                            return ttScore;  // Beta cutoff
-                        }
-                        // Update alpha if we have a better lower bound
-                        if (ttScore > alpha) {
-                            alpha = ttScore;
-                        }
+                        if (tts >= beta) { info.ttCutoffs++; return tts; }
+                        if (tts > alpha) alpha = tts;
                     } else if (ttBound == Bound::UPPER) {
-                        // Upper bound (fail-low) - score <= ttScore  
-                        if (ttScore <= alpha) {
-                            info.ttCutoffs++;
-                            return ttScore;  // Alpha cutoff
-                        }
-                        // Update beta if we have a better upper bound
-                        if (ttScore < beta) {
-                            beta = ttScore;
-                        }
-                    }
-                    
-                    // Check if window is now invalid after adjustments
-                    if (alpha >= beta) {
-                        info.ttCutoffs++;
-                        return alpha;  // Window closed
+                        if (tts <= alpha) { info.ttCutoffs++; return tts; }
+                        if (tts < beta) beta = tts;
+                        if (alpha >= beta) { info.ttCutoffs++; return alpha; }
                     }
                 }
-                
-                // Sub-phase 4E: Extract TT move and info for ordering and singular extensions
-                // Even if depth is insufficient, we can still use the move
+
+                // Extract TT move for ordering
                 ttMove = static_cast<Move>(ttEntry->move);
                 if (ttMove != NO_MOVE) {
-                    // Bug #013 fix: Validate TT move has valid squares before using
                     Square from = moveFrom(ttMove);
                     Square to = moveTo(ttMove);
                     if (from < 64 && to < 64 && from != to) {
                         info.ttMoveHits++;
-                        // Save TT info for singular extensions
                         ttScore = eval::Score(ttEntry->score);
                         ttBound = ttEntry->bound();
                         ttDepth = ttEntry->depth;
                     } else {
-                        // TT move is corrupted - likely from hash collision
                         ttMove = NO_MOVE;
-                        info.ttCollisions++; // Track this as a collision
-                        std::cerr << "WARNING: Corrupted TT move detected: " 
+                        info.ttCollisions++;
+                        std::cerr << "WARNING: Corrupted TT move detected: "
                                   << std::hex << ttEntry->move << std::dec << std::endl;
                     }
                 }
-                
-                // Phase 4.2.c: Try to get static eval from TT if available
-                // The evalScore field should contain the true static evaluation
+
                 if (!staticEvalComputed && ttEntry->evalScore != TT_EVAL_NONE) {
                     staticEval = eval::Score(ttEntry->evalScore);
                     staticEvalComputed = true;
@@ -543,6 +531,9 @@ eval::Score negamax(Board& board,
         }
     }
     
+    // Generate pseudo-legal moves now that early exits are handled
+    MoveGenerator::generateMovesForSearch(board, moves, false);
+
     // Get previous move for countermove lookup (CM3.2)
     Move prevMove = NO_MOVE;
     if (ply > 0) {
@@ -1019,8 +1010,6 @@ eval::Score negamax(Board& board,
     // Store position in TT after search completes
     // Only store if we have a valid TT and didn't terminate early
     if (tt && tt->isEnabled() && !info.stopped && bestMove != NO_MOVE) {
-        // Sub-phase 5D: Skip storing at root position
-        if (ply > 0) {
             Hash zobristKey = board.zobristKey();
             
             // Sub-phase 5B: Determine bound type based on score relative to original window
@@ -1056,7 +1045,6 @@ eval::Score negamax(Board& board,
             tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore, 
                      static_cast<uint8_t>(depth), bound);
             info.ttStores++;
-        }
     }
     
     return bestScore;
