@@ -793,37 +793,17 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
     if (captureEnd != moves.begin()) {
         std::sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
-                // Get SEE values with error handling
-                SEEValue seeA = SEE_INVALID;
-                SEEValue seeB = SEE_INVALID;
-                
-                try {
-                    seeA = m_see.see(board, a);
-                } catch (...) {
-                    // Fall back to MVV-LVA if SEE fails
-                    seeA = MvvLvaOrdering::scoreMove(board, a);
-                }
-                
-                try {
-                    seeB = m_see.see(board, b);
-                } catch (...) {
-                    // Fall back to MVV-LVA if SEE fails
-                    seeB = MvvLvaOrdering::scoreMove(board, b);
-                }
-                
-                // Handle invalid SEE values
-                if (seeA == SEE_INVALID) {
-                    seeA = MvvLvaOrdering::scoreMove(board, a);
-                }
-                if (seeB == SEE_INVALID) {
-                    seeB = MvvLvaOrdering::scoreMove(board, b);
-                }
-                
+                // Get SEE values without exceptions (SEE is noexcept)
+                SEEValue seeA = m_see.see(board, a);
+                SEEValue seeB = m_see.see(board, b);
+
+                // Fallback to MVV-LVA if SEE returned invalid
+                if (seeA == SEE_INVALID) seeA = MvvLvaOrdering::scoreMove(board, a);
+                if (seeB == SEE_INVALID) seeB = MvvLvaOrdering::scoreMove(board, b);
+
                 // Order by SEE value (higher is better)
-                if (seeA != seeB) {
-                    return seeA > seeB;
-                }
-                
+                if (seeA != seeB) return seeA > seeB;
+
                 // If equal SEE, fall back to MVV-LVA for stability
                 return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });

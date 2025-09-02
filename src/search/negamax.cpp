@@ -90,16 +90,23 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
                       const SearchData* searchData = nullptr, int ply = 0,
                       Move prevMove = NO_MOVE, int countermoveBonus = 0,
                       const SearchLimits* limits = nullptr, int depth = 0) noexcept {
-    // Stage 11: Always use MVV-LVA for move ordering (remediated - no compile flag)
-    // Stage 19, Phase A2: Use killer moves if available
-    // Stage 20, Phase B2: Use history heuristic for quiet moves
-    // Stage 23, CM3.2: Countermove lookup (no bonus yet)
-    // Phase 4.3.a: Counter-move history for better move ordering
+    // Stage 11: Base MVV-LVA ordering (always available)
+    // Stage 15: Optional SEE ordering for captures when enabled via UCI
+    // Stage 19/20/23: Killers, history, countermoves for quiets
     static MvvLvaOrdering mvvLva;
     
     // Phase 4.3.a-fix2: Depth gating - only use CMH at depth >= 6 to avoid noise
     // At shallow depths, the CMH table is "cold" and adds more noise than signal
     // Increased from 4 to 6 for better performance at fast time controls
+    // Optional SEE capture ordering first (prefix-only) when enabled
+    if (search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
+        // SEE policy orders only captures/promotions prefix; quiets preserved
+        search::g_seeMoveOrdering.orderMoves(board, moves);
+    } else {
+        // Default capture ordering
+        mvvLva.orderMoves(board, moves);
+    }
+
     if (depth >= 6 && searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
         // Use counter-move history for enhanced move ordering at sufficient depth
@@ -120,11 +127,8 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         // Fallback to basic countermoves without history
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, prevMove, ply, countermoveBonus);
-    } else {
-        // Fallback to standard MVV-LVA
-        mvvLva.orderMoves(board, moves);
     }
-    
+
     // Sub-phase 4E: TT Move Ordering
     // Put TT move first AFTER all other ordering (only do this once!)
     if (ttMove != NO_MOVE) {
@@ -221,7 +225,7 @@ eval::Score negamax(Board& board,
                 inPanicMode = (remainingTime < std::chrono::milliseconds(100));
             }
             // Use quiescence search to resolve tactical sequences
-            return quiescence(board, ply, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
+            return quiescence(board, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
         }
         // Fallback: return static evaluation (only if quiescence disabled via UCI)
         return board.evaluate();

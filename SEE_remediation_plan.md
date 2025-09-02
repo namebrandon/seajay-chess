@@ -388,3 +388,20 @@ Key files and line numbers for reference:
 - `src/uci/uci.cpp:820-846` - SEEMode UCI handling
 - `src/search/move_ordering.cpp:666-693` - SEEMoveOrdering::orderMoves
 - `src/core/see.cpp` - SEE implementation
+
+---
+
+## Implementation Log
+
+- 2025-09-02: Phase B2 wiring and safety
+  - Negamax: integrated SEE-based capture ordering when `SEEMode != OFF`, before killers/history ordering.
+    - File: `src/search/negamax.cpp` — inject `g_seeMoveOrdering.orderMoves(board, moves)` in `orderMoves(...)`.
+  - Quiescence: use SEE-based ordering for captures at non-check nodes when `SEEMode != OFF`.
+    - File: `src/search/quiescence.cpp` — conditionally call `g_seeMoveOrdering.orderMoves`.
+  - Quiescence SEEPruning depth: added `qply` parameter to quiescence and switched threshold ramps and equal-exchange pruning from `ply` to `qply`; pass `qply=0` on entry and `qply+1` on recursion.
+    - Files: `src/search/quiescence.h`, `src/search/quiescence.cpp`, `src/search/negamax.cpp` (call site).
+  - Hot path cleanup: removed try/catch around SEE in SEE production comparator.
+    - File: `src/search/move_ordering.cpp` — comparator in `orderMovesWithSEE` now relies on noexcept SEE and falls back only on `SEE_INVALID`.
+  - SMP readiness: made global SEE calculator thread-local.
+    - File: `src/core/see.h` — `inline thread_local SEECalculator g_seeCalculator;`.
+  - Note: qply-based pruning refactor is planned next (tracked above) and will be implemented in a follow-up patch.

@@ -73,6 +73,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
 eval::Score quiescence(
     Board& board,
     int ply,
+    int qply,  // quiescence-local depth
     eval::Score alpha,
     eval::Score beta,
     seajay::SearchInfo& searchInfo,

@@ -34,6 +34,7 @@ constexpr int MATE_BOUND = 29000;
 eval::Score quiescence(
     Board& board,
     int ply,
+    int qply,
     eval::Score alpha,
     eval::Score beta,
     seajay::SearchInfo& searchInfo,
@@ -230,10 +231,14 @@ eval::Score quiescence(
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
-    // MVV-LVA is a CORE FEATURE - always compile it in!
     // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
-    MvvLvaOrdering mvvLva;
-    mvvLva.orderMoves(board, moves);
+    // Use SEE-based capture ordering when enabled for non-check nodes
+    if (!isInCheck && search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
+        search::g_seeMoveOrdering.orderMoves(board, moves);
+    } else {
+        MvvLvaOrdering mvvLva;
+        mvvLva.orderMoves(board, moves);
+    }
     
     // Phase 2.2 Missing Item 1: Queen Promotion Prioritization
     // Move queen promotions to the very front (before TT moves)
@@ -322,8 +327,8 @@ eval::Score quiescence(
                 pruneThreshold = isEndgame ? SEE_PRUNE_THRESHOLD_ENDGAME : SEE_PRUNE_THRESHOLD_AGGRESSIVE;
                 
                 // Make pruning more aggressive deeper in quiescence
-                // Each 2 plies deeper, increase pruning aggressiveness by 25cp
-                int depthBonus = (ply / 2) * 25;
+                // Each 2 plies deeper, increase pruning aggressiveness by 25cp (use qply)
+                int depthBonus = (qply / 2) * 25;
                 pruneThreshold = std::min(pruneThreshold + depthBonus, 0);  // Don't prune winning captures
             }
             
@@ -347,17 +352,17 @@ eval::Score quiescence(
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
             if (data.seePruningModeEnum == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
-                // Prune equal exchanges based on depth
-                // At ply 3-4: prune if position is quiet
-                // At ply 5-6: prune more aggressively  
-                // At ply 7+: always prune equal exchanges
+                // Prune equal exchanges based on quiescence depth
+                // At qply 3-4: prune if position is quiet
+                // At qply 5-6: prune more aggressively
+                // At qply 7+: always prune equal exchanges
                 bool pruneEqual = false;
-                if (ply >= 7) {
+                if (qply >= 7) {
                     pruneEqual = true;  // Always prune deep in search
-                } else if (ply >= 5) {
+                } else if (qply >= 5) {
                     // Prune if we're not finding tactics
                     pruneEqual = (staticEval >= alpha - eval::Score(50));
-                } else if (ply >= 3) {
+                } else if (qply >= 3) {
                     // Only prune if position looks very quiet
                     pruneEqual = (staticEval >= alpha);
                 }
@@ -378,7 +383,7 @@ eval::Score quiescence(
         board.makeMove(move, undo);
         
         // Recursive quiescence search with check ply tracking and panic mode propagation
-        eval::Score score = -quiescence(board, ply + 1, -beta, -alpha, 
+        eval::Score score = -quiescence(board, ply + 1, qply + 1, -beta, -alpha, 
                                        searchInfo, data, limits, tt, newCheckPly, inPanicMode);
         
         // Unmake the move

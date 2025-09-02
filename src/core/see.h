@@ -163,8 +163,8 @@ private:
     static thread_local SwapList m_swapList;
 };
 
-// Global SEE calculator instance
-inline SEECalculator g_seeCalculator;
+// Global SEE calculator instance (thread-local for SMP safety)
+inline thread_local SEECalculator g_seeCalculator;
 
 // Convenience functions
 [[nodiscard]] inline SEEValue see(const Board& board, Move move) noexcept {
