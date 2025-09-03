@@ -5,17 +5,19 @@
 
 namespace seajay::eval {
 
-// Initialize static parameters
-// Reduced values - 4ku's seem too high for our implementation
+// Initialize static parameters - ALL VALUES CONTROLLED VIA UCI
+// Use setoption to modify these values:
+// - KingSafetyDirectShieldMg (default 16)
+// - KingSafetyAdvancedShieldMg (default 12)  
+// - KingSafetyEnableScoring (default 1)
 KingSafety::KingSafetyParams KingSafety::s_params = {
-    // Phase A1: modest MG weight increases to better recognize basic king shields
-    .directShieldMg = 16,    // was 10; still far below 4ku values
-    .directShieldEg = -3,    // unchanged (endgame king safety less important)
-    .advancedShieldMg = 12,  // was 8; modest bump
-    .advancedShieldEg = -2,  // unchanged
-    .airSquareBonusMg = 2,   // Phase A4: tiny bonus for prophylaxis
-    .airSquareBonusEg = 0,   // Not relevant in endgame
-    .enableScoring = 1       // Phase KS3: ENABLED
+    .directShieldMg = 16,     // UCI controlled
+    .directShieldEg = -3,     // Endgame values less important
+    .advancedShieldMg = 12,   // UCI controlled
+    .advancedShieldEg = -2,   // Endgame values less important
+    .airSquareBonusMg = 2,    // Air square bonus
+    .airSquareBonusEg = 0,    // Not relevant in endgame
+    .enableScoring = 1        // UCI controlled (0=disabled, 1=enabled)
 };
 
 Score KingSafety::evaluate(const Board& board, Color side) {

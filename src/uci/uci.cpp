@@ -8,6 +8,7 @@
 #include "../core/bitboard.h"      // Phase A2: popCount for phase(0-256)
 #include "../search/move_ordering.h"  // Stage 15: For SEE integration
 #include "../search/quiescence.h"      // Stage 15 Day 6: For SEE pruning mode
+#include "../evaluation/king_safety.h"  // For king safety parameter tuning
 #include "../search/lmr.h"             // For LMR table initialization
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include <cmath>                       // For std::round in SPSA float parsing
@@ -185,6 +186,11 @@ void UCIEngine::handleUCI() {
     std::cout << "option name queen_eg_center type spin default 9 min 5 max 20" << std::endl;
     std::cout << "option name queen_eg_active type spin default 7 min 0 max 20" << std::endl;
     std::cout << "option name queen_eg_back type spin default -5 min -10 max 5" << std::endl;
+    
+    // King safety parameters
+    std::cout << "option name KingSafetyDirectShieldMg type spin default 16 min 0 max 50" << std::endl;
+    std::cout << "option name KingSafetyAdvancedShieldMg type spin default 12 min 0 max 40" << std::endl;
+    std::cout << "option name KingSafetyEnableScoring type spin default 1 min 0 max 1" << std::endl;
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
@@ -861,6 +867,46 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid Threads value: " << value << std::endl;
+        }
+    }
+    // Handle King Safety parameters
+    else if (optionName == "KingSafetyDirectShieldMg") {
+        try {
+            int value_int = std::stoi(value);
+            if (value_int >= 0 && value_int <= 50) {
+                auto params = eval::KingSafety::getParams();
+                params.directShieldMg = value_int;
+                eval::KingSafety::setParams(params);
+                std::cerr << "info string KingSafetyDirectShieldMg set to " << value_int << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KingSafetyDirectShieldMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KingSafetyAdvancedShieldMg") {
+        try {
+            int value_int = std::stoi(value);
+            if (value_int >= 0 && value_int <= 40) {
+                auto params = eval::KingSafety::getParams();
+                params.advancedShieldMg = value_int;
+                eval::KingSafety::setParams(params);
+                std::cerr << "info string KingSafetyAdvancedShieldMg set to " << value_int << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KingSafetyAdvancedShieldMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KingSafetyEnableScoring") {
+        try {
+            int value_int = std::stoi(value);
+            if (value_int >= 0 && value_int <= 1) {
+                auto params = eval::KingSafety::getParams();
+                params.enableScoring = value_int;
+                eval::KingSafety::setParams(params);
+                std::cerr << "info string KingSafetyEnableScoring set to " << value_int << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KingSafetyEnableScoring value: " << value << std::endl;
         }
     }
     // Stage 15 Day 5: Handle SEEMode option
