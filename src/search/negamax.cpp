@@ -2042,14 +2042,13 @@ void sendSearchInfo(const SearchData& info) {
 
 // Phase 1: Send current search info during a search (periodic updates)
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
-// UCI Score Conversion: Added Color parameter for White's perspective conversion
 void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
     uci::InfoBuilder builder;
     
     // Basic depth info
     builder.appendDepth(info.depth, info.seldepth);
     
-    // Score - now with UCI-compliant White's perspective conversion
+    // Score - UCI-compliant side-to-move perspective
     builder.appendScore(info.bestScore, sideToMove);
     
     // Node statistics
@@ -2084,14 +2083,13 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
 
 // Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
 // Phase 5: Refactored to use InfoBuilder for cleaner construction
-// UCI Score Conversion: Added Color parameter for White's perspective conversion
 void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt, const TriangularPV* pv) {
     uci::InfoBuilder builder;
     
     // Basic depth info
     builder.appendDepth(info.depth, info.seldepth);
     
-    // Score - now with UCI-compliant White's perspective conversion
+    // Score - UCI-compliant side-to-move perspective
     builder.appendScore(info.bestScore, sideToMove);
     
     // Iteration-specific information
