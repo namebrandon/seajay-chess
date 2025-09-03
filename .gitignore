@@ -48,7 +48,10 @@ perf.data
 # Local configuration
 .env.local
 *.local
+
+# AI assistant context files (should never be tracked)
 CLAUDE.md         # AI context file (may contain sensitive information)
+.claude/          # Claude-specific configuration directory
 container-config.sh  # Container configuration script
 yolo.sh           # Claude permission bypass script
 config.json       # Configuration file
