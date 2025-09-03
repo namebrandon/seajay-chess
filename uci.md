@@ -721,11 +721,16 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 3. **RazorMargin1 & RazorMargin2** - Early pruning thresholds
 4. **NullMoveReductionBase** - Null move core reduction
 
+### High Priority (Castling & King Safety) ⭐⭐⭐
+5. **King PST middlegame values** - king_mg_e1, b1, g1 (castling incentives)
+6. **KingSafetyDirectShieldMg & KingSafetyAdvancedShieldMg** - Shield pawn bonuses
+7. **These directly affect opening play and castling behavior**
+
 ### High Priority (Search Efficiency)
-5. **LMRMinMoveNumber & LMRMinDepth** - LMR activation points
-6. **NullMoveStaticMargin** - Null move pruning threshold
-7. **FutilityMargin1-4** - Depth-specific pruning (tune as group)
-8. **CountermoveBonus** - Move ordering quality
+8. **LMRMinMoveNumber & LMRMinDepth** - LMR activation points
+9. **NullMoveStaticMargin** - Null move pruning threshold
+10. **FutilityMargin1-4** - Depth-specific pruning (tune as group)
+11. **CountermoveBonus** - Move ordering quality
 
 ### Medium Priority (Endgame PST Tuning)
 9. **Pawn endgame PST values** - Critical endgame evaluation
@@ -748,6 +753,28 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 ---
 
 ## Example SPSA Workload for OpenBench
+
+### King Safety & Castling Test (Highest Priority) ⭐⭐⭐⭐
+```
+# Test if castling is overvalued - start with reduced values
+king_mg_e1, int, -15.0, -50.0, 50.0, 5.0, 0.002
+king_mg_b1, int, 15.0, -50.0, 50.0, 5.0, 0.002
+king_mg_g1, int, 10.0, -50.0, 50.0, 5.0, 0.002
+KingSafetyDirectShieldMg, int, 8.0, 0.0, 30.0, 2.0, 0.002
+KingSafetyAdvancedShieldMg, int, 6.0, 0.0, 25.0, 2.0, 0.002
+```
+Games: 60000  
+Time Control: 10+0.1  
+**Expected Impact:** Very high - directly affects opening play patterns
+
+### King Safety Only (Simpler Test) ⭐⭐⭐
+```
+KingSafetyDirectShieldMg, int, 8.0, 0.0, 30.0, 2.0, 0.002
+KingSafetyAdvancedShieldMg, int, 6.0, 0.0, 25.0, 2.0, 0.002
+```
+Games: 30000  
+Time Control: 10+0.1  
+**Expected Impact:** Tests pawn shield evaluation in isolation
 
 ### Core Pruning Test (Futility & Razoring) ⭐⭐⭐
 ```
@@ -861,5 +888,11 @@ Time Control: 10+0.1
 - **Single parameter:** 20000-30000
 - **2-4 parameters:** 40000-50000
 - **5+ parameters:** 60000-100000
+
+### SPSA Float Rounding
+**IMPORTANT:** All integer parameters now properly handle SPSA float values:
+- Values like 15.6 round to 16 (proper rounding, not truncation)
+- This includes ALL parameters: PST values, king safety, search parameters
+- Verified working with OpenBench SPSA
 
 ⭐ = Recommended for SPSA tuning
