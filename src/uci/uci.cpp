@@ -869,10 +869,18 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid Threads value: " << value << std::endl;
         }
     }
-    // Handle King Safety parameters
+    // Handle King Safety parameters (with proper SPSA rounding)
     else if (optionName == "KingSafetyDirectShieldMg") {
         try {
-            int value_int = std::stoi(value);
+            // SPSA-compatible rounding for float values
+            int value_int = 0;
+            try {
+                double dv = std::stod(value);
+                value_int = static_cast<int>(std::round(dv));
+            } catch (...) {
+                value_int = std::stoi(value);  // Fallback for integer strings
+            }
+            
             if (value_int >= 0 && value_int <= 50) {
                 auto params = eval::KingSafety::getParams();
                 params.directShieldMg = value_int;
@@ -885,7 +893,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "KingSafetyAdvancedShieldMg") {
         try {
-            int value_int = std::stoi(value);
+            // SPSA-compatible rounding for float values
+            int value_int = 0;
+            try {
+                double dv = std::stod(value);
+                value_int = static_cast<int>(std::round(dv));
+            } catch (...) {
+                value_int = std::stoi(value);  // Fallback for integer strings
+            }
+            
             if (value_int >= 0 && value_int <= 40) {
                 auto params = eval::KingSafety::getParams();
                 params.advancedShieldMg = value_int;
@@ -898,7 +914,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "KingSafetyEnableScoring") {
         try {
-            int value_int = std::stoi(value);
+            // SPSA-compatible rounding for float values
+            int value_int = 0;
+            try {
+                double dv = std::stod(value);
+                value_int = static_cast<int>(std::round(dv));
+            } catch (...) {
+                value_int = std::stoi(value);  // Fallback for integer strings
+            }
+            
             if (value_int >= 0 && value_int <= 1) {
                 auto params = eval::KingSafety::getParams();
                 params.enableScoring = value_int;
