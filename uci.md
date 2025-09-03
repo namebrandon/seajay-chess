@@ -503,6 +503,95 @@ These parameters fine-tune piece-square table values in the endgame. They're pri
 
 ---
 
+## King Safety Tuning ⭐⭐
+
+### KingSafetyDirectShieldMg ⭐
+**Type:** spin  
+**Default:** 16  
+**Range:** 0-50  
+**Purpose:** Bonus for pawns directly shielding the king in middlegame.  
+**SPSA Input:** `KingSafetyDirectShieldMg, int, 16.0, 0.0, 50.0, 3.0, 0.002`  
+**Note:** Uses proper SPSA float rounding (16.6 → 17)
+
+### KingSafetyAdvancedShieldMg ⭐
+**Type:** spin  
+**Default:** 12  
+**Range:** 0-40  
+**Purpose:** Bonus for advanced shield pawns (2 ranks ahead) in middlegame.  
+**SPSA Input:** `KingSafetyAdvancedShieldMg, int, 12.0, 0.0, 40.0, 2.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+### KingSafetyEnableScoring
+**Type:** spin  
+**Default:** 1  
+**Range:** 0-1  
+**Purpose:** Enable (1) or disable (0) king safety scoring entirely.  
+**SPSA:** Not recommended for tuning - use for testing only  
+
+---
+
+## King PST Middlegame (Castling Incentives) ⭐⭐⭐
+
+These parameters control the middlegame piece-square table values for the king on rank 1, directly affecting castling incentives. Default values create a 50-60 centipawn incentive to castle.
+
+### king_mg_e1 ⭐
+**Type:** spin  
+**Default:** -30  
+**Range:** -50 to 50  
+**Purpose:** King on starting square (e1). Negative value encourages moving.  
+**SPSA Input:** `king_mg_e1, int, -30.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_b1 ⭐⭐
+**Type:** spin  
+**Default:** 30  
+**Range:** -50 to 50  
+**Purpose:** Queenside castled position. High value encourages O-O-O.  
+**SPSA Input:** `king_mg_b1, int, 30.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_g1 ⭐⭐
+**Type:** spin  
+**Default:** 20  
+**Range:** -50 to 50  
+**Purpose:** Kingside castled position. Positive value encourages O-O.  
+**SPSA Input:** `king_mg_g1, int, 20.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_a1
+**Type:** spin  
+**Default:** 20  
+**Range:** -50 to 50  
+**Purpose:** Corner square (a1).  
+**SPSA Input:** `king_mg_a1, int, 20.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_h1
+**Type:** spin  
+**Default:** 20  
+**Range:** -50 to 50  
+**Purpose:** Corner square (h1).  
+**SPSA Input:** `king_mg_h1, int, 20.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_c1
+**Type:** spin  
+**Default:** 10  
+**Range:** -50 to 50  
+**Purpose:** Near queenside castle (c1).  
+**SPSA Input:** `king_mg_c1, int, 10.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_d1
+**Type:** spin  
+**Default:** -20  
+**Range:** -50 to 50  
+**Purpose:** Center-ish square (d1). Negative to discourage.  
+**SPSA Input:** `king_mg_d1, int, -20.0, -50.0, 50.0, 5.0, 0.002`  
+
+### king_mg_f1
+**Type:** spin  
+**Default:** -30  
+**Range:** -50 to 50  
+**Purpose:** Center-ish square (f1). Negative to discourage.  
+**SPSA Input:** `king_mg_f1, int, -30.0, -50.0, 50.0, 5.0, 0.002`  
+
+---
+
 ## Move Ordering
 
 ### CountermoveBonus ⭐

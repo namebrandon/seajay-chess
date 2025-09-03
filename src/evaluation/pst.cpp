@@ -194,6 +194,40 @@ void PST::updateFromUCIParam(const std::string& param, int value) noexcept {
             updateEndgameValue(QUEEN, makeSquare(File(f), RANK_1), value);
         }
     }
+    // ===== KING MIDDLEGAME PST PARAMETERS =====
+    // These control castling incentives - critical for opening play
+    else if (param == "king_mg_e1") {
+        // E1 - starting square for white king
+        updateMiddlegameValue(KING, makeSquare(FILE_E, RANK_1), value);
+    }
+    else if (param == "king_mg_b1") {
+        // B1 - queenside castled position
+        updateMiddlegameValue(KING, makeSquare(FILE_B, RANK_1), value);
+    }
+    else if (param == "king_mg_g1") {
+        // G1 - kingside castled position  
+        updateMiddlegameValue(KING, makeSquare(FILE_G, RANK_1), value);
+    }
+    else if (param == "king_mg_a1") {
+        // A1 - corner square
+        updateMiddlegameValue(KING, makeSquare(FILE_A, RANK_1), value);
+    }
+    else if (param == "king_mg_h1") {
+        // H1 - corner square
+        updateMiddlegameValue(KING, makeSquare(FILE_H, RANK_1), value);
+    }
+    else if (param == "king_mg_c1") {
+        // C1 - near queenside castle
+        updateMiddlegameValue(KING, makeSquare(FILE_C, RANK_1), value);
+    }
+    else if (param == "king_mg_d1") {
+        // D1 - center-ish
+        updateMiddlegameValue(KING, makeSquare(FILE_D, RANK_1), value);
+    }
+    else if (param == "king_mg_f1") {
+        // F1 - center-ish
+        updateMiddlegameValue(KING, makeSquare(FILE_F, RANK_1), value);
+    }
 }
 
 // Debug: dump current PST values

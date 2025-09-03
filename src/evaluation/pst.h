@@ -84,6 +84,11 @@ public:
         s_pstTables[pt][sq].eg = Score(value);
     }
     
+    // SPSA tuning interface - update middlegame value for a specific square
+    static void updateMiddlegameValue(PieceType pt, Square sq, int value) noexcept {
+        s_pstTables[pt][sq].mg = Score(value);
+    }
+    
     // Update with symmetry - updates both left and right sides
     static void updateEndgameSymmetric(PieceType pt, Square sq, int value) noexcept {
         // Update the square itself

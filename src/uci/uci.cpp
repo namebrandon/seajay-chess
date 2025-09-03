@@ -192,6 +192,16 @@ void UCIEngine::handleUCI() {
     std::cout << "option name KingSafetyAdvancedShieldMg type spin default 12 min 0 max 40" << std::endl;
     std::cout << "option name KingSafetyEnableScoring type spin default 1 min 0 max 1" << std::endl;
     
+    // King PST middlegame values (key squares for castling incentives)
+    std::cout << "option name king_mg_e1 type spin default -30 min -50 max 50" << std::endl;  // Starting square
+    std::cout << "option name king_mg_b1 type spin default 30 min -50 max 50" << std::endl;   // Queenside castled
+    std::cout << "option name king_mg_g1 type spin default 20 min -50 max 50" << std::endl;   // Kingside castled
+    std::cout << "option name king_mg_a1 type spin default 20 min -50 max 50" << std::endl;   // Corner
+    std::cout << "option name king_mg_h1 type spin default 20 min -50 max 50" << std::endl;   // Corner
+    std::cout << "option name king_mg_c1 type spin default 10 min -50 max 50" << std::endl;   // Near queenside
+    std::cout << "option name king_mg_d1 type spin default -20 min -50 max 50" << std::endl;  // Center-ish
+    std::cout << "option name king_mg_f1 type spin default -30 min -50 max 50" << std::endl;  // Center-ish
+    
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
@@ -1489,7 +1499,8 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
              optionName.find("knight_eg_") == 0 ||
              optionName.find("bishop_eg_") == 0 ||
              optionName.find("rook_eg_") == 0 ||
-             optionName.find("queen_eg_") == 0) {
+             optionName.find("queen_eg_") == 0 ||
+             optionName.find("king_mg_") == 0) {
         try {
             // OpenBench may send floats for integer parameters (e.g., 90.6).
             // Round to nearest int instead of truncating to avoid downward bias.
