@@ -15,19 +15,22 @@ These parameters form the foundation of search efficiency and should be tuned be
 
 ## Tuning Parameters (Option A)
 
-### SPSA Configuration
+### SPSA Configuration (Revised after initial testing)
 ```
-CountermoveBonus, int, 8000.0, 4000.0, 16000.0, 500.0, 0.002
-AspirationWindow, int, 16.0, 5.0, 50.0, 3.0, 0.002
+CountermoveBonus, int, 7700.0, 4000.0, 16000.0, 600.0, 0.002
+AspirationWindow, int, 15.0, 5.0, 50.0, 3.0, 0.002
 AspirationMaxAttempts, int, 5.0, 3.0, 10.0, 1.0, 0.002
 ```
+
+Initial test with C_end=1500 showed rapid convergence toward ~7600-7700, 
+so restarting with better starting value and more conservative step size.
 
 ### Parameter Details
 
 | Parameter | Current | Min | Max | Step (C) | Learning Rate (R) | Purpose |
 |-----------|---------|-----|-----|----------|------------------|---------|
-| CountermoveBonus | 8000 | 4000 | 16000 | 500.0 | 0.002 | History bonus for countermoves that cause cutoffs |
-| AspirationWindow | 16 | 5 | 50 | 3.0 | 0.002 | Initial window size in centipawns |
+| CountermoveBonus | 7700 | 4000 | 16000 | 600.0 | 0.002 | History bonus for countermoves that cause cutoffs |
+| AspirationWindow | 15 | 5 | 50 | 3.0 | 0.002 | Initial window size in centipawns |
 | AspirationMaxAttempts | 5 | 3 | 10 | 1.0 | 0.002 | Max re-searches before infinite window |
 
 ### OpenBench Settings
@@ -81,6 +84,30 @@ Based on results:
 - All UCI options implemented and documented
 - Ready for OpenBench submission
 
+### 2025-09-03: First Test Results (2,100 games)
+- Started with C_end=1500 for CountermoveBonus (too large)
+- CountermoveBonus rapidly dropped from 8000 → 7642
+- Clear signal that default was too high
+- Restarting with:
+  - CountermoveBonus start: 7700 (closer to optimum)
+  - C_end: 600 (more conservative, follows 1/20th rule)
+  - AspirationWindow adjusted to 15 (was trending lower)
+
+## SPSA Learnings
+
+### C_end Selection Strategy
+1. **Documentation suggests 1/20th of range** - Good starting point
+2. **But watch early convergence rate** - If moving rapidly, you may need larger C_end
+3. **Best of both worlds**: Use larger C_end to find neighborhood, then restart with:
+   - Better starting value (based on initial results)
+   - Conservative C_end for fine-tuning
+
+### Understanding SPSA Output
+- **"Curr" is a running average**, not the tested values
+- Actual tested values are Curr ± C
+- Movement per game = gradient × C × R (very small)
+- Rapid movement (>100 units in 1000 games) suggests parameter was far from optimal
+
 ## Notes
 
 ### Why These Parameters?
@@ -108,8 +135,8 @@ When submitting to OpenBench, use:
 Base: main
 Dev: tune/20250903-foundation
 SPSA Parameters:
-CountermoveBonus, int, 8000.0, 4000.0, 16000.0, 500.0, 0.002
-AspirationWindow, int, 16.0, 5.0, 50.0, 3.0, 0.002
+CountermoveBonus, int, 7700.0, 4000.0, 16000.0, 600.0, 0.002
+AspirationWindow, int, 15.0, 5.0, 50.0, 3.0, 0.002
 AspirationMaxAttempts, int, 5.0, 3.0, 10.0, 1.0, 0.002
 
 Games: 40000
