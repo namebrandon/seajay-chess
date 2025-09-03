@@ -8,7 +8,14 @@ class Board;
 
 namespace seajay::eval {
 
+// Forward declaration
+struct EvalTrace;
+
+// Normal evaluation - zero overhead
 Score evaluate(const Board& board);
+
+// Evaluation with detailed tracing
+Score evaluateWithTrace(const Board& board, EvalTrace& trace);
 
 
 #ifdef DEBUG

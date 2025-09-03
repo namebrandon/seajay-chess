@@ -74,6 +74,9 @@ private:
     // B0: One-shot search summary toggle
     bool m_showSearchStats = false;     // Print search summary after go
     
+    // Evaluation detail option
+    bool m_evalExtended = false;        // Show detailed evaluation breakdown
+    
     // Phase R1: Razoring parameters
     bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
     int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)
@@ -130,6 +133,7 @@ private:
     void handleBench(const std::vector<std::string>& tokens);
     void handleSetOption(const std::vector<std::string>& tokens);  // Stage 14, Deliverable 1.8
     void handleDumpPST();  // SPSA debug: dump current PST values
+    void handleDebug(const std::vector<std::string>& tokens);  // Debug command handler
     
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);

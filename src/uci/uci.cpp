@@ -13,7 +13,8 @@
 #include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
-#include "../evaluation/evaluate.h"   // Phase 3: For UCI eval command
+#include "../evaluation/evaluate.h"   // For evaluation functions
+#include "../evaluation/eval_trace.h"  // For evaluation tracing
 #include "../evaluation/pst.h"       // For SPSA PST tuning
 #include <iostream>
 #include <iomanip>
@@ -79,6 +80,9 @@ void UCIEngine::run() {
         else if (command == "dumpPST") {
             handleDumpPST();  // SPSA debug: dump current PST values
         }
+        else if (command == "d" || command == "debug") {
+            handleDebug(tokens);  // Debug command handler
+        }
         // Ignore unknown commands (UCI protocol requirement)
     }
 }
@@ -124,6 +128,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowPhaseInfo type check default true" << std::endl;
     // B0: One-shot search summary at end of go
     std::cout << "option name SearchStats type check default false" << std::endl;
+    
+    // Evaluation detail option
+    std::cout << "option name EvalExtended type check default false" << std::endl;
     
     // Phase R1/R2: Razoring options
     std::cout << "option name UseRazoring type check default true" << std::endl;
@@ -1277,6 +1284,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string SearchStats disabled" << std::endl;
         }
     }
+    else if (optionName == "EvalExtended") {
+        if (value == "true") {
+            m_evalExtended = true;
+            std::cerr << "info string EvalExtended enabled - detailed evaluation breakdown available" << std::endl;
+        } else if (value == "false") {
+            m_evalExtended = false;
+            std::cerr << "info string EvalExtended disabled" << std::endl;
+        }
+    }
     // Phase R1: Razoring options
     else if (optionName == "UseRazoring") {
         if (value == "true") {
@@ -1320,4 +1336,37 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
 void UCIEngine::handleDumpPST() {
     // Dump current PST values for debugging SPSA tuning
     eval::PST::dumpTables();
+}
+
+void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
+    // Debug command handler - provides detailed evaluation and other debug info
+    // Usage: "d" or "debug" [eval]
+    
+    if (tokens.size() > 1 && tokens[1] == "eval") {
+        // Show detailed evaluation if EvalExtended is enabled
+        if (m_evalExtended) {
+            eval::EvalTrace trace;
+            eval::Score score = eval::evaluateWithTrace(m_board, trace);
+            
+            // Print the detailed breakdown
+            trace.print(m_board.sideToMove());
+        } else {
+            // Just show the basic score
+            eval::Score score = eval::evaluate(m_board);
+            std::cout << "Evaluation: " << score.value() << " cp" << std::endl;
+            std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
+        }
+    } else {
+        // Default debug output - show board state
+        std::cout << "\n" << m_board.toString() << std::endl;
+        std::cout << "FEN: " << m_board.toFEN() << std::endl;
+        std::cout << "Side to move: " << (m_board.sideToMove() == WHITE ? "White" : "Black") << std::endl;
+        
+        // If EvalExtended is enabled, also show evaluation
+        if (m_evalExtended) {
+            eval::EvalTrace trace;
+            eval::Score score = eval::evaluateWithTrace(m_board, trace);
+            trace.print(m_board.sideToMove());
+        }
+    }
 }

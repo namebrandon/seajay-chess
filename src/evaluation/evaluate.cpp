@@ -1,4 +1,5 @@
 #include "evaluate.h"
+#include "eval_trace.h"  // For evaluation tracing
 #include "material.h"
 #include "pst.h"  // Stage 9: Include PST header
 #include "pawn_structure.h"  // Phase PP2: Passed pawn evaluation
@@ -35,7 +36,14 @@ inline int phase0to256(const Board& board) noexcept {
     // 256 = full middlegame, 0 = pure endgame
     return std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE, 0, 256);
 }
-Score evaluate(const Board& board) {
+// Template implementation for evaluation with optional tracing
+template<bool Traced>
+Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
+    // Reset trace if provided
+    if constexpr (Traced) {
+        if (trace) trace->reset();
+    }
+    
     // Get material from board
     const Material& material = board.material();
     
@@ -86,12 +94,26 @@ Score evaluate(const Board& board) {
         int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
         int invPhase = 256 - phase;      // Inverse phase for endgame weight
         
+        // Trace phase and PST components
+        if constexpr (Traced) {
+            if (trace) {
+                trace->phase256 = phase;
+                trace->pstMg = pstScore.mg;
+                trace->pstEg = pstScore.eg;
+            }
+        }
+        
         // Fixed-point blend with rounding (shift by 8 to divide by 256)
         int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
         pstValue = Score(blendedPst);
     } else {
         // Original behavior - use only middlegame PST values (no tapering)
         pstValue = pstScore.mg;
+    }
+    
+    // Trace PST value
+    if constexpr (Traced) {
+        if (trace) trace->pst = pstValue;
     }
     
     // Phase PP2: Passed pawn evaluation
@@ -465,6 +487,16 @@ Score evaluate(const Board& board) {
     // Convert passed pawn value to Score
     Score passedPawnScore(passedPawnValue);
     
+    // Trace passed pawn score
+    if constexpr (Traced) {
+        if (trace) {
+            trace->passedPawns = passedPawnScore;
+            // Add detail tracking if we saw any special cases
+            trace->passedDetail.whiteCount = popCount(whitePassedPawns);
+            trace->passedDetail.blackCount = popCount(blackPassedPawns);
+        }
+    }
+    
     // Phase IP2: Isolated pawn evaluation
     // Base penalties by rank (white perspective) - conservative values
     static constexpr int ISOLATED_PAWN_PENALTY[8] = {
@@ -535,6 +567,11 @@ Score evaluate(const Board& board) {
     // Convert isolated pawn penalty to Score
     Score isolatedPawnScore(isolatedPawnPenalty);
     
+    // Trace isolated pawn score
+    if constexpr (Traced) {
+        if (trace) trace->isolatedPawns = isolatedPawnScore;
+    }
+    
     // DP3: Doubled pawn penalties enabled
     // Reduced penalties after testing showed -15/-6 was too harsh
     static constexpr int DOUBLED_PAWN_PENALTY_MG = -8;   // Middlegame penalty (reduced from -15)
@@ -557,6 +594,11 @@ Score evaluate(const Board& board) {
     // Convert doubled pawn penalty to Score
     Score doubledPawnScore(doubledPawnPenalty);
     
+    // Trace doubled pawn score
+    if constexpr (Traced) {
+        if (trace) trace->doubledPawns = doubledPawnScore;
+    }
+    
     // PI2: Pawn islands evaluation - fewer islands is better
     // Conservative penalties to start (will tune in PI3)
     static constexpr int PAWN_ISLAND_PENALTY = 5;  // Per island beyond the first
@@ -569,6 +611,11 @@ Score evaluate(const Board& board) {
     int pawnIslandValue = blackIslandPenalty - whiteIslandPenalty;
     Score pawnIslandScore(pawnIslandValue);
     
+    // Trace pawn island score
+    if constexpr (Traced) {
+        if (trace) trace->pawnIslands = pawnIslandScore;
+    }
+    
     // BP3: Backward pawn evaluation enabled
     // Reduced penalty after initial test showed 18cp was too high
     static constexpr int BACKWARD_PAWN_PENALTY = 8;  // Centipawns penalty per backward pawn
@@ -578,6 +625,11 @@ Score evaluate(const Board& board) {
     // From white's perspective: penalize white's backward pawns, reward black's backward pawns
     int backwardPawnValue = (blackBackwardCount - whiteBackwardCount) * BACKWARD_PAWN_PENALTY;
     Score backwardPawnScore(backwardPawnValue);
+    
+    // Trace backward pawn score
+    if constexpr (Traced) {
+        if (trace) trace->backwardPawns = backwardPawnScore;
+    }
     
     // BPB2: Bishop pair bonus integration (Phase 2 - conservative values)
     // Detect if each side has the bishop pair
@@ -608,6 +660,11 @@ Score evaluate(const Board& board) {
     if (blackBishopPair) bishopPairValue -= bonus;
     
     Score bishopPairScore(bishopPairValue);
+    
+    // Trace bishop pair score
+    if constexpr (Traced) {
+        if (trace) trace->bishopPair = bishopPairScore;
+    }
     
     // MOB2: Piece mobility evaluation (Phase 2 - basic integration)
     // Count pseudo-legal moves for pieces, excluding squares attacked by enemy pawns
@@ -700,6 +757,11 @@ Score evaluate(const Board& board) {
     // Create score from total outpost value
     Score knightOutpostScore(knightOutpostValue);
     
+    // Trace knight outpost score
+    if constexpr (Traced) {
+        if (trace) trace->knightOutposts = knightOutpostScore;
+    }
+    
     // Phase 2: Conservative mobility bonuses per move count
     // Phase 2.5.e-3: Using SIMD-optimized batched mobility calculation
     static constexpr int MOBILITY_BONUS_PER_MOVE = 2;  // 2 centipawns per available move
@@ -724,7 +786,11 @@ Score evaluate(const Board& board) {
             Bitboard attacks = MoveGenerator::getKnightAttacks(knightSqs[i]);
             attacks &= ~board.pieces(WHITE);
             attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+            int moveCount = popCount(attacks);
+            whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+            if constexpr (Traced) {
+                if (trace) trace->mobilityDetail.whiteKnightMoves += moveCount;
+            }
         }
         
         // Process remaining knights if any
@@ -942,6 +1008,11 @@ Score evaluate(const Board& board) {
     int mobilityValue = whiteMobilityScore - blackMobilityScore;
     Score mobilityScore(mobilityValue);
     
+    // Trace mobility score
+    if constexpr (Traced) {
+        if (trace) trace->mobility = mobilityScore;
+    }
+    
     // Phase KS2: King safety evaluation (integrated but returns 0 score)
     // Evaluate for both sides and combine
     Score whiteKingSafety = KingSafety::evaluate(board, WHITE);
@@ -951,8 +1022,18 @@ Score evaluate(const Board& board) {
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
     Score kingSafetyScore = whiteKingSafety - blackKingSafety;
     
+    // Trace king safety score
+    if constexpr (Traced) {
+        if (trace) trace->kingSafety = kingSafetyScore;
+    }
+    
     // Phase ROF2: Calculate rook file bonus score
     Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
+    
+    // Trace rook file score
+    if constexpr (Traced) {
+        if (trace) trace->rookFiles = rookFileScore;
+    }
 
     // Phase A3: Tiny bonus for king proximity to own rook in endgames only
     Score rookKingProximityScore = Score(0);
@@ -990,9 +1071,20 @@ Score evaluate(const Board& board) {
         rookKingProximityScore = Score(wBonus - bBonus);
     }
     
+    // Trace rook-king proximity score
+    if constexpr (Traced) {
+        if (trace) trace->rookKingProximity = rookKingProximityScore;
+    }
+    
     // Calculate total evaluation from white's perspective
     // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files + knight outposts
     Score materialDiff = material.value(WHITE) - material.value(BLACK);
+    
+    // Trace material
+    if constexpr (Traced) {
+        if (trace) trace->material = materialDiff;
+    }
+    
     Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
@@ -1002,6 +1094,18 @@ Score evaluate(const Board& board) {
         return -totalWhite;
     }
 }
+
+// Public interfaces for evaluation
+Score evaluate(const Board& board) {
+    // Normal evaluation with no tracing - zero overhead
+    return evaluateImpl<false>(board, nullptr);
+}
+
+Score evaluateWithTrace(const Board& board, EvalTrace& trace) {
+    // Evaluation with detailed tracing
+    return evaluateImpl<true>(board, &trace);
+}
+
 #ifdef DEBUG
 bool verifyMaterialIncremental(const Board& board) {
     // Recount material from scratch
