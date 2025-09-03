@@ -459,7 +459,7 @@ eval::Score negamax(Board& board,
     // Check if we can do null move
     bool canDoNull = !isPvNode                                  // Phase P2: No null in PV nodes!
                     && !weAreInCheck                              // Not in check
-                    && depth >= 3                                // Minimum depth
+                    && depth >= limits.nullMoveMinDepth          // Minimum depth (UCI configurable)
                     && ply > 0                                   // Not at root
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
                     && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD  // Original detection
@@ -468,9 +468,15 @@ eval::Score negamax(Board& board,
     if (canDoNull && limits.useNullMove) {
         info.nullMoveStats.attempts++;
         
-        // Phase A3.1: Simple depth-based adaptive reduction (no expensive eval call)
-        // R=2 for depth<6, R=3 for depth 6-11, R=4 for depth 12+
-        int nullMoveReduction = 2 + (depth >= 6) + (depth >= 12);
+        // Use UCI-configurable reduction values
+        int nullMoveReduction = limits.nullMoveReductionBase;
+        if (depth >= 6) nullMoveReduction = limits.nullMoveReductionDepth6;
+        if (depth >= 12) nullMoveReduction = limits.nullMoveReductionDepth12;
+        
+        // Dynamic adjustment based on eval margin (UCI configurable)
+        if (staticEvalComputed && staticEval - beta > eval::Score(limits.nullMoveEvalMargin)) {
+            nullMoveReduction++;
+        }
         
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
@@ -503,8 +509,8 @@ eval::Score negamax(Board& board,
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
             
-            // Phase 1.5b: Deeper verification search at depth >= 10
-            if (depth >= 10) {  // Lowered from 12 to match Laser's threshold
+            // Phase 1.5b: Deeper verification search at configurable depth
+            if (depth >= limits.nullMoveVerifyDepth) {  // UCI configurable threshold
                 // Verification search at depth - R (one ply deeper than null move)
                 eval::Score verifyScore = negamax(
                     board,
@@ -1293,6 +1299,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
     info.lmrParams.baseReduction = limits.lmrBaseReduction;
     info.lmrParams.depthFactor = limits.lmrDepthFactor;
+    info.lmrParams.historyThreshold = limits.lmrHistoryThreshold;
+    info.lmrParams.pvReduction = limits.lmrPvReduction;
+    info.lmrParams.nonImprovingBonus = limits.lmrNonImprovingBonus;
     info.lmrStats.reset();
     
     // Stage 22 Phase P3.5: Reset PVS statistics at search start
@@ -1801,6 +1810,9 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
     info.lmrParams.baseReduction = limits.lmrBaseReduction;
     info.lmrParams.depthFactor = limits.lmrDepthFactor;
+    info.lmrParams.historyThreshold = limits.lmrHistoryThreshold;
+    info.lmrParams.pvReduction = limits.lmrPvReduction;
+    info.lmrParams.nonImprovingBonus = limits.lmrNonImprovingBonus;
     info.lmrStats.reset();
     
     // Stage 13, Deliverable 2.2b: Use new time management in regular search too

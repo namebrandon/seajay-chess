@@ -116,10 +116,19 @@ void UCIEngine::handleUCI() {
     std::cout << "option name LMRMinMoveNumber type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
     std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
+    std::cout << "option name LMRHistoryThreshold type spin default 50 min 10 max 90" << std::endl;
+    std::cout << "option name LMRPvReduction type spin default 1 min 0 max 2" << std::endl;
+    std::cout << "option name LMRNonImprovingBonus type spin default 1 min 0 max 3" << std::endl;
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
-    std::cout << "option name NullMoveStaticMargin type spin default 120 min 50 max 300" << std::endl;  // Phase A4
+    std::cout << "option name NullMoveStaticMargin type spin default 90 min 50 max 300" << std::endl;  // Phase A4
+    std::cout << "option name NullMoveMinDepth type spin default 3 min 2 max 5" << std::endl;
+    std::cout << "option name NullMoveReductionBase type spin default 2 min 1 max 4" << std::endl;
+    std::cout << "option name NullMoveReductionDepth6 type spin default 3 min 2 max 5" << std::endl;
+    std::cout << "option name NullMoveReductionDepth12 type spin default 4 min 3 max 6" << std::endl;
+    std::cout << "option name NullMoveVerifyDepth type spin default 10 min 6 max 14" << std::endl;
+    std::cout << "option name NullMoveEvalMargin type spin default 200 min 100 max 400" << std::endl;
     
     // PST Phase Interpolation option
     std::cout << "option name UsePSTInterpolation type check default true" << std::endl;
@@ -136,6 +145,13 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseRazoring type check default true" << std::endl;
     std::cout << "option name RazorMargin1 type spin default 300 min 100 max 800" << std::endl;
     std::cout << "option name RazorMargin2 type spin default 500 min 200 max 1200" << std::endl;
+    
+    // Futility Pruning options
+    std::cout << "option name UseFutilityPruning type check default true" << std::endl;
+    std::cout << "option name FutilityMargin1 type spin default 100 min 50 max 200" << std::endl;
+    std::cout << "option name FutilityMargin2 type spin default 175 min 100 max 300" << std::endl;
+    std::cout << "option name FutilityMargin3 type spin default 250 min 150 max 400" << std::endl;
+    std::cout << "option name FutilityMargin4 type spin default 325 min 200 max 500" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
@@ -519,10 +535,26 @@ void UCIEngine::search(const SearchParams& params) {
     limits.lmrMinMoveNumber = m_lmrMinMoveNumber;
     limits.lmrBaseReduction = m_lmrBaseReduction;
     limits.lmrDepthFactor = m_lmrDepthFactor;
+    limits.lmrHistoryThreshold = m_lmrHistoryThreshold;
+    limits.lmrPvReduction = m_lmrPvReduction;
+    limits.lmrNonImprovingBonus = m_lmrNonImprovingBonus;
     
     // Stage 21: Pass null move pruning options
     limits.useNullMove = m_useNullMove;
     limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
+    limits.nullMoveMinDepth = m_nullMoveMinDepth;
+    limits.nullMoveReductionBase = m_nullMoveReductionBase;
+    limits.nullMoveReductionDepth6 = m_nullMoveReductionDepth6;
+    limits.nullMoveReductionDepth12 = m_nullMoveReductionDepth12;
+    limits.nullMoveVerifyDepth = m_nullMoveVerifyDepth;
+    limits.nullMoveEvalMargin = m_nullMoveEvalMargin;
+    
+    // Futility pruning parameters
+    limits.useFutilityPruning = m_useFutilityPruning;
+    limits.futilityMargin1 = m_futilityMargin1;
+    limits.futilityMargin2 = m_futilityMargin2;
+    limits.futilityMargin3 = m_futilityMargin3;
+    limits.futilityMargin4 = m_futilityMargin4;
     
     // Phase R1: Pass razoring options
     limits.useRazoring = m_useRazoring;
@@ -933,13 +965,74 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "LMRDepthFactor") {
         try {
-            int factor = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int factor = 0;
+            try {
+                double dv = std::stod(value);
+                factor = static_cast<int>(std::round(dv));
+            } catch (...) {
+                factor = std::stoi(value);
+            }
             if (factor >= 1 && factor <= 10) {
                 m_lmrDepthFactor = factor;
                 std::cerr << "info string LMR depth factor set to: " << factor << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid LMRDepthFactor value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRHistoryThreshold") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int threshold = 0;
+            try {
+                double dv = std::stod(value);
+                threshold = static_cast<int>(std::round(dv));
+            } catch (...) {
+                threshold = std::stoi(value);
+            }
+            if (threshold >= 10 && threshold <= 90) {
+                m_lmrHistoryThreshold = threshold;
+                std::cerr << "info string LMR history threshold set to: " << threshold << "%" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRHistoryThreshold value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRPvReduction") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int reduction = 0;
+            try {
+                double dv = std::stod(value);
+                reduction = static_cast<int>(std::round(dv));
+            } catch (...) {
+                reduction = std::stoi(value);
+            }
+            if (reduction >= 0 && reduction <= 2) {
+                m_lmrPvReduction = reduction;
+                std::cerr << "info string LMR PV reduction set to: " << reduction << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRPvReduction value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "LMRNonImprovingBonus") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int bonus = 0;
+            try {
+                double dv = std::stod(value);
+                bonus = static_cast<int>(std::round(dv));
+            } catch (...) {
+                bonus = std::stoi(value);
+            }
+            if (bonus >= 0 && bonus <= 3) {
+                m_lmrNonImprovingBonus = bonus;
+                std::cerr << "info string LMR non-improving bonus set to: " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid LMRNonImprovingBonus value: " << value << std::endl;
         }
     }
     // Stage 21: Handle UseNullMove option
@@ -957,6 +1050,132 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else {
             std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveStaticMargin") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 50 && margin <= 300) {
+                m_nullMoveStaticMargin = margin;
+                std::cerr << "info string Null move static margin set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveStaticMargin value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveMinDepth") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int depth = 0;
+            try {
+                double dv = std::stod(value);
+                depth = static_cast<int>(std::round(dv));
+            } catch (...) {
+                depth = std::stoi(value);
+            }
+            if (depth >= 2 && depth <= 5) {
+                m_nullMoveMinDepth = depth;
+                std::cerr << "info string Null move min depth set to: " << depth << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveMinDepth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveReductionBase") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int reduction = 0;
+            try {
+                double dv = std::stod(value);
+                reduction = static_cast<int>(std::round(dv));
+            } catch (...) {
+                reduction = std::stoi(value);
+            }
+            if (reduction >= 1 && reduction <= 4) {
+                m_nullMoveReductionBase = reduction;
+                std::cerr << "info string Null move base reduction set to: " << reduction << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveReductionBase value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveReductionDepth6") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int reduction = 0;
+            try {
+                double dv = std::stod(value);
+                reduction = static_cast<int>(std::round(dv));
+            } catch (...) {
+                reduction = std::stoi(value);
+            }
+            if (reduction >= 2 && reduction <= 5) {
+                m_nullMoveReductionDepth6 = reduction;
+                std::cerr << "info string Null move depth 6 reduction set to: " << reduction << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveReductionDepth6 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveReductionDepth12") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int reduction = 0;
+            try {
+                double dv = std::stod(value);
+                reduction = static_cast<int>(std::round(dv));
+            } catch (...) {
+                reduction = std::stoi(value);
+            }
+            if (reduction >= 3 && reduction <= 6) {
+                m_nullMoveReductionDepth12 = reduction;
+                std::cerr << "info string Null move depth 12 reduction set to: " << reduction << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveReductionDepth12 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveVerifyDepth") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int depth = 0;
+            try {
+                double dv = std::stod(value);
+                depth = static_cast<int>(std::round(dv));
+            } catch (...) {
+                depth = std::stoi(value);
+            }
+            if (depth >= 6 && depth <= 14) {
+                m_nullMoveVerifyDepth = depth;
+                std::cerr << "info string Null move verification depth set to: " << depth << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveVerifyDepth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "NullMoveEvalMargin") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 100 && margin <= 400) {
+                m_nullMoveEvalMargin = margin;
+                std::cerr << "info string Null move eval margin set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveEvalMargin value: " << value << std::endl;
         }
     }
     // PST Phase Interpolation: Handle UsePSTInterpolation option
@@ -978,17 +1197,107 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
-    // Futility Pruning options (Phase 4 investigation)
-    else if (optionName == "FutilityPruning") {
+    // Futility Pruning options
+    else if (optionName == "UseFutilityPruning") {
         // Boolean parsing with case-insensitive support
         std::string lowerValue = value;
         std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
         
         if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_useFutilityPruning = true;
+            std::cerr << "info string Futility pruning enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_useFutilityPruning = false;
+            std::cerr << "info string Futility pruning disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid UseFutilityPruning value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityMargin1") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 50 && margin <= 200) {
+                m_futilityMargin1 = margin;
+                std::cerr << "info string Futility margin 1 set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityMargin1 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityMargin2") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 100 && margin <= 300) {
+                m_futilityMargin2 = margin;
+                std::cerr << "info string Futility margin 2 set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityMargin2 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityMargin3") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 150 && margin <= 400) {
+                m_futilityMargin3 = margin;
+                std::cerr << "info string Futility margin 3 set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityMargin3 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilityMargin4") {
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 200 && margin <= 500) {
+                m_futilityMargin4 = margin;
+                std::cerr << "info string Futility margin 4 set to: " << margin << " cp" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilityMargin4 value: " << value << std::endl;
+        }
+    }
+    // Legacy futility options (kept for backwards compatibility)
+    else if (optionName == "FutilityPruning") {
+        // Boolean parsing with case-insensitive support  
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
             seajay::getConfig().useFutilityPruning = true;
+            m_useFutilityPruning = true;
             std::cerr << "info string Futility pruning enabled" << std::endl;
         } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
             seajay::getConfig().useFutilityPruning = false;
+            m_useFutilityPruning = false;
             std::cerr << "info string Futility pruning disabled" << std::endl;
         } else {
             std::cerr << "info string Invalid FutilityPruning value: " << value << std::endl;

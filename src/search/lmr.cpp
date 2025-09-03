@@ -78,12 +78,12 @@ int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& para
     
     // Adjust based on PV node (reduce less in PV)
     if (isPvNode && reduction > 0) {
-        reduction = std::max(1, reduction - 1);
+        reduction = std::max(1, reduction - params.pvReduction);
     }
     
     // Adjust based on improving (reduce more when not improving)
     if (!improving && reduction < depth - 1) {
-        reduction++;
+        reduction += params.nonImprovingBonus;
     }
     
     // Apply user-configured base reduction adjustment
@@ -151,9 +151,9 @@ bool shouldReduceMove(Move move, int depth, int moveNumber, bool isCapture,
         Square to = moveTo(move);
         int historyScore = history.getScore(sideToMove, from, to);
         
-        // Don't reduce if history score is in top tier (>50% of max)
-        // Lowered threshold from 75% to 50% to protect more good moves
-        if (historyScore > HistoryHeuristic::HISTORY_MAX / 2) {
+        // Don't reduce if history score is above threshold (UCI configurable)
+        int threshold = (HistoryHeuristic::HISTORY_MAX * params.historyThreshold) / 100;
+        if (historyScore > threshold) {
             return false;
         }
     }

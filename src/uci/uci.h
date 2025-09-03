@@ -61,10 +61,19 @@ private:
     int m_lmrMinMoveNumber = 6;         // Start reducing after this many moves (tuned value)  
     int m_lmrBaseReduction = 1;         // Base reduction amount
     int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
+    int m_lmrHistoryThreshold = 50;     // History score threshold percentage (0-100)
+    int m_lmrPvReduction = 1;           // Reduction adjustment for PV nodes
+    int m_lmrNonImprovingBonus = 1;     // Extra reduction when not improving
     
     // Stage 21: Null Move Pruning parameters  
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     int m_nullMoveStaticMargin = 90;   // Margin for static null move pruning - reduced from 120
+    int m_nullMoveMinDepth = 3;         // Minimum depth for null move pruning
+    int m_nullMoveReductionBase = 2;    // Base null move reduction
+    int m_nullMoveReductionDepth6 = 3;  // Reduction at depth >= 6
+    int m_nullMoveReductionDepth12 = 4; // Reduction at depth >= 12
+    int m_nullMoveVerifyDepth = 10;     // Depth threshold for verification search
+    int m_nullMoveEvalMargin = 200;     // Extra reduction when eval >> beta
     
     // PST Phase Interpolation parameters
     bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation
@@ -87,6 +96,13 @@ private:
     
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
     int m_countermoveBonus = 8000;      // Optimal bonus score for countermoves (CM3.5 testing)
+    
+    // Futility Pruning parameters
+    bool m_useFutilityPruning = true;     // Enable/disable futility pruning
+    int m_futilityMargin1 = 100;          // Futility margin for depth 1 (in centipawns)
+    int m_futilityMargin2 = 175;          // Futility margin for depth 2 (in centipawns)
+    int m_futilityMargin3 = 250;          // Futility margin for depth 3 (in centipawns)
+    int m_futilityMargin4 = 325;          // Futility margin for depth 4 (in centipawns)
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     bool m_useMoveCountPruning = true;    // Enable/disable move count pruning

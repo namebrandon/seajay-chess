@@ -71,10 +71,26 @@ struct SearchLimits {
     int lmrMinMoveNumber = 4;         // Start reducing after this many moves
     int lmrBaseReduction = 1;         // Base reduction amount
     int lmrDepthFactor = 100;         // For formula: reduction = base + (depth-minDepth)/depthFactor
+    int lmrHistoryThreshold = 50;     // History score threshold percentage (0-100)
+    int lmrPvReduction = 1;           // Reduction adjustment for PV nodes
+    int lmrNonImprovingBonus = 1;     // Extra reduction when not improving
     
     // Stage 21: Null Move Pruning parameters
     bool useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
     int nullMoveStaticMargin = 90;   // Margin for static null move pruning - reduced from 120
+    int nullMoveMinDepth = 3;         // Minimum depth for null move pruning
+    int nullMoveReductionBase = 2;    // Base null move reduction
+    int nullMoveReductionDepth6 = 3;  // Reduction at depth >= 6
+    int nullMoveReductionDepth12 = 4; // Reduction at depth >= 12
+    int nullMoveVerifyDepth = 10;     // Depth threshold for verification search
+    int nullMoveEvalMargin = 200;     // Extra reduction when eval >> beta
+    
+    // Futility Pruning parameters
+    bool useFutilityPruning = true;     // Enable/disable futility pruning
+    int futilityMargin1 = 100;          // Futility margin for depth 1 (in centipawns)
+    int futilityMargin2 = 175;          // Futility margin for depth 2 (in centipawns)
+    int futilityMargin3 = 250;          // Futility margin for depth 3 (in centipawns)
+    int futilityMargin4 = 325;          // Futility margin for depth 4 (in centipawns)
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
@@ -203,6 +219,9 @@ struct SearchData {
         int minMoveNumber = 6;         // Start reducing after this many moves (tuned for +42 ELO)
         int baseReduction = 1;         // Base reduction amount
         int depthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
+        int historyThreshold = 50;     // History score threshold percentage (0-100)
+        int pvReduction = 1;           // Reduction adjustment for PV nodes
+        int nonImprovingBonus = 1;     // Extra reduction when not improving
     } lmrParams;
     
     // Stage 18: LMR statistics
