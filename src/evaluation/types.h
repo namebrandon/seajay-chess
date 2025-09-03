@@ -60,21 +60,21 @@ public:
             static_cast<value_type>(32000)));
     }
     
-    static consteval Score zero() noexcept { return Score(0); }
-    static consteval Score draw() noexcept { return Score(0); }
-    static consteval Score mate() noexcept { return Score(32000); }
-    static consteval Score mate_in(int ply) noexcept { 
+    static constexpr Score zero() noexcept { return Score(0); }
+    static constexpr Score draw() noexcept { return Score(0); }
+    static constexpr Score mate() noexcept { return Score(32000); }
+    static constexpr Score mate_in(int ply) noexcept { 
         return Score(32000 - ply); 
     }
-    static consteval Score mated_in(int ply) noexcept { 
+    static constexpr Score mated_in(int ply) noexcept { 
         return Score(-32000 + ply); 
     }
-    static consteval Score infinity() noexcept { 
+    static constexpr Score infinity() noexcept { 
         // Use a value that can be safely negated without overflow
         // Reserve the actual max/min for special purposes
         return Score(1000000); 
     }
-    static consteval Score minus_infinity() noexcept { 
+    static constexpr Score minus_infinity() noexcept { 
         // Use a value that can be safely negated without overflow
         return Score(-1000000); 
     }
