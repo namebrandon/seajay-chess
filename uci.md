@@ -139,6 +139,27 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 **Purpose:** Depth scaling factor for reduction formula.  
 **SPSA Input:** `LMRDepthFactor, int, 3.0, 1.0, 10.0, 1.0, 0.002`  
 
+### LMRHistoryThreshold
+**Type:** spin  
+**Default:** 50  
+**Range:** 10-90  
+**Purpose:** History score threshold (percentage) for LMR reduction.  
+**SPSA Input:** `LMRHistoryThreshold, int, 50.0, 10.0, 90.0, 5.0, 0.002`  
+
+### LMRPvReduction
+**Type:** spin  
+**Default:** 1  
+**Range:** 0-2  
+**Purpose:** Reduction amount for PV nodes in LMR.  
+**SPSA Input:** `LMRPvReduction, int, 1.0, 0.0, 2.0, 0.5, 0.002`  
+
+### LMRNonImprovingBonus
+**Type:** spin  
+**Default:** 1  
+**Range:** 0-3  
+**Purpose:** Extra reduction when position is not improving.  
+**SPSA Input:** `LMRNonImprovingBonus, int, 1.0, 0.0, 3.0, 0.5, 0.002`  
+
 ---
 
 ## Null Move Pruning
@@ -151,10 +172,141 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 
 ### NullMoveStaticMargin ⭐
 **Type:** spin  
-**Default:** 120  
+**Default:** 90  
 **Range:** 50-300  
 **Purpose:** Static evaluation margin for null move pruning.  
-**SPSA Input:** `NullMoveStaticMargin, int, 120.0, 50.0, 300.0, 15.0, 0.002`  
+**SPSA Input:** `NullMoveStaticMargin, int, 90.0, 50.0, 300.0, 15.0, 0.002`  
+
+### NullMoveMinDepth
+**Type:** spin  
+**Default:** 3  
+**Range:** 2-5  
+**Purpose:** Minimum depth to apply null move pruning.  
+**SPSA Input:** `NullMoveMinDepth, int, 3.0, 2.0, 5.0, 1.0, 0.002`  
+
+### NullMoveReductionBase ⭐
+**Type:** spin  
+**Default:** 2  
+**Range:** 1-4  
+**Purpose:** Base reduction amount for null move.  
+**SPSA Input:** `NullMoveReductionBase, int, 2.0, 1.0, 4.0, 0.5, 0.002`  
+
+### NullMoveReductionDepth6
+**Type:** spin  
+**Default:** 3  
+**Range:** 2-5  
+**Purpose:** Reduction at depth 6+ for null move.  
+**SPSA Input:** `NullMoveReductionDepth6, int, 3.0, 2.0, 5.0, 0.5, 0.002`  
+
+### NullMoveReductionDepth12
+**Type:** spin  
+**Default:** 4  
+**Range:** 3-6  
+**Purpose:** Reduction at depth 12+ for null move.  
+**SPSA Input:** `NullMoveReductionDepth12, int, 4.0, 3.0, 6.0, 0.5, 0.002`  
+
+### NullMoveVerifyDepth
+**Type:** spin  
+**Default:** 10  
+**Range:** 6-14  
+**Purpose:** Depth at which to verify null move cutoffs.  
+**SPSA Input:** `NullMoveVerifyDepth, int, 10.0, 6.0, 14.0, 1.0, 0.002`  
+
+### NullMoveEvalMargin
+**Type:** spin  
+**Default:** 200  
+**Range:** 100-400  
+**Purpose:** Evaluation margin required for null move attempt.  
+**SPSA Input:** `NullMoveEvalMargin, int, 200.0, 100.0, 400.0, 20.0, 0.002`  
+
+---
+
+## Razoring
+
+### UseRazoring
+**Type:** check  
+**Default:** true  
+**Purpose:** Enables razoring (early pruning at low depths).  
+**SPSA:** Not tunable - generally beneficial  
+
+### RazorMargin1 ⭐
+**Type:** spin  
+**Default:** 300  
+**Range:** 100-800  
+**Purpose:** Razoring margin for depth 1.  
+**SPSA Input:** `RazorMargin1, int, 300.0, 100.0, 800.0, 30.0, 0.002`  
+
+### RazorMargin2 ⭐
+**Type:** spin  
+**Default:** 500  
+**Range:** 200-1200  
+**Purpose:** Razoring margin for depth 2.  
+**SPSA Input:** `RazorMargin2, int, 500.0, 200.0, 1200.0, 50.0, 0.002`  
+
+---
+
+## Futility Pruning (Enhanced)
+
+### UseFutilityPruning
+**Type:** check  
+**Default:** true  
+**Purpose:** Enables futility pruning at frontier nodes.  
+**SPSA:** Not tunable - generally beneficial  
+
+### FutilityPruning
+**Type:** check  
+**Default:** true  
+**Purpose:** Alternative enable flag for futility pruning.  
+**SPSA:** Not tunable - generally beneficial  
+
+### FutilityMaxDepth
+**Type:** spin  
+**Default:** 7  
+**Range:** 0-10  
+**Purpose:** Maximum depth to apply futility pruning.  
+**SPSA Input:** `FutilityMaxDepth, int, 7.0, 4.0, 10.0, 1.0, 0.002`  
+
+### FutilityBase ⭐
+**Type:** spin  
+**Default:** 150  
+**Range:** 50-500  
+**Purpose:** Base futility margin.  
+**SPSA Input:** `FutilityBase, int, 150.0, 50.0, 500.0, 20.0, 0.002`  
+
+### FutilityScale ⭐
+**Type:** spin  
+**Default:** 60  
+**Range:** 20-200  
+**Purpose:** Futility margin scaling factor per depth.  
+**SPSA Input:** `FutilityScale, int, 60.0, 20.0, 200.0, 10.0, 0.002`  
+
+### FutilityMargin1
+**Type:** spin  
+**Default:** 100  
+**Range:** 50-200  
+**Purpose:** Futility margin for depth 1.  
+**SPSA Input:** `FutilityMargin1, int, 100.0, 50.0, 200.0, 10.0, 0.002`  
+
+### FutilityMargin2
+**Type:** spin  
+**Default:** 175  
+**Range:** 100-300  
+**Purpose:** Futility margin for depth 2.  
+**SPSA Input:** `FutilityMargin2, int, 175.0, 100.0, 300.0, 15.0, 0.002`  
+
+### FutilityMargin3
+**Type:** spin  
+**Default:** 250  
+**Range:** 150-400  
+**Purpose:** Futility margin for depth 3.  
+**SPSA Input:** `FutilityMargin3, int, 250.0, 150.0, 400.0, 20.0, 0.002`  
+
+### FutilityMargin4
+**Type:** spin  
+**Default:** 325  
+**Range:** 200-500  
+**Purpose:** Futility margin for depth 4.  
+**SPSA Input:** `FutilityMargin4, int, 325.0, 200.0, 500.0, 25.0, 0.002`  
 
 ---
 
@@ -172,6 +324,182 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 **Default:** true  
 **Purpose:** Prints phase details during `uci -> eval`: continuous phase (0–256) and coarse GamePhase (OPENING/MIDDLEGAME/ENDGAME). Visibility only; does not affect evaluation.  
 **SPSA:** Not tunable - debug/visibility option  
+
+### EvalExtended
+**Type:** check  
+**Default:** false  
+**Purpose:** Shows detailed evaluation breakdown by component (material, PST, mobility, etc.).  
+**SPSA:** Not tunable - debug/visibility option  
+
+---
+
+## Endgame PST Tuning ⭐⭐⭐
+
+These parameters fine-tune piece-square table values in the endgame. They're prime candidates for SPSA tuning.
+
+### Pawn Endgame PST
+
+#### pawn_eg_r3_d
+**Type:** spin  
+**Default:** 8  
+**Range:** 0-30  
+**Purpose:** Pawn endgame value on rank 3, d-file.  
+**SPSA Input:** `pawn_eg_r3_d, int, 8.0, 0.0, 30.0, 2.0, 0.002`  
+
+#### pawn_eg_r3_e
+**Type:** spin  
+**Default:** 7  
+**Range:** 0-30  
+**Purpose:** Pawn endgame value on rank 3, e-file.  
+**SPSA Input:** `pawn_eg_r3_e, int, 7.0, 0.0, 30.0, 2.0, 0.002`  
+
+#### pawn_eg_r4_d
+**Type:** spin  
+**Default:** 18  
+**Range:** 10-50  
+**Purpose:** Pawn endgame value on rank 4, d-file.  
+**SPSA Input:** `pawn_eg_r4_d, int, 18.0, 10.0, 50.0, 3.0, 0.002`  
+
+#### pawn_eg_r4_e
+**Type:** spin  
+**Default:** 16  
+**Range:** 10-50  
+**Purpose:** Pawn endgame value on rank 4, e-file.  
+**SPSA Input:** `pawn_eg_r4_e, int, 16.0, 10.0, 50.0, 3.0, 0.002`  
+
+#### pawn_eg_r5_d
+**Type:** spin  
+**Default:** 29  
+**Range:** 20-70  
+**Purpose:** Pawn endgame value on rank 5, d-file.  
+**SPSA Input:** `pawn_eg_r5_d, int, 29.0, 20.0, 70.0, 4.0, 0.002`  
+
+#### pawn_eg_r5_e
+**Type:** spin  
+**Default:** 27  
+**Range:** 20-70  
+**Purpose:** Pawn endgame value on rank 5, e-file.  
+**SPSA Input:** `pawn_eg_r5_e, int, 27.0, 20.0, 70.0, 4.0, 0.002`  
+
+#### pawn_eg_r6_d
+**Type:** spin  
+**Default:** 51  
+**Range:** 30-100  
+**Purpose:** Pawn endgame value on rank 6, d-file.  
+**SPSA Input:** `pawn_eg_r6_d, int, 51.0, 30.0, 100.0, 5.0, 0.002`  
+
+#### pawn_eg_r6_e
+**Type:** spin  
+**Default:** 48  
+**Range:** 30-100  
+**Purpose:** Pawn endgame value on rank 6, e-file.  
+**SPSA Input:** `pawn_eg_r6_e, int, 48.0, 30.0, 100.0, 5.0, 0.002`  
+
+#### pawn_eg_r7_center
+**Type:** spin  
+**Default:** 75  
+**Range:** 50-150  
+**Purpose:** Pawn endgame value on rank 7, center files.  
+**SPSA Input:** `pawn_eg_r7_center, int, 75.0, 50.0, 150.0, 8.0, 0.002`  
+
+### Knight Endgame PST
+
+#### knight_eg_center ⭐
+**Type:** spin  
+**Default:** 15  
+**Range:** 5-25  
+**Purpose:** Knight bonus in center squares.  
+**SPSA Input:** `knight_eg_center, int, 15.0, 5.0, 25.0, 2.0, 0.002`  
+
+#### knight_eg_extended
+**Type:** spin  
+**Default:** 10  
+**Range:** 0-20  
+**Purpose:** Knight bonus in extended center.  
+**SPSA Input:** `knight_eg_extended, int, 10.0, 0.0, 20.0, 2.0, 0.002`  
+
+#### knight_eg_edge
+**Type:** spin  
+**Default:** -25  
+**Range:** -40 to -10  
+**Purpose:** Knight penalty on edge squares.  
+**SPSA Input:** `knight_eg_edge, int, -25.0, -40.0, -10.0, 3.0, 0.002`  
+
+#### knight_eg_corner
+**Type:** spin  
+**Default:** -40  
+**Range:** -50 to -20  
+**Purpose:** Knight penalty in corner squares.  
+**SPSA Input:** `knight_eg_corner, int, -40.0, -50.0, -20.0, 3.0, 0.002`  
+
+### Bishop Endgame PST
+
+#### bishop_eg_long_diag ⭐
+**Type:** spin  
+**Default:** 19  
+**Range:** 10-35  
+**Purpose:** Bishop bonus on long diagonals.  
+**SPSA Input:** `bishop_eg_long_diag, int, 19.0, 10.0, 35.0, 2.0, 0.002`  
+
+#### bishop_eg_center
+**Type:** spin  
+**Default:** 14  
+**Range:** 5-25  
+**Purpose:** Bishop bonus in center.  
+**SPSA Input:** `bishop_eg_center, int, 14.0, 5.0, 25.0, 2.0, 0.002`  
+
+#### bishop_eg_edge
+**Type:** spin  
+**Default:** -5  
+**Range:** -15 to 5  
+**Purpose:** Bishop penalty on edges.  
+**SPSA Input:** `bishop_eg_edge, int, -5.0, -15.0, 5.0, 2.0, 0.002`  
+
+### Rook Endgame PST
+
+#### rook_eg_7th ⭐
+**Type:** spin  
+**Default:** 20  
+**Range:** 15-40  
+**Purpose:** Rook bonus on 7th rank.  
+**SPSA Input:** `rook_eg_7th, int, 20.0, 15.0, 40.0, 2.0, 0.002`  
+
+#### rook_eg_active
+**Type:** spin  
+**Default:** 12  
+**Range:** 5-20  
+**Purpose:** Active rook bonus.  
+**SPSA Input:** `rook_eg_active, int, 12.0, 5.0, 20.0, 2.0, 0.002`  
+
+#### rook_eg_passive
+**Type:** spin  
+**Default:** 5  
+**Range:** 0-15  
+**Purpose:** Passive rook value.  
+**SPSA Input:** `rook_eg_passive, int, 5.0, 0.0, 15.0, 1.0, 0.002`  
+
+### Queen Endgame PST
+
+#### queen_eg_center
+**Type:** spin  
+**Default:** 9  
+**Range:** 5-20  
+**Purpose:** Queen bonus in center.  
+**SPSA Input:** `queen_eg_center, int, 9.0, 5.0, 20.0, 1.0, 0.002`  
+
+#### queen_eg_active
+**Type:** spin  
+**Default:** 7  
+**Range:** 0-20  
+**Purpose:** Active queen bonus.  
+**SPSA Input:** `queen_eg_active, int, 7.0, 0.0, 20.0, 1.0, 0.002`  
+
+#### queen_eg_back
+**Type:** spin  
+**Default:** -5  
+**Range:** -10 to 5  
+**Purpose:** Queen penalty on back rank.  
+**SPSA Input:** `queen_eg_back, int, -5.0, -10.0, 5.0, 1.0, 0.002`  
 
 ---
 
@@ -298,46 +626,104 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 
 ## SPSA Tuning Priority Recommendations
 
-### High Priority (Large Impact Expected)
+### Highest Priority (Core Search Parameters)
 1. **MaxCheckPly** - Controls tactical depth (400-600 ELO impact)
-2. **LMRMinMoveNumber** - When to start reductions
-3. **NullMoveStaticMargin** - Null move pruning threshold
-4. **CountermoveBonus** - Move ordering quality
+2. **FutilityBase & FutilityScale** - Core pruning margins
+3. **RazorMargin1 & RazorMargin2** - Early pruning thresholds
+4. **NullMoveReductionBase** - Null move core reduction
 
-### Medium Priority (Moderate Impact)
-5. **MoveCountLimit3-8** - Tune as a group for consistency
-6. **AspirationWindow** - Search efficiency
-7. **LMRMinDepth** - LMR application depth
-8. **MoveCountHistoryThreshold** - History heuristic impact
+### High Priority (Search Efficiency)
+5. **LMRMinMoveNumber & LMRMinDepth** - LMR activation points
+6. **NullMoveStaticMargin** - Null move pruning threshold
+7. **FutilityMargin1-4** - Depth-specific pruning (tune as group)
+8. **CountermoveBonus** - Move ordering quality
 
-### Low Priority (Fine Tuning)
-9. **StabilityThreshold** - Time management
-10. **Phase-specific stability** - Opening/Middle/Endgame
-11. **LMRBaseReduction/DepthFactor** - LMR formula tuning
-12. **MoveCountHistoryBonus/ImprovingRatio** - Move count details
+### Medium Priority (Endgame PST Tuning)
+9. **Pawn endgame PST values** - Critical endgame evaluation
+10. **Knight centralization values** - knight_eg_center, edge, corner
+11. **Bishop diagonals** - bishop_eg_long_diag
+12. **Rook 7th rank** - rook_eg_7th
+
+### Medium-Low Priority (Fine Tuning)
+13. **MoveCountLimit3-8** - Tune as a group for consistency
+14. **AspirationWindow** - Search efficiency
+15. **LMRHistoryThreshold** - History impact on LMR
+16. **NullMoveVerifyDepth** - Verification threshold
+
+### Low Priority (Minor Adjustments)
+17. **StabilityThreshold** - Time management
+18. **Phase-specific stability** - Opening/Middle/Endgame
+19. **LMRPvReduction/NonImprovingBonus** - LMR variations
+20. **Queen/Rook passive positions** - Minor PST adjustments
 
 ---
 
 ## Example SPSA Workload for OpenBench
 
-### Single Parameter Test (MaxCheckPly)
+### Core Pruning Test (Futility & Razoring) ⭐⭐⭐
 ```
-MaxCheckPly, int, 6.0, 0.0, 10.0, 1.0, 0.002
+FutilityBase, int, 150.0, 50.0, 500.0, 20.0, 0.002
+FutilityScale, int, 60.0, 20.0, 200.0, 10.0, 0.002
+RazorMargin1, int, 300.0, 100.0, 800.0, 30.0, 0.002
+RazorMargin2, int, 500.0, 200.0, 1200.0, 50.0, 0.002
 ```
-Games: 30000  
+Games: 50000  
+Time Control: 10+0.1  
+**Expected Impact:** High - these control core pruning behavior
+
+### Null Move Suite ⭐⭐
+```
+NullMoveStaticMargin, int, 90.0, 50.0, 300.0, 15.0, 0.002
+NullMoveReductionBase, int, 2.0, 1.0, 4.0, 0.5, 0.002
+NullMoveReductionDepth6, int, 3.0, 2.0, 5.0, 0.5, 0.002
+NullMoveReductionDepth12, int, 4.0, 3.0, 6.0, 0.5, 0.002
+NullMoveEvalMargin, int, 200.0, 100.0, 400.0, 20.0, 0.002
+```
+Games: 60000  
 Time Control: 10+0.1  
 
-### Multi-Parameter Test (LMR Suite)
+### Enhanced LMR Suite ⭐⭐
 ```
 LMRMinDepth, int, 3.0, 1.0, 6.0, 1.0, 0.002
 LMRMinMoveNumber, int, 6.0, 3.0, 12.0, 1.0, 0.002
 LMRBaseReduction, int, 1.0, 0.0, 3.0, 0.5, 0.002
 LMRDepthFactor, int, 3.0, 1.0, 10.0, 1.0, 0.002
+LMRHistoryThreshold, int, 50.0, 10.0, 90.0, 5.0, 0.002
+LMRPvReduction, int, 1.0, 0.0, 2.0, 0.5, 0.002
+LMRNonImprovingBonus, int, 1.0, 0.0, 3.0, 0.5, 0.002
 ```
-Games: 50000  
+Games: 70000  
 Time Control: 10+0.1  
 
-### Large Suite Test (Move Count Pruning)
+### Endgame PST Pawn Suite ⭐⭐
+```
+pawn_eg_r3_d, int, 8.0, 0.0, 30.0, 2.0, 0.002
+pawn_eg_r3_e, int, 7.0, 0.0, 30.0, 2.0, 0.002
+pawn_eg_r4_d, int, 18.0, 10.0, 50.0, 3.0, 0.002
+pawn_eg_r4_e, int, 16.0, 10.0, 50.0, 3.0, 0.002
+pawn_eg_r5_d, int, 29.0, 20.0, 70.0, 4.0, 0.002
+pawn_eg_r5_e, int, 27.0, 20.0, 70.0, 4.0, 0.002
+pawn_eg_r6_d, int, 51.0, 30.0, 100.0, 5.0, 0.002
+pawn_eg_r6_e, int, 48.0, 30.0, 100.0, 5.0, 0.002
+pawn_eg_r7_center, int, 75.0, 50.0, 150.0, 8.0, 0.002
+```
+Games: 80000  
+Time Control: 10+0.1  
+
+### Knight & Bishop Endgame Suite ⭐
+```
+knight_eg_center, int, 15.0, 5.0, 25.0, 2.0, 0.002
+knight_eg_extended, int, 10.0, 0.0, 20.0, 2.0, 0.002
+knight_eg_edge, int, -25.0, -40.0, -10.0, 3.0, 0.002
+knight_eg_corner, int, -40.0, -50.0, -20.0, 3.0, 0.002
+bishop_eg_long_diag, int, 19.0, 10.0, 35.0, 2.0, 0.002
+bishop_eg_center, int, 14.0, 5.0, 25.0, 2.0, 0.002
+bishop_eg_edge, int, -5.0, -15.0, 5.0, 2.0, 0.002
+```
+Games: 70000  
+Time Control: 10+0.1  
+
+### Move Count Pruning Suite
 ```
 MoveCountLimit3, int, 12.0, 3.0, 30.0, 2.0, 0.002
 MoveCountLimit4, int, 18.0, 5.0, 40.0, 2.0, 0.002
@@ -350,6 +736,23 @@ MoveCountHistoryBonus, int, 6.0, 2.0, 12.0, 1.0, 0.002
 ```
 Games: 80000  
 Time Control: 10+0.1  
+
+### Mega-Tune (All High-Priority Parameters) ⭐⭐⭐⭐
+```
+MaxCheckPly, int, 6.0, 0.0, 10.0, 1.0, 0.002
+FutilityBase, int, 150.0, 50.0, 500.0, 20.0, 0.002
+FutilityScale, int, 60.0, 20.0, 200.0, 10.0, 0.002
+RazorMargin1, int, 300.0, 100.0, 800.0, 30.0, 0.002
+RazorMargin2, int, 500.0, 200.0, 1200.0, 50.0, 0.002
+NullMoveReductionBase, int, 2.0, 1.0, 4.0, 0.5, 0.002
+NullMoveStaticMargin, int, 90.0, 50.0, 300.0, 15.0, 0.002
+LMRMinMoveNumber, int, 6.0, 3.0, 12.0, 1.0, 0.002
+LMRMinDepth, int, 3.0, 1.0, 6.0, 1.0, 0.002
+CountermoveBonus, int, 8000.0, 4000.0, 16000.0, 500.0, 0.002
+```
+Games: 120000  
+Time Control: 10+0.1  
+**Note:** This is a comprehensive tune but requires significant compute time  
 
 ---
 
