@@ -276,9 +276,9 @@ private:
         
         // King table - encourage castling and corner safety in middlegame
         std::array<MgEgScore, 64>{
-            // Rank 1 - encourage castling positions (SPSA tuned)
-            MgEgScore(20, -30), MgEgScore(-5, -10), MgEgScore(10, -10), MgEgScore(-20, -20),
-            MgEgScore(21, -30), MgEgScore(-30, -20), MgEgScore(16, -10), MgEgScore(20, -30),
+            // Rank 1 - encourage castling positions (SPSA tuned 2025-01-04 with 150k games)
+            MgEgScore(25, -30), MgEgScore(-5, -10), MgEgScore(8, -10), MgEgScore(-27, -20),
+            MgEgScore(21, -30), MgEgScore(-28, -20), MgEgScore(16, -10), MgEgScore(12, -30),
             // Rank 2
             MgEgScore(20, -20), MgEgScore(20, 0), MgEgScore(0, 0), MgEgScore(-20, -10),
             MgEgScore(-20, -10), MgEgScore(0, 0), MgEgScore(20, 0), MgEgScore(20, -20),
@@ -450,9 +450,9 @@ private:
         
         // King table - encourage castling and corner safety in middlegame
         std::array<MgEgScore, 64>{
-            // Rank 1 - encourage castling positions (SPSA tuned)
-            MgEgScore(20, -30), MgEgScore(-5, -10), MgEgScore(10, -10), MgEgScore(-20, -20),
-            MgEgScore(21, -30), MgEgScore(-30, -20), MgEgScore(16, -10), MgEgScore(20, -30),
+            // Rank 1 - encourage castling positions (SPSA tuned 2025-01-04 with 150k games)
+            MgEgScore(25, -30), MgEgScore(-5, -10), MgEgScore(8, -10), MgEgScore(-27, -20),
+            MgEgScore(21, -30), MgEgScore(-28, -20), MgEgScore(16, -10), MgEgScore(12, -30),
             // Rank 2
             MgEgScore(20, -20), MgEgScore(20, 0), MgEgScore(0, 0), MgEgScore(-20, -10),
             MgEgScore(-20, -10), MgEgScore(0, 0), MgEgScore(20, 0), MgEgScore(20, -20),

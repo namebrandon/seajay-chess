@@ -156,19 +156,19 @@ void UCIEngine::handleUCI() {
     // Evaluation detail option
     std::cout << "option name EvalExtended type check default false" << std::endl;
     
-    // Middlegame piece values (SPSA tunable)
-    std::cout << "option name PawnValueMg type spin default 100 min 70 max 130" << std::endl;
-    std::cout << "option name KnightValueMg type spin default 320 min 280 max 360" << std::endl;
-    std::cout << "option name BishopValueMg type spin default 330 min 290 max 370" << std::endl;
-    std::cout << "option name RookValueMg type spin default 510 min 450 max 570" << std::endl;
-    std::cout << "option name QueenValueMg type spin default 950 min 850 max 1050" << std::endl;
+    // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
+    std::cout << "option name PawnValueMg type spin default 71 min 50 max 130" << std::endl;
+    std::cout << "option name KnightValueMg type spin default 325 min 280 max 360" << std::endl;
+    std::cout << "option name BishopValueMg type spin default 344 min 290 max 370" << std::endl;
+    std::cout << "option name RookValueMg type spin default 487 min 450 max 570" << std::endl;
+    std::cout << "option name QueenValueMg type spin default 895 min 850 max 1050" << std::endl;
     
-    // Endgame piece values (SPSA tunable)
-    std::cout << "option name PawnValueEg type spin default 110 min 80 max 140" << std::endl;
-    std::cout << "option name KnightValueEg type spin default 305 min 270 max 340" << std::endl;
-    std::cout << "option name BishopValueEg type spin default 340 min 300 max 380" << std::endl;
-    std::cout << "option name RookValueEg type spin default 540 min 480 max 600" << std::endl;
-    std::cout << "option name QueenValueEg type spin default 930 min 830 max 1030" << std::endl;
+    // Endgame piece values (SPSA tuned 2025-01-04 with 150k games)
+    std::cout << "option name PawnValueEg type spin default 92 min 60 max 140" << std::endl;
+    std::cout << "option name KnightValueEg type spin default 311 min 270 max 340" << std::endl;
+    std::cout << "option name BishopValueEg type spin default 327 min 300 max 380" << std::endl;
+    std::cout << "option name RookValueEg type spin default 510 min 480 max 600" << std::endl;
+    std::cout << "option name QueenValueEg type spin default 932 min 830 max 1030" << std::endl;
     
     // Phase R1/R2: Razoring options
     std::cout << "option name UseRazoring type check default true" << std::endl;
@@ -224,11 +224,11 @@ void UCIEngine::handleUCI() {
     std::cout << "option name king_mg_e1 type spin default 21 min -50 max 50" << std::endl;  // Starting square
     std::cout << "option name king_mg_b1 type spin default -5 min -50 max 50" << std::endl;   // Queenside castled
     std::cout << "option name king_mg_g1 type spin default 16 min -50 max 50" << std::endl;   // Kingside castled
-    std::cout << "option name king_mg_a1 type spin default 20 min -50 max 50" << std::endl;   // Corner
-    std::cout << "option name king_mg_h1 type spin default 20 min -50 max 50" << std::endl;   // Corner
-    std::cout << "option name king_mg_c1 type spin default 10 min -50 max 50" << std::endl;   // Near queenside
-    std::cout << "option name king_mg_d1 type spin default -20 min -50 max 50" << std::endl;  // Center-ish
-    std::cout << "option name king_mg_f1 type spin default -30 min -50 max 50" << std::endl;  // Center-ish
+    std::cout << "option name king_mg_a1 type spin default 25 min -50 max 50" << std::endl;   // Corner (SPSA: +25)
+    std::cout << "option name king_mg_h1 type spin default 12 min -50 max 50" << std::endl;   // Corner (SPSA: +12)
+    std::cout << "option name king_mg_c1 type spin default 8 min -50 max 50" << std::endl;    // Near queenside (SPSA: +8)
+    std::cout << "option name king_mg_d1 type spin default -27 min -50 max 50" << std::endl;  // Center (SPSA: -27)
+    std::cout << "option name king_mg_f1 type spin default -28 min -50 max 50" << std::endl;  // Center (SPSA: -28)
     
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB

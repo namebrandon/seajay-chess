@@ -8,23 +8,23 @@
 
 namespace seajay::eval {
 
-// Default middlegame piece values (can be overridden via UCI)
+// Default middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
 inline std::array<Score, 6> PIECE_VALUES_MG = {
-    Score(100),   // PAWN
-    Score(320),   // KNIGHT  
-    Score(330),   // BISHOP (slightly > knight)
-    Score(510),   // ROOK (updated based on expert feedback)
-    Score(950),   // QUEEN (updated based on expert feedback)
+    Score(71),    // PAWN (lower value = more dynamic play)
+    Score(325),   // KNIGHT  
+    Score(344),   // BISHOP (stronger than traditional)
+    Score(487),   // ROOK
+    Score(895),   // QUEEN
     Score(0)      // KING (not counted in material)
 };
 
-// Default endgame piece values (can be overridden via UCI)
+// Default endgame piece values (SPSA tuned 2025-01-04 with 150k games)
 inline std::array<Score, 6> PIECE_VALUES_EG = {
-    Score(110),   // PAWN (more valuable in endgame)
-    Score(305),   // KNIGHT (slightly weaker in endgame)
-    Score(340),   // BISHOP (stronger in open endgame)
-    Score(540),   // ROOK (stronger in endgame)
-    Score(930),   // QUEEN (slightly weaker without support)
+    Score(92),    // PAWN
+    Score(311),   // KNIGHT
+    Score(327),   // BISHOP
+    Score(510),   // ROOK (strong in endgame)
+    Score(932),   // QUEEN
     Score(0)      // KING (not counted in material)
 };
 

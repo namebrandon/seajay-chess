@@ -5,6 +5,28 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 
 ## Recent SPSA Tuning Results
 
+### 2025-01-04 (150,000 games) - Piece Values & King Safety ⭐⭐⭐⭐⭐
+**Result: +27 ELO from tuning alone, +54 ELO combined vs main**
+
+Dramatic changes in piece values discovered a more dynamic evaluation style:
+- **PawnValueMg**: 100 → 71 (significantly lower - promotes dynamic play)
+- **KnightValueMg**: 320 → 325 (slight increase)
+- **BishopValueMg**: 330 → 344 (notable increase)
+- **RookValueMg**: 510 → 487 (decrease)
+- **QueenValueMg**: 950 → 895 (decrease)
+- **PawnValueEg**: 110 → 92 (lower endgame value)
+- **KnightValueEg**: 305 → 311 (slight increase)
+- **BishopValueEg**: 340 → 327 (decrease)
+- **RookValueEg**: 540 → 510 (decrease but still strong)
+- **QueenValueEg**: 930 → 932 (stable)
+
+King safety adjustments:
+- **king_mg_a1**: 20 → 25 (corner more attractive)
+- **king_mg_c1**: 10 → 8 (slight decrease)
+- **king_mg_d1**: -20 → -27 (center more dangerous)
+- **king_mg_f1**: -30 → -28 (slight improvement)
+- **king_mg_h1**: 20 → 12 (h-file corner less attractive)
+
 ### 2025-09-04 (250,000 games)
 - **CountermoveBonus**: 8000 → 7960 (slight reduction for better move ordering balance)
 - **AspirationWindow**: 16 → 13 (tighter initial bounds reduce re-searches)
@@ -333,43 +355,82 @@ These parameters control the fundamental piece values used in material evaluatio
 
 ### PawnValueMg ⭐⭐⭐
 **Type:** spin  
-**Default:** 100  
-**Range:** 70-130  
+**Default:** 71 (SPSA tuned 2025-01-04)  
+**Range:** 50-130  
 **Purpose:** Middlegame value of a pawn in centipawns.  
-**SPSA Input:** `PawnValueMg, int, 100.0, 70.0, 130.0, 5.0, 0.002`  
-**Note:** Uses proper SPSA float rounding
+**SPSA Input:** `PawnValueMg, int, 71.0, 50.0, 130.0, 5.0, 0.002`  
+**Note:** Lower value promotes dynamic play over material
 
 ### KnightValueMg ⭐⭐⭐
 **Type:** spin  
-**Default:** 320  
+**Default:** 325 (SPSA tuned 2025-01-04)  
 **Range:** 280-360  
 **Purpose:** Middlegame value of a knight in centipawns.  
-**SPSA Input:** `KnightValueMg, int, 320.0, 280.0, 360.0, 5.0, 0.002`  
+**SPSA Input:** `KnightValueMg, int, 325.0, 280.0, 360.0, 5.0, 0.002`  
 **Note:** Uses proper SPSA float rounding
 
 ### BishopValueMg ⭐⭐⭐
 **Type:** spin  
-**Default:** 330  
+**Default:** 344 (SPSA tuned 2025-01-04)  
 **Range:** 290-370  
 **Purpose:** Middlegame value of a bishop in centipawns.  
-**SPSA Input:** `BishopValueMg, int, 330.0, 290.0, 370.0, 5.0, 0.002`  
-**Note:** Uses proper SPSA float rounding
+**SPSA Input:** `BishopValueMg, int, 344.0, 290.0, 370.0, 5.0, 0.002`  
+**Note:** Bishops valued higher relative to knights
 
 ### RookValueMg ⭐⭐⭐
 **Type:** spin  
-**Default:** 510  
+**Default:** 487 (SPSA tuned 2025-01-04)  
 **Range:** 450-570  
 **Purpose:** Middlegame value of a rook in centipawns.  
-**SPSA Input:** `RookValueMg, int, 510.0, 450.0, 570.0, 5.0, 0.002`  
+**SPSA Input:** `RookValueMg, int, 487.0, 450.0, 570.0, 5.0, 0.002`  
 **Note:** Uses proper SPSA float rounding
 
 ### QueenValueMg ⭐⭐⭐
 **Type:** spin  
-**Default:** 950  
+**Default:** 895 (SPSA tuned 2025-01-04)  
 **Range:** 850-1050  
 **Purpose:** Middlegame value of a queen in centipawns.  
-**SPSA Input:** `QueenValueMg, int, 950.0, 850.0, 1050.0, 5.0, 0.002`  
+**SPSA Input:** `QueenValueMg, int, 895.0, 850.0, 1050.0, 5.0, 0.002`  
 **Note:** Uses proper SPSA float rounding
+
+## Piece Values (Endgame) ⭐⭐⭐⭐
+
+These parameters control piece values in the endgame phase and are interpolated with middlegame values based on remaining material.
+
+### PawnValueEg ⭐⭐⭐
+**Type:** spin  
+**Default:** 92 (SPSA tuned 2025-01-04)  
+**Range:** 60-140  
+**Purpose:** Endgame value of a pawn in centipawns.  
+**SPSA Input:** `PawnValueEg, int, 92.0, 60.0, 140.0, 5.0, 0.002`  
+
+### KnightValueEg ⭐⭐⭐
+**Type:** spin  
+**Default:** 311 (SPSA tuned 2025-01-04)  
+**Range:** 270-340  
+**Purpose:** Endgame value of a knight in centipawns.  
+**SPSA Input:** `KnightValueEg, int, 311.0, 270.0, 340.0, 5.0, 0.002`  
+
+### BishopValueEg ⭐⭐⭐
+**Type:** spin  
+**Default:** 327 (SPSA tuned 2025-01-04)  
+**Range:** 300-380  
+**Purpose:** Endgame value of a bishop in centipawns.  
+**SPSA Input:** `BishopValueEg, int, 327.0, 300.0, 380.0, 5.0, 0.002`  
+
+### RookValueEg ⭐⭐⭐
+**Type:** spin  
+**Default:** 510 (SPSA tuned 2025-01-04)  
+**Range:** 480-600  
+**Purpose:** Endgame value of a rook in centipawns.  
+**SPSA Input:** `RookValueEg, int, 510.0, 480.0, 600.0, 5.0, 0.002`  
+
+### QueenValueEg ⭐⭐⭐
+**Type:** spin  
+**Default:** 932 (SPSA tuned 2025-01-04)  
+**Range:** 830-1030  
+**Purpose:** Endgame value of a queen in centipawns.  
+**SPSA Input:** `QueenValueEg, int, 932.0, 830.0, 1030.0, 5.0, 0.002`  
 
 ---
 

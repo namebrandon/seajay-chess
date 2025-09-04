@@ -86,19 +86,19 @@ private:
     // Evaluation detail option
     bool m_evalExtended = false;        // Show detailed evaluation breakdown
     
-    // Middlegame piece values (SPSA tunable)
-    int m_pawnValueMg = 100;            // Pawn middlegame value
-    int m_knightValueMg = 320;          // Knight middlegame value  
-    int m_bishopValueMg = 330;          // Bishop middlegame value
-    int m_rookValueMg = 510;            // Rook middlegame value
-    int m_queenValueMg = 950;           // Queen middlegame value
+    // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
+    int m_pawnValueMg = 71;             // Pawn middlegame value
+    int m_knightValueMg = 325;          // Knight middlegame value  
+    int m_bishopValueMg = 344;          // Bishop middlegame value
+    int m_rookValueMg = 487;            // Rook middlegame value
+    int m_queenValueMg = 895;           // Queen middlegame value
     
-    // Endgame piece values (SPSA tunable)
-    int m_pawnValueEg = 110;            // Pawn endgame value (more valuable)
-    int m_knightValueEg = 305;          // Knight endgame value (slightly weaker)
-    int m_bishopValueEg = 340;          // Bishop endgame value (stronger in open)
-    int m_rookValueEg = 540;            // Rook endgame value (stronger)
-    int m_queenValueEg = 930;           // Queen endgame value (slightly weaker)
+    // Endgame piece values (SPSA tuned 2025-01-04 with 150k games)
+    int m_pawnValueEg = 92;             // Pawn endgame value
+    int m_knightValueEg = 311;          // Knight endgame value
+    int m_bishopValueEg = 327;          // Bishop endgame value
+    int m_rookValueEg = 510;            // Rook endgame value
+    int m_queenValueEg = 932;           // Queen endgame value
     
     // Phase R1: Razoring parameters
     bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
