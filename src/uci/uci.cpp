@@ -1044,7 +1044,14 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "LMRMinDepth") {
         try {
-            int depth = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int depth = 0;
+            try {
+                double dv = std::stod(value);
+                depth = static_cast<int>(std::round(dv));
+            } catch (...) {
+                depth = std::stoi(value);
+            }
             if (depth >= 0 && depth <= 10) {
                 m_lmrMinDepth = depth;
                 std::cerr << "info string LMR min depth set to: " << depth << std::endl;
@@ -1055,7 +1062,14 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "LMRMinMoveNumber") {
         try {
-            int moveNum = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int moveNum = 0;
+            try {
+                double dv = std::stod(value);
+                moveNum = static_cast<int>(std::round(dv));
+            } catch (...) {
+                moveNum = std::stoi(value);
+            }
             if (moveNum >= 0 && moveNum <= 20) {
                 m_lmrMinMoveNumber = moveNum;
                 std::cerr << "info string LMR min move number set to: " << moveNum << std::endl;
@@ -1066,7 +1080,14 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "LMRBaseReduction") {
         try {
-            int reduction = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int reduction = 0;
+            try {
+                double dv = std::stod(value);
+                reduction = static_cast<int>(std::round(dv));
+            } catch (...) {
+                reduction = std::stoi(value);
+            }
             if (reduction >= 0 && reduction <= 3) {
                 m_lmrBaseReduction = reduction;
                 std::cerr << "info string LMR base reduction set to: " << reduction << std::endl;
@@ -1545,20 +1566,68 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         std::cerr << "info string MoveCountPruning set to " << value << std::endl;
     }
     else if (optionName == "MoveCountLimit3") {
-        m_moveCountLimit3 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit3 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit3 = limit;
+            std::cerr << "info string MoveCountLimit3 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit3 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountLimit4") {
-        m_moveCountLimit4 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit4 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit4 = limit;
+            std::cerr << "info string MoveCountLimit4 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit4 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountLimit5") {
-        m_moveCountLimit5 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit5 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit5 = limit;
+            std::cerr << "info string MoveCountLimit5 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit5 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountLimit6") {
-        m_moveCountLimit6 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit6 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit6 = limit;
+            std::cerr << "info string MoveCountLimit6 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit6 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountLimit7") {
         m_moveCountLimit7 = std::stoi(value);
@@ -1569,8 +1638,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         std::cerr << "info string MoveCountLimit8 set to " << value << std::endl;
     }
     else if (optionName == "MoveCountHistoryThreshold") {
-        m_moveCountHistoryThreshold = std::stoi(value);
-        std::cerr << "info string MoveCountHistoryThreshold set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int threshold = 0;
+            try {
+                double dv = std::stod(value);
+                threshold = static_cast<int>(std::round(dv));
+            } catch (...) {
+                threshold = std::stoi(value);
+            }
+            m_moveCountHistoryThreshold = threshold;
+            std::cerr << "info string MoveCountHistoryThreshold set to " << threshold << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountHistoryThreshold value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountHistoryBonus") {
         m_moveCountHistoryBonus = std::stoi(value);
@@ -1895,12 +1976,19 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "RazorMargin1") {
         try {
-            int margin = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
             if (margin >= 100 && margin <= 800) {
                 m_razorMargin1 = margin;
                 std::cerr << "info string RazorMargin1 set to " << margin << " cp" << std::endl;
             } else {
-                std::cerr << "info string RazorMargin1 out of range: " << value << " (must be 100-800)" << std::endl;
+                std::cerr << "info string RazorMargin1 out of range: " << margin << " (must be 100-800)" << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid RazorMargin1 value: " << value << std::endl;
@@ -1908,12 +1996,19 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "RazorMargin2") {
         try {
-            int margin = std::stoi(value);
+            // SPSA-safe parsing: handle float values from OpenBench
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
             if (margin >= 200 && margin <= 1200) {
                 m_razorMargin2 = margin;
                 std::cerr << "info string RazorMargin2 set to " << margin << " cp" << std::endl;
             } else {
-                std::cerr << "info string RazorMargin2 out of range: " << value << " (must be 200-1200)" << std::endl;
+                std::cerr << "info string RazorMargin2 out of range: " << margin << " (must be 200-1200)" << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid RazorMargin2 value: " << value << std::endl;
