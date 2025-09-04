@@ -93,6 +93,13 @@ private:
     int m_rookValueMg = 510;            // Rook middlegame value
     int m_queenValueMg = 950;           // Queen middlegame value
     
+    // Endgame piece values (SPSA tunable)
+    int m_pawnValueEg = 110;            // Pawn endgame value (more valuable)
+    int m_knightValueEg = 305;          // Knight endgame value (slightly weaker)
+    int m_bishopValueEg = 340;          // Bishop endgame value (stronger in open)
+    int m_rookValueEg = 540;            // Rook endgame value (stronger)
+    int m_queenValueEg = 930;           // Queen endgame value (slightly weaker)
+    
     // Phase R1: Razoring parameters
     bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
     int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)

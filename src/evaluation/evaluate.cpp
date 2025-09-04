@@ -1078,7 +1078,25 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     
     // Calculate total evaluation from white's perspective
     // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files + knight outposts
-    Score materialDiff = material.value(WHITE) - material.value(BLACK);
+    
+    // Phase-interpolated material evaluation
+    Score materialDiff;
+    if (seajay::getConfig().usePSTInterpolation) {
+        // Use phase interpolation for material values (same phase as PST)
+        int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
+        int invPhase = 256 - phase;      // Inverse phase for endgame weight
+        
+        // Get MG and EG material differences
+        Score materialMg = material.valueMg(WHITE) - material.valueMg(BLACK);
+        Score materialEg = material.valueEg(WHITE) - material.valueEg(BLACK);
+        
+        // Interpolate between mg and eg values
+        int interpolated = (materialMg.value() * phase + materialEg.value() * invPhase) / 256;
+        materialDiff = Score(interpolated);
+    } else {
+        // Use pure middlegame values (backward compatibility)
+        materialDiff = material.value(WHITE) - material.value(BLACK);
+    }
     
     // Trace material
     if constexpr (Traced) {

@@ -37,11 +37,18 @@ UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     search::initLMRTable();
     
     // Initialize piece values to defaults (can be overridden via UCI)
-    eval::setPieceValue(PAWN, m_pawnValueMg);
-    eval::setPieceValue(KNIGHT, m_knightValueMg);
-    eval::setPieceValue(BISHOP, m_bishopValueMg);
-    eval::setPieceValue(ROOK, m_rookValueMg);
-    eval::setPieceValue(QUEEN, m_queenValueMg);
+    eval::setPieceValueMg(PAWN, m_pawnValueMg);
+    eval::setPieceValueMg(KNIGHT, m_knightValueMg);
+    eval::setPieceValueMg(BISHOP, m_bishopValueMg);
+    eval::setPieceValueMg(ROOK, m_rookValueMg);
+    eval::setPieceValueMg(QUEEN, m_queenValueMg);
+    
+    // Initialize endgame piece values
+    eval::setPieceValueEg(PAWN, m_pawnValueEg);
+    eval::setPieceValueEg(KNIGHT, m_knightValueEg);
+    eval::setPieceValueEg(BISHOP, m_bishopValueEg);
+    eval::setPieceValueEg(ROOK, m_rookValueEg);
+    eval::setPieceValueEg(QUEEN, m_queenValueEg);
     
     // Initialize board to starting position
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -155,6 +162,13 @@ void UCIEngine::handleUCI() {
     std::cout << "option name BishopValueMg type spin default 330 min 290 max 370" << std::endl;
     std::cout << "option name RookValueMg type spin default 510 min 450 max 570" << std::endl;
     std::cout << "option name QueenValueMg type spin default 950 min 850 max 1050" << std::endl;
+    
+    // Endgame piece values (SPSA tunable)
+    std::cout << "option name PawnValueEg type spin default 110 min 80 max 140" << std::endl;
+    std::cout << "option name KnightValueEg type spin default 305 min 270 max 340" << std::endl;
+    std::cout << "option name BishopValueEg type spin default 340 min 300 max 380" << std::endl;
+    std::cout << "option name RookValueEg type spin default 540 min 480 max 600" << std::endl;
+    std::cout << "option name QueenValueEg type spin default 930 min 830 max 1030" << std::endl;
     
     // Phase R1/R2: Razoring options
     std::cout << "option name UseRazoring type check default true" << std::endl;
@@ -1713,7 +1727,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
             if (paramValue >= 70 && paramValue <= 130) {
                 m_pawnValueMg = paramValue;
-                eval::setPieceValue(PAWN, paramValue);
+                eval::setPieceValueMg(PAWN, paramValue);
                 std::cerr << "info string PawnValueMg set to " << paramValue << std::endl;
             }
         } catch (...) {
@@ -1731,7 +1745,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
             if (paramValue >= 280 && paramValue <= 360) {
                 m_knightValueMg = paramValue;
-                eval::setPieceValue(KNIGHT, paramValue);
+                eval::setPieceValueMg(KNIGHT, paramValue);
                 std::cerr << "info string KnightValueMg set to " << paramValue << std::endl;
             }
         } catch (...) {
@@ -1749,7 +1763,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
             if (paramValue >= 290 && paramValue <= 370) {
                 m_bishopValueMg = paramValue;
-                eval::setPieceValue(BISHOP, paramValue);
+                eval::setPieceValueMg(BISHOP, paramValue);
                 std::cerr << "info string BishopValueMg set to " << paramValue << std::endl;
             }
         } catch (...) {
@@ -1767,7 +1781,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
             if (paramValue >= 450 && paramValue <= 570) {
                 m_rookValueMg = paramValue;
-                eval::setPieceValue(ROOK, paramValue);
+                eval::setPieceValueMg(ROOK, paramValue);
                 std::cerr << "info string RookValueMg set to " << paramValue << std::endl;
             }
         } catch (...) {
@@ -1785,11 +1799,102 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
             if (paramValue >= 850 && paramValue <= 1050) {
                 m_queenValueMg = paramValue;
-                eval::setPieceValue(QUEEN, paramValue);
+                eval::setPieceValueMg(QUEEN, paramValue);
                 std::cerr << "info string QueenValueMg set to " << paramValue << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid QueenValueMg value: " << value << std::endl;
+        }
+    }
+    // Endgame piece values (SPSA tunable)
+    else if (optionName == "PawnValueEg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 80 && paramValue <= 140) {
+                m_pawnValueEg = paramValue;
+                eval::setPieceValueEg(PAWN, paramValue);
+                std::cerr << "info string PawnValueEg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid PawnValueEg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KnightValueEg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 270 && paramValue <= 340) {
+                m_knightValueEg = paramValue;
+                eval::setPieceValueEg(KNIGHT, paramValue);
+                std::cerr << "info string KnightValueEg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KnightValueEg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "BishopValueEg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 300 && paramValue <= 380) {
+                m_bishopValueEg = paramValue;
+                eval::setPieceValueEg(BISHOP, paramValue);
+                std::cerr << "info string BishopValueEg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid BishopValueEg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "RookValueEg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 480 && paramValue <= 600) {
+                m_rookValueEg = paramValue;
+                eval::setPieceValueEg(ROOK, paramValue);
+                std::cerr << "info string RookValueEg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid RookValueEg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "QueenValueEg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 830 && paramValue <= 1030) {
+                m_queenValueEg = paramValue;
+                eval::setPieceValueEg(QUEEN, paramValue);
+                std::cerr << "info string QueenValueEg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QueenValueEg value: " << value << std::endl;
         }
     }
     // Phase R1: Razoring options

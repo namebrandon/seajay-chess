@@ -8,8 +8,8 @@
 
 namespace seajay::eval {
 
-// Default piece values (can be overridden via UCI)
-inline std::array<Score, 6> PIECE_VALUES = {
+// Default middlegame piece values (can be overridden via UCI)
+inline std::array<Score, 6> PIECE_VALUES_MG = {
     Score(100),   // PAWN
     Score(320),   // KNIGHT  
     Score(330),   // BISHOP (slightly > knight)
@@ -18,10 +18,37 @@ inline std::array<Score, 6> PIECE_VALUES = {
     Score(0)      // KING (not counted in material)
 };
 
-// UCI interface to update piece values
+// Default endgame piece values (can be overridden via UCI)
+inline std::array<Score, 6> PIECE_VALUES_EG = {
+    Score(110),   // PAWN (more valuable in endgame)
+    Score(305),   // KNIGHT (slightly weaker in endgame)
+    Score(340),   // BISHOP (stronger in open endgame)
+    Score(540),   // ROOK (stronger in endgame)
+    Score(930),   // QUEEN (slightly weaker without support)
+    Score(0)      // KING (not counted in material)
+};
+
+// Keep backward compatibility - PIECE_VALUES now points to MG values
+inline std::array<Score, 6>& PIECE_VALUES = PIECE_VALUES_MG;
+
+// UCI interface to update middlegame piece values (backward compatible)
 inline void setPieceValue(PieceType pt, int value) {
     if (pt >= PAWN && pt <= QUEEN) {
-        PIECE_VALUES[pt] = Score(value);
+        PIECE_VALUES_MG[pt] = Score(value);
+    }
+}
+
+// UCI interface to update middlegame piece values (explicit)
+inline void setPieceValueMg(PieceType pt, int value) {
+    if (pt >= PAWN && pt <= QUEEN) {
+        PIECE_VALUES_MG[pt] = Score(value);
+    }
+}
+
+// UCI interface to update endgame piece values
+inline void setPieceValueEg(PieceType pt, int value) {
+    if (pt >= PAWN && pt <= QUEEN) {
+        PIECE_VALUES_EG[pt] = Score(value);
     }
 }
 
@@ -40,9 +67,11 @@ public:
         const PieceType pt = typeOf(p);
         if (pt != KING) {  // Don't count king value
             if (add) {
-                m_values[c] += PIECE_VALUES[pt];
+                m_values_mg[c] += PIECE_VALUES_MG[pt];
+                m_values_eg[c] += PIECE_VALUES_EG[pt];
             } else {
-                m_values[c] -= PIECE_VALUES[pt];
+                m_values_mg[c] -= PIECE_VALUES_MG[pt];
+                m_values_eg[c] -= PIECE_VALUES_EG[pt];
             }
         }
         
@@ -61,13 +90,35 @@ public:
     }
     
     [[nodiscard]] constexpr Score balance(Color stm) const noexcept {
-        const Score white_val = m_values[WHITE];
-        const Score black_val = m_values[BLACK];
+        // For backward compatibility, return middlegame values
+        const Score white_val = m_values_mg[WHITE];
+        const Score black_val = m_values_mg[BLACK];
+        return stm == WHITE ? white_val - black_val : black_val - white_val;
+    }
+    
+    [[nodiscard]] constexpr Score balanceMg(Color stm) const noexcept {
+        const Score white_val = m_values_mg[WHITE];
+        const Score black_val = m_values_mg[BLACK];
+        return stm == WHITE ? white_val - black_val : black_val - white_val;
+    }
+    
+    [[nodiscard]] constexpr Score balanceEg(Color stm) const noexcept {
+        const Score white_val = m_values_eg[WHITE];
+        const Score black_val = m_values_eg[BLACK];
         return stm == WHITE ? white_val - black_val : black_val - white_val;
     }
     
     [[nodiscard]] constexpr Score value(Color c) const noexcept {
-        return m_values[c];
+        // For backward compatibility, return middlegame values
+        return m_values_mg[c];
+    }
+    
+    [[nodiscard]] constexpr Score valueMg(Color c) const noexcept {
+        return m_values_mg[c];
+    }
+    
+    [[nodiscard]] constexpr Score valueEg(Color c) const noexcept {
+        return m_values_eg[c];
     }
     
     [[nodiscard]] constexpr int count(Piece p) const noexcept {
@@ -81,11 +132,29 @@ public:
     
     [[nodiscard]] constexpr Score nonPawnMaterial(Color c) const noexcept {
         Score total = Score::zero();
-        // Manually iterate through piece types
-        total += PIECE_VALUES[KNIGHT] * count(c, KNIGHT);
-        total += PIECE_VALUES[BISHOP] * count(c, BISHOP);
-        total += PIECE_VALUES[ROOK] * count(c, ROOK);
-        total += PIECE_VALUES[QUEEN] * count(c, QUEEN);
+        // Manually iterate through piece types (using MG values for backward compat)
+        total += PIECE_VALUES_MG[KNIGHT] * count(c, KNIGHT);
+        total += PIECE_VALUES_MG[BISHOP] * count(c, BISHOP);
+        total += PIECE_VALUES_MG[ROOK] * count(c, ROOK);
+        total += PIECE_VALUES_MG[QUEEN] * count(c, QUEEN);
+        return total;
+    }
+    
+    [[nodiscard]] constexpr Score nonPawnMaterialMg(Color c) const noexcept {
+        Score total = Score::zero();
+        total += PIECE_VALUES_MG[KNIGHT] * count(c, KNIGHT);
+        total += PIECE_VALUES_MG[BISHOP] * count(c, BISHOP);
+        total += PIECE_VALUES_MG[ROOK] * count(c, ROOK);
+        total += PIECE_VALUES_MG[QUEEN] * count(c, QUEEN);
+        return total;
+    }
+    
+    [[nodiscard]] constexpr Score nonPawnMaterialEg(Color c) const noexcept {
+        Score total = Score::zero();
+        total += PIECE_VALUES_EG[KNIGHT] * count(c, KNIGHT);
+        total += PIECE_VALUES_EG[BISHOP] * count(c, BISHOP);
+        total += PIECE_VALUES_EG[ROOK] * count(c, ROOK);
+        total += PIECE_VALUES_EG[QUEEN] * count(c, QUEEN);
         return total;
     }
     
@@ -131,14 +200,18 @@ public:
     
     void clear() noexcept {
         m_counts.fill(0);
-        m_values[WHITE] = Score::zero();
-        m_values[BLACK] = Score::zero();
+        m_values_mg[WHITE] = Score::zero();
+        m_values_mg[BLACK] = Score::zero();
+        m_values_eg[WHITE] = Score::zero();
+        m_values_eg[BLACK] = Score::zero();
     }
     
     bool operator==(const Material& other) const noexcept {
         return m_counts == other.m_counts && 
-               m_values[WHITE] == other.m_values[WHITE] &&
-               m_values[BLACK] == other.m_values[BLACK];
+               m_values_mg[WHITE] == other.m_values_mg[WHITE] &&
+               m_values_mg[BLACK] == other.m_values_mg[BLACK] &&
+               m_values_eg[WHITE] == other.m_values_eg[WHITE] &&
+               m_values_eg[BLACK] == other.m_values_eg[BLACK];
     }
     
     bool operator!=(const Material& other) const noexcept {
@@ -147,25 +220,42 @@ public:
     
 #ifdef DEBUG
     void verify() const noexcept {
-        // Verify internal consistency
-        Score white_calc = Score::zero();
-        Score black_calc = Score::zero();
+        // Verify internal consistency for both MG and EG values
+        Score white_calc_mg = Score::zero();
+        Score black_calc_mg = Score::zero();
+        Score white_calc_eg = Score::zero();
+        Score black_calc_eg = Score::zero();
         
-        // Manually iterate through piece types for verification
-        white_calc += PIECE_VALUES[PAWN] * count(WHITE, PAWN);
-        white_calc += PIECE_VALUES[KNIGHT] * count(WHITE, KNIGHT);
-        white_calc += PIECE_VALUES[BISHOP] * count(WHITE, BISHOP);
-        white_calc += PIECE_VALUES[ROOK] * count(WHITE, ROOK);
-        white_calc += PIECE_VALUES[QUEEN] * count(WHITE, QUEEN);
+        // Verify middlegame values
+        white_calc_mg += PIECE_VALUES_MG[PAWN] * count(WHITE, PAWN);
+        white_calc_mg += PIECE_VALUES_MG[KNIGHT] * count(WHITE, KNIGHT);
+        white_calc_mg += PIECE_VALUES_MG[BISHOP] * count(WHITE, BISHOP);
+        white_calc_mg += PIECE_VALUES_MG[ROOK] * count(WHITE, ROOK);
+        white_calc_mg += PIECE_VALUES_MG[QUEEN] * count(WHITE, QUEEN);
         
-        black_calc += PIECE_VALUES[PAWN] * count(BLACK, PAWN);
-        black_calc += PIECE_VALUES[KNIGHT] * count(BLACK, KNIGHT);
-        black_calc += PIECE_VALUES[BISHOP] * count(BLACK, BISHOP);
-        black_calc += PIECE_VALUES[ROOK] * count(BLACK, ROOK);
-        black_calc += PIECE_VALUES[QUEEN] * count(BLACK, QUEEN);
+        black_calc_mg += PIECE_VALUES_MG[PAWN] * count(BLACK, PAWN);
+        black_calc_mg += PIECE_VALUES_MG[KNIGHT] * count(BLACK, KNIGHT);
+        black_calc_mg += PIECE_VALUES_MG[BISHOP] * count(BLACK, BISHOP);
+        black_calc_mg += PIECE_VALUES_MG[ROOK] * count(BLACK, ROOK);
+        black_calc_mg += PIECE_VALUES_MG[QUEEN] * count(BLACK, QUEEN);
         
-        assert(white_calc == m_values[WHITE]);
-        assert(black_calc == m_values[BLACK]);
+        // Verify endgame values
+        white_calc_eg += PIECE_VALUES_EG[PAWN] * count(WHITE, PAWN);
+        white_calc_eg += PIECE_VALUES_EG[KNIGHT] * count(WHITE, KNIGHT);
+        white_calc_eg += PIECE_VALUES_EG[BISHOP] * count(WHITE, BISHOP);
+        white_calc_eg += PIECE_VALUES_EG[ROOK] * count(WHITE, ROOK);
+        white_calc_eg += PIECE_VALUES_EG[QUEEN] * count(WHITE, QUEEN);
+        
+        black_calc_eg += PIECE_VALUES_EG[PAWN] * count(BLACK, PAWN);
+        black_calc_eg += PIECE_VALUES_EG[KNIGHT] * count(BLACK, KNIGHT);
+        black_calc_eg += PIECE_VALUES_EG[BISHOP] * count(BLACK, BISHOP);
+        black_calc_eg += PIECE_VALUES_EG[ROOK] * count(BLACK, ROOK);
+        black_calc_eg += PIECE_VALUES_EG[QUEEN] * count(BLACK, QUEEN);
+        
+        assert(white_calc_mg == m_values_mg[WHITE]);
+        assert(black_calc_mg == m_values_mg[BLACK]);
+        assert(white_calc_eg == m_values_eg[WHITE]);
+        assert(black_calc_eg == m_values_eg[BLACK]);
         
         // Verify reasonable piece counts
         for (int i = 0; i < 12; ++i) {
@@ -177,7 +267,8 @@ public:
     
 private:
     std::array<int8_t, 12> m_counts{};  // Piece counts indexed by Piece enum
-    std::array<Score, 2> m_values{Score::zero(), Score::zero()};  // Material values per side
+    std::array<Score, 2> m_values_mg{Score::zero(), Score::zero()};  // Middlegame material values per side
+    std::array<Score, 2> m_values_eg{Score::zero(), Score::zero()};  // Endgame material values per side
 };
 
 } // namespace seajay::eval
