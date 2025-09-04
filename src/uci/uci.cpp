@@ -1630,12 +1630,36 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         }
     }
     else if (optionName == "MoveCountLimit7") {
-        m_moveCountLimit7 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit7 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit7 = limit;
+            std::cerr << "info string MoveCountLimit7 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit7 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountLimit8") {
-        m_moveCountLimit8 = std::stoi(value);
-        std::cerr << "info string MoveCountLimit8 set to " << value << std::endl;
+        try {
+            // SPSA-safe parsing: handle float values from OpenBench
+            int limit = 0;
+            try {
+                double dv = std::stod(value);
+                limit = static_cast<int>(std::round(dv));
+            } catch (...) {
+                limit = std::stoi(value);
+            }
+            m_moveCountLimit8 = limit;
+            std::cerr << "info string MoveCountLimit8 set to " << limit << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountLimit8 value: " << value << std::endl;
+        }
     }
     else if (optionName == "MoveCountHistoryThreshold") {
         try {
