@@ -210,13 +210,13 @@ void UCIEngine::handleUCI() {
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
     
     // Stage 13 Remediation: Aspiration window and time management options
-    std::cout << "option name AspirationWindow type spin default 16 min 5 max 50" << std::endl;
+    std::cout << "option name AspirationWindow type spin default 13 min 5 max 50" << std::endl;
     
     // Stage 22 Phase P3.5: PVS statistics output option
     std::cout << "option name ShowPVSStats type check default false" << std::endl;
     
     // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
-    std::cout << "option name CountermoveBonus type spin default 8000 min 0 max 20000" << std::endl;
+    std::cout << "option name CountermoveBonus type spin default 7960 min 0 max 20000" << std::endl;
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     std::cout << "option name MoveCountPruning type check default true" << std::endl;

@@ -48,9 +48,9 @@ struct SearchLimits {
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     bool useQuiescence = true;  // Enable/disable quiescence search
     
-    // Stage 13 Remediation: Configurable aspiration window parameters
-    int aspirationWindow = 16;        // Initial aspiration window size in centipawns
-    int aspirationMaxAttempts = 5;    // Max re-search attempts
+    // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
+    int aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
+    int aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
     int stabilityThreshold = 6;       // Iterations needed for move stability
     bool useAspirationWindows = true; // Enable/disable aspiration windows
     

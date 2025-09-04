@@ -3,6 +3,12 @@
 ## Overview
 This document lists all UCI options available in SeaJay, their purpose, and SPSA tuning recommendations for OpenBench.
 
+## Recent SPSA Tuning Results (2025-09-04)
+The following parameters were optimized using SPSA with 250,000 games:
+- **CountermoveBonus**: 8000 → 7960 (slight reduction for better move ordering balance)
+- **AspirationWindow**: 16 → 13 (tighter initial bounds reduce re-searches)
+- **AspirationMaxAttempts**: 5 → 5 (optimal value confirmed)
+
 ---
 
 ## Core Engine Options
@@ -70,16 +76,18 @@ This document lists all UCI options available in SeaJay, their purpose, and SPSA
 
 ### AspirationWindow ⭐
 **Type:** spin  
-**Default:** 16  
+**Default:** 13  
 **Range:** 5-50  
 **Purpose:** Initial aspiration window size in centipawns.  
-**SPSA Input:** `AspirationWindow, int, 16.0, 5.0, 50.0, 3.0, 0.002`  
+**SPSA:** Tuned with 250,000 games on 2025-09-04. Reduced from 16 to 13 for tighter initial bounds.  
+**SPSA Input:** `AspirationWindow, int, 13.0, 5.0, 50.0, 3.0, 0.002`  
 
 ### AspirationMaxAttempts
 **Type:** spin  
 **Default:** 5  
 **Range:** 3-10  
 **Purpose:** Maximum re-search attempts before infinite window.  
+**SPSA:** Validated with 250,000 games on 2025-09-04. Optimal value remains at 5.  
 **SPSA Input:** `AspirationMaxAttempts, int, 5.0, 3.0, 10.0, 1.0, 0.002`  
 
 ### AspirationGrowth
@@ -596,10 +604,11 @@ These parameters control the middlegame piece-square table values for the king o
 
 ### CountermoveBonus ⭐
 **Type:** spin  
-**Default:** 8000  
+**Default:** 7960  
 **Range:** 0-20000  
 **Purpose:** History bonus for countermoves that cause cutoffs.  
-**SPSA Input:** `CountermoveBonus, int, 8000.0, 4000.0, 16000.0, 500.0, 0.002`  
+**SPSA:** Tuned with 250,000 games on 2025-09-04. Slightly reduced from 8000 to 7960 for optimal performance.  
+**SPSA Input:** `CountermoveBonus, int, 7960.0, 4000.0, 16000.0, 500.0, 0.002`  
 
 ### CounterMoveHistoryWeight
 **Type:** float  

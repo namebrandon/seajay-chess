@@ -94,8 +94,8 @@ private:
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
     
-    // Stage 23 CM3.1: Countermove heuristic bonus (micro-phase testing)
-    int m_countermoveBonus = 8000;      // Optimal bonus score for countermoves (CM3.5 testing)
+    // Stage 23 CM3.1: Countermove heuristic bonus (SPSA-tuned 2025-09-04)
+    int m_countermoveBonus = 7960;      // SPSA-tuned with 250k games (2025-09-04)
     
     // Futility Pruning parameters
     bool m_useFutilityPruning = true;     // Enable/disable futility pruning
@@ -119,9 +119,9 @@ private:
     // Multi-threading support (stub for OpenBench compatibility)
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
     
-    // Stage 13 Remediation: Configurable aspiration window parameters
-    int m_aspirationWindow = 16;        // Initial aspiration window size in centipawns
-    int m_aspirationMaxAttempts = 5;    // Max re-search attempts before infinite window
+    // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
+    int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
+    int m_aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
     int m_stabilityThreshold = 6;       // Iterations needed for move stability
     bool m_useAspirationWindows = true; // Enable/disable aspiration windows
     
