@@ -1481,20 +1481,6 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid FutilityScale value: " << value << std::endl;
         }
     }
-    // Stage 21 Phase A4: Handle NullMoveStaticMargin option
-    else if (optionName == "NullMoveStaticMargin") {
-        try {
-            int margin = std::stoi(value);
-            if (margin >= 50 && margin <= 300) {
-                m_nullMoveStaticMargin = margin;
-                std::cerr << "info string Null move static margin set to " << margin << std::endl;
-            } else {
-                std::cerr << "info string NullMoveStaticMargin must be between 50 and 300" << std::endl;
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "info string Invalid NullMoveStaticMargin value: " << value << std::endl;
-        }
-    }
     // Stage 22 Phase P3.5: Handle ShowPVSStats option
     else if (optionName == "ShowPVSStats") {
         // Make boolean parsing case-insensitive and accept common variations

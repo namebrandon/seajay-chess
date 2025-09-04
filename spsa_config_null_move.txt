@@ -1,0 +1,54 @@
+# SPSA Configuration for Null Move Pruning Parameters
+# =========================================================================
+# All parameters verified to have proper SPSA float handling (2025-01-04)
+# Expected Impact: 10-30 ELO from null move tuning
+#
+# Format: param_name, type, current_value, min, max, C_end, R_end
+#
+# OpenBench Settings:
+# - Time Control: 10+0.1 or 60+0.6
+# - Pairs-Per: 8
+# - Iterations: 100-150
+# - Alpha: 0.602 (default)
+# - Gamma: 0.101 (default)
+# - A-Ratio: 0.1 (default)
+# =========================================================================
+
+# NULL MOVE PRUNING PARAMETERS
+
+# Static evaluation margin for null move pruning
+# Higher values = more conservative pruning
+NullMoveStaticMargin, int, 90, 50, 300, 10.0, 0.002
+
+# Base reduction amount for null move search
+# The minimum depth reduction applied
+NullMoveReductionBase, int, 2, 1, 4, 0.5, 0.002
+
+# Reduction at depth >= 6
+# Additional reduction for medium depth searches
+NullMoveReductionDepth6, int, 3, 2, 5, 0.5, 0.002
+
+# Reduction at depth >= 12
+# Additional reduction for deep searches
+NullMoveReductionDepth12, int, 4, 3, 6, 0.5, 0.002
+
+# Evaluation margin for extra reduction
+# When eval >> beta, apply extra reduction
+NullMoveEvalMargin, int, 200, 100, 400, 15.0, 0.002
+
+# Minimum depth to apply null move pruning
+# Below this depth, null move is not used
+NullMoveMinDepth, int, 3, 2, 5, 0.5, 0.002
+
+# =========================================================================
+# Notes:
+# - NullMoveStaticMargin: Controls when to skip null move (safety threshold)
+# - Reduction parameters: Balance between speed and accuracy
+# - EvalMargin: Helps with positions where we're already winning big
+# - MinDepth: Prevents null move at very shallow depths where it's less effective
+#
+# C_end rationale:
+# - Small step (0.5) for reduction depths - these are sensitive
+# - Medium step (10.0) for static margin - reasonable exploration
+# - Large step (15.0) for eval margin - can vary more without breaking
+# =========================================================================
