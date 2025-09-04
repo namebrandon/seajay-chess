@@ -202,14 +202,14 @@ void UCIEngine::handleUCI() {
     std::cout << "option name queen_eg_back type spin default -5 min -10 max 5" << std::endl;
     
     // King safety parameters
-    std::cout << "option name KingSafetyDirectShieldMg type spin default 16 min 0 max 50" << std::endl;
-    std::cout << "option name KingSafetyAdvancedShieldMg type spin default 12 min 0 max 40" << std::endl;
+    std::cout << "option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50" << std::endl;
+    std::cout << "option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40" << std::endl;
     std::cout << "option name KingSafetyEnableScoring type spin default 1 min 0 max 1" << std::endl;
     
     // King PST middlegame values (key squares for castling incentives)
-    std::cout << "option name king_mg_e1 type spin default -30 min -50 max 50" << std::endl;  // Starting square
-    std::cout << "option name king_mg_b1 type spin default 30 min -50 max 50" << std::endl;   // Queenside castled
-    std::cout << "option name king_mg_g1 type spin default 20 min -50 max 50" << std::endl;   // Kingside castled
+    std::cout << "option name king_mg_e1 type spin default 21 min -50 max 50" << std::endl;  // Starting square
+    std::cout << "option name king_mg_b1 type spin default -5 min -50 max 50" << std::endl;   // Queenside castled
+    std::cout << "option name king_mg_g1 type spin default 16 min -50 max 50" << std::endl;   // Kingside castled
     std::cout << "option name king_mg_a1 type spin default 20 min -50 max 50" << std::endl;   // Corner
     std::cout << "option name king_mg_h1 type spin default 20 min -50 max 50" << std::endl;   // Corner
     std::cout << "option name king_mg_c1 type spin default 10 min -50 max 50" << std::endl;   // Near queenside

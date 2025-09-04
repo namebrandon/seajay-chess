@@ -3,11 +3,20 @@
 ## Overview
 This document lists all UCI options available in SeaJay, their purpose, and SPSA tuning recommendations for OpenBench.
 
-## Recent SPSA Tuning Results (2025-09-04)
-The following parameters were optimized using SPSA with 250,000 games:
+## Recent SPSA Tuning Results
+
+### 2025-09-04 (250,000 games)
 - **CountermoveBonus**: 8000 → 7960 (slight reduction for better move ordering balance)
 - **AspirationWindow**: 16 → 13 (tighter initial bounds reduce re-searches)
 - **AspirationMaxAttempts**: 5 → 5 (optimal value confirmed)
+
+### 2025-09-04 (135,000 games) - King Safety & PST
+The following parameters were optimized for better king safety and castling decisions:
+- **king_mg_e1**: -30 → 21 (king now prefers staying on e1 more than before)
+- **king_mg_b1**: 30 → -5 (queenside castle less attractive)
+- **king_mg_g1**: 20 → 16 (kingside castle slightly less attractive)
+- **KingSafetyDirectShieldMg**: 16 → 19 (increased pawn shield value)
+- **KingSafetyAdvancedShieldMg**: 12 → 6 (reduced advanced shield bonus)
 
 ---
 
@@ -561,18 +570,20 @@ These parameters fine-tune piece-square table values in the endgame. They're pri
 
 ### KingSafetyDirectShieldMg ⭐
 **Type:** spin  
-**Default:** 16  
+**Default:** 19  
 **Range:** 0-50  
 **Purpose:** Bonus for pawns directly shielding the king in middlegame.  
-**SPSA Input:** `KingSafetyDirectShieldMg, int, 16.0, 0.0, 50.0, 3.0, 0.002`  
-**Note:** Uses proper SPSA float rounding (16.6 → 17)
+**SPSA:** Optimized with 135,000 games (increased from 16 to 19)  
+**SPSA Input:** `KingSafetyDirectShieldMg, int, 19.0, 0.0, 50.0, 3.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
 
 ### KingSafetyAdvancedShieldMg ⭐
 **Type:** spin  
-**Default:** 12  
+**Default:** 6  
 **Range:** 0-40  
 **Purpose:** Bonus for advanced shield pawns (2 ranks ahead) in middlegame.  
-**SPSA Input:** `KingSafetyAdvancedShieldMg, int, 12.0, 0.0, 40.0, 2.0, 0.002`  
+**SPSA:** Optimized with 135,000 games (decreased from 12 to 6)  
+**SPSA Input:** `KingSafetyAdvancedShieldMg, int, 6.0, 0.0, 40.0, 2.0, 0.002`  
 **Note:** Uses proper SPSA float rounding
 
 ### KingSafetyEnableScoring
@@ -590,24 +601,27 @@ These parameters control the middlegame piece-square table values for the king o
 
 ### king_mg_e1 ⭐
 **Type:** spin  
-**Default:** -30  
+**Default:** 21  
 **Range:** -50 to 50  
-**Purpose:** King on starting square (e1). Negative value encourages moving.  
-**SPSA Input:** `king_mg_e1, int, -30.0, -50.0, 50.0, 5.0, 0.002`  
+**Purpose:** King on starting square (e1). Positive value now (was -30).  
+**SPSA:** Optimized with 135,000 games (changed from -30 to +21)  
+**SPSA Input:** `king_mg_e1, int, 21.0, -50.0, 50.0, 5.0, 0.002`  
 
 ### king_mg_b1 ⭐⭐
 **Type:** spin  
-**Default:** 30  
+**Default:** -5  
 **Range:** -50 to 50  
-**Purpose:** Queenside castled position. High value encourages O-O-O.  
-**SPSA Input:** `king_mg_b1, int, 30.0, -50.0, 50.0, 5.0, 0.002`  
+**Purpose:** Queenside castled position. Slightly negative now (was +30).  
+**SPSA:** Optimized with 135,000 games (changed from +30 to -5)  
+**SPSA Input:** `king_mg_b1, int, -5.0, -50.0, 50.0, 5.0, 0.002`  
 
 ### king_mg_g1 ⭐⭐
 **Type:** spin  
-**Default:** 20  
+**Default:** 16  
 **Range:** -50 to 50  
-**Purpose:** Kingside castled position. Positive value encourages O-O.  
-**SPSA Input:** `king_mg_g1, int, 20.0, -50.0, 50.0, 5.0, 0.002`  
+**Purpose:** Kingside castled position. Slightly reduced (was 20).  
+**SPSA:** Optimized with 135,000 games (changed from 20 to 16)  
+**SPSA Input:** `king_mg_g1, int, 16.0, -50.0, 50.0, 5.0, 0.002`  
 
 ### king_mg_a1
 **Type:** spin  

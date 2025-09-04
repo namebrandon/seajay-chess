@@ -7,13 +7,13 @@ namespace seajay::eval {
 
 // Initialize static parameters - ALL VALUES CONTROLLED VIA UCI
 // Use setoption to modify these values:
-// - KingSafetyDirectShieldMg (default 16)
-// - KingSafetyAdvancedShieldMg (default 12)  
+// - KingSafetyDirectShieldMg (default 19) - SPSA tuned with 135k games
+// - KingSafetyAdvancedShieldMg (default 6) - SPSA tuned with 135k games
 // - KingSafetyEnableScoring (default 1)
 KingSafety::KingSafetyParams KingSafety::s_params = {
-    .directShieldMg = 16,     // UCI controlled
+    .directShieldMg = 19,     // UCI controlled - SPSA tuned
     .directShieldEg = -3,     // Endgame values less important
-    .advancedShieldMg = 12,   // UCI controlled
+    .advancedShieldMg = 6,    // UCI controlled - SPSA tuned
     .advancedShieldEg = -2,   // Endgame values less important
     .airSquareBonusMg = 2,    // Air square bonus
     .airSquareBonusEg = 0,    // Not relevant in endgame
