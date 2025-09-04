@@ -86,6 +86,13 @@ private:
     // Evaluation detail option
     bool m_evalExtended = false;        // Show detailed evaluation breakdown
     
+    // Middlegame piece values (SPSA tunable)
+    int m_pawnValueMg = 100;            // Pawn middlegame value
+    int m_knightValueMg = 320;          // Knight middlegame value  
+    int m_bishopValueMg = 330;          // Bishop middlegame value
+    int m_rookValueMg = 510;            // Rook middlegame value
+    int m_queenValueMg = 950;           // Queen middlegame value
+    
     // Phase R1: Razoring parameters
     bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
     int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)

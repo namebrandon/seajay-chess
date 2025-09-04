@@ -8,7 +8,8 @@
 
 namespace seajay::eval {
 
-inline constexpr std::array<Score, 6> PIECE_VALUES = {
+// Default piece values (can be overridden via UCI)
+inline std::array<Score, 6> PIECE_VALUES = {
     Score(100),   // PAWN
     Score(320),   // KNIGHT  
     Score(330),   // BISHOP (slightly > knight)
@@ -16,6 +17,13 @@ inline constexpr std::array<Score, 6> PIECE_VALUES = {
     Score(950),   // QUEEN (updated based on expert feedback)
     Score(0)      // KING (not counted in material)
 };
+
+// UCI interface to update piece values
+inline void setPieceValue(PieceType pt, int value) {
+    if (pt >= PAWN && pt <= QUEEN) {
+        PIECE_VALUES[pt] = Score(value);
+    }
+}
 
 class alignas(64) Material {
 public:

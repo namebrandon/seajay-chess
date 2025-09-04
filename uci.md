@@ -318,6 +318,52 @@ The following parameters were optimized using SPSA with 250,000 games:
 
 ---
 
+## Piece Values (Middlegame) ⭐⭐⭐⭐
+
+These parameters control the fundamental piece values used in material evaluation. They are prime candidates for SPSA tuning as they affect every position evaluation.
+
+### PawnValueMg ⭐⭐⭐
+**Type:** spin  
+**Default:** 100  
+**Range:** 70-130  
+**Purpose:** Middlegame value of a pawn in centipawns.  
+**SPSA Input:** `PawnValueMg, int, 100.0, 70.0, 130.0, 5.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+### KnightValueMg ⭐⭐⭐
+**Type:** spin  
+**Default:** 320  
+**Range:** 280-360  
+**Purpose:** Middlegame value of a knight in centipawns.  
+**SPSA Input:** `KnightValueMg, int, 320.0, 280.0, 360.0, 5.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+### BishopValueMg ⭐⭐⭐
+**Type:** spin  
+**Default:** 330  
+**Range:** 290-370  
+**Purpose:** Middlegame value of a bishop in centipawns.  
+**SPSA Input:** `BishopValueMg, int, 330.0, 290.0, 370.0, 5.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+### RookValueMg ⭐⭐⭐
+**Type:** spin  
+**Default:** 510  
+**Range:** 450-570  
+**Purpose:** Middlegame value of a rook in centipawns.  
+**SPSA Input:** `RookValueMg, int, 510.0, 450.0, 570.0, 5.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+### QueenValueMg ⭐⭐⭐
+**Type:** spin  
+**Default:** 950  
+**Range:** 850-1050  
+**Purpose:** Middlegame value of a queen in centipawns.  
+**SPSA Input:** `QueenValueMg, int, 950.0, 850.0, 1050.0, 5.0, 0.002`  
+**Note:** Uses proper SPSA float rounding
+
+---
+
 ## Evaluation Options
 
 ### UsePSTInterpolation
@@ -724,11 +770,17 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 
 ## SPSA Tuning Priority Recommendations
 
+### Highest Priority (Fundamental Values) ⭐⭐⭐⭐⭐
+1. **Piece Values (Middlegame)** - PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg
+   - These affect EVERY position evaluation
+   - Expected impact: 30-60 ELO
+   - Should be tuned together as they interact
+
 ### Highest Priority (Core Search Parameters)
-1. **MaxCheckPly** - Controls tactical depth (400-600 ELO impact)
-2. **FutilityBase & FutilityScale** - Core pruning margins
-3. **RazorMargin1 & RazorMargin2** - Early pruning thresholds
-4. **NullMoveReductionBase** - Null move core reduction
+2. **MaxCheckPly** - Controls tactical depth (400-600 ELO impact)
+3. **FutilityBase & FutilityScale** - Core pruning margins
+4. **RazorMargin1 & RazorMargin2** - Early pruning thresholds
+5. **NullMoveReductionBase** - Null move core reduction
 
 ### High Priority (Castling & King Safety) ⭐⭐⭐
 5. **King PST middlegame values** - king_mg_e1, b1, g1 (castling incentives)
@@ -762,6 +814,19 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 ---
 
 ## Example SPSA Workload for OpenBench
+
+### Piece Values Test (HIGHEST PRIORITY) ⭐⭐⭐⭐⭐
+```
+# Fundamental piece values - affects every evaluation
+PawnValueMg, int, 100.0, 70.0, 130.0, 5.0, 0.002
+KnightValueMg, int, 320.0, 280.0, 360.0, 5.0, 0.002
+BishopValueMg, int, 330.0, 290.0, 370.0, 5.0, 0.002
+RookValueMg, int, 510.0, 450.0, 570.0, 5.0, 0.002
+QueenValueMg, int, 950.0, 850.0, 1050.0, 5.0, 0.002
+```
+Games: 80000  
+Time Control: 10+0.1  
+**Expected Impact:** Very high - 30-60 ELO. These are the most fundamental parameters in the engine.
 
 ### King Safety & Castling Test (Highest Priority) ⭐⭐⭐⭐
 ```

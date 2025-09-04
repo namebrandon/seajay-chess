@@ -36,6 +36,13 @@ UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     // Initialize LMR reduction table (improved logarithmic version)
     search::initLMRTable();
     
+    // Initialize piece values to defaults (can be overridden via UCI)
+    eval::setPieceValue(PAWN, m_pawnValueMg);
+    eval::setPieceValue(KNIGHT, m_knightValueMg);
+    eval::setPieceValue(BISHOP, m_bishopValueMg);
+    eval::setPieceValue(ROOK, m_rookValueMg);
+    eval::setPieceValue(QUEEN, m_queenValueMg);
+    
     // Initialize board to starting position
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     m_board.clearGameHistory();
@@ -141,6 +148,13 @@ void UCIEngine::handleUCI() {
     
     // Evaluation detail option
     std::cout << "option name EvalExtended type check default false" << std::endl;
+    
+    // Middlegame piece values (SPSA tunable)
+    std::cout << "option name PawnValueMg type spin default 100 min 70 max 130" << std::endl;
+    std::cout << "option name KnightValueMg type spin default 320 min 280 max 360" << std::endl;
+    std::cout << "option name BishopValueMg type spin default 330 min 290 max 370" << std::endl;
+    std::cout << "option name RookValueMg type spin default 510 min 450 max 570" << std::endl;
+    std::cout << "option name QueenValueMg type spin default 950 min 850 max 1050" << std::endl;
     
     // Phase R1/R2: Razoring options
     std::cout << "option name UseRazoring type check default true" << std::endl;
@@ -275,6 +289,10 @@ void UCIEngine::handlePosition(const std::vector<std::string>& tokens) {
         std::vector<std::string> moveStrings(tokens.begin() + index, tokens.end());
         applyMoves(moveStrings);
     }
+    
+    // Recalculate material values with current piece values AFTER all moves
+    // This ensures UCI-configured piece values are applied to the final position
+    m_board.recalculateMaterial();
 }
 
 bool UCIEngine::setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index) {
@@ -1681,6 +1699,97 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_evalExtended = false;
             std::cerr << "info string EvalExtended disabled" << std::endl;
+        }
+    }
+    // Middlegame piece values (with SPSA float rounding)
+    else if (optionName == "PawnValueMg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 70 && paramValue <= 130) {
+                m_pawnValueMg = paramValue;
+                eval::setPieceValue(PAWN, paramValue);
+                std::cerr << "info string PawnValueMg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid PawnValueMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KnightValueMg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 280 && paramValue <= 360) {
+                m_knightValueMg = paramValue;
+                eval::setPieceValue(KNIGHT, paramValue);
+                std::cerr << "info string KnightValueMg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KnightValueMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "BishopValueMg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 290 && paramValue <= 370) {
+                m_bishopValueMg = paramValue;
+                eval::setPieceValue(BISHOP, paramValue);
+                std::cerr << "info string BishopValueMg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid BishopValueMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "RookValueMg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 450 && paramValue <= 570) {
+                m_rookValueMg = paramValue;
+                eval::setPieceValue(ROOK, paramValue);
+                std::cerr << "info string RookValueMg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid RookValueMg value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "QueenValueMg") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+            if (paramValue >= 850 && paramValue <= 1050) {
+                m_queenValueMg = paramValue;
+                eval::setPieceValue(QUEEN, paramValue);
+                std::cerr << "info string QueenValueMg set to " << paramValue << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QueenValueMg value: " << value << std::endl;
         }
     }
     // Phase R1: Razoring options

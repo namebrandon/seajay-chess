@@ -913,6 +913,22 @@ bool Board::fromFEN(const std::string& fen) {
     return result.hasValue();
 }
 
+void Board::recalculateMaterial() {
+    // Clear current material values
+    m_material.clear();
+    
+    // Recalculate material for all pieces on the board
+    for (int sq = 0; sq < 64; ++sq) {
+        Piece p = m_mailbox[sq];
+        if (p != NO_PIECE && p < NUM_PIECES) {
+            m_material.add(p);
+        }
+    }
+    
+    // Invalidate evaluation cache since material changed
+    m_evalCacheValid = false;
+}
+
 void Board::rebuildZobristKey() {
     m_zobristKey = 0;
     m_pawnZobristKey = 0;  // Initialize pawn hash

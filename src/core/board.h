@@ -80,6 +80,7 @@ public:
     
     // Material evaluation
     const eval::Material& material() const noexcept { return m_material; }
+    void recalculateMaterial();  // Recalculate material values after piece value changes
     eval::Score evaluate() const noexcept;
     
     // PST evaluation (Stage 9)
