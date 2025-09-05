@@ -171,12 +171,18 @@ TTEntry* TranspositionTable::probe(Hash key) {
     size_t idx = index(key);
     TTEntry* entry = &m_entries[idx];
     
-    // Check if this is the position we're looking for
-    // CRITICAL FIX: Must check isEmpty() first to avoid false hits on garbage data
-    uint32_t key32 = static_cast<uint32_t>(key >> 32);
-    if (!entry->isEmpty() && entry->key32 == key32) {
-        m_stats.hits++;
-        return entry;
+    // Track probe-side collisions for diagnostics
+    if (entry->isEmpty()) {
+        m_stats.probeEmpties++;
+    } else {
+        uint32_t key32 = static_cast<uint32_t>(key >> 32);
+        if (entry->key32 == key32) {
+            m_stats.hits++;
+            return entry;
+        } else {
+            // Non-empty slot with wrong key = collision
+            m_stats.probeMismatches++;
+        }
     }
     
     return nullptr;

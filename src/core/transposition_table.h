@@ -62,16 +62,27 @@ struct TTStats {
     std::atomic<uint64_t> stores{0};
     std::atomic<uint64_t> collisions{0};
     
+    // Probe-side collision tracking for better diagnostics
+    std::atomic<uint64_t> probeEmpties{0};      // Probed an empty slot
+    std::atomic<uint64_t> probeMismatches{0};   // Probed non-empty with wrong key (real collision)
+    
     void reset() {
         probes = 0;
         hits = 0;
         stores = 0;
         collisions = 0;
+        probeEmpties = 0;
+        probeMismatches = 0;
     }
     
     double hitRate() const {
         uint64_t p = probes.load();
         return p > 0 ? (100.0 * hits.load() / p) : 0.0;
+    }
+    
+    double collisionRate() const {
+        uint64_t p = probes.load();
+        return p > 0 ? (100.0 * probeMismatches.load() / p) : 0.0;
     }
 };
 
