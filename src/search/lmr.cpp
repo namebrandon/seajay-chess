@@ -8,8 +8,14 @@ namespace seajay::search {
 // Inspired by Stockfish and other strong engines
 static int reductionTable[64][64];
 static bool tableInitialized = false;
+static int currentBaseReduction = -1;
+static int currentDepthFactor = -1;
 
 void initLMRTableWithParams(int baseReduction, int depthFactor) {
+    // Update tracked parameters
+    currentBaseReduction = baseReduction;
+    currentDepthFactor = depthFactor;
+    
     // Convert parameters to decimal values
     // baseReduction: 100 = 1.0, 50 = 0.5, etc.
     // depthFactor: 225 = 2.25, 300 = 3.0, etc.
@@ -52,9 +58,11 @@ void initLMRTable() {
 
 int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params,
                    bool isPvNode, bool improving) {
-    // Reinitialize table if parameters have changed
-    // This allows dynamic tuning via UCI
-    if (!tableInitialized || params.baseReduction != 50 || params.depthFactor != 225) {
+    // Reinitialize table ONLY if parameters have actually changed
+    // This prevents constant reinitialization during search
+    if (!tableInitialized || 
+        (params.baseReduction != currentBaseReduction) || 
+        (params.depthFactor != currentDepthFactor)) {
         initLMRTableWithParams(params.baseReduction, params.depthFactor);
         tableInitialized = true;
     }
