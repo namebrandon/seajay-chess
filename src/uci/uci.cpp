@@ -551,6 +551,15 @@ void UCIEngine::search(const SearchParams& params) {
     // Start search in separate thread for proper stop handling
     m_searching.store(true, std::memory_order_relaxed);
     m_searchThread = std::thread(&UCIEngine::searchThreadFunc, this, params);
+    
+    // For non-infinite searches, wait for completion
+    // Infinite searches will continue running until stop command
+    if (!params.infinite) {
+        if (m_searchThread.joinable()) {
+            m_searchThread.join();
+        }
+        m_searching.store(false, std::memory_order_relaxed);
+    }
 }
 
 void UCIEngine::searchThreadFunc(const SearchParams& params) {
