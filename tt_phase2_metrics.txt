@@ -1,0 +1,39 @@
+=== Phase 2 Testing (With TT Stores) ===
+Positions: 3
+Depth: 10
+Hash sizes: 1 16 MB
+
+=== Hash Size: 1 MB ===
+
+Position 1:
+  nodes=1648 hit%=62.3 null-no-store=0 static-no-store=0
+
+Position 2:
+  nodes=1347 hit%=52.3 null-no-store=0 static-no-store=0
+
+Position 3:
+  nodes=3029 hit%=39.6 null-no-store=0 static-no-store=0
+
+=== Hash Size: 16 MB ===
+
+Position 1:
+  nodes=1648 hit%=66.8 null-no-store=0 static-no-store=0
+
+Position 2:
+  nodes=1347 hit%=55.4 null-no-store=0 static-no-store=0
+
+Position 3:
+  nodes=3020 hit%=53.4 null-no-store=0 static-no-store=0
+
+=== Comparison with Baseline ===
+
+Baseline (1MB hash, depth 10):
+  Position 1: nodes=70192 hit%=59.1 null-no-store=3371 static-no-store=892
+  Position 2: nodes=67023 hit%=35.6 null-no-store=2908 static-no-store=3889
+  Position 3: nodes=98389 hit%=27.7 null-no-store=2454 static-no-store=10900
+
+Phase 2 improvements show:
+  - Zero missing TT stores (was thousands)
+  - Improved hit rates
+  - Significant node reduction
+

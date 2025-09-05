@@ -468,8 +468,33 @@ eval::Score negamax(Board& board,
             
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
-                // TT remediation Phase 1.2: Track missing TT store
-                info.nullMoveStats.staticNullNoStore++;
+                
+                // TT remediation Phase 2.2: Add TT store for static-null pruning
+                if (tt && tt->isEnabled()) {
+                    uint64_t zobristKey = board.zobristKey();
+                    eval::Score returnScore = staticEval - margin;
+                    int16_t scoreToStore = returnScore.value();
+                    
+                    // Adjust mate scores before storing (unlikely for static eval, but be safe)
+                    if (returnScore.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = returnScore.value() + ply;
+                    } else if (returnScore.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = returnScore.value() - ply;
+                    }
+                    
+                    // Store with NO_MOVE since this is a static pruning decision
+                    // Use UPPER bound since we're returning a score < beta (fail-low from opponent's view)
+                    // Store the actual static eval if we have it
+                    int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
+                    tt->store(zobristKey, NO_MOVE, scoreToStore, evalToStore,
+                             static_cast<uint8_t>(depth), Bound::UPPER);
+                    info.ttStores++;
+                    // No longer track as missing store
+                } else {
+                    // Only track as missing if TT is disabled
+                    info.nullMoveStats.staticNullNoStore++;
+                }
+                
                 // Node explosion diagnostics: Track reverse futility pruning
                 if (limits.nodeExplosionDiagnostics) {
                     g_nodeExplosionStats.recordStaticNullMovePrune(depth);
@@ -556,8 +581,29 @@ eval::Score negamax(Board& board,
                     // Continue with normal search instead of returning
                 } else {
                     // Verification passed, null move cutoff is valid
-                    // TT remediation Phase 1.2: Track missing TT store
-                    info.nullMoveStats.nullMoveNoStore++;
+                    // TT remediation Phase 2.1: Add TT store for null-move cutoff
+                    if (tt && tt->isEnabled()) {
+                        uint64_t zobristKey = board.zobristKey();
+                        int16_t scoreToStore = beta.value();  // Store beta for fail-high
+                        
+                        // Adjust mate scores before storing
+                        if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                            scoreToStore = beta.value() + ply;
+                        } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                            scoreToStore = beta.value() - ply;
+                        }
+                        
+                        // Store with NO_MOVE since this is a null-move cutoff
+                        // Use LOWER bound since we're failing high (score >= beta)
+                        tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                                 static_cast<uint8_t>(depth), Bound::LOWER);
+                        info.ttStores++;
+                        // No longer track as missing store
+                    } else {
+                        // Only track as missing if TT is disabled
+                        info.nullMoveStats.nullMoveNoStore++;
+                    }
+                    
                     if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                         return nullScore;
                     } else {
@@ -567,8 +613,29 @@ eval::Score negamax(Board& board,
                 }
             } else {
                 // Shallow depth, trust null move without verification
-                // TT remediation Phase 1.2: Track missing TT store
-                info.nullMoveStats.nullMoveNoStore++;
+                // TT remediation Phase 2.1: Add TT store for null-move cutoff
+                if (tt && tt->isEnabled()) {
+                    uint64_t zobristKey = board.zobristKey();
+                    int16_t scoreToStore = beta.value();  // Store beta for fail-high
+                    
+                    // Adjust mate scores before storing
+                    if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = beta.value() + ply;
+                    } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = beta.value() - ply;
+                    }
+                    
+                    // Store with NO_MOVE since this is a null-move cutoff
+                    // Use LOWER bound since we're failing high (score >= beta)
+                    tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                             static_cast<uint8_t>(depth), Bound::LOWER);
+                    info.ttStores++;
+                    // No longer track as missing store
+                } else {
+                    // Only track as missing if TT is disabled
+                    info.nullMoveStats.nullMoveNoStore++;
+                }
+                
                 if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                     return nullScore;
                 } else {
