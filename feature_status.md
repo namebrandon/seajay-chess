@@ -99,7 +99,37 @@ Average explosion ratios across all positions and depths:
    - Shows TT move placement success
    - Tracks cutoff type breakdown
 
-## Phase 5: Additional Issues [FUTURE]
+## Phase 5: Summary and Next Steps
+
+### Diagnostic Implementation Complete
+- **Commit e970adc**: Added comprehensive move type tracking
+- **Commit 1fe32f3**: Tested TT replacement fix (reverted - made things worse)
+
+### Key Findings
+1. **Move ordering mechanics are correct**
+   - TT moves always placed first when found
+   - Killers, history, MVV-LVA all working as designed
+   
+2. **Problem is move quality, not ordering**
+   - 69% first-move cutoff (need 90%+)
+   - TT moves only 75% effective at causing cutoffs
+   - This compounds to 38.5x node explosion
+
+### Recommended Next Steps
+1. **More aggressive pruning**
+   - Lower futility margins
+   - More aggressive LMR reductions
+   - Earlier move count pruning
+   
+2. **Better move generation**
+   - Check quiet move generation order
+   - Consider sorting by piece type/value
+   
+3. **Evaluation improvements**
+   - Better eval = better move selection
+   - Consider eval caching
+
+## Phase 6: Additional Issues [FUTURE]
 
 ### Priority Suspects (Updated)
 1. **Quiescence explosion** - Likely not pruning bad captures effectively
