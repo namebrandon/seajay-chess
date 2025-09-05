@@ -2388,3 +2388,300 @@ return quiescence(board, ply, alpha, beta, searchInfo, info, limits, *tt,
 - Need to update all quiescence call sites
 - Testing to ensure PV correctly concatenates search and quiescence moves
 
+## Transposition Table Architecture Improvements - 2-Way Set Associative Design
+
+**Date Added:** September 5, 2025  
+**Status:** DEFERRED - Major architectural enhancement for future  
+**Source:** TT remediation analysis and consultant recommendations  
+**Priority:** HIGH - Enables LazySMP and significantly reduces collision rates  
+
+### Current Architecture Limitations
+
+SeaJay currently uses a **direct-mapped** transposition table:
+- One entry per hash index
+- Simple always-replace policy
+- ~30% collision rate under typical search conditions
+- Not suitable for multi-threaded search (LazySMP)
+
+### Proposed 2-Way Set Associative Architecture
+
+#### Core Concept
+
+Instead of mapping each position to a single TT entry, map to a **bucket** containing 2 entries:
+
+```cpp
+struct TTBucket {
+    TTEntry entries[2];  // 2-way set: 32 bytes total
+    
+    // Which entry to probe/replace for a given hash
+    TTEntry* probe(uint64_t hash) {
+        uint32_t key32 = hash >> 32;
+        
+        // Check both entries for exact match
+        for (int i = 0; i < 2; i++) {
+            if (entries[i].key32 == key32) {
+                return &entries[i];  // Found exact position
+            }
+        }
+        
+        // No match - return nullptr to indicate miss
+        return nullptr;
+    }
+    
+    // Replacement strategy for stores
+    int selectVictim(uint64_t hash, int depth, uint8_t generation) {
+        uint32_t key32 = hash >> 32;
+        
+        // Always replace exact match
+        for (int i = 0; i < 2; i++) {
+            if (entries[i].key32 == key32) {
+                return i;
+            }
+        }
+        
+        // Replace based on depth/age/importance
+        return replacementPolicy(entries, depth, generation);
+    }
+};
+```
+
+#### Replacement Policy Options
+
+**Option 1: Depth-Preferred (Simple)**
+```cpp
+int replacementPolicy(TTEntry entries[2], int newDepth, uint8_t gen) {
+    // Replace shallower entry
+    if (entries[0].depth <= entries[1].depth) {
+        return 0;
+    }
+    return 1;
+}
+```
+
+**Option 2: Age + Depth Hybrid (Recommended)**
+```cpp
+int replacementPolicy(TTEntry entries[2], int newDepth, uint8_t gen) {
+    int scores[2];
+    
+    for (int i = 0; i < 2; i++) {
+        scores[i] = 0;
+        
+        // Prefer keeping recent entries
+        if (entries[i].generation() == gen) {
+            scores[i] += 1000;
+        }
+        
+        // Prefer keeping deeper searches
+        scores[i] += entries[i].depth * 10;
+        
+        // Prefer keeping entries with moves
+        if (entries[i].move != NO_MOVE) {
+            scores[i] += 100;
+        }
+    }
+    
+    // Replace entry with lower score
+    return (scores[0] < scores[1]) ? 0 : 1;
+}
+```
+
+### Benefits Over Current Direct-Mapped Design
+
+1. **Collision Rate Reduction**
+   - Current: ~30% collision rate
+   - 2-way: Expected 10-15% collision rate
+   - 4-way: Expected 5-8% collision rate (diminishing returns)
+
+2. **Better Information Retention**
+   - Keep both shallow tactical entry AND deep positional entry
+   - Preserve entries with moves vs NO_MOVE entries
+   - Maintain entries from different search iterations
+
+3. **Cache Performance**
+   - 32-byte bucket fits in single cache line (64-byte aligned)
+   - Spatial locality: checking both entries is cache-friendly
+   - No additional memory accesses vs direct-mapped
+
+### LazySMP Compatibility
+
+#### Why Current Design Breaks with LazySMP
+
+Direct-mapped TT with multiple threads causes:
+- **Race conditions**: Two threads updating same entry simultaneously
+- **Data corruption**: Partial writes visible to other threads
+- **Lost information**: Thread A's deep search overwritten by Thread B's shallow search
+
+#### How 2-Way Enables LazySMP
+
+1. **Reduced Contention**
+   - With 2 entries per bucket, threads less likely to conflict
+   - Thread A can use entry[0] while Thread B uses entry[1]
+   - Natural load balancing across entries
+
+2. **Lock-Free Operations**
+   ```cpp
+   // Atomic 128-bit operations for lock-free access
+   struct TTEntry {
+       std::atomic<uint64_t> data1;  // key32 + move + score
+       std::atomic<uint64_t> data2;  // evalScore + depth + genBound
+   };
+   
+   // Lock-free store using memory ordering
+   void atomicStore(TTEntry& entry, TTEntry newData) {
+       entry.data1.store(newData.data1, std::memory_order_relaxed);
+       entry.data2.store(newData.data2, std::memory_order_release);
+   }
+   
+   // Lock-free probe with acquire semantics
+   bool atomicProbe(TTEntry& entry, uint32_t key32) {
+       uint64_t d2 = entry.data2.load(std::memory_order_acquire);
+       uint64_t d1 = entry.data1.load(std::memory_order_relaxed);
+       return (d1 >> 32) == key32;
+   }
+   ```
+
+3. **XOR Trick for Consistency**
+   ```cpp
+   // Stockfish's XOR trick for atomic updates
+   void xorStore(TTEntry* entry, TTEntry newData) {
+       uint64_t key = entry->asUint64();
+       entry->asUint64() = key ^ newData.asUint64() ^ key;
+   }
+   ```
+
+### Implementation Plan
+
+#### Phase 1: 2-Way Set Associative (Foundational)
+1. Modify TTEntry to use atomic operations
+2. Implement TTBucket with 2 entries
+3. Update probe() to check both entries
+4. Implement replacement policy
+5. Extensive single-threaded testing
+
+**Estimated effort:** 8-10 hours
+**Expected gain:** 10-20 ELO from reduced collisions
+
+#### Phase 2: Lock-Free Operations (LazySMP Prep)
+1. Convert to atomic data members
+2. Implement memory ordering semantics
+3. Add XOR trick for consistency
+4. Validate with thread sanitizer
+
+**Estimated effort:** 6-8 hours
+**Required for:** Multi-threading support
+
+#### Phase 3: LazySMP Integration
+1. Create ThreadPool class
+2. Implement shared TT access
+3. Add UCI threads option
+4. Coordinate search across threads
+5. Handle thread-local vs shared data
+
+**Estimated effort:** 15-20 hours
+**Expected gain:** 50-100 ELO at longer time controls
+
+### Memory and Performance Considerations
+
+#### Memory Layout
+```cpp
+// Current: 16 bytes per entry
+struct TTEntry { /* 16 bytes */ };
+
+// 2-way: 32 bytes per bucket (2x memory)
+struct TTBucket {
+    TTEntry entries[2];  // 32 bytes
+};
+
+// 4-way: 64 bytes per bucket (4x memory, full cache line)
+struct TTBucket {
+    TTEntry entries[4];  // 64 bytes, perfectly aligned
+};
+```
+
+#### Performance Impact
+- **Probe cost**: 2x comparisons (negligible with cache locality)
+- **Store cost**: Replacement policy computation (minimal)
+- **Memory bandwidth**: Same (sequential access within cache line)
+- **Cache efficiency**: Better (fewer cache misses due to conflicts)
+
+### Testing Strategy
+
+1. **Correctness Testing**
+   - Verify both entries checked on probe
+   - Ensure replacement policy works correctly
+   - Validate no information lost vs direct-mapped
+
+2. **Performance Testing**
+   - Measure collision rates at various hash sizes
+   - Compare search node counts with same positions
+   - Monitor cache miss rates with perf tools
+
+3. **LazySMP Testing**
+   - Thread sanitizer for race conditions
+   - Verify deterministic search with 1 thread
+   - Scaling efficiency with 2,4,8 threads
+
+### Risk Mitigation
+
+1. **Incremental Implementation**
+   - Start with 2-way, single-threaded
+   - Add lock-free ops only after 2-way stable
+   - LazySMP as final step
+
+2. **Compatibility Mode**
+   - Keep direct-mapped as compile-time option
+   - Allow runtime selection via UCI
+   - Benchmark both implementations
+
+3. **Extensive Validation**
+   - Perft with TT enabled (must match)
+   - SPRT testing at each phase
+   - Collision rate monitoring
+
+### Expected Timeline
+
+**When to Implement:**
+- After current TT remediation is complete and stable
+- Before beginning multi-threading work
+- Ideal: As first task of Phase 3 (Advanced Search)
+
+**Dependencies:**
+- Current TT must be fully debugged
+- Search must be stable (no non-determinism)
+- Move ordering should be mature
+
+### Success Metrics
+
+1. **Phase 1 (2-Way):**
+   - Collision rate: <15%
+   - Node reduction: Additional 5-10%
+   - ELO gain: 10-20
+   - No performance regression
+
+2. **Phase 2 (Lock-Free):**
+   - Thread sanitizer clean
+   - No measurable overhead vs non-atomic
+   - Deterministic with 1 thread
+
+3. **Phase 3 (LazySMP):**
+   - 1.7x speedup with 2 threads
+   - 2.8x speedup with 4 threads
+   - 50+ ELO gain at 60+0 time control
+   - Stable under all conditions
+
+### References
+
+1. **Stockfish Implementation**: Reference for lock-free TT
+2. **Ethereal**: Simpler 2-way implementation
+3. **CPW TT Article**: Theory and tradeoffs
+4. **Our Analysis**: /workspace/TT_remediation_plan.md
+5. **Consultant Feedback**: Recommendations for 2-way design
+
+### Notes
+
+- 2-way provides 80% of benefit with 20% of complexity
+- 4-way has diminishing returns (not recommended initially)
+- Lock-free ops are tricky but well-documented in chess engines
+- LazySMP is simpler than other parallel search algorithms
+- This is the standard evolution path for chess engines
+

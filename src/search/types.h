@@ -161,6 +161,12 @@ struct SearchData {
     uint64_t ttStores = 0;         // Total TT stores
     uint64_t ttCollisions = 0;     // TT corrupted moves detected (Bug #013)
     
+    // TT replacement tracking (for diagnostics)
+    uint64_t ttReplaceEmpty = 0;      // Replaced empty entries
+    uint64_t ttReplaceOldGen = 0;     // Replaced old generation entries
+    uint64_t ttReplaceDepth = 0;      // Replaced shallower entries (same gen)
+    uint64_t ttReplaceSkipped = 0;    // Skipped replacement (entry was deeper)
+    
     // Quiescence search statistics
     uint64_t qsearchNodes = 0;     // Nodes searched in quiescence
     uint64_t qsearchCutoffs = 0;   // Beta cutoffs in quiescence
@@ -261,16 +267,30 @@ struct SearchData {
         uint64_t verificationFails = 0;   // Verification search failures (for Phase A3)
         uint64_t staticCutoffs = 0;       // Static null move cutoffs (for Phase A4)
         
+        // TT remediation Phase 1.2: Track missing TT stores
+        uint64_t nullMoveNoStore = 0;     // Null-move cutoffs without TT store
+        uint64_t staticNullNoStore = 0;   // Static null returns without TT store
+        
         void reset() {
             attempts = 0;
             cutoffs = 0;
             zugzwangAvoids = 0;
             verificationFails = 0;
             staticCutoffs = 0;
+            nullMoveNoStore = 0;
+            staticNullNoStore = 0;
         }
         
         double cutoffRate() const {
             return attempts > 0 ? (100.0 * cutoffs / attempts) : 0.0;
+        }
+        
+        double nullMoveNoStoreRate() const {
+            return cutoffs > 0 ? (100.0 * nullMoveNoStore / cutoffs) : 0.0;
+        }
+        
+        double staticNullNoStoreRate() const {
+            return staticCutoffs > 0 ? (100.0 * staticNullNoStore / staticCutoffs) : 0.0;
         }
     } nullMoveStats;
     

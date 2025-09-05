@@ -118,20 +118,55 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
     size_t idx = index(key);
     TTEntry* entry = &m_entries[idx];
     
-    // Check for collision (different position mapping to same index)
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
+    
+    // FIX: Check for collision BEFORE checking isEmpty()
+    // A collision is when we have a non-empty entry with a different key
     if (!entry->isEmpty() && entry->key32 != key32) {
         m_stats.collisions++;
     }
     
-    // Depth-preferred replacement strategy
-    // Replace if:
-    // 1. Entry is empty
-    // 2. Entry is from a different generation (old search)
-    // 3. New search is at least as deep as existing entry
-    const bool canReplace = entry->isEmpty()
-                         || entry->generation() != m_generation
-                         || depth >= entry->depth;
+    // Track replacement decision for diagnostics
+    bool canReplace = false;
+    
+    if (entry->isEmpty()) {
+        // Case 1: Entry is empty - always replace
+        canReplace = true;
+        // Note: We'll track this in negamax.cpp where we have access to SearchData
+    } else if (entry->key32 == key32) {
+        // Same position - update based on depth and generation
+        
+        // TT pollution fix: Protect entries with moves from NO_MOVE overwrites
+        if (move == NO_MOVE && entry->move != NO_MOVE && depth <= entry->depth) {
+            // Don't replace a valuable move-carrying entry with a NO_MOVE heuristic
+            canReplace = false;
+        } else if (entry->generation() != m_generation) {
+            // Case 2: Old generation - consider depth before replacing
+            // IMPROVED: Only replace old gen if new search is at least as deep
+            if (depth >= entry->depth - 2) {  // Allow 2 ply grace for old entries
+                canReplace = true;
+            }
+        } else {
+            // Case 3: Same generation - replace if deeper
+            if (depth >= entry->depth) {
+                canReplace = true;
+            }
+        }
+    } else {
+        // Different position (collision) - use depth-preferred replacement
+        
+        // TT pollution fix: Be more conservative with NO_MOVE heuristic entries
+        if (move == NO_MOVE && depth <= entry->depth + 2) {
+            // Don't displace entries for shallow heuristics
+            canReplace = false;
+        } else if (depth > entry->depth + 2) {
+            // Replace if new entry is significantly deeper
+            canReplace = true;
+        } else if (entry->generation() != m_generation && depth >= entry->depth) {
+            // Or if it's old and at least as deep
+            canReplace = true;
+        }
+    }
     
     if (canReplace) {
         entry->save(key32, move, score, evalScore, depth, bound, m_generation);
@@ -146,12 +181,18 @@ TTEntry* TranspositionTable::probe(Hash key) {
     size_t idx = index(key);
     TTEntry* entry = &m_entries[idx];
     
-    // Check if this is the position we're looking for
-    // CRITICAL FIX: Must check isEmpty() first to avoid false hits on garbage data
-    uint32_t key32 = static_cast<uint32_t>(key >> 32);
-    if (!entry->isEmpty() && entry->key32 == key32) {
-        m_stats.hits++;
-        return entry;
+    // Track probe-side collisions for diagnostics
+    if (entry->isEmpty()) {
+        m_stats.probeEmpties++;
+    } else {
+        uint32_t key32 = static_cast<uint32_t>(key >> 32);
+        if (entry->key32 == key32) {
+            m_stats.hits++;
+            return entry;
+        } else {
+            // Non-empty slot with wrong key = collision
+            m_stats.probeMismatches++;
+        }
     }
     
     return nullptr;

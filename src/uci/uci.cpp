@@ -2111,7 +2111,7 @@ void UCIEngine::handleDumpPST() {
 
 void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
     // Debug command handler - provides detailed evaluation and other debug info
-    // Usage: "d" or "debug" [eval]
+    // Usage: "d" or "debug" [eval|tt]
     
     if (tokens.size() > 1 && tokens[1] == "eval") {
         // Show detailed evaluation if EvalExtended is enabled
@@ -2127,6 +2127,19 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "Evaluation: " << score.value() << " cp" << std::endl;
             std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
         }
+    } else if (tokens.size() > 1 && tokens[1] == "tt") {
+        // Show TT collision statistics
+        const auto& stats = m_tt.stats();
+        std::cout << "=== TT Collision Diagnostics ===" << std::endl;
+        std::cout << "Probes: " << stats.probes.load() << std::endl;
+        std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
+        std::cout << "Stores: " << stats.stores.load() << std::endl;
+        std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
+        std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
+        std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
+                  << " (" << stats.collisionRate() << "%)" << std::endl;
+        std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;
+        std::cout << "\n(Run a search first, then check 'info string' output for missing TT store stats)" << std::endl;
     } else {
         // Default debug output - show board state
         std::cout << "\n" << m_board.toString() << std::endl;

@@ -468,6 +468,37 @@ eval::Score negamax(Board& board,
             
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
+                
+                // TT remediation Phase 2.2: Add TT store for static-null pruning
+                // TT pollution fix: Only store at depth >= 2 to reduce low-value writes
+                if (tt && tt->isEnabled() && depth >= 2) {
+                    uint64_t zobristKey = board.zobristKey();
+                    // FIX: Use beta for fail-high, consistent with null-move
+                    int16_t scoreToStore = beta.value();
+                    
+                    // Adjust mate scores before storing
+                    if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = beta.value() + ply;
+                    } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = beta.value() - ply;
+                    }
+                    
+                    // Store with NO_MOVE since this is a static pruning decision
+                    // FIX: Use LOWER bound for fail-high (score >= beta)
+                    // FIX: Use depth 0 since static-null is heuristic, not searched
+                    int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
+                    tt->store(zobristKey, NO_MOVE, scoreToStore, evalToStore,
+                             0, Bound::LOWER);  // Depth 0 for heuristic bound
+                    info.ttStores++;
+                    // No longer track as missing store
+                } else if (!tt || !tt->isEnabled()) {
+                    // Only track as missing if TT is disabled
+                    info.nullMoveStats.staticNullNoStore++;
+                } else {
+                    // Skipped due to depth gating (depth < 2)
+                    info.nullMoveStats.staticNullNoStore++;
+                }
+                
                 // Node explosion diagnostics: Track reverse futility pruning
                 if (limits.nodeExplosionDiagnostics) {
                     g_nodeExplosionStats.recordStaticNullMovePrune(depth);
@@ -554,6 +585,29 @@ eval::Score negamax(Board& board,
                     // Continue with normal search instead of returning
                 } else {
                     // Verification passed, null move cutoff is valid
+                    // TT remediation Phase 2.1: Add TT store for null-move cutoff
+                    if (tt && tt->isEnabled()) {
+                        uint64_t zobristKey = board.zobristKey();
+                        int16_t scoreToStore = beta.value();  // Store beta for fail-high
+                        
+                        // Adjust mate scores before storing
+                        if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                            scoreToStore = beta.value() + ply;
+                        } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                            scoreToStore = beta.value() - ply;
+                        }
+                        
+                        // Store with NO_MOVE since this is a null-move cutoff
+                        // Use LOWER bound since we're failing high (score >= beta)
+                        tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                                 static_cast<uint8_t>(depth), Bound::LOWER);
+                        info.ttStores++;
+                        // No longer track as missing store
+                    } else {
+                        // Only track as missing if TT is disabled
+                        info.nullMoveStats.nullMoveNoStore++;
+                    }
+                    
                     if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                         return nullScore;
                     } else {
@@ -563,6 +617,29 @@ eval::Score negamax(Board& board,
                 }
             } else {
                 // Shallow depth, trust null move without verification
+                // TT remediation Phase 2.1: Add TT store for null-move cutoff
+                if (tt && tt->isEnabled()) {
+                    uint64_t zobristKey = board.zobristKey();
+                    int16_t scoreToStore = beta.value();  // Store beta for fail-high
+                    
+                    // Adjust mate scores before storing
+                    if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = beta.value() + ply;
+                    } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = beta.value() - ply;
+                    }
+                    
+                    // Store with NO_MOVE since this is a null-move cutoff
+                    // Use LOWER bound since we're failing high (score >= beta)
+                    tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                             static_cast<uint8_t>(depth), Bound::LOWER);
+                    info.ttStores++;
+                    // No longer track as missing store
+                } else {
+                    // Only track as missing if TT is disabled
+                    info.nullMoveStats.nullMoveNoStore++;
+                }
+                
                 if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                     return nullScore;
                 } else {
@@ -1811,6 +1888,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " null: att=" << info.nullMoveStats.attempts
                   << " cut=" << info.nullMoveStats.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
+                  << " no-store=" << info.nullMoveStats.nullMoveNoStore
+                  << " static-cut=" << info.nullMoveStats.staticCutoffs
+                  << " static-no-store=" << info.nullMoveStats.staticNullNoStore
                   << " prune: fut=" << info.futilityPruned
                   << " mcp=" << info.moveCountPruned
                   << " razor: att=" << info.razoring.attempts
