@@ -129,7 +129,43 @@ Average explosion ratios across all positions and depths:
    - Better eval = better move selection
    - Consider eval caching
 
-## Phase 6: Additional Issues [FUTURE]
+## Phase 6: SPSA Parameter Integration [COMPLETED]
+
+### Applied SPSA-Tuned Parameters
+- **Commit 386e372**: Integrated all SPSA-tuned pruning parameters
+- Updated both SearchLimits defaults and UCI option defaults
+
+### Results with SPSA Parameters
+- **Total nodes: 637K -> 187K (71% reduction!)**
+- **First-move cutoff: 69.1% -> 77.9%**
+- **Late cutoffs: 1556 -> 336 (78% reduction)**
+- **TT effectiveness: 24.6% -> 46.6%**
+
+### Key Parameter Changes
+- More aggressive LMR (depth 3->2, moves 4->2)
+- Deeper null move reductions (base 2->4)
+- Much tighter move count limits (12->7 at depth 3)
+- Higher futility margins (Base=240, Scale=73)
+- Tighter razor margins
+
+## Success Summary
+
+### Original Problem
+- SeaJay using 38.5x more nodes than Stash
+- Only 69% first-move cutoff rate
+
+### Solution Applied
+1. Enhanced diagnostics to identify root causes
+2. Found move ordering mechanics were correct
+3. Applied SPSA-tuned pruning parameters
+4. Achieved 71% node reduction
+
+### Remaining Work
+While significant improvement achieved, further optimization possible:
+- Still using ~3-5x more nodes than Stash (down from 38.5x)
+- Could investigate better quiet move generation
+- Consider more aggressive aspiration windows
+- Possible evaluation improvements
 
 ### Priority Suspects (Updated)
 1. **Quiescence explosion** - Likely not pruning bad captures effectively
