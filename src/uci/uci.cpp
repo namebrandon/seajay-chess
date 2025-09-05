@@ -259,7 +259,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MoveCountLimit6 type spin default 30 min 10 max 80" << std::endl;
     std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
     std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
-    std::cout << "option name MoveCountHistoryThreshold type spin default 1500 min 0 max 5000" << std::endl;
+    std::cout << "option name MoveCountHistoryThreshold type spin default 1500 min -5000 max 5000" << std::endl;
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
     
