@@ -35,16 +35,42 @@ Average explosion ratios across all positions and depths:
 - **Move Ordering Failures**: Late cutoffs, bad captures searched
 - **SEE Analysis**: Call counts, false positives/negatives, expensive captures
 
-## Phase 3: Root Cause Analysis [IN PROGRESS]
+## Phase 3: Root Cause Analysis [COMPLETED]
 
 ### Implementation Status
 ✅ Added `NodeExplosionStats` struct with comprehensive tracking
 ✅ Added thread-local instance for UCI compatibility  
 ✅ Added UCI option `NodeExplosionDiagnostics`
 ✅ Added instrumentation hooks in negamax and quiescence
-⏳ Fixing compilation issues with member functions
+✅ Fixed compilation issues and node counting bugs
+✅ Successfully collected diagnostic data
 
-## Phase 3: Root Cause Analysis [PENDING]
+### Key Findings from Diagnostics
+
+#### Test Position: `r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17`
+- **SeaJay**: 316,554 nodes at depth 10
+- **Stash**: 8,228 nodes (SeaJay uses **38.5x more**)
+- **Komodo**: 39,741 nodes (SeaJay uses **8.0x more**)
+
+#### Root Causes Identified
+
+1. **🔴 CRITICAL: Move Ordering Completely Broken**
+   - First-move cutoff rate: 0% (should be 90%+)
+   - Top-3 cutoff rate: 0% (should be 95%+)
+   - Beta cutoffs happening extremely late or not at all
+   - This is THE primary cause of node explosion
+
+2. **Suspicious Pruning Statistics**
+   - Futility pruning: 100% "success" rate (likely a bug)
+   - Move count pruning: 100% rate (seems incorrect)
+   - These metrics suggest the tracking is broken, not the pruning
+
+3. **Quiescence Search Issues**
+   - 50% of nodes in qsearch (reasonable but could be better)
+   - Stand-pat and capture metrics not tracked properly
+   - SEE metrics showing 0 for bad captures
+
+## Phase 4: Fix Priority [NEXT]
 
 ### Priority Suspects (Updated)
 1. **Quiescence explosion** - Likely not pruning bad captures effectively

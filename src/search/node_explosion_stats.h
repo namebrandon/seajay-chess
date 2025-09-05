@@ -186,7 +186,7 @@ struct NodeExplosionStats {
     
     // Convenience methods for instrumentation
     void recordNodeAtDepth(int ply) {
-        recordNode(ply, false);
+        depthDist.recordNode(ply, false);
     }
     
     void recordQuiescenceEntry(int ply) {
@@ -194,7 +194,8 @@ struct NodeExplosionStats {
     }
     
     void recordQuiescenceNode(int qply) {
-        depthDist.qsearchNodesAtDepth[std::min(qply, 15)]++;
+        // Track qsearch nodes at depth
+        depthDist.recordNode(qply, true);
     }
     
     void recordStandPatCutoff(int qply) {
@@ -202,15 +203,19 @@ struct NodeExplosionStats {
     }
     
     void recordStaticNullMovePrune(int depth) {
-        pruningByDepth.staticNullMoveAtDepth[std::min(depth, 15)]++;
+        // Track static null move (reverse futility) pruning
+        if (depth > 0 && depth < 10) {
+            pruningByDepth.futilityAttempts[depth]++;
+            pruningByDepth.futilityPrunes[depth]++;
+        }
     }
     
     void recordMoveCountPrune(int depth, int moveCount) {
-        recordMoveCount(depth, true);
+        pruningByDepth.recordMoveCount(depth, true);
     }
     
     void recordFutilityPrune(int depth, int margin) {
-        recordFutility(depth, true);
+        pruningByDepth.recordFutility(depth, true);
     }
     
     void recordDeltaPrune(int qply, int margin) {
@@ -229,20 +234,22 @@ struct NodeExplosionStats {
     }
     
     void recordLMRReduction(int depth, int reduction) {
-        recordLMR(depth, true, false);
+        pruningByDepth.recordLMR(depth, true, false);
     }
     
     void recordLMRReSearch(int depth) {
-        recordLMR(depth, true, true);
+        pruningByDepth.recordLMR(depth, true, true);
     }
     
     void recordLMRSuccess(int depth) {
         // LMR was successful (move was bad as expected)
-        pruningByDepth.lmrSuccessAtDepth[std::min(depth, 15)]++;
+        if (depth > 0 && depth < 10) {
+            pruningByDepth.lmrReductions[depth]++;
+        }
     }
     
     void recordBetaCutoff(int ply, int moveIndex) {
-        recordCutoff(moveIndex);
+        moveOrderingFailure.recordCutoff(moveIndex);
     }
     
     void recordLateCutoff(int ply, int moveIndex) {
@@ -259,11 +266,22 @@ struct NodeExplosionStats {
     }
     
     // Display statistics in UCI output
-    void displayStats(uint64_t totalNodes, uint64_t qsearchNodes) const {
+    void displayStats(uint64_t reportedTotalNodes, uint64_t reportedQsearchNodes) const {
         std::cout << "info string === Node Explosion Diagnostic Report ===" << std::endl;
         
-        // Node distribution
-        uint64_t mainNodes = totalNodes - qsearchNodes;
+        // Node distribution - use our own tracked nodes for accuracy
+        uint64_t trackedTotal = 0;
+        uint64_t trackedQsearch = 0;
+        for (int i = 0; i < 32; i++) {
+            trackedTotal += depthDist.nodesAtDepth[i];
+            trackedQsearch += depthDist.qsearchAtDepth[i];
+        }
+        
+        // Use reported values if our tracking is incomplete
+        uint64_t totalNodes = (trackedTotal > 0) ? trackedTotal : reportedTotalNodes;
+        uint64_t qsearchNodes = (trackedTotal > 0) ? trackedQsearch : reportedQsearchNodes;
+        
+        uint64_t mainNodes = (qsearchNodes <= totalNodes) ? (totalNodes - qsearchNodes) : 0;
         double qsearchRatio = totalNodes > 0 ? 100.0 * qsearchNodes / totalNodes : 0.0;
         std::cout << "info string Total nodes: " << totalNodes 
                   << " (main: " << mainNodes << ", qsearch: " << qsearchNodes 
@@ -287,15 +305,26 @@ struct NodeExplosionStats {
         }
         
         // Pruning effectiveness
-        uint64_t totalPruning = pruningByDepth.futilityAttempts + pruningByDepth.moveCountAttempts + 
-                                pruningByDepth.lmrAttempts;
-        if (totalPruning > 0) {
-            std::cout << "info string Pruning: futility=" << pruningByDepth.futilityPrunes 
-                      << "/" << pruningByDepth.futilityAttempts
-                      << ", movecount=" << pruningByDepth.moveCountPrunes 
-                      << "/" << pruningByDepth.moveCountAttempts
-                      << ", LMR=" << pruningByDepth.lmrReductions 
-                      << "/" << pruningByDepth.lmrAttempts << std::endl;
+        uint64_t totalFutility = 0, totalFutilityPrunes = 0;
+        uint64_t totalMoveCount = 0, totalMoveCountPrunes = 0;
+        uint64_t totalLMR = 0, totalLMRReductions = 0;
+        
+        for (int i = 0; i < 10; i++) {
+            totalFutility += pruningByDepth.futilityAttempts[i];
+            totalFutilityPrunes += pruningByDepth.futilityPrunes[i];
+            totalMoveCount += pruningByDepth.moveCountAttempts[i];
+            totalMoveCountPrunes += pruningByDepth.moveCountPrunes[i];
+            totalLMR += pruningByDepth.lmrAttempts[i];
+            totalLMRReductions += pruningByDepth.lmrReductions[i];
+        }
+        
+        if (totalFutility + totalMoveCount + totalLMR > 0) {
+            std::cout << "info string Pruning: futility=" << totalFutilityPrunes 
+                      << "/" << totalFutility
+                      << ", movecount=" << totalMoveCountPrunes 
+                      << "/" << totalMoveCount
+                      << ", LMR=" << totalLMRReductions 
+                      << "/" << totalLMR << std::endl;
         }
         
         // Quiescence explosion indicators
