@@ -18,7 +18,14 @@ namespace seajay::search {
  */
 
 /**
- * Initialize the logarithmic reduction table
+ * Initialize the logarithmic reduction table with parameters
+ * @param baseReduction Base reduction value (100 = 1.0 in formula)
+ * @param depthFactor Divisor for log formula (225 = 2.25 in formula)
+ */
+void initLMRTableWithParams(int baseReduction, int depthFactor);
+
+/**
+ * Initialize the logarithmic reduction table with default values
  * Should be called once at engine startup
  */
 void initLMRTable();

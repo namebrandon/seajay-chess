@@ -9,26 +9,24 @@ namespace seajay::search {
 static int reductionTable[64][64];
 static bool tableInitialized = false;
 
-void initLMRTable() {
-    // Only initialize once
-    if (tableInitialized) {
-        return;
-    }
+void initLMRTableWithParams(int baseReduction, int depthFactor) {
+    // Convert parameters to decimal values
+    // baseReduction: 100 = 1.0, 50 = 0.5, etc.
+    // depthFactor: 225 = 2.25, 300 = 3.0, etc.
+    double base = baseReduction / 100.0;
+    double divisor = depthFactor / 100.0;
     
-    // Initialize with logarithmic formula
-    // This gives a smooth increase in reductions based on both depth and move number
+    // Initialize with logarithmic formula using parameters
     for (int depth = 1; depth < 64; depth++) {
         for (int moves = 1; moves < 64; moves++) {
-            // Base logarithmic formula
-            double reduction = 0.5 + std::log(depth) * std::log(moves) / 2.25;
+            // Parameterized logarithmic formula
+            double reduction = base + std::log(depth) * std::log(moves) / divisor;
             
             // Store as integer, capped at reasonable values
             reductionTable[depth][moves] = std::min(depth - 1, static_cast<int>(reduction));
             
             // Ensure non-negative
-            if (reductionTable[depth][moves] < 0) {
-                reductionTable[depth][moves] = 0;
-            }
+            reductionTable[depth][moves] = std::max(0, reductionTable[depth][moves]);
         }
     }
     
@@ -38,15 +36,27 @@ void initLMRTable() {
         reductionTable[depth][1] = 0;
         reductionTable[depth][2] = 0;
     }
+}
+
+void initLMRTable() {
+    // Only initialize once
+    if (tableInitialized) {
+        return;
+    }
+    
+    // Initialize with default values: base=0.5 (50), divisor=2.25 (225)
+    initLMRTableWithParams(50, 225);
     
     tableInitialized = true;
 }
 
 int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params,
                    bool isPvNode, bool improving) {
-    // Ensure table is initialized
-    if (!tableInitialized) {
-        initLMRTable();
+    // Reinitialize table if parameters have changed
+    // This allows dynamic tuning via UCI
+    if (!tableInitialized || params.baseReduction != 50 || params.depthFactor != 225) {
+        initLMRTableWithParams(params.baseReduction, params.depthFactor);
+        tableInitialized = true;
     }
     
     // No reduction if LMR is disabled
@@ -86,10 +96,8 @@ int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& para
         reduction += params.nonImprovingBonus;
     }
     
-    // Apply user-configured base reduction adjustment
-    if (params.baseReduction != 1) {
-        reduction = reduction * params.baseReduction;
-    }
+    // Note: baseReduction and depthFactor are now applied in the table initialization
+    // No need for additional scaling here
     
     // Cap reduction to leave at least 1 ply of search
     reduction = std::min(reduction, std::max(1, depth - 2));

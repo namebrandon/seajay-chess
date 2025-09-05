@@ -133,9 +133,9 @@ void UCIEngine::handleUCI() {
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
     std::cout << "option name LMRMinDepth type spin default 3 min 0 max 10" << std::endl;
-    std::cout << "option name LMRMinMoveNumber type spin default 6 min 0 max 20" << std::endl;
-    std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
-    std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
+    std::cout << "option name LMRMinMoveNumber type spin default 4 min 0 max 20" << std::endl;
+    std::cout << "option name LMRBaseReduction type spin default 50 min 0 max 200" << std::endl;
+    std::cout << "option name LMRDepthFactor type spin default 225 min 100 max 400" << std::endl;
     std::cout << "option name LMRHistoryThreshold type spin default 50 min 10 max 90" << std::endl;
     std::cout << "option name LMRPvReduction type spin default 1 min 0 max 2" << std::endl;
     std::cout << "option name LMRNonImprovingBonus type spin default 1 min 0 max 3" << std::endl;
@@ -1127,9 +1127,9 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             } catch (...) {
                 reduction = std::stoi(value);
             }
-            if (reduction >= 0 && reduction <= 3) {
+            if (reduction >= 0 && reduction <= 200) {
                 m_lmrBaseReduction = reduction;
-                std::cerr << "info string LMR base reduction set to: " << reduction << std::endl;
+                std::cerr << "info string LMR base reduction set to: " << reduction << " (" << (reduction/100.0) << " in formula)" << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid LMRBaseReduction value: " << value << std::endl;
@@ -1145,9 +1145,9 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             } catch (...) {
                 factor = std::stoi(value);
             }
-            if (factor >= 1 && factor <= 10) {
+            if (factor >= 100 && factor <= 400) {
                 m_lmrDepthFactor = factor;
-                std::cerr << "info string LMR depth factor set to: " << factor << std::endl;
+                std::cerr << "info string LMR depth factor set to: " << factor << " (" << (factor/100.0) << " divisor in formula)" << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid LMRDepthFactor value: " << value << std::endl;

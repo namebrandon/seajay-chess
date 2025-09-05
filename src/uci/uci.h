@@ -70,9 +70,9 @@ private:
     // Stage 18: Late Move Reductions (LMR) parameters
     bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)
     int m_lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
-    int m_lmrMinMoveNumber = 6;         // Start reducing after this many moves (tuned value)  
-    int m_lmrBaseReduction = 1;         // Base reduction amount
-    int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
+    int m_lmrMinMoveNumber = 4;         // Start reducing after this many moves  
+    int m_lmrBaseReduction = 50;        // Base reduction in formula (50 = 0.5)
+    int m_lmrDepthFactor = 225;         // Divisor in formula (225 = 2.25)
     int m_lmrHistoryThreshold = 50;     // History score threshold percentage (0-100)
     int m_lmrPvReduction = 1;           // Reduction adjustment for PV nodes
     int m_lmrNonImprovingBonus = 1;     // Extra reduction when not improving
