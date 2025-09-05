@@ -468,6 +468,8 @@ eval::Score negamax(Board& board,
             
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
+                // TT remediation Phase 1.2: Track missing TT store
+                info.nullMoveStats.staticNullNoStore++;
                 // Node explosion diagnostics: Track reverse futility pruning
                 if (limits.nodeExplosionDiagnostics) {
                     g_nodeExplosionStats.recordStaticNullMovePrune(depth);
@@ -554,6 +556,8 @@ eval::Score negamax(Board& board,
                     // Continue with normal search instead of returning
                 } else {
                     // Verification passed, null move cutoff is valid
+                    // TT remediation Phase 1.2: Track missing TT store
+                    info.nullMoveStats.nullMoveNoStore++;
                     if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                         return nullScore;
                     } else {
@@ -563,6 +567,8 @@ eval::Score negamax(Board& board,
                 }
             } else {
                 // Shallow depth, trust null move without verification
+                // TT remediation Phase 1.2: Track missing TT store
+                info.nullMoveStats.nullMoveNoStore++;
                 if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
                     return nullScore;
                 } else {
@@ -1811,6 +1817,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " null: att=" << info.nullMoveStats.attempts
                   << " cut=" << info.nullMoveStats.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
+                  << " no-store=" << info.nullMoveStats.nullMoveNoStore
+                  << " static-cut=" << info.nullMoveStats.staticCutoffs
+                  << " static-no-store=" << info.nullMoveStats.staticNullNoStore
                   << " prune: fut=" << info.futilityPruned
                   << " mcp=" << info.moveCountPruned
                   << " razor: att=" << info.razoring.attempts

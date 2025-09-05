@@ -2139,6 +2139,7 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
         std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
                   << " (" << stats.collisionRate() << "%)" << std::endl;
         std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;
+        std::cout << "\n(Run a search first, then check 'info string' output for missing TT store stats)" << std::endl;
     } else {
         // Default debug output - show board state
         std::cout << "\n" << m_board.toString() << std::endl;

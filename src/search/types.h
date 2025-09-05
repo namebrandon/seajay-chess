@@ -267,16 +267,30 @@ struct SearchData {
         uint64_t verificationFails = 0;   // Verification search failures (for Phase A3)
         uint64_t staticCutoffs = 0;       // Static null move cutoffs (for Phase A4)
         
+        // TT remediation Phase 1.2: Track missing TT stores
+        uint64_t nullMoveNoStore = 0;     // Null-move cutoffs without TT store
+        uint64_t staticNullNoStore = 0;   // Static null returns without TT store
+        
         void reset() {
             attempts = 0;
             cutoffs = 0;
             zugzwangAvoids = 0;
             verificationFails = 0;
             staticCutoffs = 0;
+            nullMoveNoStore = 0;
+            staticNullNoStore = 0;
         }
         
         double cutoffRate() const {
             return attempts > 0 ? (100.0 * cutoffs / attempts) : 0.0;
+        }
+        
+        double nullMoveNoStoreRate() const {
+            return cutoffs > 0 ? (100.0 * nullMoveNoStore / cutoffs) : 0.0;
+        }
+        
+        double staticNullNoStoreRate() const {
+            return staticCutoffs > 0 ? (100.0 * staticNullNoStore / staticCutoffs) : 0.0;
         }
     } nullMoveStats;
     
