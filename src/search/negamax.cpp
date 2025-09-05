@@ -1123,6 +1123,14 @@ eval::Score negamax(Board& board,
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
                     }
                     
+                    // Node explosion diagnostics: Track beta cutoff position
+                    if (limits.nodeExplosionDiagnostics) {
+                        g_nodeExplosionStats.recordBetaCutoff(ply, legalMoveCount - 1);
+                        if (legalMoveCount > 10) {
+                            g_nodeExplosionStats.recordLateCutoff(ply, legalMoveCount - 1);
+                        }
+                    }
+                    
                     // Diagnostic: Track cutoff position distribution
                     if (legalMoveCount <= 3) {
                         info.cutoffsByPosition[legalMoveCount - 1]++;

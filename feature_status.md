@@ -70,7 +70,30 @@ Average explosion ratios across all positions and depths:
    - Stand-pat and capture metrics not tracked properly
    - SEE metrics showing 0 for bad captures
 
-## Phase 4: Fix Priority [NEXT]
+## Phase 4: Fix Priority - Move Ordering [IN PROGRESS]
+
+### Branch: `bugfix/nodexp/20250905-move-ordering`
+
+#### Findings So Far
+
+1. **Beta cutoff tracking was broken** 
+   - Diagnostic showed 0% first-move cutoffs
+   - Actually ~69% first-move cutoffs (still needs improvement)
+   - Added proper tracking in negamax
+
+2. **Current Move Ordering Performance**
+   - First-move cutoff: 69.1% (target: 90%+)
+   - Top-3 cutoff: 85.2% (target: 95%+)  
+   - 1556 late cutoffs (after move 10) at depth 10
+   - Still using 38.5x more nodes than Stash
+
+3. **Next Investigation Steps**
+   - Track which move types cause cutoffs (TT, killer, capture, quiet)
+   - Check TT move effectiveness
+   - Verify killer move implementation
+   - Check MVV-LVA ordering
+
+## Phase 5: Additional Issues [FUTURE]
 
 ### Priority Suspects (Updated)
 1. **Quiescence explosion** - Likely not pruning bad captures effectively

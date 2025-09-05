@@ -136,6 +136,12 @@ struct NodeExplosionStats {
         uint64_t killerNotInTop3 = 0;           // Killer caused cutoff but wasn't in top 3
         uint64_t cutoffAfterMove10 = 0;         // Beta cutoff after move 10
         
+        // Track what type of move causes cutoffs
+        uint64_t ttMoveCutoffs = 0;             // TT move caused cutoff
+        uint64_t killerCutoffs = 0;             // Killer move caused cutoff  
+        uint64_t captureCutoffs = 0;            // Capture caused cutoff
+        uint64_t quietCutoffs = 0;              // Quiet move caused cutoff
+        
         // Track bad capture ordering
         uint64_t qxpSearchedBeforeCutoff = 0;   // QxP searched when better move existed
         uint64_t rxpSearchedBeforeCutoff = 0;   // RxP searched when better move existed
@@ -248,8 +254,21 @@ struct NodeExplosionStats {
         }
     }
     
-    void recordBetaCutoff(int ply, int moveIndex) {
+    void recordBetaCutoff(int ply, int moveIndex, bool isTTMove = false, bool isKiller = false, bool isCapture = false) {
         moveOrderingFailure.recordCutoff(moveIndex);
+        
+        // Track what type of move caused cutoff
+        if (isTTMove) {
+            moveOrderingFailure.ttMoveCutoffs++;
+            if (moveIndex > 0) moveOrderingFailure.ttMoveNotFirst++;
+        } else if (isKiller) {
+            moveOrderingFailure.killerCutoffs++;
+            if (moveIndex >= 3) moveOrderingFailure.killerNotInTop3++;
+        } else if (isCapture) {
+            moveOrderingFailure.captureCutoffs++;
+        } else {
+            moveOrderingFailure.quietCutoffs++;
+        }
     }
     
     void recordLateCutoff(int ply, int moveIndex) {
@@ -337,6 +356,24 @@ struct NodeExplosionStats {
                   << moveOrderingFailure.firstMoveRate()
                   << ", top3-cutoff%=" << moveOrderingFailure.top3Rate()
                   << ", late-cutoffs=" << moveOrderingFailure.cutoffAfterMove10 << std::endl;
+        
+        // Cutoff types
+        uint64_t totalCutoffs = moveOrderingFailure.ttMoveCutoffs + moveOrderingFailure.killerCutoffs +
+                               moveOrderingFailure.captureCutoffs + moveOrderingFailure.quietCutoffs;
+        if (totalCutoffs > 0) {
+            std::cout << "info string Cutoff types: TT=" << moveOrderingFailure.ttMoveCutoffs
+                      << " (" << (100.0 * moveOrderingFailure.ttMoveCutoffs / totalCutoffs) << "%)"
+                      << ", killer=" << moveOrderingFailure.killerCutoffs 
+                      << " (" << (100.0 * moveOrderingFailure.killerCutoffs / totalCutoffs) << "%)"
+                      << ", capture=" << moveOrderingFailure.captureCutoffs
+                      << " (" << (100.0 * moveOrderingFailure.captureCutoffs / totalCutoffs) << "%)"
+                      << ", quiet=" << moveOrderingFailure.quietCutoffs
+                      << " (" << (100.0 * moveOrderingFailure.quietCutoffs / totalCutoffs) << "%)" << std::endl;
+            
+            if (moveOrderingFailure.ttMoveNotFirst > 0) {
+                std::cout << "info string TT move not first " << moveOrderingFailure.ttMoveNotFirst << " times" << std::endl;
+            }
+        }
         
         // SEE issues
         if (seeExplosion.seeCallsInQsearch > 0) {
