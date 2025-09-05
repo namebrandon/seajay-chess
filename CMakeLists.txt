@@ -150,6 +150,8 @@ set(SEARCH_SOURCES
     src/search/quiescence_performance.h
     src/search/lmr.cpp
     src/search/lmr.h
+    src/search/node_explosion_stats.cpp
+    src/search/node_explosion_stats.h
     # src/search/quiescence_optimized.cpp  # Disabled: needs refactoring for thread-local SEE stats
     # src/search/quiescence_optimized.h
 )

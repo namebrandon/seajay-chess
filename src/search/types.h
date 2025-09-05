@@ -128,6 +128,9 @@ struct SearchLimits {
     int razorMargin1 = 300;              // Razoring margin for depth 1 (in centipawns)
     int razorMargin2 = 500;              // Razoring margin for depth 2 (in centipawns)
     
+    // Node explosion diagnostics (temporary for debugging)
+    bool nodeExplosionDiagnostics = false; // Enable detailed node explosion tracking
+    
     // Default constructor
     SearchLimits() = default;
 };
