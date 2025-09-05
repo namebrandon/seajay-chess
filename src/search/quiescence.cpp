@@ -1,4 +1,5 @@
 #include "quiescence.h"
+#include "node_explosion_stats.h"  // Node explosion diagnostics
 #include "../core/board.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
@@ -55,6 +56,11 @@ eval::Score quiescence(
     
     // Track nodes
     data.qsearchNodes++;
+    
+    // Node explosion diagnostics: Track quiescence nodes
+    if (limits.nodeExplosionDiagnostics) {
+        g_nodeExplosionStats.recordQuiescenceNode(qply);
+    }
     
     // Deliverable 2.1: TT Probing in Quiescence
     // Probe transposition table at the start of quiescence
@@ -348,6 +354,14 @@ eval::Score quiescence(
             // Prune if SEE value is below threshold
             if (seeValue < pruneThreshold) {
                 data.seeStats.seePruned++;
+                // Node explosion diagnostics: Track SEE pruning
+                if (limits.nodeExplosionDiagnostics) {
+                    g_nodeExplosionStats.recordSEEPrune(qply, seeValue);
+                    // Track bad captures (SEE < 0)
+                    if (seeValue < 0) {
+                        g_nodeExplosionStats.recordBadCapture(qply);
+                    }
+                }
                 
                 // Track which threshold was used
                 if (pruneThreshold == SEE_PRUNE_THRESHOLD_CONSERVATIVE) {

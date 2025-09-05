@@ -19,13 +19,14 @@ Average explosion ratios across all positions and depths:
 2. Middlegame positions show worst explosion (38.5x)
 3. Even simple positions have 4-14x explosion
 
-## Phase 2: Instrumentation [IN PROGRESS]
+## Phase 2: Instrumentation [COMPLETED]
 
 ### Added Components
 1. ✅ `node_explosion_stats.h` - Comprehensive diagnostic statistics structure
 2. ✅ `node_explosion_stats.cpp` - Thread-local implementation for thread safety
 3. ✅ `nodeExplosionDiagnostics` flag in SearchLimits
-4. ⏳ Instrumentation hooks in search functions (next step)
+4. ✅ Build system integration (CMakeLists.txt)
+5. ⏳ Instrumentation hooks in search functions (next step)
 
 ### Statistics Being Tracked
 - **Depth Distribution**: Nodes at each ply, EBF calculations
@@ -33,6 +34,15 @@ Average explosion ratios across all positions and depths:
 - **Quiescence Explosion**: Entry counts, stand-pat rates, capture rates
 - **Move Ordering Failures**: Late cutoffs, bad captures searched
 - **SEE Analysis**: Call counts, false positives/negatives, expensive captures
+
+## Phase 3: Root Cause Analysis [IN PROGRESS]
+
+### Implementation Status
+✅ Added `NodeExplosionStats` struct with comprehensive tracking
+✅ Added thread-local instance for UCI compatibility  
+✅ Added UCI option `NodeExplosionDiagnostics`
+✅ Added instrumentation hooks in negamax and quiescence
+⏳ Fixing compilation issues with member functions
 
 ## Phase 3: Root Cause Analysis [PENDING]
 

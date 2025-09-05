@@ -9,6 +9,7 @@
 #include "lmr.h"            // Stage 18: Late Move Reductions
 #include "principal_variation.h"     // PV tracking infrastructure
 #include "countermove_history.h"     // Phase 4.3.a: Counter-move history
+#include "node_explosion_stats.h"     // Node explosion diagnostics
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
@@ -223,6 +224,11 @@ eval::Score negamax(Board& board,
     // Increment node counter
     info.nodes++;
     
+    // Node explosion diagnostics: Track depth distribution
+    if (limits.nodeExplosionDiagnostics) {
+        g_nodeExplosionStats.recordNodeAtDepth(ply);
+    }
+    
     
     // Phase 1 & 2, enhanced in Phase 6: Check for periodic UCI info updates with smart throttling
     // Check periodically regardless of ply depth (since we spend most time at deeper plies)
@@ -258,6 +264,10 @@ eval::Score negamax(Board& board,
             if (info.timeLimit != std::chrono::milliseconds::max()) {
                 auto remainingTime = info.timeLimit - info.elapsed();
                 inPanicMode = (remainingTime < std::chrono::milliseconds(100));
+            }
+            // Node explosion diagnostics: Track quiescence entry
+            if (limits.nodeExplosionDiagnostics) {
+                g_nodeExplosionStats.recordQuiescenceEntry(ply);
             }
             // Use quiescence search to resolve tactical sequences
             return quiescence(board, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
@@ -458,6 +468,10 @@ eval::Score negamax(Board& board,
             
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
+                // Node explosion diagnostics: Track reverse futility pruning
+                if (limits.nodeExplosionDiagnostics) {
+                    g_nodeExplosionStats.recordStaticNullMovePrune(depth);
+                }
                 return staticEval - margin;  // Return reduced score for safety
             }
         }
@@ -813,6 +827,10 @@ eval::Score negamax(Board& board,
                 info.moveCountPruned++;
                 int b = SearchData::PruneBreakdown::bucketForDepth(depth);
                 info.pruneBreakdown.moveCount[b]++;
+                // Node explosion diagnostics: Track move count pruning
+                if (limits.nodeExplosionDiagnostics) {
+                    g_nodeExplosionStats.recordMoveCountPrune(depth, moveCount);
+                }
                 continue;  // Skip this move
             }
             } // End of else block for countermove check
@@ -951,6 +969,10 @@ eval::Score negamax(Board& board,
                         // Track by effective depth for telemetry
                         int b = SearchData::PruneBreakdown::bucketForDepth(effectiveDepth);
                         info.pruneBreakdown.futilityEff[b]++;
+                        // Node explosion diagnostics: Track futility pruning
+                        if (limits.nodeExplosionDiagnostics) {
+                            g_nodeExplosionStats.recordFutilityPrune(effectiveDepth, futilityMargin);
+                        }
                         continue;
                     }
                 }
@@ -1005,6 +1027,10 @@ eval::Score negamax(Board& board,
                     
                     // Track LMR statistics
                     info.lmrStats.totalReductions++;
+                    // Node explosion diagnostics: Track LMR application
+                    if (limits.nodeExplosionDiagnostics) {
+                        g_nodeExplosionStats.recordLMRReduction(depth, reduction);
+                    }
                 }
             }
             
@@ -1018,6 +1044,10 @@ eval::Score negamax(Board& board,
             // If reduced scout fails high, re-search without reduction
             if (score > alpha && reduction > 0) {
                 info.lmrStats.reSearches++;
+                // Node explosion diagnostics: Track LMR re-search
+                if (limits.nodeExplosionDiagnostics) {
+                    g_nodeExplosionStats.recordLMRReSearch(depth);
+                }
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
                                 nullptr,  // Phase PV3: Still a scout search
@@ -1772,6 +1802,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " total=" << info.illegalPseudoTotal
                   << std::endl;
     }
+    
+    // Node explosion diagnostics: Display collected statistics
+    if (limits.nodeExplosionDiagnostics) {
+        g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
+        g_nodeExplosionStats.reset();  // Reset for next search
+    }
+    
     return bestMove;
 }
 
@@ -1958,6 +1995,12 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Print instrumentation counters at end of search - only in debug builds
     Board::printCounters();
 #endif
+    
+    // Node explosion diagnostics: Display collected statistics
+    if (limits.nodeExplosionDiagnostics) {
+        g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
+        g_nodeExplosionStats.reset();  // Reset for next search
+    }
     
     // Return the best move found
     // If no iterations completed, bestMove will be invalid

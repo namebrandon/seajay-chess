@@ -158,6 +158,9 @@ void UCIEngine::handleUCI() {
     // B0: One-shot search summary at end of go
     std::cout << "option name SearchStats type check default false" << std::endl;
     
+    // Node explosion diagnostics option
+    std::cout << "option name NodeExplosionDiagnostics type check default false" << std::endl;
+    
     // Evaluation detail option
     std::cout << "option name EvalExtended type check default false" << std::endl;
     
@@ -672,6 +675,8 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.showPVSStats = m_showPVSStats;
     // B0: One-shot search summary toggle
     limits.showSearchStats = m_showSearchStats;
+    // Node explosion diagnostics toggle
+    limits.nodeExplosionDiagnostics = m_nodeExplosionDiagnostics;
     
     // Stage 23 CM3.3: Pass countermove bonus to search
     limits.countermoveBonus = m_countermoveBonus;
@@ -1843,6 +1848,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_showSearchStats = false;
             std::cerr << "info string SearchStats disabled" << std::endl;
+        }
+    }
+    else if (optionName == "NodeExplosionDiagnostics") {
+        if (value == "true") {
+            m_nodeExplosionDiagnostics = true;
+            std::cerr << "info string NodeExplosionDiagnostics enabled" << std::endl;
+        } else if (value == "false") {
+            m_nodeExplosionDiagnostics = false;
+            std::cerr << "info string NodeExplosionDiagnostics disabled" << std::endl;
         }
     }
     else if (optionName == "EvalExtended") {

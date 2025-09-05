@@ -94,6 +94,8 @@ private:
     bool m_showPhaseInfo = true;        // Print phase (0-256) and coarse GamePhase in eval
     // B0: One-shot search summary toggle
     bool m_showSearchStats = false;     // Print search summary after go
+    // Node explosion diagnostics toggle
+    bool m_nodeExplosionDiagnostics = false;  // Enable diagnostic statistics collection
     
     // Evaluation detail option
     bool m_evalExtended = false;        // Show detailed evaluation breakdown

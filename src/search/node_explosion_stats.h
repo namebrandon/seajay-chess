@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <array>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
 #include "../core/types.h"  // For PieceType definitions
 
 namespace seajay::search {
@@ -182,6 +184,71 @@ struct NodeExplosionStats {
         }
     } seeExplosion;
     
+    // Convenience methods for instrumentation
+    void recordNodeAtDepth(int ply) {
+        recordNode(ply, false);
+    }
+    
+    void recordQuiescenceEntry(int ply) {
+        qsearchExplosion.recordEntry(ply);
+    }
+    
+    void recordQuiescenceNode(int qply) {
+        depthDist.qsearchNodesAtDepth[std::min(qply, 15)]++;
+    }
+    
+    void recordStandPatCutoff(int qply) {
+        qsearchExplosion.standPatReturns++;
+    }
+    
+    void recordStaticNullMovePrune(int depth) {
+        pruningByDepth.staticNullMoveAtDepth[std::min(depth, 15)]++;
+    }
+    
+    void recordMoveCountPrune(int depth, int moveCount) {
+        recordMoveCount(depth, true);
+    }
+    
+    void recordFutilityPrune(int depth, int margin) {
+        recordFutility(depth, true);
+    }
+    
+    void recordDeltaPrune(int qply, int margin) {
+        // Track delta pruning in quiescence
+        qsearchExplosion.capturesGenerated++;
+    }
+    
+    void recordSEEPrune(int qply, int seeValue) {
+        seeExplosion.seeCallsInQsearch++;
+        if (seeValue == 0) seeExplosion.seeEqualExchanges++;
+    }
+    
+    void recordBadCapture(int qply) {
+        // Bad capture being pruned
+        seeExplosion.seeFalsePositives++;
+    }
+    
+    void recordLMRReduction(int depth, int reduction) {
+        recordLMR(depth, true, false);
+    }
+    
+    void recordLMRReSearch(int depth) {
+        recordLMR(depth, true, true);
+    }
+    
+    void recordLMRSuccess(int depth) {
+        // LMR was successful (move was bad as expected)
+        pruningByDepth.lmrSuccessAtDepth[std::min(depth, 15)]++;
+    }
+    
+    void recordBetaCutoff(int ply, int moveIndex) {
+        recordCutoff(moveIndex);
+    }
+    
+    void recordLateCutoff(int ply, int moveIndex) {
+        moveOrderingFailure.cutoffAfterMove10++;
+    }
+    
     // Reset all statistics
     void reset() {
         depthDist = {};
@@ -191,10 +258,66 @@ struct NodeExplosionStats {
         seeExplosion = {};
     }
     
-    // Get a summary report
-    void printSummary() const {
-        // This will be implemented to print key findings
-        // For now, data is collected for analysis
+    // Display statistics in UCI output
+    void displayStats(uint64_t totalNodes, uint64_t qsearchNodes) const {
+        std::cout << "info string === Node Explosion Diagnostic Report ===" << std::endl;
+        
+        // Node distribution
+        uint64_t mainNodes = totalNodes - qsearchNodes;
+        double qsearchRatio = totalNodes > 0 ? 100.0 * qsearchNodes / totalNodes : 0.0;
+        std::cout << "info string Total nodes: " << totalNodes 
+                  << " (main: " << mainNodes << ", qsearch: " << qsearchNodes 
+                  << ", qsearch%: " << std::fixed << std::setprecision(1) << qsearchRatio << "%)" << std::endl;
+        
+        // Effective branching factor
+        if (depthDist.nodesAtDepth[1] > 0) {
+            double avgEBF = 0.0;
+            int validDepths = 0;
+            for (int d = 1; d < 15; d++) {
+                if (depthDist.nodesAtDepth[d] > 0 && depthDist.nodesAtDepth[d-1] > 0) {
+                    double ebf = (double)depthDist.nodesAtDepth[d] / depthDist.nodesAtDepth[d-1];
+                    avgEBF += ebf;
+                    validDepths++;
+                }
+            }
+            if (validDepths > 0) {
+                avgEBF /= validDepths;
+                std::cout << "info string Average EBF: " << std::fixed << std::setprecision(2) << avgEBF << std::endl;
+            }
+        }
+        
+        // Pruning effectiveness
+        uint64_t totalPruning = pruningByDepth.futilityAttempts + pruningByDepth.moveCountAttempts + 
+                                pruningByDepth.lmrAttempts;
+        if (totalPruning > 0) {
+            std::cout << "info string Pruning: futility=" << pruningByDepth.futilityPrunes 
+                      << "/" << pruningByDepth.futilityAttempts
+                      << ", movecount=" << pruningByDepth.moveCountPrunes 
+                      << "/" << pruningByDepth.moveCountAttempts
+                      << ", LMR=" << pruningByDepth.lmrReductions 
+                      << "/" << pruningByDepth.lmrAttempts << std::endl;
+        }
+        
+        // Quiescence explosion indicators
+        std::cout << "info string Qsearch: stand-pat%=" << std::fixed << std::setprecision(1) 
+                  << qsearchExplosion.standPatRate()
+                  << ", capture-search%=" << qsearchExplosion.captureSearchRate() << std::endl;
+        
+        // Move ordering quality
+        std::cout << "info string Move ordering: first-move-cutoff%=" << std::fixed << std::setprecision(1)
+                  << moveOrderingFailure.firstMoveRate()
+                  << ", top3-cutoff%=" << moveOrderingFailure.top3Rate()
+                  << ", late-cutoffs=" << moveOrderingFailure.cutoffAfterMove10 << std::endl;
+        
+        // SEE issues
+        if (seeExplosion.seeCallsInQsearch > 0) {
+            std::cout << "info string SEE: QxP=" << seeExplosion.queenTakesPawn
+                      << ", RxP=" << seeExplosion.rookTakesPawn
+                      << ", minor-xP=" << seeExplosion.minorTakesPawn
+                      << ", equal-exchanges=" << seeExplosion.seeEqualExchanges << std::endl;
+        }
+        
+        std::cout << "info string === End Diagnostic Report ===" << std::endl;
     }
 };
 
