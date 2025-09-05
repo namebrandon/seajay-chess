@@ -472,22 +472,22 @@ eval::Score negamax(Board& board,
                 // TT remediation Phase 2.2: Add TT store for static-null pruning
                 if (tt && tt->isEnabled()) {
                     uint64_t zobristKey = board.zobristKey();
-                    eval::Score returnScore = staticEval - margin;
-                    int16_t scoreToStore = returnScore.value();
+                    // FIX: Use beta for fail-high, consistent with null-move
+                    int16_t scoreToStore = beta.value();
                     
-                    // Adjust mate scores before storing (unlikely for static eval, but be safe)
-                    if (returnScore.value() >= MATE_BOUND - MAX_PLY) {
-                        scoreToStore = returnScore.value() + ply;
-                    } else if (returnScore.value() <= -MATE_BOUND + MAX_PLY) {
-                        scoreToStore = returnScore.value() - ply;
+                    // Adjust mate scores before storing
+                    if (beta.value() >= MATE_BOUND - MAX_PLY) {
+                        scoreToStore = beta.value() + ply;
+                    } else if (beta.value() <= -MATE_BOUND + MAX_PLY) {
+                        scoreToStore = beta.value() - ply;
                     }
                     
                     // Store with NO_MOVE since this is a static pruning decision
-                    // Use UPPER bound since we're returning a score < beta (fail-low from opponent's view)
-                    // Store the actual static eval if we have it
+                    // FIX: Use LOWER bound for fail-high (score >= beta)
+                    // FIX: Use depth 0 since static-null is heuristic, not searched
                     int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
                     tt->store(zobristKey, NO_MOVE, scoreToStore, evalToStore,
-                             static_cast<uint8_t>(depth), Bound::UPPER);
+                             0, Bound::LOWER);  // Depth 0 for heuristic bound
                     info.ttStores++;
                     // No longer track as missing store
                 } else {
