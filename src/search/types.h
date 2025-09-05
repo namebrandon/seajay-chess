@@ -161,6 +161,12 @@ struct SearchData {
     uint64_t ttStores = 0;         // Total TT stores
     uint64_t ttCollisions = 0;     // TT corrupted moves detected (Bug #013)
     
+    // TT replacement tracking (for diagnostics)
+    uint64_t ttReplaceEmpty = 0;      // Replaced empty entries
+    uint64_t ttReplaceOldGen = 0;     // Replaced old generation entries
+    uint64_t ttReplaceDepth = 0;      // Replaced shallower entries (same gen)
+    uint64_t ttReplaceSkipped = 0;    // Skipped replacement (entry was deeper)
+    
     // Quiescence search statistics
     uint64_t qsearchNodes = 0;     // Nodes searched in quiescence
     uint64_t qsearchCutoffs = 0;   // Beta cutoffs in quiescence
