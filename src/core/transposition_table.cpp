@@ -135,7 +135,12 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         // Note: We'll track this in negamax.cpp where we have access to SearchData
     } else if (entry->key32 == key32) {
         // Same position - update based on depth and generation
-        if (entry->generation() != m_generation) {
+        
+        // TT pollution fix: Protect entries with moves from NO_MOVE overwrites
+        if (move == NO_MOVE && entry->move != NO_MOVE && depth <= entry->depth) {
+            // Don't replace a valuable move-carrying entry with a NO_MOVE heuristic
+            canReplace = false;
+        } else if (entry->generation() != m_generation) {
             // Case 2: Old generation - consider depth before replacing
             // IMPROVED: Only replace old gen if new search is at least as deep
             if (depth >= entry->depth - 2) {  // Allow 2 ply grace for old entries
@@ -149,8 +154,13 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         }
     } else {
         // Different position (collision) - use depth-preferred replacement
-        // Replace if new entry is significantly deeper
-        if (depth > entry->depth + 2) {
+        
+        // TT pollution fix: Be more conservative with NO_MOVE heuristic entries
+        if (move == NO_MOVE && depth <= entry->depth + 2) {
+            // Don't displace entries for shallow heuristics
+            canReplace = false;
+        } else if (depth > entry->depth + 2) {
+            // Replace if new entry is significantly deeper
             canReplace = true;
         } else if (entry->generation() != m_generation && depth >= entry->depth) {
             // Or if it's old and at least as deep

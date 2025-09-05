@@ -6,24 +6,24 @@ Hash sizes: 1 16 MB
 === Hash Size: 1 MB ===
 
 Position 1:
-  nodes=1648 hit%=62.3 null-no-store=0 static-no-store=0
+  nodes=1648 hit%=61.2 null-no-store=0 static-no-store=406
 
 Position 2:
-  nodes=1347 hit%=52.3 null-no-store=0 static-no-store=0
+  nodes=1347 hit%=41.0 null-no-store=0 static-no-store=2278
 
 Position 3:
-  nodes=3029 hit%=39.6 null-no-store=0 static-no-store=0
+  nodes=3029 hit%=43.0 null-no-store=0 static-no-store=2663
 
 === Hash Size: 16 MB ===
 
 Position 1:
-  nodes=1648 hit%=66.8 null-no-store=0 static-no-store=0
+  nodes=1648 hit%=66.5 null-no-store=0 static-no-store=465
 
 Position 2:
-  nodes=1347 hit%=55.4 null-no-store=0 static-no-store=0
+  nodes=1347 hit%=47.8 null-no-store=0 static-no-store=2559
 
 Position 3:
-  nodes=3020 hit%=53.4 null-no-store=0 static-no-store=0
+  nodes=3020 hit%=50.5 null-no-store=0 static-no-store=2614
 
 === Comparison with Baseline ===
 

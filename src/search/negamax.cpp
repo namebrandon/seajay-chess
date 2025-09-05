@@ -470,7 +470,8 @@ eval::Score negamax(Board& board,
                 info.nullMoveStats.staticCutoffs++;
                 
                 // TT remediation Phase 2.2: Add TT store for static-null pruning
-                if (tt && tt->isEnabled()) {
+                // TT pollution fix: Only store at depth >= 2 to reduce low-value writes
+                if (tt && tt->isEnabled() && depth >= 2) {
                     uint64_t zobristKey = board.zobristKey();
                     // FIX: Use beta for fail-high, consistent with null-move
                     int16_t scoreToStore = beta.value();
@@ -490,8 +491,11 @@ eval::Score negamax(Board& board,
                              0, Bound::LOWER);  // Depth 0 for heuristic bound
                     info.ttStores++;
                     // No longer track as missing store
-                } else {
+                } else if (!tt || !tt->isEnabled()) {
                     // Only track as missing if TT is disabled
+                    info.nullMoveStats.staticNullNoStore++;
+                } else {
+                    // Skipped due to depth gating (depth < 2)
                     info.nullMoveStats.staticNullNoStore++;
                 }
                 
