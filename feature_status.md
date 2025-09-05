@@ -74,24 +74,30 @@ Average explosion ratios across all positions and depths:
 
 ### Branch: `bugfix/nodexp/20250905-move-ordering`
 
-#### Findings So Far
+#### Findings (Completed Analysis)
 
-1. **Beta cutoff tracking was broken** 
-   - Diagnostic showed 0% first-move cutoffs
-   - Actually ~69% first-move cutoffs (still needs improvement)
-   - Added proper tracking in negamax
+1. **Move Ordering Mechanics Working Correctly**
+   - TT moves: Found 20,100 times, ALWAYS placed first (100%)
+   - Killers: Being updated and positioned correctly
+   - History: Using butterfly updates (reward good, penalize bad)
+   - MVV-LVA: Working for captures
 
-2. **Current Move Ordering Performance**
-   - First-move cutoff: 69.1% (target: 90%+)
-   - Top-3 cutoff: 85.2% (target: 95%+)  
-   - 1556 late cutoffs (after move 10) at depth 10
-   - Still using 38.5x more nodes than Stash
+2. **Actual Problem: Move Quality, Not Ordering**
+   - TT moves only cause 26% of cutoffs (should be 40-50%)
+   - TT move effectiveness: 75% (25% don't cause cutoffs)
+   - Captures cause 48% of cutoffs (actually good)
+   - First-move cutoff: 69% (target: 90%+)
 
-3. **Next Investigation Steps**
-   - Track which move types cause cutoffs (TT, killer, capture, quiet)
-   - Check TT move effectiveness
-   - Verify killer move implementation
-   - Check MVV-LVA ordering
+3. **Root Causes Identified**
+   - TT replacement strategy may be keeping stale moves
+   - Possible TT pollution from different search depths
+   - History table may need more aggressive updates
+   - Base move generation order for quiet moves
+
+4. **Commit: e970adc** - Enhanced diagnostics
+   - Added detailed move type tracking
+   - Shows TT move placement success
+   - Tracks cutoff type breakdown
 
 ## Phase 5: Additional Issues [FUTURE]
 
