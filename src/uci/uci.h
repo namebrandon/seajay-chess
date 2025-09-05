@@ -138,7 +138,7 @@ private:
     int m_moveCountLimit6 = 30;           // Move limit for depth 6
     int m_moveCountLimit7 = 36;           // Move limit for depth 7
     int m_moveCountLimit8 = 42;           // Move limit for depth 8
-    int m_moveCountHistoryThreshold = 1500; // History score threshold for bonus moves
+    int m_moveCountHistoryThreshold = -82; // History score threshold for bonus moves (SPSA-suggested)
     int m_moveCountHistoryBonus = 6;      // Extra moves for good history
     int m_moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
     
