@@ -207,9 +207,17 @@ eval::Score negamax(Board& board,
     }
     
     // Time check - only check periodically to reduce overhead
-    if ((info.nodes & (SearchData::TIME_CHECK_INTERVAL - 1)) == 0 && info.checkTime()) {
-        info.stopped = true;
-        return eval::Score::zero();
+    if ((info.nodes & (SearchData::TIME_CHECK_INTERVAL - 1)) == 0) {
+        // Check external stop flag first (UCI stop command or LazySMP global stop)
+        if (limits.stopFlag && limits.stopFlag->load(std::memory_order_relaxed)) {
+            info.stopped = true;
+            return eval::Score::zero();
+        }
+        // Then check time limit
+        if (info.checkTime()) {
+            info.stopped = true;
+            return eval::Score::zero();
+        }
     }
     
     // Increment node counter
@@ -1367,6 +1375,12 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     // Same iterative deepening loop as original search
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
+        // Check external stop flag before starting new iteration
+        if (limits.stopFlag && limits.stopFlag->load(std::memory_order_relaxed)) {
+            info.stopped = true;
+            break;
+        }
+        
         info.depth = depth;
         board.setSearchMode(true);
         
@@ -1840,6 +1854,12 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     // Iterative deepening loop
     for (int depth = 1; depth <= limits.maxDepth; depth++) {
+        // Check external stop flag before starting new iteration
+        if (limits.stopFlag && limits.stopFlag->load(std::memory_order_relaxed)) {
+            info.stopped = true;
+            break;
+        }
+        
         info.depth = depth;
         
         // Track iteration start time

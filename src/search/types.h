@@ -45,6 +45,11 @@ struct SearchLimits {
     bool infinite = false;    // Infinite analysis mode
     bool ponder = false;      // Pondering mode (thinking on opponent's time)
     
+    // External stop flag (for UCI stop command)
+    // Pointer to atomic bool that can be set from UCI thread
+    // This allows clean shutdown of search threads (LazySMP compatible)
+    std::atomic<bool>* stopFlag = nullptr;
+    
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     bool useQuiescence = true;  // Enable/disable quiescence search
     

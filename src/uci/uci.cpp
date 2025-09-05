@@ -56,6 +56,11 @@ UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     // No need to push - board tracks its own history
 }
 
+UCIEngine::~UCIEngine() {
+    // Clean up search thread on destruction
+    stopSearch();
+}
+
 void UCIEngine::run() {
     std::string line;
     
@@ -524,7 +529,31 @@ int UCIEngine::SearchParams::calculateSearchTime(Color sideToMove) const {
     return 100;
 }
 
+void UCIEngine::stopSearch() {
+    // Signal stop to any running search
+    m_stopRequested.store(true, std::memory_order_relaxed);
+    
+    // Wait for search thread to finish if it's running
+    if (m_searchThread.joinable()) {
+        m_searchThread.join();
+    }
+    
+    m_searching.store(false, std::memory_order_relaxed);
+}
+
 void UCIEngine::search(const SearchParams& params) {
+    // Stop any previous search
+    stopSearch();
+    
+    // Reset stop flag for new search
+    m_stopRequested.store(false, std::memory_order_relaxed);
+    
+    // Start search in separate thread for proper stop handling
+    m_searching.store(true, std::memory_order_relaxed);
+    m_searchThread = std::thread(&UCIEngine::searchThreadFunc, this, params);
+}
+
+void UCIEngine::searchThreadFunc(const SearchParams& params) {
     // Stage 9b: Check for immediate draw before searching
     if (m_board.isDraw()) {
         reportDrawIfDetected();
@@ -539,11 +568,13 @@ void UCIEngine::search(const SearchParams& params) {
             std::cout << "info depth 1 score cp 0 nodes 1 pv " 
                      << moveToUCI(anyMove) << std::endl;
             std::cout << "bestmove " << moveToUCI(anyMove) << std::endl;
+            m_searching.store(false, std::memory_order_relaxed);
             return;
         } else {
             // No legal moves (checkmate or stalemate)
             std::cout << "info depth 1 score mate 0 nodes 1" << std::endl;
             std::cout << "bestmove 0000" << std::endl;
+            m_searching.store(false, std::memory_order_relaxed);
             return;
         }
     }
@@ -569,6 +600,9 @@ void UCIEngine::search(const SearchParams& params) {
     }
     
     limits.infinite = params.infinite;
+    
+    // Pass stop flag for external stop handling (LazySMP compatible)
+    limits.stopFlag = &m_stopRequested;
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
@@ -650,13 +684,19 @@ void UCIEngine::search(const SearchParams& params) {
     
     // Note: search::search already outputs UCI info during search
     
-    // Send best move
-    if (bestMove != Move()) {
-        sendBestMove(bestMove);
-    } else {
-        // No legal moves (checkmate or stalemate)
-        sendBestMove(Move());
+    // Only send bestmove if search wasn't stopped by UCI
+    if (!m_stopRequested.load(std::memory_order_relaxed)) {
+        // Send best move
+        if (bestMove != Move()) {
+            sendBestMove(bestMove);
+        } else {
+            // No legal moves (checkmate or stalemate)
+            sendBestMove(Move());
+        }
     }
+    
+    // Mark search as complete
+    m_searching.store(false, std::memory_order_relaxed);
 }
 
 Move UCIEngine::selectRandomMove() {
@@ -686,8 +726,8 @@ void UCIEngine::updateSearchInfo(SearchInfo& info, Move bestMove, int64_t search
 }
 
 void UCIEngine::handleStop() {
-    // For Stage 3: move selection is instantaneous, so just acknowledge
-    // In future phases, this would interrupt search
+    // Stop any ongoing search
+    stopSearch();
 }
 
 void UCIEngine::handleQuit() {

@@ -4,6 +4,9 @@
 #include <vector>
 #include <sstream>
 #include <chrono>
+#include <thread>
+#include <atomic>
+#include <mutex>
 #include "../core/board.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
@@ -25,6 +28,7 @@ namespace seajay {
 class UCIEngine {
 public:
     UCIEngine();
+    ~UCIEngine();  // Destructor to clean up search thread
     
     /**
      * Main UCI loop - processes commands until quit
@@ -42,6 +46,14 @@ private:
     Board m_board;
     bool m_quit;
     TranspositionTable m_tt;  // Transposition table for search
+    
+    // Thread management for search
+    // Note: Designed for forward compatibility with LazySMP
+    // Currently single search thread, but atomic stop flag will work with multiple threads
+    std::thread m_searchThread;
+    std::atomic<bool> m_searching{false};
+    std::atomic<bool> m_stopRequested{false};  // Global stop flag for all search threads (LazySMP ready)
+    std::mutex m_searchMutex;  // Protects search state changes
     
     // UCI options (Stage 14, Deliverable 1.8)
     bool m_useQuiescence = true;  // Enable/disable quiescence search
@@ -188,6 +200,8 @@ private:
     
     // Search and move selection
     void search(const SearchParams& params);
+    void searchThreadFunc(const SearchParams& params);
+    void stopSearch();
     Move selectRandomMove();
     
     SearchParams parseGoCommand(const std::vector<std::string>& tokens);
