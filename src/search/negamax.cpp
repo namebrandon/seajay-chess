@@ -721,6 +721,15 @@ eval::Score negamax(Board& board,
     // Phase 4.3.a-fix2: Pass depth for CMH gating
     orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
     
+    // Node explosion diagnostics: Track TT move ordering effectiveness
+    if (limits.nodeExplosionDiagnostics && ttMove != NO_MOVE) {
+        // Check if TT move is in the move list
+        bool ttMoveValid = std::find(moves.begin(), moves.end(), ttMove) != moves.end();
+        // Check if it's first
+        bool ttMoveFirst = (!moves.empty() && moves[0] == ttMove);
+        g_nodeExplosionStats.recordTTMoveFound(ttMoveValid, ttMoveFirst);
+    }
+    
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
         std::cerr << "Root: generated " << moves.size() << " moves, depth=" << depth << "\n";
@@ -1123,9 +1132,24 @@ eval::Score negamax(Board& board,
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
                     }
                     
-                    // Node explosion diagnostics: Track beta cutoff position
+                    // Node explosion diagnostics: Track beta cutoff position and move type
                     if (limits.nodeExplosionDiagnostics) {
-                        g_nodeExplosionStats.recordBetaCutoff(ply, legalMoveCount - 1);
+                        // Determine move type for diagnostic tracking
+                        bool isTTMove = (move == ttMove && ttMove != NO_MOVE);
+                        bool isKiller = false;
+                        bool isCaptureMv = isCapture(move) || isPromotion(move) || isEnPassant(move);
+                        
+                        // Check if it's a killer move
+                        if (!isCaptureMv && info.killers) {
+                            for (int slot = 0; slot < 2; ++slot) {
+                                if (move == info.killers->getKiller(ply, slot)) {
+                                    isKiller = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        g_nodeExplosionStats.recordBetaCutoff(ply, legalMoveCount - 1, isTTMove, isKiller, isCaptureMv);
                         if (legalMoveCount > 10) {
                             g_nodeExplosionStats.recordLateCutoff(ply, legalMoveCount - 1);
                         }

@@ -136,6 +136,11 @@ struct NodeExplosionStats {
         uint64_t killerNotInTop3 = 0;           // Killer caused cutoff but wasn't in top 3
         uint64_t cutoffAfterMove10 = 0;         // Beta cutoff after move 10
         
+        // Track TT move effectiveness
+        uint64_t ttMovesFound = 0;              // TT move was found in TT
+        uint64_t ttMovesValid = 0;              // TT move was legal in current position
+        uint64_t ttMovesFirst = 0;              // TT move was searched first
+        
         // Track what type of move causes cutoffs
         uint64_t ttMoveCutoffs = 0;             // TT move caused cutoff
         uint64_t killerCutoffs = 0;             // Killer move caused cutoff  
@@ -254,6 +259,14 @@ struct NodeExplosionStats {
         }
     }
     
+    void recordTTMoveFound(bool valid, bool first) {
+        moveOrderingFailure.ttMovesFound++;
+        if (valid) {
+            moveOrderingFailure.ttMovesValid++;
+            if (first) moveOrderingFailure.ttMovesFirst++;
+        }
+    }
+    
     void recordBetaCutoff(int ply, int moveIndex, bool isTTMove = false, bool isKiller = false, bool isCapture = false) {
         moveOrderingFailure.recordCutoff(moveIndex);
         
@@ -369,6 +382,14 @@ struct NodeExplosionStats {
                       << " (" << (100.0 * moveOrderingFailure.captureCutoffs / totalCutoffs) << "%)"
                       << ", quiet=" << moveOrderingFailure.quietCutoffs
                       << " (" << (100.0 * moveOrderingFailure.quietCutoffs / totalCutoffs) << "%)" << std::endl;
+            
+            if (moveOrderingFailure.ttMovesFound > 0) {
+                std::cout << "info string TT moves: found=" << moveOrderingFailure.ttMovesFound
+                          << ", valid=" << moveOrderingFailure.ttMovesValid
+                          << " (" << (100.0 * moveOrderingFailure.ttMovesValid / moveOrderingFailure.ttMovesFound) << "%)"
+                          << ", first=" << moveOrderingFailure.ttMovesFirst
+                          << " (" << (100.0 * moveOrderingFailure.ttMovesFirst / std::max<uint64_t>(1, moveOrderingFailure.ttMovesValid)) << "%)" << std::endl;
+            }
             
             if (moveOrderingFailure.ttMoveNotFirst > 0) {
                 std::cout << "info string TT move not first " << moveOrderingFailure.ttMoveNotFirst << " times" << std::endl;

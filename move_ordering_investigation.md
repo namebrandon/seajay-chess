@@ -70,8 +70,30 @@ quit" | ./bin/seajay 2>&1 | grep -A 10 "Node Explosion"
 - **Still a problem**: Should be 90%+ for good move ordering
 - **Added**: Enhanced diagnostics to track cutoff types (TT, killer, capture, quiet)
 
-### Current Status
+### Current Status (Updated)
 - First-move cutoff: 69.1% (needs +20% improvement)
-- Top-3 cutoff: 85.2% (needs +10% improvement)
+- Top-3 cutoff: 85.2% (needs +10% improvement)  
 - Late cutoffs: 1556 (too many)
 - Node explosion: Still 38.5x vs Stash
+
+### Latest Findings (2025-09-05)
+
+**TT Move Analysis:**
+- TT moves are found 20,100 times and ALWAYS placed first (100%)
+- But TT moves only cause 15,199 cutoffs (75.6% effectiveness)
+- This means TT moves are placed correctly but often don't cause cutoffs
+- Possible causes:
+  - TT storing moves from different depths
+  - TT pollution from sibling nodes
+  - Shallow searches polluting deep search TT entries
+
+**Move Type Cutoff Breakdown:**
+- Captures: 48.2% (highest - good MVV-LVA ordering)
+- TT moves: 26.1% (should be higher)
+- Killers: 19.7% (reasonable)
+- Quiet: 6.1% (expected to be low)
+
+### Root Causes (Refined):
+1. **TT moves not always good** - 25% of TT moves don't cause cutoffs
+2. **First-move cutoff at 69%** - Even with TT moves first, still searching too many moves
+3. **Move generation ordering** - May need to check if quiet moves are ordered properly
