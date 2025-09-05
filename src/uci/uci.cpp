@@ -684,15 +684,14 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Note: search::search already outputs UCI info during search
     
-    // Only send bestmove if search wasn't stopped by UCI
-    if (!m_stopRequested.load(std::memory_order_relaxed)) {
-        // Send best move
-        if (bestMove != Move()) {
-            sendBestMove(bestMove);
-        } else {
-            // No legal moves (checkmate or stalemate)
-            sendBestMove(Move());
-        }
+    // ALWAYS send bestmove, even if stopped (UCI protocol requirement)
+    // GUIs expect a bestmove response after every go command
+    if (bestMove != Move()) {
+        sendBestMove(bestMove);
+    } else {
+        // No legal moves or no best move found - send null move
+        // This ensures GUI always gets a response
+        sendBestMove(Move());
     }
     
     // Mark search as complete
