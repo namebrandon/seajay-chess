@@ -127,23 +127,23 @@ void UCIEngine::handleUCI() {
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
-    std::cout << "option name LMRMinDepth type spin default 3 min 0 max 10" << std::endl;
-    std::cout << "option name LMRMinMoveNumber type spin default 6 min 0 max 20" << std::endl;
-    std::cout << "option name LMRBaseReduction type spin default 1 min 0 max 3" << std::endl;
-    std::cout << "option name LMRDepthFactor type spin default 3 min 1 max 10" << std::endl;
+    std::cout << "option name LMRMinDepth type spin default 2 min 0 max 10" << std::endl;
+    std::cout << "option name LMRMinMoveNumber type spin default 2 min 0 max 20" << std::endl;
+    std::cout << "option name LMRBaseReduction type spin default 69 min 0 max 200" << std::endl;
+    std::cout << "option name LMRDepthFactor type spin default 114 min 1 max 200" << std::endl;
     std::cout << "option name LMRHistoryThreshold type spin default 50 min 10 max 90" << std::endl;
     std::cout << "option name LMRPvReduction type spin default 1 min 0 max 2" << std::endl;
     std::cout << "option name LMRNonImprovingBonus type spin default 1 min 0 max 3" << std::endl;
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
-    std::cout << "option name NullMoveStaticMargin type spin default 90 min 50 max 300" << std::endl;  // Phase A4
-    std::cout << "option name NullMoveMinDepth type spin default 3 min 2 max 5" << std::endl;
-    std::cout << "option name NullMoveReductionBase type spin default 2 min 1 max 4" << std::endl;
-    std::cout << "option name NullMoveReductionDepth6 type spin default 3 min 2 max 5" << std::endl;
-    std::cout << "option name NullMoveReductionDepth12 type spin default 4 min 3 max 6" << std::endl;
+    std::cout << "option name NullMoveStaticMargin type spin default 87 min 50 max 300" << std::endl;  // SPSA tuned
+    std::cout << "option name NullMoveMinDepth type spin default 2 min 1 max 5" << std::endl;
+    std::cout << "option name NullMoveReductionBase type spin default 4 min 1 max 6" << std::endl;
+    std::cout << "option name NullMoveReductionDepth6 type spin default 4 min 2 max 6" << std::endl;
+    std::cout << "option name NullMoveReductionDepth12 type spin default 5 min 3 max 7" << std::endl;
     std::cout << "option name NullMoveVerifyDepth type spin default 10 min 6 max 14" << std::endl;
-    std::cout << "option name NullMoveEvalMargin type spin default 200 min 100 max 400" << std::endl;
+    std::cout << "option name NullMoveEvalMargin type spin default 197 min 100 max 400" << std::endl;
     
     // PST Phase Interpolation option
     std::cout << "option name UsePSTInterpolation type check default true" << std::endl;
@@ -172,8 +172,8 @@ void UCIEngine::handleUCI() {
     
     // Phase R1/R2: Razoring options
     std::cout << "option name UseRazoring type check default true" << std::endl;
-    std::cout << "option name RazorMargin1 type spin default 300 min 100 max 800" << std::endl;
-    std::cout << "option name RazorMargin2 type spin default 500 min 200 max 1200" << std::endl;
+    std::cout << "option name RazorMargin1 type spin default 274 min 100 max 800" << std::endl;
+    std::cout << "option name RazorMargin2 type spin default 468 min 200 max 1200" << std::endl;
     
     // Futility Pruning options
     std::cout << "option name UseFutilityPruning type check default true" << std::endl;
@@ -248,13 +248,13 @@ void UCIEngine::handleUCI() {
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     std::cout << "option name MoveCountPruning type check default true" << std::endl;
-    std::cout << "option name MoveCountLimit3 type spin default 12 min 3 max 50" << std::endl;
-    std::cout << "option name MoveCountLimit4 type spin default 18 min 5 max 60" << std::endl;
-    std::cout << "option name MoveCountLimit5 type spin default 24 min 8 max 70" << std::endl;
-    std::cout << "option name MoveCountLimit6 type spin default 30 min 10 max 80" << std::endl;
+    std::cout << "option name MoveCountLimit3 type spin default 7 min 3 max 50" << std::endl;
+    std::cout << "option name MoveCountLimit4 type spin default 15 min 5 max 60" << std::endl;
+    std::cout << "option name MoveCountLimit5 type spin default 20 min 8 max 70" << std::endl;
+    std::cout << "option name MoveCountLimit6 type spin default 25 min 10 max 80" << std::endl;
     std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
     std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
-    std::cout << "option name MoveCountHistoryThreshold type spin default 1500 min 0 max 5000" << std::endl;
+    std::cout << "option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000" << std::endl;
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
     
@@ -272,8 +272,8 @@ void UCIEngine::handleUCI() {
     // Futility Pruning options (Phase 4 investigation)
     std::cout << "option name FutilityPruning type check default true" << std::endl;
     std::cout << "option name FutilityMaxDepth type spin default 7 min 0 max 10" << std::endl;
-    std::cout << "option name FutilityBase type spin default 150 min 50 max 500" << std::endl;
-    std::cout << "option name FutilityScale type spin default 60 min 20 max 200" << std::endl;
+    std::cout << "option name FutilityBase type spin default 241 min 50 max 500" << std::endl;
+    std::cout << "option name FutilityScale type spin default 73 min 20 max 200" << std::endl;
     
     // Important notice about evaluation scoring
     std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
@@ -1088,7 +1088,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             } catch (...) {
                 reduction = std::stoi(value);
             }
-            if (reduction >= 0 && reduction <= 3) {
+            if (reduction >= 0 && reduction <= 200) {
                 m_lmrBaseReduction = reduction;
                 std::cerr << "info string LMR base reduction set to: " << reduction << std::endl;
             }
@@ -1106,7 +1106,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             } catch (...) {
                 factor = std::stoi(value);
             }
-            if (factor >= 1 && factor <= 10) {
+            if (factor >= 1 && factor <= 200) {
                 m_lmrDepthFactor = factor;
                 std::cerr << "info string LMR depth factor set to: " << factor << std::endl;
             }

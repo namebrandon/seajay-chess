@@ -57,23 +57,23 @@ private:
     
     // Stage 18: Late Move Reductions (LMR) parameters
     bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)
-    int m_lmrMinDepth = 3;              // Minimum depth to apply LMR (0 to disable)
-    int m_lmrMinMoveNumber = 6;         // Start reducing after this many moves (tuned value)  
-    int m_lmrBaseReduction = 1;         // Base reduction amount
-    int m_lmrDepthFactor = 3;           // For formula: reduction = base + (depth-minDepth)/depthFactor
+    int m_lmrMinDepth = 2;              // Minimum depth to apply LMR (0 to disable) - SPSA tuned
+    int m_lmrMinMoveNumber = 2;         // Start reducing after this many moves - SPSA tuned  
+    int m_lmrBaseReduction = 69;        // Base reduction amount - SPSA tuned (scaled from centipawns)
+    int m_lmrDepthFactor = 114;         // For formula: reduction = base + (depth-minDepth)/depthFactor - SPSA tuned
     int m_lmrHistoryThreshold = 50;     // History score threshold percentage (0-100)
     int m_lmrPvReduction = 1;           // Reduction adjustment for PV nodes
     int m_lmrNonImprovingBonus = 1;     // Extra reduction when not improving
     
     // Stage 21: Null Move Pruning parameters  
     bool m_useNullMove = true;          // Enable/disable null move pruning (enabled for Phase A2)
-    int m_nullMoveStaticMargin = 90;   // Margin for static null move pruning - reduced from 120
-    int m_nullMoveMinDepth = 3;         // Minimum depth for null move pruning
-    int m_nullMoveReductionBase = 2;    // Base null move reduction
-    int m_nullMoveReductionDepth6 = 3;  // Reduction at depth >= 6
-    int m_nullMoveReductionDepth12 = 4; // Reduction at depth >= 12
+    int m_nullMoveStaticMargin = 87;    // Margin for static null move pruning - SPSA tuned
+    int m_nullMoveMinDepth = 2;         // Minimum depth for null move pruning - SPSA tuned
+    int m_nullMoveReductionBase = 4;    // Base null move reduction - SPSA tuned
+    int m_nullMoveReductionDepth6 = 4;  // Reduction at depth >= 6 - SPSA tuned
+    int m_nullMoveReductionDepth12 = 5; // Reduction at depth >= 12 - SPSA tuned
     int m_nullMoveVerifyDepth = 10;     // Depth threshold for verification search
-    int m_nullMoveEvalMargin = 200;     // Extra reduction when eval >> beta
+    int m_nullMoveEvalMargin = 197;     // Extra reduction when eval >> beta - SPSA tuned
     
     // PST Phase Interpolation parameters
     bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation
@@ -102,8 +102,8 @@ private:
     
     // Phase R1: Razoring parameters
     bool m_useRazoring = true;          // Enable/disable razoring (default true - SPRT proven +5.89 ELO)
-    int m_razorMargin1 = 300;           // Razoring margin for depth 1 (in centipawns)
-    int m_razorMargin2 = 500;           // Razoring margin for depth 2 (in centipawns)
+    int m_razorMargin1 = 274;           // Razoring margin for depth 1 (in centipawns) - SPSA tuned
+    int m_razorMargin2 = 468;           // Razoring margin for depth 2 (in centipawns) - SPSA tuned
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool m_showPVSStats = false;        // Show PVS statistics after each depth
@@ -120,13 +120,13 @@ private:
     
     // Phase 3: Move Count Pruning parameters (conservative implementation)
     bool m_useMoveCountPruning = true;    // Enable/disable move count pruning
-    int m_moveCountLimit3 = 12;           // Move limit for depth 3
-    int m_moveCountLimit4 = 18;           // Move limit for depth 4
-    int m_moveCountLimit5 = 24;           // Move limit for depth 5
-    int m_moveCountLimit6 = 30;           // Move limit for depth 6
-    int m_moveCountLimit7 = 36;           // Move limit for depth 7
-    int m_moveCountLimit8 = 42;           // Move limit for depth 8
-    int m_moveCountHistoryThreshold = 1500; // History score threshold for bonus moves
+    int m_moveCountLimit3 = 7;            // Move limit for depth 3 - SPSA tuned
+    int m_moveCountLimit4 = 15;           // Move limit for depth 4 - SPSA tuned
+    int m_moveCountLimit5 = 20;           // Move limit for depth 5 - SPSA tuned
+    int m_moveCountLimit6 = 25;           // Move limit for depth 6 - SPSA tuned
+    int m_moveCountLimit7 = 36;           // Move limit for depth 7 (not tuned)
+    int m_moveCountLimit8 = 42;           // Move limit for depth 8 (not tuned)
+    int m_moveCountHistoryThreshold = 0;  // History score threshold for bonus moves - SPSA tuned
     int m_moveCountHistoryBonus = 6;      // Extra moves for good history
     int m_moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
     
