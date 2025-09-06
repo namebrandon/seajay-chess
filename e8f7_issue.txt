@@ -1,0 +1,181 @@
+The Problem Position - r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17
+
+  - SeaJay: Chooses e8f7 (king move) at depths 4-12
+  - Komodo: Chooses c8d7 (developing bishop)
+  - Stockfish: Chooses d5d4 (pawn push)
+
+Critical Finding: It's NOT an Evaluation Issue!
+
+  Looking at the depth-1 evaluations from Black's perspective:
+
+  | Move                        | SeaJay Eval (Black POV) | Quality |
+  |-----------------------------|-------------------------|---------|
+  | Starting position           | +162 cp                 | -       |
+  | After d5d4 (Stockfish)      | +175 cp                 | Best!   |
+  | After e8f7 (SeaJay chooses) | +134 cp                 | Worst!  |
+  | After c8d7 (Komodo)         | +62 cp                  | Middle  |
+
+  SeaJay's evaluation is CORRECT! It properly recognizes that:
+  - d5d4 gives Black the best position (+175)
+  - e8f7 is worse for Black (+134)
+  - c8d7 is even worse (+62)
+
+  Search Instability
+
+  The issue is that SeaJay finds the right move initially (d5d4 at depth 1-2), but then switches to e8f7 at depth 4 and gets stuck there. This suggests:
+
+● Key Insights
+
+  1. Evaluation is CORRECT: SeaJay properly evaluates d5d4 > e8f7 > c8d7
+  2. Search instability at depth 3-4: The engine switches from correct moves to e8f7
+  3. Not a root ordering issue initially: The problem is the search choosing the wrong move at depth 4+
+
+Bash(echo -e "setoption name EvalExtended value true\nposition fen r1b1k3/pp3rpp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 w - - 4 18\ndebug eval" | ./bin/seajay 2>&1 | grep -E…)
+  ⎿  -- Material --
+       Material:             -2.28 cp
+     -- King Safety --
+     … +3 lines (ctrl+r to expand)
+
+● Bash(echo -e "setoption name EvalExtended value true\nposition fen r3k2r/pp1b2pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 w kq - 4 18\ndebug eval" | ./bin/seajay 2>&1 | grep -…)
+  ⎿  -- Material --
+       Material:             -2.28 cp
+     -- King Safety --
+     … +3 lines (ctrl+r to expand)
+
+● Hmm, king safety is identical. Let me get the full breakdown:
+
+● Bash(echo -e "setoption name EvalExtended value true\nposition fen r1b1k3/pp3rpp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 w - - 4 18\ndebug eval" | ./bin/seajay 2>&1 | tail -3…)
+  ⎿  Game Phase: 192/256 (MG: 75%, EG: 25%)
+
+     -- Material --
+     … +27 lines (ctrl+r to expand)
+
+● Wait, the static evaluation shows:
+  - Starting: +140 cp for Black
+  - After e8f7: +145 cp for Black
+  - After c8d7: +160 cp for Black
+
+  But the search at depth 1 showed very different values! This means quiescence search is finding tactics that change the evaluation significantly. The static eval is almost identical, but tactical sequences matter here.
+
+  The problem is that at depth 4, the search sees something tactical that makes e8f7 look better, but this is actually a horizon effect - at deeper depths, the tactical threat is refuted.
+
+  This confirms:
+  1. Static evaluation is fine - differences are minimal
+  2. The issue is search-based - tactical considerations at specific depths
+  3. e8f7 likely avoids some immediate threat that the search sees at depth 4
+  4. Node explosion occurs because the engine keeps trying to prove e8f7 is good when it's not
+
+
+> at what depth does q-search begin? could we temporarily isolate it and see if it is impacting the result, or do we feel q-search is not causing the issue here?
+
+● Excellent question! Quiescence search begins at depth 0 (leaf nodes). Let's test if it's causing the issue:
+
+● Bash(echo -e "setoption name UseQuiescence value false\nposition fen r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17\ngo depth 6" | ./bin/seajay 2>&1 | grep…)
+  ⎿  info depth 1 seldepth 1 score cp 268 nodes 2 nps 333 time 0 tthits 0.00 hashfull 0 pv g4g2
+     info depth 2 seldepth 3 score cp 54 nodes 106 nps 8833 time 0 moveeff 100.00 tthits 21.28 hashfull 0 pv c8d7
+     info depth 3 seldepth 4 score cp 189 ebf 52.00 nodes 327 nps 21800 time 0 moveeff 100.00 tthits 35.04 hashfull 0 pv c8d7 b2b7
+     … +4 lines (ctrl+r to expand)
+
+● Wow! Without quiescence, the engine doesn't stick to e8f7! It chooses:
+  - Depth 1: g4g2 (aggressive queen move)
+  - Depth 2-3: c8d7 (correct developing move!)
+  - Depth 4-5: d5d4 (Stockfish's choice!)
+  - Depth 6: g4a4 (queen retreat)
+
+  Now with quiescence enabled:
+
+● Bash(echo -e "setoption name UseQuiescence value true\nposition fen r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17\ngo depth 6" | ./bin/seajay 2>&1 | grep…)
+  ⎿  info depth 1 seldepth 2 score cp 162 nodes 37 nps 4625 time 0 tthits 0.00 hashfull 0 pv d5d4
+     info depth 2 seldepth 4 score cp 147 nodes 280 nps 21538 time 0 moveeff 38.24 tthits 10.53 hashfull 1 pv d5d4 c1c7
+     info depth 3 seldepth 7 score cp 146 ebf 6.57 nodes 1816 nps 106823 time 0 moveeff 49.31 tthits 74.58 hashfull 1 pv b7b6
+     … +4 lines (ctrl+r to expand)
+
+● Critical Discovery!
+
+  Quiescence search is causing the problem!
+
+  Without quiescence:
+  - Searches stay with reasonable moves (c8d7, d5d4)
+  - No e8f7 preference
+  - Much lower node counts
+
+  With quiescence:
+  - Switches to e8f7 at depth 4
+  - Sticks with it through depth 6+
+  - Higher node counts
+
+● Let me check what's happening in quiescence at depth 4:
+
+● Bash(echo -e "setoption name UseQuiescence value true\nsetoption name QSearchNodeLimit value 10\nposition fen r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 1…)
+  ⎿  info depth 1 seldepth 2 score cp 162 nodes 37 nps 4625 time 0 tthits 0.00 hashfull 0 pv d5d4
+     info depth 2 seldepth 4 score cp 147 nodes 280 nps 21538 time 0 moveeff 38.24 tthits 10.53 hashfull 1 pv d5d4 c1c7
+     info depth 3 seldepth 7 score cp 146 ebf 6.57 nodes 1816 nps 106823 time 0 moveeff 49.31 tthits 74.58 hashfull 1 pv b7b6
+     … +2 lines (ctrl+r to expand)
+
+● The issue persists even with limited quiescence. This suggests:
+
+  1. Quiescence is seeing tactics that make e8f7 look safe
+  2. The queen on g4 is very active, and after e8f7, quiescence might see checks/captures that look dangerous for other moves
+  3. King moves might avoid certain tactical sequences that quiescence explores
+
+  Let me check the quiescence implementation for any biases:
+
+Read(src/search/quiescence.h)
+  ⎿  Read 50 lines (ctrl+r to expand)
+
+● The problem is clear: quiescence search explores captures and checks, and in this tactical position with the Black queen on g4:
+
+  1. After e8f7: The king is "safer" on f7, avoiding immediate tactics
+  2. After other moves: Quiescence sees queen checks/captures that look dangerous
+  3. The horizon effect: At depth 4 + quiescence, e8f7 avoids tactics that would be refuted at deeper depths
+
+  Root Cause Summary
+
+  1. Not an evaluation problem - Static eval is correct
+  2. Quiescence search creates the preference for e8f7 at depth 4
+  3. Tactical position with active queen makes quiescence very sensitive
+  4. Node explosion occurs because the engine keeps searching e8f7 first
+
+  Potential Solutions
+
+  1. Better quiescence move ordering - Don't explore all checks/captures equally
+  2. King safety bonus in quiescence might be too high
+  3. Check extension limits - Maybe too many checks are extended
+  4. Delta pruning - Perhaps not aggressive enough with queen moves
+
+ Key Biases Found in Quiescence Search
+
+  1. King Move Priority in Check Evasion (Lines 224-240)
+
+  When in check, king moves are always searched first, before:
+  - Blocking moves
+  - Capturing the checking piece
+
+  This creates a strong bias toward king moves when under attack.
+
+  2. Check Extension Behavior (Lines 165-171)
+
+  - Checks are extended up to maxCheckPly (default 6)
+  - This means positions with lots of checks get searched deeper
+  - King moves might avoid check sequences that other moves face
+
+  3. No King Safety Evaluation in Quiescence
+
+  - Quiescence uses static eval which includes king safety
+  - But there's no special king safety bonus/penalty for moves
+  - The bias comes from move ordering, not evaluation
+
+  4. Stand-pat Not Available in Check (Lines 176-208)
+
+  - When in check, must make a move (no stand-pat)
+  - This forces exploration of all legal moves when checked
+  - King moves being first means they set the initial alpha
+
+  Why This Causes e8f7 Preference
+
+  In the problem position with Black queen on g4:
+
+  1. After non-king moves: Quiescence likely finds White checks that force Black into check evasion
+  2. Check evasion prioritizes king moves: So these lines get searched with king-move-first bias
+  3. After e8f7: The king on f7 might avoid immediate checks that e8 would face
+  4. Cascade effect: Once e8f7 avoids checks, it looks better in shallow searchTh
