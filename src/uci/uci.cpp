@@ -283,9 +283,10 @@ void UCIEngine::handleUCI() {
     std::cout << "option name FutilityBase type spin default 240 min 50 max 500" << std::endl;
     std::cout << "option name FutilityScale type spin default 73 min 20 max 200" << std::endl;
     
-    // Static Null Move options (NMR Phase 2)
+    // Static Null Move options (NMR Phase 2 - revised)
     std::cout << "option name StaticNullEndgameThreshold type spin default 1300 min 500 max 10000" << std::endl;
-    std::cout << "option name StaticNullMaxDepth type spin default 4 min 1 max 10" << std::endl;
+    std::cout << "option name StaticNullMaxDepth type spin default 8 min 1 max 10" << std::endl;
+    std::cout << "option name StaticNullEndgameMaxDepth type spin default 3 min 0 max 10" << std::endl;
     
     // Important notice about evaluation scoring
     std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
@@ -1602,6 +1603,28 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid StaticNullMaxDepth value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "StaticNullEndgameMaxDepth") {
+        try {
+            // SPSA-compatible: handle float values from OpenBench
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                // Fallback for integer strings
+                paramValue = std::stoi(value);
+            }
+            
+            if (paramValue >= 0 && paramValue <= 10) {
+                seajay::getConfig().staticNullEndgameMaxDepth = paramValue;
+                std::cerr << "info string StaticNullEndgameMaxDepth set to " << paramValue << std::endl;
+            } else {
+                std::cerr << "info string Invalid StaticNullEndgameMaxDepth value: " << paramValue << " (must be 0-10)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid StaticNullEndgameMaxDepth value: " << value << std::endl;
         }
     }
     // Stage 22 Phase P3.5: Handle ShowPVSStats option
