@@ -67,6 +67,9 @@ private:
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "conservative";  // SEE pruning: off, conservative, aggressive
     
+    // Phase 2.2: Root quiet re-ranking
+    int m_rootKingPenalty = 200;  // Penalty for non-capturing, non-castling king moves at root
+    
     // Stage 18: Late Move Reductions (LMR) parameters
     bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)
     int m_lmrMinDepth = 2;              // Minimum depth to apply LMR (SPSA-tuned)

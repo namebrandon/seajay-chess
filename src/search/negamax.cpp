@@ -131,18 +131,25 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     }
 
     // Root-specific quiet move tweaks: prefer checks and central pawn pushes
-    if (ply == 0 && !moves.empty()) {
+    // Phase 2.2: Apply toggleable king penalty, excluding castling
+    if (ply == 0 && !moves.empty() && limits != nullptr) {
         // Find where quiet moves start (after captures/promotions)
         auto quietStart = std::find_if(moves.begin(), moves.end(),
             [](const Move& m) { return !isPromotion(m) && !isCapture(m) && !isEnPassant(m); });
         if (quietStart != moves.end()) {
-            auto scoreQuiet = [&board](const Move& m) -> int {
+            auto scoreQuiet = [&board, limits](const Move& m) -> int {
                 int score = 0;
-                // Penalize king moves at the root
+                
+                // Phase 2.2: Penalize non-capturing, non-castling king moves at root
+                // Use UCI-controlled penalty value
                 Piece fromPiece = board.pieceAt(moveFrom(m));
                 if (fromPiece != NO_PIECE && typeOf(fromPiece) == KING) {
-                    score -= 200;
+                    // Explicitly exclude castling from penalty
+                    if (!isCastling(m)) {
+                        score -= limits->rootKingPenalty;
+                    }
                 }
+                
                 // Central pawn push bonus (d4/e4/d5/e5)
                 Square to = moveTo(m);
                 if (to == 27 || to == 28 || to == 35 || to == 36) {

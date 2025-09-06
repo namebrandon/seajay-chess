@@ -70,6 +70,9 @@ struct SearchLimits {
     uint64_t qsearchNodeLimit = 0;    // Per-position node limit (0 = unlimited)
     int maxCheckPly = 6;               // Maximum check extension depth in quiescence search
     
+    // Phase 2.2: Root quiet re-ranking
+    int rootKingPenalty = 200;        // Penalty for non-capturing, non-castling king moves at root
+    
     // Stage 18: Late Move Reductions (LMR) parameters
     bool lmrEnabled = true;           // Enable/disable LMR via UCI
     int lmrMinDepth = 2;              // Minimum depth to apply LMR (SPSA-tuned)

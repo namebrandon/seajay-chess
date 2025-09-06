@@ -124,6 +124,9 @@ void UCIEngine::handleUCI() {
     // Maximum check extension depth in quiescence search
     std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
     
+    // Phase 2.2: Root king penalty for non-capturing, non-castling king moves
+    std::cout << "option name RootKingPenalty type spin default 200 min 0 max 1000" << std::endl;
+    
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
@@ -623,6 +626,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
     limits.maxCheckPly = m_maxCheckPly;  // Pass maximum check extension depth
     
+    // Phase 2.2: Pass root king penalty
+    limits.rootKingPenalty = m_rootKingPenalty;
+    
     // Stage 18: Pass LMR parameters  
     limits.lmrEnabled = m_lmrEnabled;
     limits.lmrMinDepth = m_lmrMinDepth;
@@ -906,6 +912,20 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid MaxCheckPly value: " << value << std::endl;
+        }
+    }
+    // Phase 2.2: Handle RootKingPenalty option
+    else if (optionName == "RootKingPenalty") {
+        try {
+            int penalty = std::stoi(value);
+            if (penalty >= 0 && penalty <= 1000) {
+                m_rootKingPenalty = penalty;
+                std::cerr << "info string Root king penalty set to: " << penalty << std::endl;
+            } else {
+                std::cerr << "info string Invalid RootKingPenalty value: " << value << " (must be 0-1000)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid RootKingPenalty value: " << value << std::endl;
         }
     }
     // Stage 10 Remediation: Handle UseMagicBitboards option
