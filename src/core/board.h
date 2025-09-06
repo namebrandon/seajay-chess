@@ -288,6 +288,9 @@ public:
     // Calculate non-pawn material for zugzwang detection
     eval::Score nonPawnMaterial(Color c) const;
     
+    // Endgame detection for pruning decisions (NMR Phase 1)
+    bool isEndgame(eval::Score npmThreshold = eval::Score(1300)) const;
+    
     // Internal implementation (called by safe wrappers)
     void makeMoveInternal(Move move, UndoInfo& undo);
     void unmakeMoveInternal(Move move, const UndoInfo& undo);

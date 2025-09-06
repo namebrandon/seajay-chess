@@ -451,8 +451,10 @@ eval::Score negamax(Board& board,
     constexpr eval::Score ZUGZWANG_THRESHOLD = eval::Score(500 + 330);  // Rook + Bishop value (original)
     
     // Phase 1.2: Enhanced reverse futility pruning (static null move)
-    // Extended to depth 8 with more aggressive shallow margins
-    if (!isPvNode && depth <= 8 && depth > 0 && !weAreInCheck && std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+    // NMR Phase 2: Add endgame guard and use configurable max depth
+    if (!isPvNode && depth <= getConfig().staticNullMaxDepth && depth > 0 && !weAreInCheck 
+        && std::abs(beta.value()) < MATE_BOUND - MAX_PLY
+        && !board.isEndgame(eval::Score(getConfig().staticNullEndgameThreshold))) {
         // Phase 4.2.c: Use our pre-computed static eval
         if (staticEvalComputed) {
             // More aggressive margin at shallow depths, conservative at deeper

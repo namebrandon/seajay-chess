@@ -1994,6 +1994,13 @@ eval::Score Board::nonPawnMaterial(Color c) const {
     return value;
 }
 
+// Endgame detection for pruning decisions (NMR Phase 1)
+bool Board::isEndgame(eval::Score npmThreshold) const {
+    eval::Score npmUs = nonPawnMaterial(sideToMove());
+    eval::Score npmThem = nonPawnMaterial(~sideToMove());
+    return npmUs < npmThreshold || npmThem < npmThreshold;
+}
+
 // Direct FEN parsing helpers (atomic approach)
 FenResult Board::parseBoardPositionDirect(std::string_view boardStr, std::array<Piece, 64>& mailbox) {
     // Clear the mailbox first

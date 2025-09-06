@@ -31,6 +31,10 @@ public:
     int futilityBase = 150;             // Base margin for futility pruning (reset to original for exponential scaling)
     int futilityScale = 79;             // Scale factor per depth for futility margin (SPSA-tuned from 60)
     
+    // Static Null Move configuration (NMR Phase 2)
+    int staticNullEndgameThreshold = 1300;  // NPM threshold for endgame detection (1300 = R+B+pawn)
+    int staticNullMaxDepth = 4;             // Maximum depth for static null pruning (reduced from 8)
+    
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
