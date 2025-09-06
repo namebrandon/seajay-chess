@@ -21,9 +21,9 @@ BLUE = '\033[0;34m'
 NC = '\033[0m'  # No Color
 
 def parse_epd_line(line):
-    """Parse an EPD line to extract FEN, best moves, and ID"""
+    """Parse an EPD line to extract FEN, best moves, avoid moves, and ID"""
     if not line or line.startswith('#'):
-        return None, None, None
+        return None, None, None, None
     
     # Handle malformed FENs with EPD operations embedded
     # First, try to extract a clean FEN by looking for common EPD operations
@@ -41,17 +41,25 @@ def parse_epd_line(line):
                     line_clean = potential_fen + " 0 1 " + line[op_start:]
                     break
     
-    # Extract FEN (everything before 'bm')
-    match = re.match(r'^(.*?)\s+bm\s+(.*?);.*?id\s+"([^"]*)"', line_clean)
-    if not match:
-        return None, None, None
+    # Extract best moves (bm)
+    best_moves = []
+    bm_match = re.search(r'bm\s+([^;]+);', line_clean)
+    if bm_match:
+        best_moves = bm_match.group(1).strip().split()
     
-    fen = match.group(1).strip()
-    best_moves = match.group(2).strip().split()
-    position_id = match.group(3).strip()
+    # Extract avoid moves (am)
+    avoid_moves = []
+    am_match = re.search(r'am\s+([^;]+);', line_clean)
+    if am_match:
+        avoid_moves = am_match.group(1).strip().split()
     
-    # Remove any EPD operations that might still be in the FEN
-    for op in ['am', 'dm', 'pv']:
+    # Extract position ID
+    id_match = re.search(r'id\s+"([^"]*)"', line_clean)
+    position_id = id_match.group(1).strip() if id_match else "unknown"
+    
+    # Extract FEN (everything before first EPD operation)
+    fen = line_clean
+    for op in ['am ', 'bm ', 'dm ', 'pv ', 'id ']:
         if op in fen:
             fen = fen[:fen.find(op)].strip()
     
@@ -59,7 +67,11 @@ def parse_epd_line(line):
     if not re.search(r'\d+\s+\d+$', fen):
         fen += " 0 1"
     
-    return fen, best_moves, position_id
+    # Must have either best moves or avoid moves to be valid
+    if not best_moves and not avoid_moves:
+        return None, None, None, None
+    
+    return fen, best_moves, avoid_moves, position_id
 
 def convert_san_to_uci(fen, san_move):
     """
@@ -153,17 +165,17 @@ def run_engine_search(engine_path, fen, time_ms=2000, depth=0):
     
     return best_move, 0, 0, "?"
 
-def moves_match(engine_move, expected_moves, fen):
-    """Check if engine move matches any expected move (handling notation differences)"""
-    if not engine_move:
+def moves_match(engine_move, moves_list, fen):
+    """Check if engine move matches any move in the list (handling notation differences)"""
+    if not engine_move or not moves_list:
         return False
     
     # Direct match
-    if engine_move in expected_moves:
+    if engine_move in moves_list:
         return True
     
     # Try converting expected moves to UCI format
-    for expected in expected_moves:
+    for expected in moves_list:
         uci_expected = convert_san_to_uci(fen, expected)
         if uci_expected and engine_move == uci_expected:
             return True
@@ -228,7 +240,7 @@ def main():
     try:
         with open(test_file, 'r') as f:
             for line in f:
-                fen, best_moves, position_id = parse_epd_line(line.strip())
+                fen, best_moves, avoid_moves, position_id = parse_epd_line(line.strip())
                 if not fen:
                     continue
                 
@@ -254,18 +266,41 @@ def main():
                 total_depth += depth_reached
                 
                 # Check if move is correct
-                if moves_match(engine_move, best_moves, fen):
+                # For positions with avoid moves, we pass if we DON'T play them
+                # For positions with best moves, we pass if we DO play them
+                passed = False
+                fail_reason = ""
+                
+                if avoid_moves and moves_match(engine_move, avoid_moves, fen):
+                    # Failed - played a move we should avoid
+                    passed = False
+                    fail_reason = f"played avoid move: {' '.join(avoid_moves)}"
+                elif avoid_moves and not best_moves:
+                    # Only avoid moves specified - pass if we didn't play them
+                    passed = True
+                elif best_moves and moves_match(engine_move, best_moves, fen):
+                    # Passed - played one of the best moves
+                    passed = True
+                elif best_moves:
+                    # Failed - didn't play any of the best moves
+                    passed = False
+                    fail_reason = f"expected: {' '.join(best_moves)}"
+                
+                if passed:
                     correct_positions += 1
-                    print(f"{GREEN}✓{NC} {position_id}: {GREEN}PASS{NC} (move: {engine_move}, depth: {depth_reached}, score: {score}, nodes: {nodes})")
+                    if avoid_moves and not best_moves:
+                        print(f"{GREEN}✓{NC} {position_id}: {GREEN}PASS{NC} (avoided: {' '.join(avoid_moves)}, played: {engine_move}, depth: {depth_reached}, score: {score})")
+                    else:
+                        print(f"{GREEN}✓{NC} {position_id}: {GREEN}PASS{NC} (move: {engine_move}, depth: {depth_reached}, score: {score}, nodes: {nodes})")
                 else:
                     failed_positions += 1
                     failed_details.append({
                         'id': position_id,
-                        'expected': ' '.join(best_moves),
+                        'expected': ' '.join(best_moves) if best_moves else f"avoid {' '.join(avoid_moves)}",
                         'got': engine_move or 'none',
                         'fen': fen
                     })
-                    print(f"{RED}✗{NC} {position_id}: {RED}FAIL{NC} (expected: {' '.join(best_moves)}, got: {engine_move}, depth: {depth_reached}, score: {score})")
+                    print(f"{RED}✗{NC} {position_id}: {RED}FAIL{NC} ({fail_reason}, got: {engine_move}, depth: {depth_reached}, score: {score})")
     
     except FileNotFoundError:
         print(f"{RED}Error: Test file not found: {test_file}{NC}")
@@ -334,6 +369,18 @@ def main():
     
     print()
     print(f"Results saved to: {report_file}")
+    
+    # Save failed positions to separate file for analysis
+    if failed_details:
+        failed_file = f"tactical_failures_{timestamp}.csv"
+        with open(failed_file, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['position_id', 'fen', 'expected_move', 'engine_move', 'test_file'])
+            for fail in failed_details:
+                writer.writerow([fail['id'], fail['fen'], fail['expected'], fail['got'], test_file])
+        
+        print(f"Failed positions saved to: {failed_file}")
+        print(f"  {len(failed_details)} positions for tactical analysis")
     
     # Update history file
     history_file = "tactical_test_history.csv"
