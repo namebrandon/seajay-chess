@@ -781,16 +781,8 @@ eval::Score negamax(Board& board,
         prevMove = searchInfo.getStackEntry(ply - 1).move;
     }
     
-    // CM4.1: Track countermove hit attempts
-    if (prevMove != NO_MOVE && info.countermoveBonus > 0) {
-        Move counterMove = info.counterMoves->getCounterMove(prevMove);
-        if (counterMove != NO_MOVE) {
-            // Check if countermove is in our move list
-            if (std::find(moves.begin(), moves.end(), counterMove) != moves.end()) {
-                info.counterMoveStats.hits++;  // We found a countermove
-            }
-        }
-    }
+    // CM4.1: Track countermove availability (removed from here to avoid double-counting)
+    // Hit tracking now happens only when countermove causes a cutoff or is tried first
     
     // Order moves for better alpha-beta pruning
     // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
@@ -1272,6 +1264,7 @@ eval::Score negamax(Board& board,
                     } else if (info.countermoveBonus > 0 && prevMove != NO_MOVE &&
                                move == info.counterMoves->getCounterMove(prevMove)) {
                         stats.counterMoveCutoffs++;
+                        info.counterMoveStats.hits++;  // Track successful countermove cutoff
                     } else {
                         stats.quietCutoffs++;
                     }
