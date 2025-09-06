@@ -900,10 +900,12 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid QSearchNodeLimit value: " << value << std::endl;
         }
     }
-    // Handle MaxCheckPly option
+    // Handle MaxCheckPly option (SPSA-compatible with float rounding)
     else if (optionName == "MaxCheckPly") {
         try {
-            int checkPly = std::stoi(value);
+            // Use std::stod + std::round to properly handle SPSA float values
+            double dv = std::stod(value);
+            int checkPly = static_cast<int>(std::round(dv));
             if (checkPly >= 0 && checkPly <= 10) {
                 m_maxCheckPly = checkPly;
                 std::cerr << "info string Maximum check extension depth set to: " << checkPly << std::endl;
@@ -914,10 +916,12 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid MaxCheckPly value: " << value << std::endl;
         }
     }
-    // Phase 2.2: Handle RootKingPenalty option
+    // Phase 2.2: Handle RootKingPenalty option (SPSA-compatible with float rounding)
     else if (optionName == "RootKingPenalty") {
         try {
-            int penalty = std::stoi(value);
+            // Use std::stod + std::round to properly handle SPSA float values
+            double dv = std::stod(value);
+            int penalty = static_cast<int>(std::round(dv));
             if (penalty >= 0 && penalty <= 1000) {
                 m_rootKingPenalty = penalty;
                 std::cerr << "info string Root king penalty set to: " << penalty << std::endl;
@@ -1592,10 +1596,12 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
-    // Stage 23 CM3.1: Handle CountermoveBonus option (micro-phase testing)
+    // Stage 23 CM3.1: Handle CountermoveBonus option (SPSA-compatible with float rounding)
     else if (optionName == "CountermoveBonus") {
         try {
-            int bonus = std::stoi(value);
+            // Use std::stod + std::round to properly handle SPSA float values
+            double dv = std::stod(value);
+            int bonus = static_cast<int>(std::round(dv));
             if (bonus >= 0 && bonus <= 20000) {
                 m_countermoveBonus = bonus;
                 std::cerr << "info string CountermoveBonus set to " << bonus << std::endl;
@@ -1751,8 +1757,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         }
     }
     else if (optionName == "MoveCountHistoryBonus") {
-        m_moveCountHistoryBonus = std::stoi(value);
-        std::cerr << "info string MoveCountHistoryBonus set to " << value << std::endl;
+        // Use std::stod + std::round to properly handle SPSA float values
+        try {
+            double dv = std::stod(value);
+            m_moveCountHistoryBonus = static_cast<int>(std::round(dv));
+            std::cerr << "info string MoveCountHistoryBonus set to " << m_moveCountHistoryBonus << std::endl;
+        } catch (...) {
+            m_moveCountHistoryBonus = std::stoi(value);  // Fallback for integer strings
+            std::cerr << "info string MoveCountHistoryBonus set to " << m_moveCountHistoryBonus << std::endl;
+        }
     }
     else if (optionName == "MoveCountImprovingRatio") {
         m_moveCountImprovingRatio = std::stoi(value);
