@@ -25,14 +25,35 @@ def parse_epd_line(line):
     if not line or line.startswith('#'):
         return None, None, None
     
+    # Handle malformed FENs with EPD operations embedded
+    # First, try to extract a clean FEN by looking for common EPD operations
+    line_clean = line
+    for op in ['am ', 'bm ', 'dm ', 'pv ']:
+        if op in line:
+            # Find where the EPD operation starts and clean the FEN
+            op_start = line.find(op)
+            if op_start > 0:
+                # Extract potential FEN part before the operation
+                potential_fen = line[:op_start].strip()
+                # Check if it looks like a valid FEN ending
+                if re.search(r'[wb]\s+[KQkq-]+\s*$', potential_fen):
+                    # Reconstruct line with proper formatting
+                    line_clean = potential_fen + " 0 1 " + line[op_start:]
+                    break
+    
     # Extract FEN (everything before 'bm')
-    match = re.match(r'^(.*?)\s+bm\s+(.*?);.*?id\s+"([^"]*)"', line)
+    match = re.match(r'^(.*?)\s+bm\s+(.*?);.*?id\s+"([^"]*)"', line_clean)
     if not match:
         return None, None, None
     
     fen = match.group(1).strip()
     best_moves = match.group(2).strip().split()
     position_id = match.group(3).strip()
+    
+    # Remove any EPD operations that might still be in the FEN
+    for op in ['am', 'dm', 'pv']:
+        if op in fen:
+            fen = fen[:fen.find(op)].strip()
     
     # Add default move counters if not present
     if not re.search(r'\d+\s+\d+$', fen):
