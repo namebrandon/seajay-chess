@@ -68,7 +68,7 @@ private:
     std::string m_seePruning = "conservative";  // SEE pruning: off, conservative, aggressive
     
     // Phase 2.2: Root quiet re-ranking
-    int m_rootKingPenalty = 200;  // Penalty for non-capturing, non-castling king moves at root
+    int m_rootKingPenalty = 0;  // Penalty for non-capturing, non-castling king moves at root (0 = no penalty)
     
     // Stage 18: Late Move Reductions (LMR) parameters
     bool m_lmrEnabled = true;           // Enable/disable LMR via UCI (default on - +42 ELO)

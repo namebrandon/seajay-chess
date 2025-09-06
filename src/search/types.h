@@ -71,7 +71,7 @@ struct SearchLimits {
     int maxCheckPly = 6;               // Maximum check extension depth in quiescence search
     
     // Phase 2.2: Root quiet re-ranking
-    int rootKingPenalty = 200;        // Penalty for non-capturing, non-castling king moves at root
+    int rootKingPenalty = 0;          // Penalty for non-capturing, non-castling king moves at root (0 = no penalty)
     
     // Stage 18: Late Move Reductions (LMR) parameters
     bool lmrEnabled = true;           // Enable/disable LMR via UCI

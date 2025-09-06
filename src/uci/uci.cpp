@@ -125,7 +125,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
     
     // Phase 2.2: Root king penalty for non-capturing, non-castling king moves
-    std::cout << "option name RootKingPenalty type spin default 200 min 0 max 1000" << std::endl;
+    std::cout << "option name RootKingPenalty type spin default 0 min 0 max 1000" << std::endl;
     
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
