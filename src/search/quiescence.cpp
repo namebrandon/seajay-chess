@@ -219,35 +219,56 @@ eval::Score quiescence(
             return eval::Score(-32000 + ply);
         }
         
-        // QSearch Fix Option A: Reverse evasion move ordering
-        // Prioritize Captures > Blocks > King moves (except in double check)
+        // QSearch Improvement: Better evasion move ordering to prevent e8f7 bias
+        // Option B: SEE-based ordering for all evasion moves
         Square kingSquare = board.kingSquare(board.sideToMove());
         
-        // Handle double check case where only king moves are legal
+        // Check if we're in double check (king attacked by 2+ pieces)
+        // In double check, only king moves are legal, so no reordering needed
         bool isDoubleCheck = false;
         if (moves.size() > 0) {
+            // Quick check: if all moves are king moves, we're likely in double check
             isDoubleCheck = std::all_of(moves.begin(), moves.end(), 
                 [kingSquare](Move m) { return from(m) == kingSquare; });
         }
         
         if (!isDoubleCheck) {
-            // Single check: Reorder to deprioritize king moves
-            std::sort(moves.begin(), moves.end(), [kingSquare](Move a, Move b) {
-                bool aIsKingMove = (from(a) == kingSquare);
-                bool bIsKingMove = (from(b) == kingSquare);
+            // Option B: Use SEE to order all evasion moves
+            // This should provide the most tactically sound ordering
+            
+            // Calculate SEE values for all moves
+            std::vector<std::pair<Move, int>> movesWithSee;
+            movesWithSee.reserve(moves.size());
+            
+            for (Move move : moves) {
+                int seeValue = 0;
                 
-                // King moves have LOWEST priority (reversed from original)
-                if (aIsKingMove && !bIsKingMove) return false;
-                if (!aIsKingMove && bIsKingMove) return true;
+                if (isCapture(move)) {
+                    // For captures, use SEE evaluation
+                    seeValue = g_seeCalculator.see(board, move);
+                } else if (from(move) == kingSquare) {
+                    // King moves get a penalty to deprioritize them
+                    // unless they're the only safe option
+                    seeValue = -100;  // Small penalty
+                } else {
+                    // Blocking moves are neutral
+                    seeValue = 0;
+                }
                 
-                // Among non-king moves: captures before blocks
-                bool aIsCapture = isCapture(a);
-                bool bIsCapture = isCapture(b);
-                if (aIsCapture && !bIsCapture) return true;
-                if (!aIsCapture && bIsCapture) return false;
-                
-                return false;
-            });
+                movesWithSee.push_back({move, seeValue});
+            }
+            
+            // Sort by SEE value (highest first)
+            std::sort(movesWithSee.begin(), movesWithSee.end(), 
+                [](const auto& a, const auto& b) {
+                    return a.second > b.second;  // Higher SEE value first
+                });
+            
+            // Replace moves with sorted version
+            moves.clear();
+            for (const auto& [move, see] : movesWithSee) {
+                moves.push_back(move);
+            }
         }
     } else {
         // Not in check: only search captures
