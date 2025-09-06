@@ -1,46 +1,46 @@
 # Tactical Test Suite Evaluation Tool
 
 ## Overview
-This tool evaluates SeaJay's tactical performance using standard test suites like WAC (Win At Chess). It helps monitor tactical strength while making engine optimizations.
+This tool evaluates SeaJay's tactical performance using standard test suites like WAC (Win At Chess). It properly handles both algebraic (SAN) and coordinate (UCI) notation for accurate move validation.
 
-## Script
-- `tactical_test.sh` - Evaluates engine performance on tactical positions
+## Quick Start
 
-## Usage
-
-### Basic Usage
+### Run WAC Test (Recommended)
 ```bash
-./tools/tactical_test.sh
-```
-Uses defaults: SeaJay at ./bin/seajay, WAC test suite, 2 seconds per position
+# Standard test (1 second per position)
+./tools/run_wac_test.sh
 
-### Custom Parameters
-```bash
-./tools/tactical_test.sh [engine_path] [test_file] [time_ms] [depth]
+# Quick test (100ms per position)
+./tools/run_wac_test.sh ./bin/seajay 100
+
+# Deep test (2 seconds per position)
+./tools/run_wac_test.sh ./bin/seajay 2000
 ```
 
-Parameters:
-- `engine_path`: Path to engine binary (default: ./bin/seajay)
-- `test_file`: EPD file with test positions (default: ./tests/positions/wacnew.epd)
-- `time_ms`: Time per position in milliseconds (default: 2000)
-- `depth`: Fixed depth limit, 0 for time-based (default: 0)
-
-### Examples
-
-Quick tactical check (1 second per position):
+### Custom Test Suite
 ```bash
-./tools/tactical_test.sh ./bin/seajay ./tests/positions/wacnew.epd 1000
+# General syntax
+python3 tools/tactical_test.py [engine] [epd_file] [time_ms] [depth]
+
+# Example with custom EPD file
+python3 tools/tactical_test.py ./bin/seajay ./tests/my_positions.epd 1000
+
+# Fixed depth testing
+python3 tools/tactical_test.py ./bin/seajay ./tests/positions/wacnew.epd 0 10
 ```
 
-Deep analysis (5 seconds per position):
-```bash
-./tools/tactical_test.sh ./bin/seajay ./tests/positions/wacnew.epd 5000
-```
+## Key Features
 
-Fixed depth testing:
-```bash
-./tools/tactical_test.sh ./bin/seajay ./tests/positions/wacnew.epd 0 10
-```
+### Accurate Move Validation
+- Uses python-chess library for proper SAN to UCI conversion
+- Correctly validates moves like "Nca4" = "c5a4", "g6" = "g5g6"
+- No more false failures due to notation differences
+
+### Enhanced Output
+- Real-time progress updates every 20 seconds
+- Clear final statistics with success rate prominently displayed
+- Color-coded results for easy interpretation
+- Performance grade (Excellent/Good/Moderate/Poor)
 
 ## Output
 
