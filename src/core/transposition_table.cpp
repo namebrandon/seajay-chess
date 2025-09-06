@@ -165,7 +165,12 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         } else if (entry->generation() != m_generation && depth >= entry->depth) {
             // Or if it's old and at least as deep
             canReplace = true;
+        } else if (entry->generation() != m_generation) {
+            // CRITICAL FIX: Always allow replacing very old entries to prevent TT lockup
+            // Even if shallower, old entries must be replaceable
+            canReplace = true;
         }
+        // Note: If none of above, canReplace stays false (same gen, shallower, with move)
     }
     
     if (canReplace) {
