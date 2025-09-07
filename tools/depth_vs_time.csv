@@ -1,0 +1,2 @@
+timestamp,engine,engine_path,fen,time_ms,depth,nodes,bestmove,score_cp
+2025-09-07_08-16-36,komodo-14.1-linux,/workspace/external/engines/komodo/komodo-14.1-linux,r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17,1000,18,1762436,e8f7,-186
