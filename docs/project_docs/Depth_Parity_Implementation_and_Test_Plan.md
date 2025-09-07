@@ -184,3 +184,16 @@ Progress Log (append-only)
   - UseStagedMovePicker (prints/accepts setoption; does not change ordering yet)
   Files: src/uci/uci.h, src/uci/uci.cpp
   Implementers: wire these toggles during Phase 1/2 integration; keep default false.
+- 2025-09-07: Phase 1 decision recorded — integrate clustering directly into TranspositionTable (runtime switch) to preserve TranspositionTable* across search. See:
+  - docs/project_docs/scaffolds/TT_Integration_Guide.md (step-by-step integration)
+  After implementation, UseClusteredTT must reinitialize TT (resize) outside of active search and switch behavior without changing callers.
+- 2025-09-07: Phase 1 COMPLETED - TT Clustering (4-way) with replacement policy:
+  - Integrated clustering directly into TranspositionTable class with runtime switch
+  - Implemented 4-way set-associative clusters (64B cache-line sized, CLUSTER_SIZE=4)
+  - Replacement policy: empty → old gen → shallower → non-EXACT → NO_MOVE → oldest
+  - Added extended statistics tracking (scan length, replacement reasons)
+  - Methods updated: probe(), store(), resize(), hashfull(), fillRate(), prefetch()
+  - UCI integration: UseClusteredTT option switches modes and rebuilds TT
+  - Debug tt command shows backend type and clustering-specific stats
+  - Verification: bench 19191913 (identical with both modes)
+  - Build successful, UCI options work, ready for OpenBench A/B testing

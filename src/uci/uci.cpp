@@ -971,14 +971,28 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Transposition table disabled" << std::endl;
         }
     }
-    // Depth Parity scaffold: UseClusteredTT (no behavior change yet)
+    // Depth Parity: UseClusteredTT - switch between regular and clustered TT
     else if (optionName == "UseClusteredTT") {
-        if (value == "true") {
+        // Don't change while searching
+        if (m_searching) {
+            std::cerr << "info string Cannot change TT mode while searching" << std::endl;
+            return;
+        }
+        
+        if (value == "true" && !m_useClusteredTT) {
             m_useClusteredTT = true;
-            std::cerr << "info string (scaffold) Clustered TT toggle set to true (no effect yet)" << std::endl;
-        } else if (value == "false") {
+            m_tt.setClustered(true);
+            // Resize to rebuild with clustering
+            size_t currentSize = m_tt.sizeInMB();
+            m_tt.resize(currentSize);
+            std::cerr << "info string Clustered TT backend enabled (" << currentSize << " MB)" << std::endl;
+        } else if (value == "false" && m_useClusteredTT) {
             m_useClusteredTT = false;
-            std::cerr << "info string (scaffold) Clustered TT toggle set to false (no effect yet)" << std::endl;
+            m_tt.setClustered(false);
+            // Resize to rebuild without clustering
+            size_t currentSize = m_tt.sizeInMB();
+            m_tt.resize(currentSize);
+            std::cerr << "info string Regular TT backend enabled (" << currentSize << " MB)" << std::endl;
         }
     }
     // Depth Parity scaffold: UseStagedMovePicker (no behavior change yet)
@@ -2184,16 +2198,38 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
         }
     } else if (tokens.size() > 1 && tokens[1] == "tt") {
-        // Show TT collision statistics
+        // Show TT collision statistics  
         const auto& stats = m_tt.stats();
         std::cout << "=== TT Collision Diagnostics ===" << std::endl;
-        std::cout << "Probes: " << stats.probes.load() << std::endl;
-        std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
-        std::cout << "Stores: " << stats.stores.load() << std::endl;
-        std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
-        std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
-        std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
-                  << " (" << stats.collisionRate() << "%)" << std::endl;
+        
+        if (m_tt.isClustered()) {
+            std::cout << "Backend: Clustered (4-way)" << std::endl;
+            std::cout << "Probes: " << stats.probes.load() << std::endl;
+            std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores.load() << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Avg scan length: " << stats.avgScanLength() << std::endl;
+            std::cout << "Replacement reasons:" << std::endl;
+            std::cout << "  Empty: " << stats.replacedEmpty.load() << std::endl;
+            std::cout << "  Old gen: " << stats.replacedOldGen.load() << std::endl;
+            std::cout << "  Shallower: " << stats.replacedShallower.load() << std::endl;
+            std::cout << "  Non-exact: " << stats.replacedNonExact.load() << std::endl;
+            std::cout << "  No-move: " << stats.replacedNoMove.load() << std::endl;
+            std::cout << "  Oldest: " << stats.replacedOldest.load() << std::endl;
+        } else {
+            std::cout << "Backend: Regular (single-entry)" << std::endl;
+            std::cout << "Probes: " << stats.probes.load() << std::endl;
+            std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores.load() << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+        }
+        
         std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;
         std::cout << "\n(Run a search first, then check 'info string' output for missing TT store stats)" << std::endl;
     } else {
