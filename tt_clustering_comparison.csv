@@ -1,0 +1,17 @@
+Position,FEN,Mode,Depth,Nodes,Time_ms,NPS,TT_Hits,TT_Hit_Rate
+startpos,rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1,non-clustered,18,2662286,3000,1053119,,0
+startpos,rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1,clustered,17,1816046,3000,1062015,,0
+kiwipete,r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1,non-clustered,15,1463639,3000,673866,,0
+kiwipete,r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1,clustered,15,1749603,3000,663482,,0
+italian,r1bqkb1r/pp1ppppp/2n2n2/8/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 4 4,non-clustered,17,2511788,3000,996741,,0
+italian,r1bqkb1r/pp1ppppp/2n2n2/8/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 4 4,clustered,17,2355305,3000,967271,,0
+endgame,8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1,non-clustered,17,3580835,3000,1343652,,0
+endgame,8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1,clustered,17,3813376,3000,1283532,,0
+tactical1,4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 1,non-clustered,17,2215460,3000,958658,,0
+tactical1,4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 1,clustered,18,2670592,3000,921847,,0
+tactical2,2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQ - 0 1,non-clustered,19,2185736,3000,879571,,0
+tactical2,2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQ - 0 1,clustered,19,2161669,3000,854414,,0
+tactical3,rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNpPP/RNB1K2R w KQ - 3 9,non-clustered,20,2789376,3000,994784,,0
+tactical3,rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNpPP/RNB1K2R w KQ - 3 9,clustered,21,2707456,3000,954674,,0
+tactical4,r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1,non-clustered,18,1739670,3000,802801,,0
+tactical4,r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1,clustered,17,1811750,3000,765743,,0

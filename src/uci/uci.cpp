@@ -2204,6 +2204,7 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
         
         if (m_tt.isClustered()) {
             std::cout << "Backend: Clustered (4-way)" << std::endl;
+#ifdef TT_STATS_ENABLED
             std::cout << "Probes: " << stats.probes.load() << std::endl;
             std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
             std::cout << "Stores: " << stats.stores.load() << std::endl;
@@ -2219,8 +2220,26 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "  Non-exact: " << stats.replacedNonExact.load() << std::endl;
             std::cout << "  No-move: " << stats.replacedNoMove.load() << std::endl;
             std::cout << "  Oldest: " << stats.replacedOldest.load() << std::endl;
+#else
+            std::cout << "Probes: " << stats.probes << std::endl;
+            std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Avg scan length: " << stats.avgScanLength() << std::endl;
+            std::cout << "Replacement reasons:" << std::endl;
+            std::cout << "  Empty: " << stats.replacedEmpty << std::endl;
+            std::cout << "  Old gen: " << stats.replacedOldGen << std::endl;
+            std::cout << "  Shallower: " << stats.replacedShallower << std::endl;
+            std::cout << "  Non-exact: " << stats.replacedNonExact << std::endl;
+            std::cout << "  No-move: " << stats.replacedNoMove << std::endl;
+            std::cout << "  Oldest: " << stats.replacedOldest << std::endl;
+#endif
         } else {
             std::cout << "Backend: Regular (single-entry)" << std::endl;
+#ifdef TT_STATS_ENABLED
             std::cout << "Probes: " << stats.probes.load() << std::endl;
             std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
             std::cout << "Stores: " << stats.stores.load() << std::endl;
@@ -2228,6 +2247,15 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
             std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
                       << " (" << stats.collisionRate() << "%)" << std::endl;
+#else
+            std::cout << "Probes: " << stats.probes << std::endl;
+            std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+#endif
         }
         
         std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;

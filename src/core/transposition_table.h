@@ -55,8 +55,15 @@ struct alignas(16) TTEntry {
 static_assert(sizeof(TTEntry) == 16, "TTEntry must be exactly 16 bytes");
 static_assert(alignof(TTEntry) == 16, "TTEntry must be 16-byte aligned");
 
+// Enable TT stats only in debug builds or when explicitly requested
+#if defined(DEBUG) || defined(ENABLE_TT_STATS)
+#define TT_STATS_ENABLED
+#endif
+
 // Statistics for transposition table operations
 struct TTStats {
+#ifdef TT_STATS_ENABLED
+    // Use relaxed memory ordering for performance
     std::atomic<uint64_t> probes{0};
     std::atomic<uint64_t> hits{0};
     std::atomic<uint64_t> stores{0};
@@ -75,6 +82,23 @@ struct TTStats {
     std::atomic<uint64_t> replacedNonExact{0};  // Replaced non-EXACT bound
     std::atomic<uint64_t> replacedNoMove{0};    // Replaced NO_MOVE entry
     std::atomic<uint64_t> replacedOldest{0};    // Replaced oldest (round-robin)
+#else
+    // Dummy fields for release builds
+    uint64_t probes = 0;
+    uint64_t hits = 0;
+    uint64_t stores = 0;
+    uint64_t collisions = 0;
+    uint64_t probeEmpties = 0;
+    uint64_t probeMismatches = 0;
+    uint64_t clusterScans = 0;
+    uint64_t totalScanLength = 0;
+    uint64_t replacedEmpty = 0;
+    uint64_t replacedOldGen = 0;
+    uint64_t replacedShallower = 0;
+    uint64_t replacedNonExact = 0;
+    uint64_t replacedNoMove = 0;
+    uint64_t replacedOldest = 0;
+#endif
     
     void reset() {
         probes = 0;
@@ -94,18 +118,30 @@ struct TTStats {
     }
     
     double hitRate() const {
-        uint64_t p = probes.load();
-        return p > 0 ? (100.0 * hits.load() / p) : 0.0;
+#ifdef TT_STATS_ENABLED
+        uint64_t p = probes.load(std::memory_order_relaxed);
+        return p > 0 ? (100.0 * hits.load(std::memory_order_relaxed) / p) : 0.0;
+#else
+        return probes > 0 ? (100.0 * hits / probes) : 0.0;
+#endif
     }
     
     double collisionRate() const {
-        uint64_t p = probes.load();
-        return p > 0 ? (100.0 * probeMismatches.load() / p) : 0.0;
+#ifdef TT_STATS_ENABLED
+        uint64_t p = probes.load(std::memory_order_relaxed);
+        return p > 0 ? (100.0 * probeMismatches.load(std::memory_order_relaxed) / p) : 0.0;
+#else
+        return probes > 0 ? (100.0 * probeMismatches / probes) : 0.0;
+#endif
     }
     
     double avgScanLength() const {
-        uint64_t scans = clusterScans.load();
-        return scans > 0 ? (double)totalScanLength.load() / scans : 0.0;
+#ifdef TT_STATS_ENABLED
+        uint64_t scans = clusterScans.load(std::memory_order_relaxed);
+        return scans > 0 ? (double)totalScanLength.load(std::memory_order_relaxed) / scans : 0.0;
+#else
+        return clusterScans > 0 ? (double)totalScanLength / clusterScans : 0.0;
+#endif
     }
 };
 
@@ -205,7 +241,6 @@ private:
     }
     
     // Select victim entry within a cluster for replacement
-    int selectVictim(const TTEntry* cluster, Hash key, Move move, uint8_t depth) const;
     
     static size_t calculateNumEntries(size_t sizeInMB);
 };

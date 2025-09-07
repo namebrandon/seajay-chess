@@ -124,38 +124,92 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
                                int16_t evalScore, uint8_t depth, Bound bound) {
     if (!m_enabled) return;
     
+#ifdef TT_STATS_ENABLED
     m_stats.stores++;
+#endif
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
     
     if (m_clustered) {
-        // Clustered mode: select victim within cluster
-        size_t clusterIdx = clusterStart(key);
+        // Clustered mode: single-pass victim selection
+        const size_t clusterIdx = clusterStart(key);  // Compute once
         TTEntry* cluster = &m_entries[clusterIdx];
         
-        // Select victim within cluster
-        int victim = selectVictim(cluster, key, move, depth);
+        // Single-pass victim selection with inline scoring
+        int bestVictim = 0;
+        int bestScore = INT32_MAX;
         
-        if (victim >= 0) {
-            TTEntry* entry = &cluster[victim];
+        // Unrolled evaluation of all 4 entries
+        for (int i = 0; i < CLUSTER_SIZE; ++i) {
+            const TTEntry& entry = cluster[i];
             
-            // Track collision if replacing a different position
-            if (!entry->isEmpty() && entry->key32 != key32) {
-                m_stats.collisions++;
+            // Immediate return cases
+            if (entry.isEmpty()) {
+#ifdef TT_STATS_ENABLED
+                m_stats.replacedEmpty++;
+#endif
+                cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
+                return;
             }
             
-            // Store the new entry
-            entry->save(key32, move, score, evalScore, depth, bound, m_generation);
+            if (entry.key32 == key32) {
+                // Same position - update if appropriate
+                if (move == NO_MOVE && entry.move != NO_MOVE && depth <= entry.depth) {
+                    return;  // Don't overwrite move with NO_MOVE
+                }
+                cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
+                return;
+            }
+            
+            // Score this entry as victim candidate
+            // Simple scoring: oldGen(-10000) + depth*100 + nonExact(-50) + noMove(-25)
+            int victimScore = entry.depth * 100;
+            if (entry.generation() != m_generation) victimScore -= 10000;
+            if (entry.bound() != Bound::EXACT) victimScore -= 50;
+            if (entry.move == NO_MOVE) victimScore -= 25;
+            
+            // Penalty for evicting deep entries with moves for shallow NO_MOVE
+            if (move == NO_MOVE && entry.move != NO_MOVE) {
+                victimScore += 200;
+            }
+            
+            if (victimScore < bestScore) {
+                bestScore = victimScore;
+                bestVictim = i;
+            }
         }
+        
+        // Store in best victim slot
+        TTEntry* victim = &cluster[bestVictim];
+#ifdef TT_STATS_ENABLED
+        if (!victim->isEmpty() && victim->key32 != key32) {
+            m_stats.collisions++;
+        }
+        // Track replacement reason
+        if (victim->generation() != m_generation) {
+            m_stats.replacedOldGen++;
+        } else if (victim->depth < depth) {
+            m_stats.replacedShallower++;
+        } else if (victim->bound() != Bound::EXACT) {
+            m_stats.replacedNonExact++;
+        } else if (victim->move == NO_MOVE) {
+            m_stats.replacedNoMove++;
+        } else {
+            m_stats.replacedOldest++;
+        }
+#endif
+        victim->save(key32, move, score, evalScore, depth, bound, m_generation);
     } else {
         // Regular mode: single entry replacement
         size_t idx = index(key);
         TTEntry* entry = &m_entries[idx];
         
-        // FIX: Check for collision BEFORE checking isEmpty()
+#ifdef TT_STATS_ENABLED
+        // Check for collision BEFORE checking isEmpty()
         // A collision is when we have a non-empty entry with a different key
         if (!entry->isEmpty() && entry->key32 != key32) {
             m_stats.collisions++;
         }
+#endif
         
         // Track replacement decision for diagnostics
         bool canReplace = false;
@@ -213,42 +267,75 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
 TTEntry* TranspositionTable::probe(Hash key) {
     if (!m_enabled) return nullptr;
     
+#ifdef TT_STATS_ENABLED
     m_stats.probes++;
+#endif
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
     
     if (m_clustered) {
-        // Clustered mode: scan 4 entries
+        // Clustered mode: unrolled scan of 4 entries
+#ifdef TT_STATS_ENABLED
         m_stats.clusterScans++;
-        size_t clusterIdx = clusterStart(key);
-        int scanLength = 0;
+#endif
+        const size_t clusterIdx = clusterStart(key);  // Compute once
+        TTEntry* cluster = &m_entries[clusterIdx];
         
-        for (size_t i = 0; i < CLUSTER_SIZE; ++i) {
-            scanLength++;
-            TTEntry* entry = &m_entries[clusterIdx + i];
-            
-            if (entry->isEmpty()) {
-                m_stats.probeEmpties++;
-                continue;
-            }
-            
-            if (entry->key32 == key32) {
-                m_stats.hits++;
-                m_stats.totalScanLength += scanLength;
-                return entry;
-            }
-            
-            // Non-empty with wrong key = mismatch
-            m_stats.probeMismatches++;
+        // Unrolled scan - minimize branches
+        // Check all 4 entries without early return for better pipelining
+        TTEntry* e0 = &cluster[0];
+        TTEntry* e1 = &cluster[1];
+        TTEntry* e2 = &cluster[2];
+        TTEntry* e3 = &cluster[3];
+        
+        // Check for matches (most likely case first)
+        if (e0->key32 == key32 && !e0->isEmpty()) {
+#ifdef TT_STATS_ENABLED
+            m_stats.hits++;
+            m_stats.totalScanLength += 1;
+#endif
+            return e0;
+        }
+        if (e1->key32 == key32 && !e1->isEmpty()) {
+#ifdef TT_STATS_ENABLED
+            m_stats.hits++;
+            m_stats.totalScanLength += 2;
+#endif
+            return e1;
+        }
+        if (e2->key32 == key32 && !e2->isEmpty()) {
+#ifdef TT_STATS_ENABLED
+            m_stats.hits++;
+            m_stats.totalScanLength += 3;
+#endif
+            return e2;
+        }
+        if (e3->key32 == key32 && !e3->isEmpty()) {
+#ifdef TT_STATS_ENABLED
+            m_stats.hits++;
+            m_stats.totalScanLength += 4;
+#endif
+            return e3;
         }
         
-        // No match found in cluster
-        m_stats.totalScanLength += scanLength;
+#ifdef TT_STATS_ENABLED
+        // Count empties and mismatches for diagnostics
+        int empties = 0;
+        if (e0->isEmpty()) empties++;
+        if (e1->isEmpty()) empties++;
+        if (e2->isEmpty()) empties++;
+        if (e3->isEmpty()) empties++;
+        m_stats.probeEmpties += empties;
+        m_stats.probeMismatches += (4 - empties);
+        m_stats.totalScanLength += 4;
+#endif
+        
         return nullptr;
     } else {
         // Regular mode: single entry
         size_t idx = index(key);
         TTEntry* entry = &m_entries[idx];
         
+#ifdef TT_STATS_ENABLED
         // Track probe-side collisions for diagnostics
         if (entry->isEmpty()) {
             m_stats.probeEmpties++;
@@ -261,6 +348,12 @@ TTEntry* TranspositionTable::probe(Hash key) {
                 m_stats.probeMismatches++;
             }
         }
+#else
+        // Fast path without stats
+        if (!entry->isEmpty() && entry->key32 == key32) {
+            return entry;
+        }
+#endif
         
         return nullptr;
     }
@@ -362,96 +455,6 @@ size_t TranspositionTable::hashfull() const {
         
         return used;  // Returns value 0-1000
     }
-}
-
-int TranspositionTable::selectVictim(const TTEntry* cluster, Hash key, Move move, uint8_t depth) const {
-    uint32_t key32 = static_cast<uint32_t>(key >> 32);
-    
-    // Replacement policy priority (from design doc):
-    // 1) Empty slot
-    // 2) Old generation entries  
-    // 3) Shallower depth entries
-    // 4) Non-EXACT bound entries
-    // 5) NO_MOVE entries
-    // 6) Oldest (round-robin)
-    
-    int bestVictim = -1;
-    int bestScore = INT32_MAX;  // Lower score = better victim
-    
-    for (size_t i = 0; i < CLUSTER_SIZE; ++i) {
-        const TTEntry& entry = cluster[i];
-        int score = 0;
-        
-        // Priority 1: Empty slot (immediate return)
-        if (entry.isEmpty()) {
-            m_stats.replacedEmpty++;
-            return i;
-        }
-        
-        // Same position - always prefer to update it
-        if (entry.key32 == key32) {
-            // Special case: protect move-carrying entries from NO_MOVE overwrites
-            if (move == NO_MOVE && entry.move != NO_MOVE && depth <= entry.depth) {
-                score = INT32_MAX;  // Never replace
-            } else {
-                return i;  // Always update same position if allowed
-            }
-        } else {
-            // Different position - apply replacement policy
-            
-            // Priority 2: Old generation (significant weight)
-            if (entry.generation() != m_generation) {
-                score -= 10000;
-            }
-            
-            // Priority 3: Depth (lower depth = better victim)
-            score += entry.depth * 100;
-            
-            // Priority 4: Bound type (non-EXACT is preferred victim)
-            if (entry.bound() != Bound::EXACT) {
-                score -= 50;
-            }
-            
-            // Priority 5: NO_MOVE entries are preferred victims
-            if (entry.move == NO_MOVE) {
-                score -= 25;
-            }
-            
-            // Special penalty: Don't evict deep entries with moves for shallow NO_MOVE
-            if (move == NO_MOVE && entry.move != NO_MOVE) {
-                score += 200;  // Make it less likely to be victim
-            }
-        }
-        
-        if (score < bestScore) {
-            bestScore = score;
-            bestVictim = i;
-        }
-    }
-    
-    // Track replacement reason (approximate based on score)
-    if (bestVictim >= 0) {
-        const TTEntry& victim = cluster[bestVictim];
-        if (victim.generation() != m_generation) {
-            m_stats.replacedOldGen++;
-        } else if (victim.depth < depth) {
-            m_stats.replacedShallower++;
-        } else if (victim.bound() != Bound::EXACT) {
-            m_stats.replacedNonExact++;
-        } else if (victim.move == NO_MOVE) {
-            m_stats.replacedNoMove++;
-        } else {
-            m_stats.replacedOldest++;
-        }
-    }
-    
-    // Fallback: round-robin if somehow no victim selected (shouldn't happen)
-    if (bestVictim < 0) {
-        bestVictim = (m_roundRobin++) % CLUSTER_SIZE;
-        m_stats.replacedOldest++;
-    }
-    
-    return bestVictim;
 }
 
 size_t TranspositionTable::calculateNumEntries(size_t sizeInMB) {

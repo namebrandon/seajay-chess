@@ -187,6 +187,20 @@ Progress Log (append-only)
 - 2025-09-07: Phase 1 decision recorded — integrate clustering directly into TranspositionTable (runtime switch) to preserve TranspositionTable* across search. See:
   - docs/project_docs/scaffolds/TT_Integration_Guide.md (step-by-step integration)
   After implementation, UseClusteredTT must reinitialize TT (resize) outside of active search and switch behavior without changing callers.
+- 2025-09-07: Phase 1 (Clustered TT) validation results reviewed (see phase1_validation_results.md). Outcome: functional correctness (bench identical), +2.56pp TT hit rate, mixed node counts (+4% average) with large opening gain (-31.8% nodes) but tactical overhead. Next steps:
+  - Phase 1b (TT micro-optimizations):
+    - Unroll 4-entry cluster scan and minimize branches; compute clusterStart once.
+    - Prefetch &entries[clusterStart] only; verify prefetch distance.
+    - Make TTStats non-atomic or compiled-out in Release (TT_DEBUG only) to avoid hot-path atomics; or use memory_order_relaxed and/or sample-based counting.
+    - Consider single-pass victim selection with a simple score (oldGen>>depth>>bound>>move) to avoid multiple scans.
+    - Re-check hashfull computation over clusters, not entries.
+  - Measurement plan:
+    - A/B UseClusteredTT true/false on OpenBench (10+0.1, Hash=128MB) with stats on/off to isolate stats overhead.
+    - Collect per-depth TT hit rate, TT cutoff counts, and average cluster scan length (if enabled) with debug builds only.
+  - Risk mitigation:
+    - Keep UseClusteredTT default false until OpenBench PASS.
+    - Do not resize TT while searching; switch only post-stop/ucinewgame.
+  - Dependency: Phase 2 MovePicker likely increases first-move cutoffs and can offset any per-node overhead introduced by clustering.
 - 2025-09-07: Phase 1 COMPLETED - TT Clustering (4-way) with replacement policy:
   - Integrated clustering directly into TranspositionTable class with runtime switch
   - Implemented 4-way set-associative clusters (64B cache-line sized, CLUSTER_SIZE=4)
