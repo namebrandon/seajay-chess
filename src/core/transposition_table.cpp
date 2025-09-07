@@ -86,7 +86,7 @@ TranspositionTable::TranspositionTable()
     ) {}
 
 TranspositionTable::TranspositionTable(size_t sizeInMB)
-    : m_generation(0), m_enabled(true), m_clustered(false) {
+    : m_generation(0), m_enabled(true), m_clustered(true) {
     resize(sizeInMB);
 }
 
