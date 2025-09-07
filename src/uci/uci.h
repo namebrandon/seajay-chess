@@ -149,6 +149,10 @@ private:
     
     // Multi-threading support (stub for OpenBench compatibility)
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
+
+    // Depth Parity scaffolds: UCI toggles (no behavior change yet)
+    bool m_useClusteredTT = false;      // Toggle for clustered TT backend (scaffold only)
+    bool m_useStagedMovePicker = false; // Toggle for staged MovePicker (scaffold only)
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)

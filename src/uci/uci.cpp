@@ -244,6 +244,9 @@ void UCIEngine::handleUCI() {
     // Stage 12: Transposition Table options
     std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
+    // Depth Parity scaffold toggles (no behavior change yet)
+    std::cout << "option name UseClusteredTT type check default false" << std::endl;
+    std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -966,6 +969,26 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_tt.setEnabled(false);
             std::cerr << "info string Transposition table disabled" << std::endl;
+        }
+    }
+    // Depth Parity scaffold: UseClusteredTT (no behavior change yet)
+    else if (optionName == "UseClusteredTT") {
+        if (value == "true") {
+            m_useClusteredTT = true;
+            std::cerr << "info string (scaffold) Clustered TT toggle set to true (no effect yet)" << std::endl;
+        } else if (value == "false") {
+            m_useClusteredTT = false;
+            std::cerr << "info string (scaffold) Clustered TT toggle set to false (no effect yet)" << std::endl;
+        }
+    }
+    // Depth Parity scaffold: UseStagedMovePicker (no behavior change yet)
+    else if (optionName == "UseStagedMovePicker") {
+        if (value == "true") {
+            m_useStagedMovePicker = true;
+            std::cerr << "info string (scaffold) Staged MovePicker toggle set to true (no effect yet)" << std::endl;
+        } else if (value == "false") {
+            m_useStagedMovePicker = false;
+            std::cerr << "info string (scaffold) Staged MovePicker toggle set to false (no effect yet)" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)
