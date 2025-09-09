@@ -1,14 +1,31 @@
-# Phase 2a Implementation Plan: Ranked MovePicker (Scoring + Shortlist)
+# Phase 2 – Ranked MovePicker: Revised Plan (Lessons‑Learned + Granular Steps)
 
 ## Executive Summary
-Phase 2a introduces a lightweight ranked move picker that scores all moves in a single pass and maintains a top-K shortlist for better early decision quality. This phase focuses solely on scoring and ordering - no pruning changes.
+We redesign Phase 2 around a ranked MovePicker with strict, incremental steps and a test‑after‑each‑change workflow. The goal is to improve early decision quality without destabilizing search. Each sub‑phase is a single functional change gated by SPRT against the Phase 1 baseline.
 
 ## Design Principles
-- **Single-pass, O(n) complexity** - No nested loops or quadratic operations
-- **Zero dynamic allocations** - Stack-based fixed arrays only
-- **Lazy SEE evaluation** - Compute SEE only when needed for shortlist boundary
-- **Clean fallback path** - UCI toggle with legacy ordering preserved
-- **Root safety** - Keep legacy ordering at ply 0 until proven safe
+- Single‑pass O(n), no quadratic work or repeated sorts
+- No dynamic allocations or hidden copies; fixed‑size stack arrays
+- In‑check parity: generate check evasions when in check (never iterate non‑evasions)
+- Clean fallback: feature behind UCI toggle; legacy path intact
+- Root and QS safety in 2a: keep ranked picker off at root and in quiescence
+- Deterministic ordering with clear tie‑breaks
+
+## Critical Lessons Learned (Do/Don’t)
+
+Do
+- Use check‑evasion generator when in check.
+- Include non‑capture promotions and top quiets in the shortlist.
+- MVV‑LVA order captures; don’t return captures in generator order.
+- After shortlist, hand off the remainder to the legacy orderer (captures + killers/history quiets).
+- Dedup TT move by exact encoding (including promotion piece).
+- Add bound checks/asserts around fixed arrays (shortlist, QS arrays) in non‑Release.
+
+Don’t
+- Don’t enable ranked picker in QS or at root in 2a.
+- Don’t rely on legal move generation for ranking (avoid tryMakeMove in ordering).
+- Don’t sort full lists or re‑sort per next(); rank once per node.
+- Don’t bury promotions or good quiets; don’t skip evasions when in check.
 
 ## Core Components
 
@@ -58,7 +75,7 @@ For deterministic ordering:
 2. MVV-LVA value (secondary)
 3. Raw move encoding (tertiary)
 
-### 3. Top-K Shortlist Mechanics
+### 3. Top‑K Shortlist Mechanics
 
 #### Implementation
 - **Fixed size**: K=10 initially (stack array)
@@ -69,19 +86,17 @@ For deterministic ordering:
 #### Future Enhancement (not in 2a)
 - Depth-aware K: `K = min(12, 8 + depth/2)`
 
-### 4. Move Yield Order
+### 4. Move Yield Order (2a target behavior)
 
 #### Main Search (negamax)
-1. **TT move** (if legal and non-null)
-2. **Top-K shortlist** (sorted by score)
-3. **Remaining captures** (SEE≥0 first, then SEE<0)
-4. **Remaining quiets** (unsorted)
+1. TT move (if present)
+2. Top‑K shortlist (captures + quiets + promotions; sorted)
+3. Remainder via legacy orderer:
+   - Captures: MVV‑LVA ordered
+   - Quiets: killers → history (existing path)
 
-#### Quiescence Search
-1. **TT move** (if capture/promotion and legal)
-2. **Captures** (MVV-LVA ordered, optional lazy SEE)
-3. **Promotions** (if not captures)
-- **No quiets in qsearch**
+#### Quiescence Search (2a)
+- Ranked picker disabled; legacy captures/promotions only (no quiets)
 
 ### 5. TT Move Handling
 
@@ -117,16 +132,7 @@ if (UseRankedMovePicker && ply > 0) {  // Skip root for safety
 ```
 
 ### Quiescence Integration
-```cpp
-if (UseRankedMovePicker) {
-    RankedMovePickerQS picker(...);  // Simplified variant
-    while (Move move = picker.next()) {
-        // existing qsearch logic
-    }
-} else {
-    // Legacy ordering
-}
-```
+- 2a: keep legacy path only; do not enable ranked QS
 
 ### UCI Toggle
 - `UseRankedMovePicker` (default: false)
@@ -177,9 +183,14 @@ if (UseRankedMovePicker) {
 - **Promotion handling**: Include piece in all comparisons
 
 ### Regression Risks
-- **Root ordering**: Keep legacy at ply 0
-- **Qsearch expansion**: No quiets, minimal changes
-- **Bench deviation**: Accept small changes, document
+- Root ordering: keep legacy at ply 0 for 2a
+- Qsearch: ranked picker off; keep captures‑only ordering
+- Bench deviation: acceptable within noise; document
+
+### UB/LTO Risks (OpenBench)
+- Fixed arrays: hard bound checks in debug; never write past end
+- Consistent ifdefs across TUs for stats/debug to avoid ODR issues under LTO
+- Avoid relying on undefined iteration over uninitialized slots
 
 ## Testing Protocol
 
@@ -209,27 +220,25 @@ Book: UHO_4060_v2.epd
 
 ## Implementation Checklist
 
-### Phase 2a Core Tasks
-- [ ] Create feature branch from current HEAD
-- [ ] Implement RankedMovePicker class
-  - [ ] Scoring functions (lazy SEE for captures)
-  - [ ] Top-K maintenance
-  - [ ] Iterator interface
-  - [ ] TT move handling
-- [ ] Implement RankedMovePickerQS (simplified)
-- [ ] Wire UCI toggle (no behavior change initially)
-- [ ] Integrate with negamax (ply > 0 only)
-- [ ] Integrate with quiescence
-- [ ] Add telemetry hooks
-- [ ] Test locally (unit, perft, bench, tactical)
-- [ ] Push to remote with proper bench in commit
-- [ ] OpenBench A/B test
+### Phase 2a Core Tasks (granular, one change per SPRT)
+Use the companion checklist before each sub‑phase: `docs/project_docs/scaffolds/Phase2a_Checklist.md`.
+- [ ] 2a.0: Scaffolds only (UCI toggle, no behavior change); verify build parity
+- [ ] 2a.1: TT‑only sanity (yield TT first; no other change)
+- [ ] 2a.2: Captures‑only shortlist (K small), remainder legacy; SPRT
+- [ ] 2a.3: Add quiets + promotions to shortlist; remainder legacy; SPRT
+- [ ] 2a.4: In‑check parity (use check evasions in picker ctor); SPRT
+- [ ] 2a.5: Deterministic tie‑breaks; assert/guards around fixed arrays; SPRT
+- [ ] 2a.6: Minimal telemetry hooks (compiled‑out in Release); SPRT
+- [ ] 2a.7: QS remains legacy; confirm no ranked QS paths via asserts/log once; SPRT
+
+For each sub‑phase:
+- Clean rebuild; bench in commit; short local sanity; then OpenBench SPRT vs Phase 1 end.
 
 ### Success Criteria
-- No regression in tactical strength
-- First-move cutoff rate maintained or improved
-- Clean, maintainable code
-- Bench documentation in commit
+- Non‑regression SPRT vs Phase 1 end at 10+0.1 (bounds [-3.00, 3.00])
+- First‑move cutoff and PV stability not worse than baseline
+- Bench within expected variance; no unexplained perf cliffs
+- No sanitizer or bounds violations in Makefile/OB build
 
 ## Notes for Implementation
 
@@ -264,5 +273,10 @@ struct RankedMovePicker {
 - Use __builtin_expect for likely paths
 - Consider prefetch for history table access
 
+## OpenBench Build Parity & Sanitizers
+- OpenBench uses Makefile with -O3 -flto -march=native. Reproduce locally for parity.
+- Add ASan/UBSan CI target (disable LTO) for quick overflow/UB detection.
+- If OB shows regressions not seen locally, run the Makefile build locally and check with minimal logging.
+
 ## Conclusion
-Phase 2a provides a focused, low-risk improvement to move ordering through lightweight scoring and shortlist extraction. By avoiding pruning changes and keeping a clean fallback path, we minimize regression risk while setting up the foundation for Phase 2b's rank-aware pruning gates.
+Phase 2 now proceeds in granular sub‑phases with an SPRT after each functional change. The shortlist improves early decisions; all remainder ordering stays legacy to preserve strength. Only after 2a passes do we introduce rank‑aware pruning gates in 2b.
