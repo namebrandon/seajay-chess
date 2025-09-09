@@ -44,8 +44,10 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_phase(Phase::TT_MOVE)
     , m_seeCalculator()
 {
-    // Generate pseudo-legal moves (MUCH faster than legal moves)
-    MoveGenerator::generatePseudoLegalMoves(board, m_allMoves);
+    // Generate appropriate moves based on check status
+    // CRITICAL FIX: Must use check evasions when in check!
+    // Use generateMovesForSearch which internally handles check evasions
+    MoveGenerator::generateMovesForSearch(board, m_allMoves, false);
     
     // Validate TT move is in the move list (pseudo-legal check)
     // We'll validate legality when we actually try it
@@ -69,9 +71,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     int16_t minShortlistScore = INT16_MIN;
     int minShortlistIdx = 0;  // Track the index of minimum score
     
-    // PHASE 2A SIMPLIFIED: Only rank captures in shortlist for now
-    // Quiets will use legacy ordering
-    constexpr bool CAPTURES_ONLY_SHORTLIST = true;
+    // Include both captures AND best quiets in shortlist
+    // FIX: Was excluding all quiets from shortlist, losing killer/history ordering
+    constexpr bool CAPTURES_ONLY_SHORTLIST = false;
     
     for (size_t i = 0; i < m_allMoves.size(); ++i) {
         Move move = m_allMoves[i];
@@ -179,37 +181,86 @@ Move RankedMovePicker::nextInternal() {
             m_moveIndex = 0;
             [[fallthrough]];
             
-        case Phase::REMAINING_GOOD_CAPTURES:
-            // Phase 2a SIMPLIFIED: No SEE, just MVV-LVA ordering
-            // All captures not in shortlist, ordered by MVV-LVA
-            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
-                Move move = m_allMoves[m_moveIndex++];
-                if (move == m_ttMove || isInShortlist(move)) continue;
-                
-                if (isCapture(move)) {
-                    return move;
+        case Phase::REMAINING_GOOD_CAPTURES: {
+            // FIX: Sort remaining captures by MVV-LVA before yielding
+            // First, collect all remaining captures
+            if (!m_remainingCapturesSorted) {
+                m_remainingCaptures.clear();
+                for (size_t i = 0; i < m_allMoves.size(); ++i) {
+                    Move move = m_allMoves[i];
+                    if (move == m_ttMove || isInShortlist(move)) continue;
+                    if (isCapture(move)) {
+                        int16_t score = getMVVLVAScore(m_board, move);
+                        m_remainingCaptures.push_back({move, score});
+                    }
                 }
+                // Sort by MVV-LVA score
+                std::sort(m_remainingCaptures.begin(), m_remainingCaptures.end());
+                m_remainingCapturesSorted = true;
+                m_remainingCaptureIndex = 0;
             }
+            
+            // Yield sorted captures
+            if (m_remainingCaptureIndex < static_cast<int>(m_remainingCaptures.size())) {
+                return m_remainingCaptures[m_remainingCaptureIndex++].move;
+            }
+            
             m_phase = Phase::REMAINING_QUIETS;
             m_moveIndex = 0;
             [[fallthrough]];
+        }
             
         case Phase::REMAINING_BAD_CAPTURES:
             // Skip this phase in 2a - no SEE filtering
             m_phase = Phase::REMAINING_QUIETS;
             [[fallthrough]];
             
-        case Phase::REMAINING_QUIETS:
-            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
-                Move move = m_allMoves[m_moveIndex++];
-                if (move == m_ttMove || isInShortlist(move)) continue;
+        case Phase::REMAINING_QUIETS: {
+            // FIX: Order remaining quiets properly (killers first, then by history)
+            if (!m_remainingQuietsSorted) {
+                m_remainingQuiets.clear();
+                std::vector<ScoredMove> killerQuiets;
+                std::vector<ScoredMove> otherQuiets;
                 
-                if (!isCapture(move)) {
-                    return move;
+                for (size_t i = 0; i < m_allMoves.size(); ++i) {
+                    Move move = m_allMoves[i];
+                    if (move == m_ttMove || isInShortlist(move)) continue;
+                    if (!isCapture(move)) {
+                        // Check if it's a killer move
+                        if (m_killers && m_killers->isKiller(m_ply, move)) {
+                            killerQuiets.push_back({move, 10000});  // High score for killers
+                        } else {
+                            // Score by history
+                            int16_t score = 0;
+                            if (m_history) {
+                                Color side = m_board.sideToMove();
+                                score = m_history->getScore(side, moveFrom(move), moveTo(move));
+                            }
+                            otherQuiets.push_back({move, score});
+                        }
+                    }
                 }
+                
+                // Sort non-killer quiets by history score
+                std::sort(otherQuiets.begin(), otherQuiets.end());
+                
+                // Combine: killers first, then sorted history moves
+                m_remainingQuiets.reserve(killerQuiets.size() + otherQuiets.size());
+                m_remainingQuiets.insert(m_remainingQuiets.end(), killerQuiets.begin(), killerQuiets.end());
+                m_remainingQuiets.insert(m_remainingQuiets.end(), otherQuiets.begin(), otherQuiets.end());
+                
+                m_remainingQuietsSorted = true;
+                m_remainingQuietIndex = 0;
             }
+            
+            // Yield sorted quiets
+            if (m_remainingQuietIndex < static_cast<int>(m_remainingQuiets.size())) {
+                return m_remainingQuiets[m_remainingQuietIndex++].move;
+            }
+            
             m_phase = Phase::DONE;
             [[fallthrough]];
+        }
             
         case Phase::DONE:
             return NO_MOVE;

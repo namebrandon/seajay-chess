@@ -10,6 +10,7 @@
 #include "countermove_history.h"
 #include <cstdint>
 #include <algorithm>
+#include <vector>
 
 #ifdef DEBUG_RANKED_PICKER
 #include <unordered_set>
@@ -146,6 +147,14 @@ private:
     int m_shortlistIndex = 0;
     int m_moveIndex = 0;
     bool m_ttMoveUsed = false;
+    
+    // Remaining moves storage for proper ordering
+    std::vector<ScoredMove> m_remainingCaptures;
+    std::vector<ScoredMove> m_remainingQuiets;
+    bool m_remainingCapturesSorted = false;
+    bool m_remainingQuietsSorted = false;
+    int m_remainingCaptureIndex = 0;
+    int m_remainingQuietIndex = 0;
     
     // SEE calculator (mutable for lazy evaluation)
     mutable SEECalculator m_seeCalculator;
