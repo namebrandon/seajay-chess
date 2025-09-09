@@ -314,6 +314,11 @@ int16_t RankedMovePicker::scoreCapture(const Board& board, Move move) {
 int16_t RankedMovePicker::scoreQuiet(Move move) {
     int16_t score = 0;
     
+    // Non-capture promotions get high priority
+    if (isPromotion(move)) {
+        score += getPromotionBonus(move);
+    }
+    
     // Killer move bonus
     if (m_killers && m_killers->isKiller(m_ply, move)) {
         score += RankedMovePickerConfig::KILLER_BONUS;
