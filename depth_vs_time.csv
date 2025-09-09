@@ -1,0 +1,2 @@
+timestamp,engine,engine_path,fen,time_ms,depth,nodes,bestmove,score_cp,tt_hits,hashfull
+2025-09-08_20-09-40,seajay,/workspace/bin/seajay,rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1,1000,15,752505,e2e4,18,49.43,396

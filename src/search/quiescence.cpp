@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <optional>  // For stack-allocated RankedMovePickerQS
 
 namespace seajay::search {
 
@@ -210,12 +211,13 @@ eval::Score quiescence(
     }
     
     // Phase 2a: Use RankedMovePickerQS for non-check positions
-    std::unique_ptr<RankedMovePickerQS> rankedPickerQS;
+    // Use optional to avoid dynamic allocation (stack allocation instead)
+    std::optional<RankedMovePickerQS> rankedPickerQS;
     MoveList moves;
     
     if (limits.useRankedMovePicker && !isInCheck) {
         // Use ranked move picker for captures/promotions only
-        rankedPickerQS = std::make_unique<RankedMovePickerQS>(board, ttMove);
+        rankedPickerQS.emplace(board, ttMove);
     }
     
     // Generate moves based on check status

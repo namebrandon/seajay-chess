@@ -35,19 +35,20 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_phase(Phase::TT_MOVE)
     , m_seeCalculator()
 {
-    // Generate all legal moves
-    MoveGenerator::generateLegalMoves(board, m_allMoves);
+    // Generate pseudo-legal moves (MUCH faster than legal moves)
+    MoveGenerator::generatePseudoLegalMoves(board, m_allMoves);
     
-    // Validate TT move
+    // Validate TT move is in the move list (pseudo-legal check)
+    // We'll validate legality when we actually try it
     if (m_ttMove != NO_MOVE) {
-        bool isLegal = false;
+        bool found = false;
         for (size_t i = 0; i < m_allMoves.size(); ++i) {
             if (m_allMoves[i] == m_ttMove) {
-                isLegal = true;
+                found = true;
                 break;
             }
         }
-        if (!isLegal) {
+        if (!found) {
             #ifdef SEARCH_STATS
             g_rankedMovePickerStats.illegalTTMoves++;
             #endif
@@ -57,6 +58,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     
     // Score all moves and build shortlist in single pass
     int16_t minShortlistScore = INT16_MIN;
+    int minShortlistIdx = 0;  // Track the index of minimum score
     
     for (size_t i = 0; i < m_allMoves.size(); ++i) {
         Move move = m_allMoves[i];
@@ -79,32 +81,25 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         if (m_shortlistSize < RankedMovePickerConfig::SHORTLIST_SIZE) {
             // Shortlist not full, just add
             m_shortlist[m_shortlistSize] = {move, score};
+            
+            // Track minimum score position
+            if (m_shortlistSize == 0 || score < minShortlistScore) {
+                minShortlistScore = score;
+                minShortlistIdx = m_shortlistSize;
+            }
+            
             m_shortlistSize++;
-            
-            // Update minimum score if shortlist now full
-            if (m_shortlistSize == RankedMovePickerConfig::SHORTLIST_SIZE) {
-                minShortlistScore = INT16_MAX;
-                for (int j = 0; j < m_shortlistSize; ++j) {
-                    if (m_shortlist[j].score < minShortlistScore) {
-                        minShortlistScore = m_shortlist[j].score;
-                    }
-                }
-            }
         } else if (score > minShortlistScore) {
-            // Find the minimum scored move in shortlist and replace
-            int minIdx = 0;
-            for (int j = 1; j < m_shortlistSize; ++j) {
-                if (m_shortlist[j].score < m_shortlist[minIdx].score) {
-                    minIdx = j;
-                }
-            }
-            m_shortlist[minIdx] = {move, score};
+            // Replace minimum scored move
+            m_shortlist[minShortlistIdx] = {move, score};
             
-            // Update minimum score
-            minShortlistScore = INT16_MAX;
-            for (int j = 0; j < m_shortlistSize; ++j) {
+            // Find new minimum in one pass
+            minShortlistScore = m_shortlist[0].score;
+            minShortlistIdx = 0;
+            for (int j = 1; j < m_shortlistSize; ++j) {
                 if (m_shortlist[j].score < minShortlistScore) {
                     minShortlistScore = m_shortlist[j].score;
+                    minShortlistIdx = j;
                 }
             }
         }
@@ -329,8 +324,8 @@ RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
     , m_phase(PhaseQS::TT_MOVE)
     , m_seeCalculator()
 {
-    // Generate only captures and promotions
-    MoveGenerator::generateLegalMoves(board, m_captures);
+    // Generate pseudo-legal moves (MUCH faster than legal moves)
+    MoveGenerator::generatePseudoLegalMoves(board, m_captures);
     
     // Filter to keep only captures and promotions
     MoveList filtered;
@@ -361,17 +356,17 @@ RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
     }
     
     // Score all captures
-    m_scoredCaptures.reserve(m_captures.size());
-    for (size_t i = 0; i < m_captures.size(); ++i) {
+    m_scoredCapturesCount = 0;
+    for (size_t i = 0; i < m_captures.size() && m_scoredCapturesCount < MAX_CAPTURES; ++i) {
         Move move = m_captures[i];
         if (move == m_ttMove) continue;  // Skip TT move
         
         int16_t score = scoreCaptureQS(board, move);
-        m_scoredCaptures.push_back({move, score});
+        m_scoredCaptures[m_scoredCapturesCount++] = {move, score};
     }
     
     // Sort by score
-    std::sort(m_scoredCaptures.begin(), m_scoredCaptures.end());
+    std::sort(m_scoredCaptures, m_scoredCaptures + m_scoredCapturesCount);
 }
 
 Move RankedMovePickerQS::next() {
@@ -385,7 +380,7 @@ Move RankedMovePickerQS::next() {
             [[fallthrough]];
             
         case PhaseQS::GOOD_CAPTURES:
-            while (m_captureIndex < m_scoredCaptures.size()) {
+            while (m_captureIndex < static_cast<size_t>(m_scoredCapturesCount)) {
                 const auto& sm = m_scoredCaptures[m_captureIndex++];
                 if (sm.score >= 0) {  // Good capture (positive MVV-LVA or SEE)
                     return sm.move;
@@ -396,7 +391,7 @@ Move RankedMovePickerQS::next() {
                     break;
                 }
             }
-            if (m_captureIndex >= m_scoredCaptures.size()) {
+            if (m_captureIndex >= static_cast<size_t>(m_scoredCapturesCount)) {
                 m_phase = PhaseQS::PROMOTIONS;
                 m_captureIndex = 0;
             }
@@ -416,7 +411,7 @@ Move RankedMovePickerQS::next() {
             [[fallthrough]];
             
         case PhaseQS::BAD_CAPTURES:
-            while (m_captureIndex < m_scoredCaptures.size()) {
+            while (m_captureIndex < static_cast<size_t>(m_scoredCapturesCount)) {
                 const auto& sm = m_scoredCaptures[m_captureIndex++];
                 if (sm.score < 0) {  // Bad capture
                     return sm.move;

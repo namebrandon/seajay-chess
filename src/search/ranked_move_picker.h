@@ -171,7 +171,10 @@ private:
     const Board& m_board;
     Move m_ttMove;
     MoveList m_captures;
-    std::vector<ScoredMoveQS> m_scoredCaptures;
+    // Fixed-size array instead of vector to avoid allocation
+    static constexpr int MAX_CAPTURES = 32;  // More than enough for captures
+    ScoredMoveQS m_scoredCaptures[MAX_CAPTURES];
+    int m_scoredCapturesCount = 0;
     
     PhaseQS m_phase;
     size_t m_captureIndex = 0;

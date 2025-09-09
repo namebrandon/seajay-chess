@@ -1,0 +1,2 @@
+timestamp,engine,test_file,time_ms,total,passed,failed,success_rate,total_nodes,avg_nodes,avg_depth
+2025-09-08_20-10-03,./bin/seajay,external/UHO_4060_v2.epd,1000,0,0,0,0.0,0,0,0.0

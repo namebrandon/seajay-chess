@@ -7,6 +7,7 @@
 #include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
 #include "ranked_move_picker.h"      // Phase 2a: Ranked move picker
+#include <optional>                   // For stack-allocated RankedMovePicker
 #include "lmr.h"            // Stage 18: Late Move Reductions
 #include "principal_variation.h"     // PV tracking infrastructure
 #include "countermove_history.h"     // Phase 4.3.a: Counter-move history
@@ -787,9 +788,10 @@ eval::Score negamax(Board& board,
     }
     
     // Phase 2a: Use RankedMovePicker if enabled (skip at root for safety)
-    std::unique_ptr<RankedMovePicker> rankedPicker;
+    // Use optional to avoid dynamic allocation (stack allocation instead)
+    std::optional<RankedMovePicker> rankedPicker;
     if (limits.useRankedMovePicker && ply > 0) {
-        rankedPicker = std::make_unique<RankedMovePicker>(
+        rankedPicker.emplace(
             board, ttMove, info.killers, info.history, 
             info.counterMoves, info.counterMoveHistory,
             prevMove, ply, depth
