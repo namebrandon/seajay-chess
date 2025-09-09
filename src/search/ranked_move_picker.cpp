@@ -128,7 +128,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 
 Move RankedMovePicker::next() {
 #ifdef DEBUG_RANKED_PICKER
-    Move result = nextImpl();
+    Move result = nextInternal();
     
     // Track yielded moves for coverage verification
     if (result != NO_MOVE) {
@@ -147,11 +147,11 @@ Move RankedMovePicker::next() {
     
     return result;
 #else
-    return nextImpl();
+    return nextInternal();
 #endif
 }
 
-Move RankedMovePicker::nextImpl() {
+Move RankedMovePicker::nextInternal() {
     switch (m_phase) {
         case Phase::TT_MOVE:
             m_phase = Phase::SHORTLIST;

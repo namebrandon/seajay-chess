@@ -72,10 +72,14 @@ public:
     // Iterator interface - returns next move or NO_MOVE when done
     Move next();
     
+private:
+    Move nextInternal();  // Internal implementation
+    
 #ifdef DEBUG_RANKED_PICKER
-    Move nextImpl();  // Internal implementation for debugging
     void verifyCoverage();  // Verify all moves are yielded
 #endif
+    
+public:
     
     // Check if picker has more moves
     bool hasNext() const { return m_phase != Phase::DONE; }
