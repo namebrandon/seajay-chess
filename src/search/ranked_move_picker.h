@@ -1,65 +1,54 @@
 #pragma once
 
+/**
+ * Phase 2a.0: Ranked MovePicker - Scaffolds Only
+ * 
+ * This is a minimal stub implementation with no actual ordering logic.
+ * The class exists only to establish the API and allow for clean compilation.
+ * 
+ * Safety constraints for Phase 2a:
+ * - Disabled at root (ply==0) - enforced by caller
+ * - Disabled in quiescence search - not wired in
+ * - TT move deduplication to be handled in later phases
+ * 
+ * Design principles:
+ * - Single-pass O(n), no quadratic work or repeated sorts
+ * - No dynamic allocations, fixed-size stack arrays only
+ * - In-check parity: use check evasions when in check
+ * - Clean fallback: feature behind UCI toggle, legacy path intact
+ * - Deterministic ordering with clear tie-breaks
+ */
+
 #include "../core/types.h"
 #include "../core/board.h"
-#include "../core/move_list.h"
-#include "../core/see.h"
-#include "killer_moves.h"
 #include "history_heuristic.h"
+#include "killer_moves.h"
 #include "countermoves.h"
 #include "countermove_history.h"
-#include <cstdint>
-#include <algorithm>
-#include <vector>
 
-#ifdef DEBUG_RANKED_PICKER
-#include <unordered_set>
-#endif
+namespace seajay {
+namespace search {
 
-namespace seajay::search {
-
-// Configuration for RankedMovePicker
-struct RankedMovePickerConfig {
-    static constexpr int SHORTLIST_SIZE = 10;
-    static constexpr int16_t KILLER_BONUS = 1000;
-    static constexpr int16_t COUNTERMOVE_BONUS = 500;
-    static constexpr int16_t REFUTATION_BONUS = 300;
-    static constexpr int16_t CHECK_BONUS = 50;
-    static constexpr int16_t HISTORY_WEIGHT = 2;
-    static constexpr int16_t PROMOTION_QUEEN_BONUS = 2000;
-    static constexpr int16_t PROMOTION_ROOK_BONUS = 750;
-    static constexpr int16_t PROMOTION_BISHOP_BONUS = 500;
-    static constexpr int16_t PROMOTION_KNIGHT_BONUS = 1000;
-};
-
-// Telemetry for debugging and tuning
-#ifdef SEARCH_STATS
-struct RankedMovePickerStats {
-    uint64_t bestMoveRank[4] = {0};  // [1], [2-5], [6-10], [11+]
-    uint64_t shortlistHits = 0;
-    uint64_t seeCallsLazy = 0;
-    uint64_t capturesTotal = 0;
-    uint64_t ttMoveUsed = 0;
-    uint64_t illegalTTMoves = 0;
-    
-    void reset() {
-        std::fill(bestMoveRank, bestMoveRank + 4, 0);
-        shortlistHits = 0;
-        seeCallsLazy = 0;
-        capturesTotal = 0;
-        ttMoveUsed = 0;
-        illegalTTMoves = 0;
-    }
-};
-
-// Global stats instance
-extern RankedMovePickerStats g_rankedMovePickerStats;
-#endif
-
-// Main RankedMovePicker class for negamax
+/**
+ * RankedMovePicker - Main class for negamax search
+ * 
+ * Phase 2a.0: Stub implementation only
+ * No actual ordering logic yet - just returns MOVE_NONE
+ */
 class RankedMovePicker {
 public:
-    // Constructor - pre-ranks all moves in single pass
+    /**
+     * Constructor
+     * @param board Current board position
+     * @param ttMove Move from transposition table (NO_MOVE if none)
+     * @param killers Killer moves table pointer
+     * @param history History heuristic table pointer
+     * @param counterMoves Counter moves table pointer
+     * @param counterMoveHistory Counter move history table pointer
+     * @param prevMove Previous move played
+     * @param ply Current ply from root
+     * @param depth Current search depth
+     */
     RankedMovePicker(const Board& board,
                      Move ttMove,
                      const KillerMoves* killers,
@@ -70,144 +59,62 @@ public:
                      int ply,
                      int depth);
     
-    // Iterator interface - returns next move or NO_MOVE when done
+    /**
+     * Get next move in ranked order
+     * @return Next move, or NO_MOVE when no more moves
+     * 
+     * Phase 2a.0: Always returns NO_MOVE (stub)
+     */
     Move next();
     
 private:
-    Move nextInternal();  // Internal implementation
-    
-#ifdef DEBUG_RANKED_PICKER
-    void verifyCoverage();  // Verify all moves are yielded
-#endif
-    
-public:
-    
-    // Check if picker has more moves
-    bool hasNext() const { return m_phase != Phase::DONE; }
-    
-    // Get number of moves generated (for debugging)
-    int moveCount() const { return m_allMoves.size(); }
-    
-private:
-    // Phases for move yielding
-    enum class Phase : uint8_t {
-        TT_MOVE,
-        SHORTLIST,
-        REMAINING_GOOD_CAPTURES,
-        REMAINING_BAD_CAPTURES,
-        REMAINING_QUIETS,
-        DONE
-    };
-    
-    // Move with its score
-    struct ScoredMove {
-        Move move;
-        int16_t score;
-        
-        bool operator<(const ScoredMove& other) const {
-            // Primary: score
-            if (score != other.score) return score > other.score;
-            // Secondary: MVV-LVA approximation (to square)
-            Square to1 = moveTo(move);
-            Square to2 = moveTo(other.move);
-            if (to1 != to2) return to1 < to2;
-            // Tertiary: raw move encoding
-            return move < other.move;
-        }
-    };
-    
-    // Scoring functions
-    int16_t scoreCapture(const Board& board, Move move);
-    int16_t scoreQuiet(Move move);
-    int16_t getMVVLVAScore(const Board& board, Move move);
-    int16_t getPromotionBonus(Move move);
-    bool shouldComputeSEE(const Board& board, Move move, int16_t mvvlva);
-    
-    // Helper to check if move is in shortlist
-    bool isInShortlist(Move move) const;
-    
-    // Member variables
+    // References to tables (no ownership)
     const Board& m_board;
-    Move m_ttMove;
     const KillerMoves* m_killers;
     const HistoryHeuristic* m_history;
     const CounterMoves* m_counterMoves;
     const CounterMoveHistory* m_counterMoveHistory;
+    
+    // Current state
+    Move m_ttMove;
     Move m_prevMove;
     int m_ply;
     int m_depth;
-    
-    // Move storage
-    MoveList m_allMoves;
-    ScoredMove m_shortlist[RankedMovePickerConfig::SHORTLIST_SIZE];
-    int m_shortlistSize = 0;
-    
-    // Iteration state
-    Phase m_phase;
-    int m_shortlistIndex = 0;
-    int m_moveIndex = 0;
-    bool m_ttMoveUsed = false;
-    
-    // Remaining moves storage for proper ordering
-    std::vector<ScoredMove> m_remainingCaptures;
-    std::vector<ScoredMove> m_remainingQuiets;
-    bool m_remainingCapturesSorted = false;
-    bool m_remainingQuietsSorted = false;
-    int m_remainingCaptureIndex = 0;
-    int m_remainingQuietIndex = 0;
-    
-    // SEE calculator (mutable for lazy evaluation)
-    mutable SEECalculator m_seeCalculator;
-    
-#ifdef DEBUG_RANKED_PICKER
-    // Coverage verification
-    std::unordered_set<Move> m_yieldedMoves;
-#endif
 };
 
-// Simplified variant for quiescence search
+/**
+ * RankedMovePickerQS - Simplified variant for quiescence search
+ * 
+ * Phase 2a.0: Stub implementation only
+ * Not actually used in Phase 2a (QS uses legacy path)
+ */
 class RankedMovePickerQS {
 public:
-    // Constructor - only considers captures and promotions
+    /**
+     * Constructor - only considers captures and promotions
+     * @param board Current board position
+     * @param ttMove Move from transposition table (NO_MOVE if none)
+     */
     RankedMovePickerQS(const Board& board, Move ttMove);
     
-    // Iterator interface
+    /**
+     * Get next move
+     * @return Next move, or NO_MOVE when no more moves
+     * 
+     * Phase 2a.0: Always returns NO_MOVE (stub)
+     */
     Move next();
-    bool hasNext() const { return m_phase != PhaseQS::DONE; }
+    
+    /**
+     * Check if picker has more moves
+     * @return false (stub always empty)
+     */
+    bool hasNext() const { return false; }
     
 private:
-    enum class PhaseQS : uint8_t {
-        TT_MOVE,
-        GOOD_CAPTURES,
-        PROMOTIONS,
-        BAD_CAPTURES,
-        DONE
-    };
-    
-    struct ScoredMoveQS {
-        Move move;
-        int16_t score;
-        
-        bool operator<(const ScoredMoveQS& other) const {
-            return score > other.score;
-        }
-    };
-    
-    int16_t scoreCaptureQS(const Board& board, Move move);
-    
     const Board& m_board;
     Move m_ttMove;
-    MoveList m_captures;
-    // Fixed-size array instead of vector to avoid allocation
-    static constexpr int MAX_CAPTURES = 32;  // More than enough for captures
-    ScoredMoveQS m_scoredCaptures[MAX_CAPTURES];
-    int m_scoredCapturesCount = 0;
-    
-    PhaseQS m_phase;
-    size_t m_captureIndex = 0;
-    bool m_ttMoveUsed = false;
-    
-    mutable SEECalculator m_seeCalculator;
 };
 
-} // namespace seajay::search
+} // namespace search
+} // namespace seajay
