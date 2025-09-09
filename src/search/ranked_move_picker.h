@@ -11,6 +11,10 @@
 #include <cstdint>
 #include <algorithm>
 
+#ifdef DEBUG_RANKED_PICKER
+#include <unordered_set>
+#endif
+
 namespace seajay::search {
 
 // Configuration for RankedMovePicker
@@ -67,6 +71,11 @@ public:
     
     // Iterator interface - returns next move or NO_MOVE when done
     Move next();
+    
+#ifdef DEBUG_RANKED_PICKER
+    Move nextImpl();  // Internal implementation for debugging
+    void verifyCoverage();  // Verify all moves are yielded
+#endif
     
     // Check if picker has more moves
     bool hasNext() const { return m_phase != Phase::DONE; }
@@ -136,6 +145,11 @@ private:
     
     // SEE calculator (mutable for lazy evaluation)
     mutable SEECalculator m_seeCalculator;
+    
+#ifdef DEBUG_RANKED_PICKER
+    // Coverage verification
+    std::unordered_set<Move> m_yieldedMoves;
+#endif
 };
 
 // Simplified variant for quiescence search

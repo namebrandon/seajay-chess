@@ -2,6 +2,15 @@
 #include "../core/move_generation.h"
 #include <cstring>
 
+// Coverage verification - only enabled in debug builds
+#ifdef DEBUG_RANKED_PICKER
+#include <unordered_set>
+#include <iostream>
+static uint64_t g_coverageChecks = 0;
+static uint64_t g_coverageMisses = 0;
+static uint64_t g_coverageDuplicates = 0;
+#endif
+
 namespace seajay::search {
 
 // MoveGenerator is already in seajay namespace
@@ -60,6 +69,10 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     int16_t minShortlistScore = INT16_MIN;
     int minShortlistIdx = 0;  // Track the index of minimum score
     
+    // PHASE 2A SIMPLIFIED: Only rank captures in shortlist for now
+    // Quiets will use legacy ordering
+    constexpr bool CAPTURES_ONLY_SHORTLIST = true;
+    
     for (size_t i = 0; i < m_allMoves.size(); ++i) {
         Move move = m_allMoves[i];
         
@@ -74,6 +87,10 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             g_rankedMovePickerStats.capturesTotal++;
             #endif
         } else {
+            if (CAPTURES_ONLY_SHORTLIST) {
+                // Skip quiets for shortlist in Phase 2a
+                continue;
+            }
             score = scoreQuiet(move);
         }
         
@@ -110,6 +127,31 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 }
 
 Move RankedMovePicker::next() {
+#ifdef DEBUG_RANKED_PICKER
+    Move result = nextImpl();
+    
+    // Track yielded moves for coverage verification
+    if (result != NO_MOVE) {
+        if (m_yieldedMoves.find(result) != m_yieldedMoves.end()) {
+            g_coverageDuplicates++;
+            std::cerr << "DUPLICATE MOVE YIELDED: " << std::hex << result 
+                      << " at ply " << std::dec << m_ply << std::endl;
+        }
+        m_yieldedMoves.insert(result);
+    } else {
+        // Check coverage when done (1/1000 sampling)
+        if (++g_coverageChecks % 1000 == 0) {
+            verifyCoverage();
+        }
+    }
+    
+    return result;
+#else
+    return nextImpl();
+#endif
+}
+
+Move RankedMovePicker::nextImpl() {
     switch (m_phase) {
         case Phase::TT_MOVE:
             m_phase = Phase::SHORTLIST;
@@ -175,6 +217,33 @@ Move RankedMovePicker::next() {
     
     return NO_MOVE;
 }
+
+#ifdef DEBUG_RANKED_PICKER
+void RankedMovePicker::verifyCoverage() {
+    // Compare yielded moves with generated moves
+    std::unordered_set<Move> generatedSet;
+    for (size_t i = 0; i < m_allMoves.size(); ++i) {
+        generatedSet.insert(m_allMoves[i]);
+    }
+    
+    // Check for missing moves
+    for (Move m : generatedSet) {
+        if (m_yieldedMoves.find(m) == m_yieldedMoves.end()) {
+            g_coverageMisses++;
+            std::cerr << "MISSING MOVE: " << std::hex << m 
+                      << " at ply " << std::dec << m_ply 
+                      << " (board hash: " << std::hex << m_board.zobristKey() << ")" << std::endl;
+        }
+    }
+    
+    // Report if counts don't match
+    if (m_yieldedMoves.size() != generatedSet.size()) {
+        std::cerr << "COVERAGE MISMATCH: generated=" << generatedSet.size() 
+                  << " yielded=" << m_yieldedMoves.size() 
+                  << " at ply " << m_ply << std::endl;
+    }
+}
+#endif
 
 int16_t RankedMovePicker::scoreCapture(const Board& board, Move move) {
     int16_t score = getMVVLVAScore(board, move);
