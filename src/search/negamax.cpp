@@ -6,6 +6,7 @@
 #include "window_growth_mode.h"      // Stage 13 Remediation Phase 4
 #include "game_phase.h"              // Stage 13 Remediation Phase 4
 #include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
+#include "ranked_move_picker.h"      // Phase 2a: Ranked move picker
 #include "lmr.h"            // Stage 18: Late Move Reductions
 #include "principal_variation.h"     // PV tracking infrastructure
 #include "countermove_history.h"     // Phase 4.3.a: Counter-move history
@@ -779,23 +780,33 @@ eval::Score negamax(Board& board,
         }
     }
     
-    // Generate pseudo-legal moves now that early exits are handled
-    MoveGenerator::generateMovesForSearch(board, moves, false);
-
     // Get previous move for countermove lookup (CM3.2)
     Move prevMove = NO_MOVE;
     if (ply > 0) {
         prevMove = searchInfo.getStackEntry(ply - 1).move;
     }
     
-    // CM4.1: Track countermove availability (removed from here to avoid double-counting)
-    // Hit tracking now happens only when countermove causes a cutoff or is tried first
-    
-    // Order moves for better alpha-beta pruning
-    // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
-    // CM3.3: Pass prevMove and bonus for countermove ordering
-    // Phase 4.3.a-fix2: Pass depth for CMH gating
-    orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+    // Phase 2a: Use RankedMovePicker if enabled (skip at root for safety)
+    std::unique_ptr<RankedMovePicker> rankedPicker;
+    if (limits.useRankedMovePicker && ply > 0) {
+        rankedPicker = std::make_unique<RankedMovePicker>(
+            board, ttMove, info.killers, info.history, 
+            info.counterMoves, info.counterMoveHistory,
+            prevMove, ply, depth
+        );
+    } else {
+        // Generate pseudo-legal moves now that early exits are handled
+        MoveGenerator::generateMovesForSearch(board, moves, false);
+        
+        // CM4.1: Track countermove availability (removed from here to avoid double-counting)
+        // Hit tracking now happens only when countermove causes a cutoff or is tried first
+        
+        // Order moves for better alpha-beta pruning
+        // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
+        // CM3.3: Pass prevMove and bonus for countermove ordering
+        // Phase 4.3.a-fix2: Pass depth for CMH gating
+        orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+    }
     
     // Node explosion diagnostics: Track TT move ordering effectiveness
     if (limits.nodeExplosionDiagnostics && ttMove != NO_MOVE) {
@@ -834,7 +845,17 @@ eval::Score negamax(Board& board,
     std::vector<Move> quietMoves;
     quietMoves.reserve(moves.size());
     
-    for (const Move& move : moves) {
+    // Phase 2a: Iterate using RankedMovePicker or traditional move list
+    Move move;
+    size_t moveIndex = 0;
+    while (true) {
+        if (rankedPicker) {
+            move = rankedPicker->next();
+            if (move == NO_MOVE) break;
+        } else {
+            if (moveIndex >= moves.size()) break;
+            move = moves[moveIndex++];
+        }
         // Skip excluded move (for singular extension search)
         if (searchInfo.isExcluded(ply, move)) {
             continue;
@@ -1328,7 +1349,7 @@ eval::Score negamax(Board& board,
                 }
             }
         }
-    }
+    }  // End of move iteration loop
     
     // Phase 3.2: Check for checkmate/stalemate after trying all moves
     if (legalMoveCount == 0) {

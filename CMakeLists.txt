@@ -134,6 +134,8 @@ set(SEARCH_SOURCES
     src/search/types.h
     src/search/move_ordering.cpp
     src/search/move_ordering.h
+    src/search/ranked_move_picker.cpp
+    src/search/ranked_move_picker.h
     src/search/killer_moves.cpp
     src/search/killer_moves.h
     src/search/history_heuristic.cpp

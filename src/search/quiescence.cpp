@@ -8,9 +8,11 @@
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
+#include "ranked_move_picker.h"  // Phase 2a: Ranked move picker
 #include "../core/see.h"  // Stage 15 Day 6: For SEE-based pruning
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 namespace seajay::search {
 
@@ -207,10 +209,19 @@ eval::Score quiescence(
         staticEval = eval::Score::minus_infinity();
     }
     
-    // Generate moves based on check status
+    // Phase 2a: Use RankedMovePickerQS for non-check positions
+    std::unique_ptr<RankedMovePickerQS> rankedPickerQS;
     MoveList moves;
+    
+    if (limits.useRankedMovePicker && !isInCheck) {
+        // Use ranked move picker for captures/promotions only
+        rankedPickerQS = std::make_unique<RankedMovePickerQS>(board, ttMove);
+    }
+    
+    // Generate moves based on check status
     if (isInCheck) {
         // In check: must generate ALL legal moves (not just captures)
+        // Don't use RankedMovePicker in check positions for Phase 2a
         moves = generateLegalMoves(board);
         
         // Check for checkmate/stalemate
@@ -249,54 +260,60 @@ eval::Score quiescence(
                 return false;
             });
         }
-    } else {
-        // Not in check: only search captures
+    } else if (!rankedPickerQS) {
+        // Not in check and not using RankedMovePicker: only search captures
         MoveGenerator::generateCaptures(board, moves);
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
     // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
     // Use SEE-based capture ordering when enabled for non-check nodes
-    if (!isInCheck && search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
-        search::g_seeMoveOrdering.orderMoves(board, moves);
-    } else {
-        MvvLvaOrdering mvvLva;
-        mvvLva.orderMoves(board, moves);
+    // Skip ordering if using RankedMovePicker (it handles ordering internally)
+    if (!rankedPickerQS) {
+        if (!isInCheck && search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
+            search::g_seeMoveOrdering.orderMoves(board, moves);
+        } else {
+            MvvLvaOrdering mvvLva;
+            mvvLva.orderMoves(board, moves);
+        }
     }
     
     // Phase 2.2 Missing Item 1: Queen Promotion Prioritization
     // Move queen promotions to the very front (before TT moves)
-    auto queenPromoIt = moves.begin();
-    for (auto it = moves.begin(); it != moves.end(); ++it) {
-        if (isPromotion(*it) && promotionType(*it) == QUEEN) {
-            if (it != queenPromoIt) {
-                std::rotate(queenPromoIt, it, it + 1);
-            }
-            ++queenPromoIt;  // Move insertion point for next queen promotion
-        }
-    }
-    
-    // Deliverable 3.2.3: Discovered Check Detection
-    // Prioritize captures that create discovered checks (after queen promos)
-    if (!isInCheck) {  // Only for capture moves, not check evasions
-        auto discoveredCheckIt = queenPromoIt;
-        for (auto it = queenPromoIt; it != moves.end(); ++it) {
-            if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
-                if (it != discoveredCheckIt) {
-                    std::rotate(discoveredCheckIt, it, it + 1);
+    // Skip if using RankedMovePicker (it handles ordering internally)
+    if (!rankedPickerQS) {
+        auto queenPromoIt = moves.begin();
+        for (auto it = moves.begin(); it != moves.end(); ++it) {
+            if (isPromotion(*it) && promotionType(*it) == QUEEN) {
+                if (it != queenPromoIt) {
+                    std::rotate(queenPromoIt, it, it + 1);
                 }
-                ++discoveredCheckIt;
+                ++queenPromoIt;  // Move insertion point for next queen promotion
             }
         }
-    }
-    
-    // TT Move Ordering (after queen promotions)
-    // If we have a TT move and it's not already a queen promotion, prioritize it
-    if (ttMove != NO_MOVE) {
-        auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
-        if (ttMoveIt != moves.end()) {
-            // Move TT move to front of non-queen-promotion moves
-            std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
+        
+        // Deliverable 3.2.3: Discovered Check Detection
+        // Prioritize captures that create discovered checks (after queen promos)
+        if (!isInCheck) {  // Only for capture moves, not check evasions
+            auto discoveredCheckIt = queenPromoIt;
+            for (auto it = queenPromoIt; it != moves.end(); ++it) {
+                if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
+                    if (it != discoveredCheckIt) {
+                        std::rotate(discoveredCheckIt, it, it + 1);
+                    }
+                    ++discoveredCheckIt;
+                }
+            }
+        }
+        
+        // TT Move Ordering (after queen promotions)
+        // If we have a TT move and it's not already a queen promotion, prioritize it
+        if (ttMove != NO_MOVE) {
+            auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
+            if (ttMoveIt != moves.end()) {
+                // Move TT move to front of non-queen-promotion moves
+                std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
+            }
         }
     }
     
@@ -308,7 +325,17 @@ eval::Score quiescence(
     // Candidate 9: Use reduced capture limit in panic mode
     const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : MAX_CAPTURES_PER_NODE;
     
-    for (const Move& move : moves) {
+    // Phase 2a: Iterate using RankedMovePickerQS or traditional move list
+    Move move;
+    size_t moveIndex = 0;
+    while (true) {
+        if (rankedPickerQS) {
+            move = rankedPickerQS->next();
+            if (move == NO_MOVE) break;
+        } else {
+            if (moveIndex >= moves.size()) break;
+            move = moves[moveIndex++];
+        }
         // Limit moves per node to prevent explosion (except when in check)
         if (!isInCheck && ++moveCount > maxCaptures) {
             break;

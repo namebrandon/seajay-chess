@@ -247,6 +247,7 @@ void UCIEngine::handleUCI() {
     // Depth Parity scaffold toggles (no behavior change yet)
     std::cout << "option name UseClusteredTT type check default false" << std::endl;
     std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
+    std::cout << "option name UseRankedMovePicker type check default false" << std::endl;
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -624,6 +625,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
+    
+    // Phase 2a: Pass ranked move picker option
+    limits.useRankedMovePicker = m_useRankedMovePicker;
     
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
@@ -1003,6 +1007,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useStagedMovePicker = false;
             std::cerr << "info string (scaffold) Staged MovePicker toggle set to false (no effect yet)" << std::endl;
+        }
+    }
+    // Phase 2a: UseRankedMovePicker
+    else if (optionName == "UseRankedMovePicker") {
+        if (value == "true") {
+            m_useRankedMovePicker = true;
+            std::cerr << "info string Ranked MovePicker enabled (Phase 2a)" << std::endl;
+        } else if (value == "false") {
+            m_useRankedMovePicker = false;
+            std::cerr << "info string Ranked MovePicker disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)

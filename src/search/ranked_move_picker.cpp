@@ -1,0 +1,484 @@
+#include "ranked_move_picker.h"
+#include "../core/move_generation.h"
+#include <cstring>
+
+namespace seajay::search {
+
+// MoveGenerator is already in seajay namespace
+
+#ifdef SEARCH_STATS
+RankedMovePickerStats g_rankedMovePickerStats;
+#endif
+
+// ========================================================================
+// RankedMovePicker Implementation
+// ========================================================================
+
+RankedMovePicker::RankedMovePicker(const Board& board,
+                                   Move ttMove,
+                                   const KillerMoves* killers,
+                                   const HistoryHeuristic* history,
+                                   const CounterMoves* counterMoves,
+                                   const CounterMoveHistory* counterMoveHistory,
+                                   Move prevMove,
+                                   int ply,
+                                   int depth)
+    : m_board(board)
+    , m_ttMove(ttMove)
+    , m_killers(killers)
+    , m_history(history)
+    , m_counterMoves(counterMoves)
+    , m_counterMoveHistory(counterMoveHistory)
+    , m_prevMove(prevMove)
+    , m_ply(ply)
+    , m_depth(depth)
+    , m_phase(Phase::TT_MOVE)
+    , m_seeCalculator()
+{
+    // Generate all legal moves
+    MoveGenerator::generateLegalMoves(board, m_allMoves);
+    
+    // Validate TT move
+    if (m_ttMove != NO_MOVE) {
+        bool isLegal = false;
+        for (size_t i = 0; i < m_allMoves.size(); ++i) {
+            if (m_allMoves[i] == m_ttMove) {
+                isLegal = true;
+                break;
+            }
+        }
+        if (!isLegal) {
+            #ifdef SEARCH_STATS
+            g_rankedMovePickerStats.illegalTTMoves++;
+            #endif
+            m_ttMove = NO_MOVE;
+        }
+    }
+    
+    // Score all moves and build shortlist in single pass
+    int16_t minShortlistScore = INT16_MIN;
+    
+    for (size_t i = 0; i < m_allMoves.size(); ++i) {
+        Move move = m_allMoves[i];
+        
+        // Skip TT move (will be yielded first)
+        if (move == m_ttMove) continue;
+        
+        // Score the move
+        int16_t score;
+        if (isCapture(move)) {
+            score = scoreCapture(board, move);
+            #ifdef SEARCH_STATS
+            g_rankedMovePickerStats.capturesTotal++;
+            #endif
+        } else {
+            score = scoreQuiet(move);
+        }
+        
+        // Try to add to shortlist
+        if (m_shortlistSize < RankedMovePickerConfig::SHORTLIST_SIZE) {
+            // Shortlist not full, just add
+            m_shortlist[m_shortlistSize] = {move, score};
+            m_shortlistSize++;
+            
+            // Update minimum score if shortlist now full
+            if (m_shortlistSize == RankedMovePickerConfig::SHORTLIST_SIZE) {
+                minShortlistScore = INT16_MAX;
+                for (int j = 0; j < m_shortlistSize; ++j) {
+                    if (m_shortlist[j].score < minShortlistScore) {
+                        minShortlistScore = m_shortlist[j].score;
+                    }
+                }
+            }
+        } else if (score > minShortlistScore) {
+            // Find the minimum scored move in shortlist and replace
+            int minIdx = 0;
+            for (int j = 1; j < m_shortlistSize; ++j) {
+                if (m_shortlist[j].score < m_shortlist[minIdx].score) {
+                    minIdx = j;
+                }
+            }
+            m_shortlist[minIdx] = {move, score};
+            
+            // Update minimum score
+            minShortlistScore = INT16_MAX;
+            for (int j = 0; j < m_shortlistSize; ++j) {
+                if (m_shortlist[j].score < minShortlistScore) {
+                    minShortlistScore = m_shortlist[j].score;
+                }
+            }
+        }
+    }
+    
+    // Sort the shortlist
+    std::sort(m_shortlist, m_shortlist + m_shortlistSize);
+}
+
+Move RankedMovePicker::next() {
+    switch (m_phase) {
+        case Phase::TT_MOVE:
+            m_phase = Phase::SHORTLIST;
+            if (m_ttMove != NO_MOVE && !m_ttMoveUsed) {
+                m_ttMoveUsed = true;
+                #ifdef SEARCH_STATS
+                g_rankedMovePickerStats.ttMoveUsed++;
+                #endif
+                return m_ttMove;
+            }
+            // Fall through to shortlist
+            [[fallthrough]];
+            
+        case Phase::SHORTLIST:
+            while (m_shortlistIndex < m_shortlistSize) {
+                Move move = m_shortlist[m_shortlistIndex++].move;
+                if (move != m_ttMove) {  // Skip if already used as TT move
+                    #ifdef SEARCH_STATS
+                    g_rankedMovePickerStats.shortlistHits++;
+                    #endif
+                    return move;
+                }
+            }
+            m_phase = Phase::REMAINING_GOOD_CAPTURES;
+            m_moveIndex = 0;
+            [[fallthrough]];
+            
+        case Phase::REMAINING_GOOD_CAPTURES:
+            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
+                Move move = m_allMoves[m_moveIndex++];
+                if (move == m_ttMove || isInShortlist(move)) continue;
+                
+                if (isCapture(move)) {
+                    // Check if it's a good capture using lazy SEE
+                    int16_t mvvlva = getMVVLVAScore(m_board, move);
+                    if (mvvlva >= 0 || (shouldComputeSEE(m_board, move, mvvlva) && 
+                        m_seeCalculator.see(m_board, move) >= 0)) {
+                        return move;
+                    }
+                }
+            }
+            m_phase = Phase::REMAINING_BAD_CAPTURES;
+            m_moveIndex = 0;
+            [[fallthrough]];
+            
+        case Phase::REMAINING_BAD_CAPTURES:
+            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
+                Move move = m_allMoves[m_moveIndex++];
+                if (move == m_ttMove || isInShortlist(move)) continue;
+                
+                if (isCapture(move)) {
+                    // Bad captures (SEE < 0 or not worth computing SEE)
+                    int16_t mvvlva = getMVVLVAScore(m_board, move);
+                    if (mvvlva < 0 && (!shouldComputeSEE(m_board, move, mvvlva) ||
+                        m_seeCalculator.see(m_board, move) < 0)) {
+                        return move;
+                    }
+                }
+            }
+            m_phase = Phase::REMAINING_QUIETS;
+            m_moveIndex = 0;
+            [[fallthrough]];
+            
+        case Phase::REMAINING_QUIETS:
+            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
+                Move move = m_allMoves[m_moveIndex++];
+                if (move == m_ttMove || isInShortlist(move)) continue;
+                
+                if (!isCapture(move)) {
+                    return move;
+                }
+            }
+            m_phase = Phase::DONE;
+            [[fallthrough]];
+            
+        case Phase::DONE:
+            return NO_MOVE;
+    }
+    
+    return NO_MOVE;
+}
+
+int16_t RankedMovePicker::scoreCapture(const Board& board, Move move) {
+    int16_t score = getMVVLVAScore(board, move);
+    
+    // Add promotion bonus
+    if (isPromotion(move)) {
+        score += getPromotionBonus(move);
+    }
+    
+    // Small check bonus
+    // Note: Checking if move gives check would require making the move
+    // For now, we'll skip this optimization in Phase 2a
+    
+    return score;
+}
+
+int16_t RankedMovePicker::scoreQuiet(Move move) {
+    int16_t score = 0;
+    
+    // Killer move bonus
+    if (m_killers && m_killers->isKiller(m_ply, move)) {
+        score += RankedMovePickerConfig::KILLER_BONUS;
+    }
+    
+    // Countermove bonus
+    if (m_counterMoves && m_prevMove != NO_MOVE && 
+        m_counterMoves->getCounterMove(m_prevMove) == move) {
+        score += RankedMovePickerConfig::COUNTERMOVE_BONUS;
+    }
+    
+    // History heuristic score
+    if (m_history) {
+        Color side = m_board.sideToMove();
+        score += m_history->getScore(side, moveFrom(move), moveTo(move)) * RankedMovePickerConfig::HISTORY_WEIGHT;
+    }
+    
+    // Counter-move history score
+    if (m_counterMoveHistory && m_prevMove != NO_MOVE) {
+        score += m_counterMoveHistory->getScore(m_prevMove, move) * RankedMovePickerConfig::REFUTATION_BONUS / 100;
+    }
+    
+    return score;
+}
+
+int16_t RankedMovePicker::getMVVLVAScore(const Board& board, Move move) {
+    // Basic MVV-LVA: victim value - attacker value
+    Square toSq = moveTo(move);
+    Square fromSq = moveFrom(move);
+    
+    Piece victim = board.pieceAt(toSq);
+    Piece attacker = board.pieceAt(fromSq);
+    
+    if (victim == NO_PIECE) {
+        // En passant special case
+        if (isEnPassant(move)) {
+            return 100 - 1;  // Pawn takes pawn
+        }
+        return 0;
+    }
+    
+    // Use the MVV-LVA tables from move_ordering.h
+    static constexpr int VICTIM_VALUES[7] = {100, 325, 325, 500, 900, 10000, 0};
+    static constexpr int ATTACKER_VALUES[7] = {1, 3, 3, 5, 9, 100, 0};
+    
+    PieceType victimType = typeOf(victim);
+    PieceType attackerType = typeOf(attacker);
+    
+    return VICTIM_VALUES[victimType] - ATTACKER_VALUES[attackerType];
+}
+
+int16_t RankedMovePicker::getPromotionBonus(Move move) {
+    if (!isPromotion(move)) return 0;
+    
+    PieceType promoType = promotionType(move);
+    switch (promoType) {
+        case QUEEN:  return RankedMovePickerConfig::PROMOTION_QUEEN_BONUS;
+        case ROOK:   return RankedMovePickerConfig::PROMOTION_ROOK_BONUS;
+        case BISHOP: return RankedMovePickerConfig::PROMOTION_BISHOP_BONUS;
+        case KNIGHT: return RankedMovePickerConfig::PROMOTION_KNIGHT_BONUS;
+        default:     return 0;
+    }
+}
+
+bool RankedMovePicker::shouldComputeSEE(const Board& board, Move move, int16_t mvvlva) {
+    // Compute SEE lazily only when:
+    // 1. MVV-LVA suggests it might be good (victim >= attacker)
+    // 2. We're at the shortlist boundary
+    
+    // For Phase 2a, use simple heuristic: compute SEE if victim value >= attacker value
+    Square toSq = moveTo(move);
+    Square fromSq = moveFrom(move);
+    
+    Piece victim = board.pieceAt(toSq);
+    Piece attacker = board.pieceAt(fromSq);
+    
+    if (victim == NO_PIECE) return false;
+    
+    PieceType victimType = typeOf(victim);
+    PieceType attackerType = typeOf(attacker);
+    
+    // Compute SEE if victim is at least as valuable as attacker
+    static constexpr int PIECE_VALUES[7] = {100, 325, 325, 500, 900, 10000, 0};
+    
+    bool shouldCompute = PIECE_VALUES[victimType] >= PIECE_VALUES[attackerType];
+    
+    #ifdef SEARCH_STATS
+    if (shouldCompute) {
+        g_rankedMovePickerStats.seeCallsLazy++;
+    }
+    #endif
+    
+    return shouldCompute;
+}
+
+bool RankedMovePicker::isInShortlist(Move move) const {
+    for (int i = 0; i < m_shortlistSize; ++i) {
+        if (m_shortlist[i].move == move) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// ========================================================================
+// RankedMovePickerQS Implementation
+// ========================================================================
+
+RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
+    : m_board(board)
+    , m_ttMove(ttMove)
+    , m_phase(PhaseQS::TT_MOVE)
+    , m_seeCalculator()
+{
+    // Generate only captures and promotions
+    MoveGenerator::generateLegalMoves(board, m_captures);
+    
+    // Filter to keep only captures and promotions
+    MoveList filtered;
+    for (size_t i = 0; i < m_captures.size(); ++i) {
+        Move move = m_captures[i];
+        if (isCapture(move) || isPromotion(move)) {
+            filtered.add(move);
+        }
+    }
+    m_captures = filtered;
+    
+    // Validate TT move (must be capture or promotion)
+    if (m_ttMove != NO_MOVE) {
+        if (!isCapture(m_ttMove) && !isPromotion(m_ttMove)) {
+            m_ttMove = NO_MOVE;
+        } else {
+            bool isLegal = false;
+            for (size_t i = 0; i < m_captures.size(); ++i) {
+                if (m_captures[i] == m_ttMove) {
+                    isLegal = true;
+                    break;
+                }
+            }
+            if (!isLegal) {
+                m_ttMove = NO_MOVE;
+            }
+        }
+    }
+    
+    // Score all captures
+    m_scoredCaptures.reserve(m_captures.size());
+    for (size_t i = 0; i < m_captures.size(); ++i) {
+        Move move = m_captures[i];
+        if (move == m_ttMove) continue;  // Skip TT move
+        
+        int16_t score = scoreCaptureQS(board, move);
+        m_scoredCaptures.push_back({move, score});
+    }
+    
+    // Sort by score
+    std::sort(m_scoredCaptures.begin(), m_scoredCaptures.end());
+}
+
+Move RankedMovePickerQS::next() {
+    switch (m_phase) {
+        case PhaseQS::TT_MOVE:
+            m_phase = PhaseQS::GOOD_CAPTURES;
+            if (m_ttMove != NO_MOVE && !m_ttMoveUsed) {
+                m_ttMoveUsed = true;
+                return m_ttMove;
+            }
+            [[fallthrough]];
+            
+        case PhaseQS::GOOD_CAPTURES:
+            while (m_captureIndex < m_scoredCaptures.size()) {
+                const auto& sm = m_scoredCaptures[m_captureIndex++];
+                if (sm.score >= 0) {  // Good capture (positive MVV-LVA or SEE)
+                    return sm.move;
+                } else {
+                    // We've reached bad captures
+                    m_phase = PhaseQS::PROMOTIONS;
+                    m_captureIndex--;  // Back up one
+                    break;
+                }
+            }
+            if (m_captureIndex >= m_scoredCaptures.size()) {
+                m_phase = PhaseQS::PROMOTIONS;
+                m_captureIndex = 0;
+            }
+            [[fallthrough]];
+            
+        case PhaseQS::PROMOTIONS:
+            // Check for non-capture promotions
+            for (size_t i = 0; i < m_captures.size(); ++i) {
+                Move move = m_captures[i];
+                if (move != m_ttMove && isPromotion(move) && !isCapture(move)) {
+                    // Note: This is simplified - in practice, promotions are usually sorted
+                    m_phase = PhaseQS::BAD_CAPTURES;
+                    return move;
+                }
+            }
+            m_phase = PhaseQS::BAD_CAPTURES;
+            [[fallthrough]];
+            
+        case PhaseQS::BAD_CAPTURES:
+            while (m_captureIndex < m_scoredCaptures.size()) {
+                const auto& sm = m_scoredCaptures[m_captureIndex++];
+                if (sm.score < 0) {  // Bad capture
+                    return sm.move;
+                }
+            }
+            m_phase = PhaseQS::DONE;
+            [[fallthrough]];
+            
+        case PhaseQS::DONE:
+            return NO_MOVE;
+    }
+    
+    return NO_MOVE;
+}
+
+int16_t RankedMovePickerQS::scoreCaptureQS(const Board& board, Move move) {
+    // Simple MVV-LVA scoring for quiescence
+    Square toSq = moveTo(move);
+    Square fromSq = moveFrom(move);
+    
+    Piece victim = board.pieceAt(toSq);
+    Piece attacker = board.pieceAt(fromSq);
+    
+    if (victim == NO_PIECE) {
+        if (isEnPassant(move)) {
+            return 100 - 1;  // Pawn takes pawn
+        }
+        if (isPromotion(move)) {
+            // Non-capture promotion
+            PieceType promoType = promotionType(move);
+            switch (promoType) {
+                case QUEEN:  return 2000;
+                case ROOK:   return 750;
+                case BISHOP: return 500;
+                case KNIGHT: return 1000;
+                default:     return 0;
+            }
+        }
+        return 0;
+    }
+    
+    static constexpr int VICTIM_VALUES[7] = {100, 325, 325, 500, 900, 10000, 0};
+    static constexpr int ATTACKER_VALUES[7] = {1, 3, 3, 5, 9, 100, 0};
+    
+    PieceType victimType = typeOf(victim);
+    PieceType attackerType = typeOf(attacker);
+    
+    int16_t score = VICTIM_VALUES[victimType] - ATTACKER_VALUES[attackerType];
+    
+    // Add promotion bonus for capture-promotions
+    if (isPromotion(move)) {
+        PieceType promoType = promotionType(move);
+        switch (promoType) {
+            case QUEEN:  score += 2000; break;
+            case ROOK:   score += 750; break;
+            case BISHOP: score += 500; break;
+            case KNIGHT: score += 1000; break;
+            default: break;
+        }
+    }
+    
+    return score;
+}
+
+} // namespace seajay::search

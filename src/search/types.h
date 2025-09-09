@@ -134,6 +134,9 @@ struct SearchLimits {
     // Node explosion diagnostics (temporary for debugging)
     bool nodeExplosionDiagnostics = false; // Enable detailed node explosion tracking
     
+    // Phase 2a: Ranked MovePicker
+    bool useRankedMovePicker = false;    // Enable ranked move picker (Phase 2a)
+    
     // Default constructor
     SearchLimits() = default;
 };
