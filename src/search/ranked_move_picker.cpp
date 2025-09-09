@@ -1,6 +1,7 @@
 #include "ranked_move_picker.h"
 #include "../core/move_generation.h"
 #include <cstring>
+#include <cassert>
 
 // Coverage verification - only enabled in debug builds
 #ifdef DEBUG_RANKED_PICKER
@@ -99,6 +100,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         // Try to add to shortlist
         if (m_shortlistSize < RankedMovePickerConfig::SHORTLIST_SIZE) {
             // Shortlist not full, just add
+            assert(m_shortlistSize >= 0 && m_shortlistSize < RankedMovePickerConfig::SHORTLIST_SIZE);
             m_shortlist[m_shortlistSize] = {move, score};
             
             // Track minimum score position
@@ -110,6 +112,8 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             m_shortlistSize++;
         } else if (score > minShortlistScore) {
             // Replace minimum scored move
+            assert(minShortlistIdx >= 0 && minShortlistIdx < m_shortlistSize);
+            assert(m_shortlistSize == RankedMovePickerConfig::SHORTLIST_SIZE);
             m_shortlist[minShortlistIdx] = {move, score};
             
             // Find new minimum in one pass
@@ -169,6 +173,8 @@ Move RankedMovePicker::nextInternal() {
             
         case Phase::SHORTLIST:
             while (m_shortlistIndex < m_shortlistSize) {
+                assert(m_shortlistIndex >= 0 && m_shortlistIndex < m_shortlistSize);
+                assert(m_shortlistSize <= RankedMovePickerConfig::SHORTLIST_SIZE);
                 Move move = m_shortlist[m_shortlistIndex++].move;
                 if (move != m_ttMove) {  // Skip if already used as TT move
                     #ifdef SEARCH_STATS
@@ -202,6 +208,7 @@ Move RankedMovePicker::nextInternal() {
             
             // Yield sorted captures
             if (m_remainingCaptureIndex < static_cast<int>(m_remainingCaptures.size())) {
+                assert(m_remainingCaptureIndex >= 0);
                 return m_remainingCaptures[m_remainingCaptureIndex++].move;
             }
             
@@ -255,6 +262,7 @@ Move RankedMovePicker::nextInternal() {
             
             // Yield sorted quiets
             if (m_remainingQuietIndex < static_cast<int>(m_remainingQuiets.size())) {
+                assert(m_remainingQuietIndex >= 0);
                 return m_remainingQuiets[m_remainingQuietIndex++].move;
             }
             
@@ -439,6 +447,7 @@ RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
         Move move = m_captures[i];
         if (move == m_ttMove) continue;  // Skip TT move
         
+        assert(m_scoredCapturesCount >= 0 && m_scoredCapturesCount < MAX_CAPTURES);
         int16_t score = scoreCaptureQS(board, move);
         m_scoredCaptures[m_scoredCapturesCount++] = {move, score};
     }
@@ -459,6 +468,8 @@ Move RankedMovePickerQS::next() {
             
         case PhaseQS::GOOD_CAPTURES:
             while (m_captureIndex < static_cast<size_t>(m_scoredCapturesCount)) {
+                assert(m_captureIndex < MAX_CAPTURES);
+                assert(m_scoredCapturesCount <= MAX_CAPTURES);
                 const auto& sm = m_scoredCaptures[m_captureIndex++];
                 if (sm.score >= 0) {  // Good capture (positive MVV-LVA or SEE)
                     return sm.move;
@@ -490,6 +501,8 @@ Move RankedMovePickerQS::next() {
             
         case PhaseQS::BAD_CAPTURES:
             while (m_captureIndex < static_cast<size_t>(m_scoredCapturesCount)) {
+                assert(m_captureIndex < MAX_CAPTURES);
+                assert(m_scoredCapturesCount <= MAX_CAPTURES);
                 const auto& sm = m_scoredCaptures[m_captureIndex++];
                 if (sm.score < 0) {  // Bad capture
                     return sm.move;
