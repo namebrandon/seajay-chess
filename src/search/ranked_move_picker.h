@@ -21,10 +21,13 @@
 
 #include "../core/types.h"
 #include "../core/board.h"
+#include "../core/move_list.h"
+#include "../core/move_generation.h"
 #include "history_heuristic.h"
 #include "killer_moves.h"
 #include "countermoves.h"
 #include "countermove_history.h"
+#include "types.h"  // For SearchData and SearchLimits
 
 namespace seajay {
 namespace search {
@@ -80,6 +83,17 @@ private:
     Move m_prevMove;
     int m_ply;
     int m_depth;
+    
+    // Legacy-ordered move list
+    MoveList m_moves;
+    size_t m_moveIndex;
+    bool m_ttMoveYielded;
+    
+#ifdef DEBUG
+    // Coverage tracking
+    size_t m_generatedCount;
+    size_t m_yieldedCount;
+#endif
 };
 
 /**
