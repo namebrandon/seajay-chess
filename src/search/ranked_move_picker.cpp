@@ -138,39 +138,23 @@ Move RankedMovePicker::next() {
             [[fallthrough]];
             
         case Phase::REMAINING_GOOD_CAPTURES:
+            // Phase 2a SIMPLIFIED: No SEE, just MVV-LVA ordering
+            // All captures not in shortlist, ordered by MVV-LVA
             while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
                 Move move = m_allMoves[m_moveIndex++];
                 if (move == m_ttMove || isInShortlist(move)) continue;
                 
                 if (isCapture(move)) {
-                    // Check if it's a good capture using lazy SEE
-                    int16_t mvvlva = getMVVLVAScore(m_board, move);
-                    if (mvvlva >= 0 || (shouldComputeSEE(m_board, move, mvvlva) && 
-                        m_seeCalculator.see(m_board, move) >= 0)) {
-                        return move;
-                    }
-                }
-            }
-            m_phase = Phase::REMAINING_BAD_CAPTURES;
-            m_moveIndex = 0;
-            [[fallthrough]];
-            
-        case Phase::REMAINING_BAD_CAPTURES:
-            while (m_moveIndex < static_cast<int>(m_allMoves.size())) {
-                Move move = m_allMoves[m_moveIndex++];
-                if (move == m_ttMove || isInShortlist(move)) continue;
-                
-                if (isCapture(move)) {
-                    // Bad captures (SEE < 0 or not worth computing SEE)
-                    int16_t mvvlva = getMVVLVAScore(m_board, move);
-                    if (mvvlva < 0 && (!shouldComputeSEE(m_board, move, mvvlva) ||
-                        m_seeCalculator.see(m_board, move) < 0)) {
-                        return move;
-                    }
+                    return move;
                 }
             }
             m_phase = Phase::REMAINING_QUIETS;
             m_moveIndex = 0;
+            [[fallthrough]];
+            
+        case Phase::REMAINING_BAD_CAPTURES:
+            // Skip this phase in 2a - no SEE filtering
+            m_phase = Phase::REMAINING_QUIETS;
             [[fallthrough]];
             
         case Phase::REMAINING_QUIETS:
@@ -275,34 +259,12 @@ int16_t RankedMovePicker::getPromotionBonus(Move move) {
 }
 
 bool RankedMovePicker::shouldComputeSEE(const Board& board, Move move, int16_t mvvlva) {
-    // Compute SEE lazily only when:
-    // 1. MVV-LVA suggests it might be good (victim >= attacker)
-    // 2. We're at the shortlist boundary
-    
-    // For Phase 2a, use simple heuristic: compute SEE if victim value >= attacker value
-    Square toSq = moveTo(move);
-    Square fromSq = moveFrom(move);
-    
-    Piece victim = board.pieceAt(toSq);
-    Piece attacker = board.pieceAt(fromSq);
-    
-    if (victim == NO_PIECE) return false;
-    
-    PieceType victimType = typeOf(victim);
-    PieceType attackerType = typeOf(attacker);
-    
-    // Compute SEE if victim is at least as valuable as attacker
-    static constexpr int PIECE_VALUES[7] = {100, 325, 325, 500, 900, 10000, 0};
-    
-    bool shouldCompute = PIECE_VALUES[victimType] >= PIECE_VALUES[attackerType];
-    
-    #ifdef SEARCH_STATS
-    if (shouldCompute) {
-        g_rankedMovePickerStats.seeCallsLazy++;
-    }
-    #endif
-    
-    return shouldCompute;
+    // Phase 2a SIMPLIFIED: Never compute SEE
+    // This function is kept for future phases but always returns false for now
+    (void)board;
+    (void)move;
+    (void)mvvlva;
+    return false;
 }
 
 bool RankedMovePicker::isInShortlist(Move move) const {
@@ -324,18 +286,9 @@ RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
     , m_phase(PhaseQS::TT_MOVE)
     , m_seeCalculator()
 {
-    // Generate pseudo-legal moves (MUCH faster than legal moves)
-    MoveGenerator::generatePseudoLegalMoves(board, m_captures);
-    
-    // Filter to keep only captures and promotions
-    MoveList filtered;
-    for (size_t i = 0; i < m_captures.size(); ++i) {
-        Move move = m_captures[i];
-        if (isCapture(move) || isPromotion(move)) {
-            filtered.add(move);
-        }
-    }
-    m_captures = filtered;
+    // Generate only captures (and promotions which are included in captures)
+    // This is MUCH more efficient than generating all moves and filtering
+    MoveGenerator::generateCaptures(board, m_captures);
     
     // Validate TT move (must be capture or promotion)
     if (m_ttMove != NO_MOVE) {

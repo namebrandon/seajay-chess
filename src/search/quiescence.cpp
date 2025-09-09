@@ -215,7 +215,9 @@ eval::Score quiescence(
     std::optional<RankedMovePickerQS> rankedPickerQS;
     MoveList moves;
     
-    if (limits.useRankedMovePicker && !isInCheck) {
+    // Phase 2a: DO NOT use RankedMovePicker in quiescence yet
+    // This will be enabled in a later phase after proven stable
+    if (false && limits.useRankedMovePicker && !isInCheck) {
         // Use ranked move picker for captures/promotions only
         rankedPickerQS.emplace(board, ttMove);
     }
