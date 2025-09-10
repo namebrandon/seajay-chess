@@ -1,12 +1,12 @@
 #pragma once
 
 /**
- * Phase 2a.4: Ranked MovePicker - In-Check Parity
+ * Phase 2a.4: Ranked MovePicker - In-Check Parity (Fixed)
  * 
  * This implementation adds proper in-check handling:
- * - When in check: generate and iterate only legal evasions
+ * - When in check: use optimized check evasion generation (same as legacy)
  * - When in check: no shortlist (disabled)
- * - When in check: TT move yielded first only if it's a legal evasion
+ * - When in check: TT move yielded first only if it's a valid evasion
  * 
  * Core features from 2a.3d retained:
  * - Captures only shortlist (no quiets, no non-capture promotions)
@@ -25,15 +25,15 @@
  * 3. Remainder via legacy ordering (skipping TT and shortlist)
  * 
  * Move yield order (in check):
- * 1. TT move (if it's a legal evasion)
- * 2. Legal evasions in legacy order (skipping TT if already yielded)
+ * 1. TT move (if it's a valid evasion)
+ * 2. Check evasions in MVV-LVA/SEE order (skipping TT if already yielded)
  * 
  * Design principles:
  * - Legacy ordering applied ONCE to all moves
  * - Shortlist = first K captures from legacy order (not in check)
  * - No separate scoring/sorting of shortlist
  * - Perfect alignment with existing behavior
- * - Legal evasions only when in check
+ * - Optimized check evasions when in check (via generateMovesForSearch)
  */
 
 #include "../core/types.h"

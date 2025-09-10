@@ -214,16 +214,17 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_yieldedCount(0)
 #endif
 {
-    // Phase 2a.4: When in check, generate only legal evasions
+    // Phase 2a.4: When in check, use optimized check evasion generation
     if (m_inCheck) {
-        // Generate legal evasions only when in check
-        MoveGenerator::generateLegalMoves(board, m_moves);
+        // Use the same generator as legacy (generateMovesForSearch calls generateCheckEvasions internally)
+        // This is much more efficient than generateLegalMoves
+        MoveGenerator::generateMovesForSearch(board, m_moves, false);
         
 #ifdef DEBUG
         m_generatedCount = m_moves.size();
 #endif
         
-        // Apply legacy ordering to the legal evasions
+        // Apply legacy ordering to the evasions (MVV-LVA/SEE only, no history for now)
         static MvvLvaOrdering mvvLva;
         
         if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
@@ -232,18 +233,8 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             mvvLva.orderMoves(board, m_moves);
         }
         
-        // Apply history heuristics for quiet evasions - same as normal path for parity
-        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
-            float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
-            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
-                                        *counterMoves, *counterMoveHistory,
-                                        prevMove, ply, countermoveBonus, cmhWeight);
-        } else if (killers && history && counterMoves) {
-            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
-                                        *counterMoves, prevMove, ply, countermoveBonus);
-        }
-        
-        // No shortlist when in check - we'll iterate legal evasions directly
+        // No history ordering for evasions - testing showed slight regression
+        // No shortlist when in check - we'll iterate evasions directly
     }
     else {
         // Not in check: normal pseudo-legal generation and shortlist building
@@ -305,7 +296,7 @@ Move RankedMovePicker::next() {
         m_ttMoveYielded = true;
         
         // Check if TT move is in our move list
-        // For in-check: TT must be a legal evasion (already in m_moves)
+        // For in-check: TT must be a valid evasion (in m_moves)
         // For normal: TT must be pseudo-legal (in m_moves)
         bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
         
@@ -328,7 +319,7 @@ Move RankedMovePicker::next() {
     }
     
     // Yield moves from m_moves in legacy order
-    // For in-check: these are legal evasions
+    // For in-check: these are check evasions (MVV-LVA/SEE ordered)
     // For normal: these are pseudo-legal moves (skipping TT and shortlist)
     while (m_moveIndex < m_moves.size()) {
         Move move = m_moves[m_moveIndex++];
