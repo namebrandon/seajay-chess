@@ -20,12 +20,17 @@ Do
 - After shortlist, hand off the remainder to the legacy orderer (captures + killers/history quiets).
 - Dedup TT move by exact encoding (including promotion piece).
 - Add bound checks/asserts around fixed arrays (shortlist, QS arrays) in non‑Release.
+ - Preserve captures‑first discipline: when mixing classes in the shortlist, ensure captures/promotions are yielded before quiets (or build the shortlist directly from the legacy‑ordered capture/promotion prefix).
+ - Consider depth‑gating quiet shortlist (e.g., enable quiets only at depth ≥ 6 to align with CMH gating) to avoid shallow‑depth noise.
+ - Keep quiet scoring weights conservative so they don’t swamp capture scores (history≈×1, killer≈300–500, countermove≈200–300, CMH scaled down).
+ - For parity: it’s safe and effective to take the shortlist directly from the already legacy‑ordered list (TT=NO_MOVE) so early yields don’t change relative ordering.
 
 Don’t
 - Don’t enable ranked picker in QS or at root in 2a.
 - Don’t rely on legal move generation for ranking (avoid tryMakeMove in ordering).
 - Don’t sort full lists or re‑sort per next(); rank once per node.
 - Don’t bury promotions or good quiets; don’t skip evasions when in check.
+ - Don’t allow quiets to outrank strong captures at shallow depth; avoid large static bonuses that destabilize early move order.
 
 ## Core Components
 
@@ -82,6 +87,9 @@ For deterministic ordering:
 - **Simple insertion**: Track minimum score in shortlist
 - **No heap/vector**: Direct array manipulation
 - **Deduplication**: Check against TT move during insertion
+ - **Class priority (stability)**: When shortlist mixes classes, yield order caps/promotions → quiets (or build shortlist from the legacy‑ordered capture/promotion prefix, then append quiets).
+ - **Depth gating (quiets)**: Admit quiets in shortlist only from depth ≥ 6 to match CMH usefulness.
+ - **Parity‑preserving option**: To avoid drift, derive shortlist from the already legacy‑ordered list (call orderMoves with ttMove=NO_MOVE) and take the first K of the relevant class.
 
 #### Future Enhancement (not in 2a)
 - Depth-aware K: `K = min(12, 8 + depth/2)`
@@ -181,6 +189,7 @@ if (UseRankedMovePicker && ply > 0) {  // Skip root for safety
 - **TT move illegality**: Explicit validation
 - **Move deduplication**: Full encoding comparison
 - **Promotion handling**: Include piece in all comparisons
+ - **Quiet shortlist instability**: If quiets cause regression, disable quiets and/or enforce class priority and depth gating; reduce quiet weights to prevent overshadowing capture scores.
 
 ### Regression Risks
 - Root ordering: keep legacy at ply 0 for 2a
@@ -280,3 +289,11 @@ struct RankedMovePicker {
 
 ## Conclusion
 Phase 2 now proceeds in granular sub‑phases with an SPRT after each functional change. The shortlist improves early decisions; all remainder ordering stays legacy to preserve strength. Only after 2a passes do we introduce rank‑aware pruning gates in 2b.
+
+## Progress Log (2a Postmortem)
+
+- 2025-09-10: 2a.3 regression identified in OpenBench (test 498). Expanding shortlist to include quiets caused a large negative result (≈ −200 nELO): Elo | −209.06 ± 29.49; LLR −3.13. Root cause analysis indicates quiet shortlist over‑prioritization at shallow depth (killer/countermove/history/CMH weights allowed quiets to outrank strong captures), lack of class priority (captures/promotions vs quiets), and no depth gating for quiets.
+  - 2a.3a (disable quiets in shortlist; keep captures + non‑capture promotions) recovered ~90% of the loss vs original base; residual small negative remained.
+  - A (promotions‑only toggle) and B (reduce K from 10→8) independently showed small negatives (≈ −10 to −12 nELO over ~3k games).
+  - Combined A+B plus parity‑preserving capture shortlist (derive shortlist captures from legacy order with ttMove=NO_MOVE; shortlist K=8) produced effectively neutral results (≈ −3 nELO within ±9 after 3k games). Conclusion: issue primarily due to quiet shortlist; remaining drift addressed by aligning shortlist order with legacy.
+  - Lessons recorded above: enforce captures‑first discipline when mixing classes, depth‑gate quiet shortlist (≥ depth 6), keep quiet weights conservative, and use parity‑preserving shortlist derivation from legacy ordering when needed.

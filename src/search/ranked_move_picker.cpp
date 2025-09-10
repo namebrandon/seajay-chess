@@ -180,7 +180,7 @@ bool RankedMovePicker::isInShortlist(Move move) const {
 }
 
 /**
- * Phase 2a.3d: Legacy-aligned shortlist implementation (final fix)
+ * Phase 2a.4: In-check parity implementation
  */
 RankedMovePicker::RankedMovePicker(const Board& board,
                                    Move ttMove,
@@ -214,38 +214,59 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_yieldedCount(0)
 #endif
 {
-    // Generate pseudo-legal moves
-    MoveGenerator::generateMovesForSearch(board, m_moves, false);
-    
+    // Phase 2a.4: When in check, generate only legal evasions
+    if (m_inCheck) {
+        // Generate legal evasions only when in check
+        MoveGenerator::generateLegalMoves(board, m_moves);
+        
 #ifdef DEBUG
-    m_generatedCount = m_moves.size();
+        m_generatedCount = m_moves.size();
 #endif
-    
-    // Phase 2a.3d: Order moves using legacy ordering FIRST
-    // This ensures perfect alignment with existing behavior
-    static MvvLvaOrdering mvvLva;
-    
-    // Apply legacy ordering to all moves (with ttMove=NO_MOVE to avoid special handling)
-    // This gives us the exact legacy order
-    if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
-        g_seeMoveOrdering.orderMoves(board, m_moves);
-    } else {
-        mvvLva.orderMoves(board, m_moves);
+        
+        // Apply legacy ordering to the legal evasions
+        static MvvLvaOrdering mvvLva;
+        
+        if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
+            g_seeMoveOrdering.orderMoves(board, m_moves);
+        } else {
+            mvvLva.orderMoves(board, m_moves);
+        }
+        
+        // No shortlist when in check - we'll iterate legal evasions directly
+        // No history ordering for evasions (keep it simple)
     }
+    else {
+        // Not in check: normal pseudo-legal generation and shortlist building
+        MoveGenerator::generateMovesForSearch(board, m_moves, false);
+        
+#ifdef DEBUG
+        m_generatedCount = m_moves.size();
+#endif
+        
+        // Phase 2a.3d: Order moves using legacy ordering FIRST
+        // This ensures perfect alignment with existing behavior
+        static MvvLvaOrdering mvvLva;
+        
+        // Apply legacy ordering to all moves (with ttMove=NO_MOVE to avoid special handling)
+        // This gives us the exact legacy order
+        if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
+            g_seeMoveOrdering.orderMoves(board, m_moves);
+        } else {
+            mvvLva.orderMoves(board, m_moves);
+        }
 
-    // Apply history heuristics for quiet moves if available
-    if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
-        float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
-        mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
-                                    *counterMoves, *counterMoveHistory,
-                                    prevMove, ply, countermoveBonus, cmhWeight);
-    } else if (killers && history && counterMoves) {
-        mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
-                                    *counterMoves, prevMove, ply, countermoveBonus);
-    }
-    
-    // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
-    if (!m_inCheck) {
+        // Apply history heuristics for quiet moves if available
+        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+            float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, *counterMoveHistory,
+                                        prevMove, ply, countermoveBonus, cmhWeight);
+        } else if (killers && history && counterMoves) {
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, prevMove, ply, countermoveBonus);
+        }
+        
+        // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
         // Walk the legacy-ordered list and take the first K captures
         for (const Move& move : m_moves) {
             // Skip TT move (will be yielded first)
@@ -266,16 +287,16 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             }
         }
     }
-    
-    // Legacy ordering already applied above - no need to repeat
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.3d: Yield TT move first if legal and not yet yielded
+    // Phase 2a.4: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
         
-        // Check if TT move is in our move list (pseudo-legal validation)
+        // Check if TT move is in our move list
+        // For in-check: TT must be a legal evasion (already in m_moves)
+        // For normal: TT must be pseudo-legal (in m_moves)
         bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
         
         if (ttMoveInList) {
@@ -287,7 +308,7 @@ Move RankedMovePicker::next() {
         // If TT move not in list, skip it and continue
     }
     
-    // Phase 2a.3d: Yield shortlist moves (only if not in check)
+    // Phase 2a.4: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG
@@ -296,7 +317,9 @@ Move RankedMovePicker::next() {
         return move;
     }
     
-    // Yield legacy-ordered moves, skipping TT move and shortlist moves
+    // Yield moves from m_moves in legacy order
+    // For in-check: these are legal evasions
+    // For normal: these are pseudo-legal moves (skipping TT and shortlist)
     while (m_moveIndex < m_moves.size()) {
         Move move = m_moves[m_moveIndex++];
         
@@ -305,7 +328,7 @@ Move RankedMovePicker::next() {
             continue;
         }
         
-        // Skip moves that are in the shortlist (already yielded)
+        // Skip moves that are in the shortlist (already yielded) - only when not in check
         if (!m_inCheck && isInShortlist(move)) {
             continue;
         }

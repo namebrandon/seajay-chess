@@ -1,30 +1,39 @@
 #pragma once
 
 /**
- * Phase 2a.3d: Ranked MovePicker - Legacy-Aligned Shortlist (Final Fix)
+ * Phase 2a.4: Ranked MovePicker - In-Check Parity
  * 
- * This implementation combines all fixes to eliminate regression:
- * - Captures only (no quiets, no non-capture promotions)
+ * This implementation adds proper in-check handling:
+ * - When in check: generate and iterate only legal evasions
+ * - When in check: no shortlist (disabled)
+ * - When in check: TT move yielded first only if it's a legal evasion
+ * 
+ * Core features from 2a.3d retained:
+ * - Captures only shortlist (no quiets, no non-capture promotions)
  * - K=8 (reduced from 10)
- * - CRITICAL: Shortlist extracted from legacy-ordered moves
- * - Ensures exact ordering alignment with legacy behavior
+ * - Shortlist extracted from legacy-ordered moves
+ * - Exact ordering alignment with legacy behavior
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
  * - Disabled in quiescence search - not wired in
- * - In-check nodes use legacy path (no shortlist)
+ * - In-check nodes: use legal evasions only (no shortlist)
  * 
- * Move yield order:
+ * Move yield order (normal):
  * 1. TT move (if legal)
  * 2. Top-8 captures from legacy order (exact same order as legacy)
  * 3. Remainder via legacy ordering (skipping TT and shortlist)
  * 
+ * Move yield order (in check):
+ * 1. TT move (if it's a legal evasion)
+ * 2. Legal evasions in legacy order (skipping TT if already yielded)
+ * 
  * Design principles:
  * - Legacy ordering applied ONCE to all moves
- * - Shortlist = first K captures from legacy order
+ * - Shortlist = first K captures from legacy order (not in check)
  * - No separate scoring/sorting of shortlist
  * - Perfect alignment with existing behavior
- * - No tie-break differences or ordering drift
+ * - Legal evasions only when in check
  */
 
 #include "../core/types.h"
