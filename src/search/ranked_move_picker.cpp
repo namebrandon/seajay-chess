@@ -9,6 +9,20 @@ namespace search {
 // Use the MVV-LVA constants from move_ordering.h
 // VICTIM_VALUES and ATTACKER_VALUES are already defined there
 
+// Phase 2a.3: Scoring constants
+static constexpr int16_t PROMOTION_BONUS[4] = {
+    200,  // Knight promotion
+    200,  // Bishop promotion  
+    500,  // Rook promotion
+    900   // Queen promotion
+};
+
+static constexpr int16_t KILLER_BONUS = 1000;
+static constexpr int16_t COUNTERMOVE_BONUS = 500;
+static constexpr int16_t REFUTATION_BONUS = 300;
+static constexpr int16_t CHECK_BONUS = 50;
+static constexpr int16_t HISTORY_MULTIPLIER = 2;
+
 /**
  * Compute MVV-LVA score for a capture move
  * Higher scores = better captures (e.g., PxQ > QxP)
@@ -45,6 +59,62 @@ int16_t RankedMovePicker::computeMvvLvaScore(Move move) const {
     
     // MVV-LVA formula: victim_value - attacker_value
     return VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker];
+}
+
+/**
+ * Compute score for a quiet move
+ * Based on killers, history, countermoves, and CMH
+ */
+int16_t RankedMovePicker::computeQuietScore(Move move) const {
+    int16_t score = 0;
+    
+    // History score (can be negative)
+    if (m_history) {
+        score += m_history->getScore(m_board.sideToMove(), moveFrom(move), moveTo(move)) * HISTORY_MULTIPLIER;
+    }
+    
+    // Killer move bonus
+    if (m_killers && m_killers->isKiller(move, m_ply)) {
+        score += KILLER_BONUS;
+    }
+    
+    // Countermove bonus
+    if (m_counterMoves && m_prevMove != NO_MOVE) {
+        if (m_counterMoves->getCounterMove(m_prevMove) == move) {
+            score += COUNTERMOVE_BONUS;
+        }
+    }
+    
+    // Counter-move history bonus (if available)
+    if (m_counterMoveHistory && m_prevMove != NO_MOVE) {
+        score += m_counterMoveHistory->getScore(m_prevMove, move) / 2;  // Scale down CMH
+    }
+    
+    // Small check bonus (cheap detection - could add if needed)
+    // For now, omit as it requires extra computation
+    
+    return score;
+}
+
+/**
+ * Compute score for a non-capture promotion
+ * Base quiet score plus promotion bonus
+ */
+int16_t RankedMovePicker::computePromotionScore(Move move) const {
+    if (!isPromotion(move)) {
+        return 0;
+    }
+    
+    // Start with base quiet score
+    int16_t score = computeQuietScore(move);
+    
+    // Add promotion bonus based on piece type
+    PieceType promoType = promotionType(move);
+    if (promoType >= KNIGHT && promoType <= QUEEN) {
+        score += PROMOTION_BONUS[promoType - KNIGHT];
+    }
+    
+    return score;
 }
 
 /**
@@ -110,7 +180,7 @@ bool RankedMovePicker::isInShortlist(Move move) const {
 }
 
 /**
- * Phase 2a.2: Captures-only shortlist implementation
+ * Phase 2a.3: Full shortlist implementation (captures + promotions + quiets)
  */
 RankedMovePicker::RankedMovePicker(const Board& board,
                                    Move ttMove,
@@ -151,23 +221,39 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     m_generatedCount = m_moves.size();
 #endif
     
-    // Phase 2a.2: Build shortlist only if NOT in check
+    // Phase 2a.3: Build shortlist only if NOT in check
     if (!m_inCheck) {
-        // Single pass to find top captures
+        // Single pass to find top moves (captures, promotions, quiets)
         for (const Move& move : m_moves) {
-            // Only consider captures (including capture-promotions and en passant)
-            if (isCapture(move) || isEnPassant(move)) {
-                // Skip TT move (will be yielded first)
-                if (move == m_ttMove) {
-                    continue;
-                }
-                
-                // Compute MVV-LVA score
-                int16_t score = computeMvvLvaScore(move);
-                
-                // Try to insert into shortlist
-                insertIntoShortlist(move, score);
+            // Skip TT move (will be yielded first)
+            if (move == m_ttMove) {
+                continue;
             }
+            
+            int16_t score = 0;
+            
+            // Score captures (including capture-promotions)
+            if (isCapture(move) || isEnPassant(move)) {
+                score = computeMvvLvaScore(move);
+                // Capture-promotions get both MVV-LVA and promotion bonus
+                if (isPromotion(move)) {
+                    PieceType promoType = promotionType(move);
+                    if (promoType >= KNIGHT && promoType <= QUEEN) {
+                        score += PROMOTION_BONUS[promoType - KNIGHT];
+                    }
+                }
+            }
+            // Score non-capture promotions
+            else if (isPromotion(move)) {
+                score = computePromotionScore(move);
+            }
+            // Score quiet moves
+            else {
+                score = computeQuietScore(move);
+            }
+            
+            // Try to insert into shortlist
+            insertIntoShortlist(move, score);
         }
     }
     
@@ -195,7 +281,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.2: Yield TT move first if legal and not yet yielded
+    // Phase 2a.3: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
         
@@ -211,7 +297,7 @@ Move RankedMovePicker::next() {
         // If TT move not in list, skip it and continue
     }
     
-    // Phase 2a.2: Yield shortlist moves (only if not in check)
+    // Phase 2a.3: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG

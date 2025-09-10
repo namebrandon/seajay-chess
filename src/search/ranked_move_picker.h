@@ -1,10 +1,12 @@
 #pragma once
 
 /**
- * Phase 2a.2: Ranked MovePicker - Captures-only Shortlist
+ * Phase 2a.3: Ranked MovePicker - Full Shortlist (Captures + Quiets + Promotions)
  * 
- * This implementation adds a Top-K shortlist of captures scored by MVV-LVA.
- * The shortlist improves early decision quality for tactical moves.
+ * This implementation expands the Top-K shortlist to include:
+ * - Captures (MVV-LVA scoring)
+ * - Non-capture promotions (bonus scoring: Q > R > B/N)
+ * - Top quiet moves (killers, history, countermoves, CMH)
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
@@ -13,7 +15,7 @@
  * 
  * Move yield order:
  * 1. TT move (if legal)
- * 2. Top-K captures shortlist (MVV-LVA ordered)
+ * 2. Top-10 shortlist (mixed captures/promotions/quiets, score-ordered)
  * 3. Remainder via legacy ordering (skipping TT and shortlist)
  * 
  * Design principles:
@@ -75,13 +77,13 @@ public:
      * Get next move in ranked order
      * @return Next move, or NO_MOVE when no more moves
      * 
-     * Phase 2a.2: Yields TT, then shortlist, then remainder
+     * Phase 2a.3: Yields TT, then shortlist (captures/quiets/promotions), then remainder
      */
     Move next();
     
 private:
     // Constants
-    static constexpr int SHORTLIST_SIZE = 8;  // Top-K captures
+    static constexpr int SHORTLIST_SIZE = 10;  // Top-K moves (captures, promotions, quiets)
     
     // References to tables (no ownership)
     const Board& m_board;
@@ -98,7 +100,7 @@ private:
     int m_countermoveBonus;
     const SearchLimits* m_limits;
     
-    // Phase 2a.2: Shortlist for top captures
+    // Phase 2a.3: Shortlist for top moves (captures, promotions, quiets)
     Move m_shortlist[SHORTLIST_SIZE];
     int16_t m_shortlistScores[SHORTLIST_SIZE];
     int m_shortlistSize;
@@ -112,6 +114,8 @@ private:
     
     // Helper methods
     int16_t computeMvvLvaScore(Move move) const;
+    int16_t computeQuietScore(Move move) const;
+    int16_t computePromotionScore(Move move) const;
     void insertIntoShortlist(Move move, int16_t score);
     bool isInShortlist(Move move) const;
     
