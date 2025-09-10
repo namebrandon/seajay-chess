@@ -57,6 +57,14 @@ Global Preconditions (apply to all 2a sub‑phases)
 - [ ] Short local tactical/bench sanity
 - [ ] SPRT vs Phase 1 end (final 2a sign‑off)
 
+2a.8 – In‑check evasion ordering (class‑priority)
+- [ ] Use optimized evasion generator via `generateMovesForSearch(..., false)` (ensures `generateCheckEvasions` parity)
+- [ ] No shortlist when in check; TT move only if a legal evasion (present in list)
+- [ ] Reorder in‑check `m_moves` by class (stable): captures‑of‑checker → blocks → king moves
+- [ ] No history/CMH/killers applied to evasion ordering; optional simple tie‑break by attacker/blocker piece type
+- [ ] Toggle off: perft/tactical unchanged; Toggle on: coverage asserts pass
+- [ ] SPRT vs Phase 1 end or `tt-cluster` baseline (bounds `[-3.00, 3.00]`)
+
 OpenBench Run Config (per SPRT)
 - Base: Phase 1 end commit (e.g., `b700e88`), no `UseRankedMovePicker`
 - Dev: current 2a sub‑phase branch, `UseRankedMovePicker=true`
@@ -66,4 +74,3 @@ OpenBench Run Config (per SPRT)
 Sanitizers (local, non‑LTO)
 - Address/Undefined: `-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer` (disable LTO)
 - Run short selfplay/tactical; fix any UB/overflows before SPRT
-

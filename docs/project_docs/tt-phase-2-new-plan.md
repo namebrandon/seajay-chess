@@ -239,6 +239,7 @@ Use the companion checklist before each sub‑phase: `docs/project_docs/scaffold
 - [ ] 2a.5: Deterministic tie‑breaks; assert/guards around fixed arrays; SPRT
 - [ ] 2a.6: Minimal telemetry hooks (compiled‑out in Release); SPRT
 - [ ] 2a.7: QS remains legacy; confirm no ranked QS paths via asserts/log once; SPRT
+- [ ] 2a.8: Evasion ordering (class‑priority): captures of checker → blocks → king moves; stable, no history/CMH; SPRT
 
 For each sub‑phase:
 - Clean rebuild; bench in commit; short local sanity; then OpenBench SPRT vs Phase 1 end.
