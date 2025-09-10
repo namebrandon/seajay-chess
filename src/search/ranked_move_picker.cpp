@@ -180,7 +180,7 @@ bool RankedMovePicker::isInShortlist(Move move) const {
 }
 
 /**
- * Phase 2a.3: Full shortlist implementation (captures + promotions + quiets)
+ * Phase 2a.3a: Shortlist implementation (captures + promotions only, no quiets)
  */
 RankedMovePicker::RankedMovePicker(const Board& board,
                                    Move ttMove,
@@ -221,9 +221,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     m_generatedCount = m_moves.size();
 #endif
     
-    // Phase 2a.3: Build shortlist only if NOT in check
+    // Phase 2a.3a: Build shortlist only if NOT in check (captures + promotions only, no quiets)
     if (!m_inCheck) {
-        // Single pass to find top moves (captures, promotions, quiets)
+        // Single pass to find top captures and promotions
         for (const Move& move : m_moves) {
             // Skip TT move (will be yielded first)
             if (move == m_ttMove) {
@@ -242,18 +242,17 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                         score += PROMOTION_BONUS[promoType - KNIGHT];
                     }
                 }
+                // Try to insert capture into shortlist
+                insertIntoShortlist(move, score);
             }
             // Score non-capture promotions
             else if (isPromotion(move)) {
                 score = computePromotionScore(move);
+                // Try to insert promotion into shortlist
+                insertIntoShortlist(move, score);
             }
-            // Score quiet moves
-            else {
-                score = computeQuietScore(move);
-            }
-            
-            // Try to insert into shortlist
-            insertIntoShortlist(move, score);
+            // Phase 2a.3a: Skip quiet moves entirely (don't add to shortlist)
+            // Quiets will still be yielded via legacy ordering after shortlist
         }
     }
     
@@ -281,7 +280,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.3: Yield TT move first if legal and not yet yielded
+    // Phase 2a.3a: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
         
@@ -297,7 +296,7 @@ Move RankedMovePicker::next() {
         // If TT move not in list, skip it and continue
     }
     
-    // Phase 2a.3: Yield shortlist moves (only if not in check)
+    // Phase 2a.3a: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG
