@@ -794,7 +794,7 @@ eval::Score negamax(Board& board,
         rankedPicker.emplace(
             board, ttMove, info.killers, info.history, 
             info.counterMoves, info.counterMoveHistory,
-            prevMove, ply, depth
+            prevMove, ply, depth, info.countermoveBonus, &limits
         );
     } else {
         // Generate pseudo-legal moves now that early exits are handled

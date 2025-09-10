@@ -1,17 +1,10 @@
 #include "ranked_move_picker.h"
-#include "move_ordering.h"  // For MVV-LVA and SEE ordering
+#include "move_ordering.h"
 #include <algorithm>
 #include <cassert>
 
 namespace seajay {
 namespace search {
-
-// Forward declaration of orderMoves from negamax.cpp
-// This is the legacy ordering function we'll use
-void orderMovesLegacy(const Board& board, MoveList& moves, Move ttMove,
-                     const KillerMoves* killers, const HistoryHeuristic* history,
-                     const CounterMoves* counterMoves, const CounterMoveHistory* counterMoveHistory,
-                     Move prevMove, int ply, int depth);
 
 /**
  * Phase 2a.1: TT-first implementation
@@ -25,7 +18,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                                    const CounterMoveHistory* counterMoveHistory,
                                    Move prevMove,
                                    int ply,
-                                   int depth)
+                                   int depth,
+                                   int countermoveBonus,
+                                   const SearchLimits* limits)
     : m_board(board)
     , m_killers(killers)
     , m_history(history)
@@ -35,6 +30,8 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_prevMove(prevMove)
     , m_ply(ply)
     , m_depth(depth)
+    , m_countermoveBonus(countermoveBonus)
+    , m_limits(limits)
     , m_moveIndex(0)
     , m_ttMoveYielded(false)
 #ifdef DEBUG
@@ -50,10 +47,34 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     m_generatedCount = m_moves.size();
 #endif
     
-    // Order moves using legacy ordering (but we'll handle TT move ourselves)
-    // We pass NO_MOVE as ttMove to prevent legacy ordering from moving it first
-    orderMovesLegacy(board, m_moves, NO_MOVE, killers, history, 
-                    counterMoves, counterMoveHistory, prevMove, ply, depth);
+    // Order moves using the exact same logic as negamax.cpp's orderMoves
+    // This ensures we match the legacy ordering exactly
+    static MvvLvaOrdering mvvLva;
+    
+    // Optional SEE capture ordering first (prefix-only) when enabled
+    if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
+        // SEE policy orders only captures/promotions prefix; quiets preserved
+        g_seeMoveOrdering.orderMoves(board, m_moves);
+    } else {
+        // Default capture ordering
+        mvvLva.orderMoves(board, m_moves);
+    }
+
+    // Use history heuristics for quiet moves if available
+    if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+        // Use counter-move history for enhanced move ordering at sufficient depth
+        float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
+        mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                    *counterMoves, *counterMoveHistory,
+                                    prevMove, ply, countermoveBonus, cmhWeight);
+    } else if (killers && history && counterMoves) {
+        // Fallback to basic countermoves without history
+        mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                    *counterMoves, prevMove, ply, countermoveBonus);
+    }
+
+    // Root-specific quiet move tweaks: we skip this since ply > 0
+    // Note: We skip TT move ordering here since we handle it in next()
 }
 
 Move RankedMovePicker::next() {
@@ -100,41 +121,6 @@ Move RankedMovePicker::next() {
 #endif
     
     return NO_MOVE;
-}
-
-// Legacy ordering implementation - simplified version of orderMoves from negamax.cpp
-void orderMovesLegacy(const Board& board, MoveList& moves, Move ttMove,
-                     const KillerMoves* killers, const HistoryHeuristic* history,
-                     const CounterMoves* counterMoves, const CounterMoveHistory* counterMoveHistory,
-                     Move prevMove, int ply, int depth) {
-    
-    // Use MVV-LVA ordering for captures
-    static MvvLvaOrdering mvvLva;
-    
-    // Check if SEE is enabled
-    if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
-        // SEE policy orders only captures/promotions prefix
-        g_seeMoveOrdering.orderMoves(board, moves);
-    } else {
-        // Default capture ordering
-        mvvLva.orderMoves(board, moves);
-    }
-    
-    // Use history heuristics for quiet moves if available and at sufficient depth
-    if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
-        // Use counter-move history for enhanced move ordering at sufficient depth
-        float cmhWeight = 1.5f;  // Default weight
-        mvvLva.orderMovesWithHistory(board, moves, *killers, *history,
-                                    *counterMoves, *counterMoveHistory,
-                                    prevMove, ply, 0, cmhWeight);
-    } else if (killers && history && counterMoves) {
-        // Fallback to basic countermoves without history
-        mvvLva.orderMovesWithHistory(board, moves, *killers, *history,
-                                    *counterMoves, prevMove, ply, 0);
-    }
-    
-    // Note: We skip TT move ordering since RankedMovePicker handles it
-    // Note: We skip root-specific tweaks since ply > 0 in RankedMovePicker
 }
 
 /**

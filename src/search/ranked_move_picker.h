@@ -51,6 +51,8 @@ public:
      * @param prevMove Previous move played
      * @param ply Current ply from root
      * @param depth Current search depth
+     * @param countermoveBonus Bonus for countermove ordering
+     * @param limits Search limits (for CMH weight)
      */
     RankedMovePicker(const Board& board,
                      Move ttMove,
@@ -60,7 +62,9 @@ public:
                      const CounterMoveHistory* counterMoveHistory,
                      Move prevMove,
                      int ply,
-                     int depth);
+                     int depth,
+                     int countermoveBonus,
+                     const SearchLimits* limits);
     
     /**
      * Get next move in ranked order
@@ -83,6 +87,8 @@ private:
     Move m_prevMove;
     int m_ply;
     int m_depth;
+    int m_countermoveBonus;
+    const SearchLimits* m_limits;
     
     // Legacy-ordered move list
     MoveList m_moves;
