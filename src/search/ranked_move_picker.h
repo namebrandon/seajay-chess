@@ -1,20 +1,25 @@
 #pragma once
 
 /**
- * Phase 2a.0: Ranked MovePicker - Scaffolds Only
+ * Phase 2a.2: Ranked MovePicker - Captures-only Shortlist
  * 
- * This is a minimal stub implementation with no actual ordering logic.
- * The class exists only to establish the API and allow for clean compilation.
+ * This implementation adds a Top-K shortlist of captures scored by MVV-LVA.
+ * The shortlist improves early decision quality for tactical moves.
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
  * - Disabled in quiescence search - not wired in
- * - TT move deduplication to be handled in later phases
+ * - In-check nodes use legacy path (no shortlist)
+ * 
+ * Move yield order:
+ * 1. TT move (if legal)
+ * 2. Top-K captures shortlist (MVV-LVA ordered)
+ * 3. Remainder via legacy ordering (skipping TT and shortlist)
  * 
  * Design principles:
  * - Single-pass O(n), no quadratic work or repeated sorts
  * - No dynamic allocations, fixed-size stack arrays only
- * - In-check parity: use check evasions when in check
+ * - In-check parity: bypass shortlist when in check
  * - Clean fallback: feature behind UCI toggle, legacy path intact
  * - Deterministic ordering with clear tie-breaks
  */
@@ -70,11 +75,14 @@ public:
      * Get next move in ranked order
      * @return Next move, or NO_MOVE when no more moves
      * 
-     * Phase 2a.0: Always returns NO_MOVE (stub)
+     * Phase 2a.2: Yields TT, then shortlist, then remainder
      */
     Move next();
     
 private:
+    // Constants
+    static constexpr int SHORTLIST_SIZE = 8;  // Top-K captures
+    
     // References to tables (no ownership)
     const Board& m_board;
     const KillerMoves* m_killers;
@@ -90,10 +98,22 @@ private:
     int m_countermoveBonus;
     const SearchLimits* m_limits;
     
+    // Phase 2a.2: Shortlist for top captures
+    Move m_shortlist[SHORTLIST_SIZE];
+    int16_t m_shortlistScores[SHORTLIST_SIZE];
+    int m_shortlistSize;
+    int m_shortlistIndex;
+    bool m_inCheck;  // Flag to bypass shortlist when in check
+    
     // Legacy-ordered move list
     MoveList m_moves;
     size_t m_moveIndex;
     bool m_ttMoveYielded;
+    
+    // Helper methods
+    int16_t computeMvvLvaScore(Move move) const;
+    void insertIntoShortlist(Move move, int16_t score);
+    bool isInShortlist(Move move) const;
     
 #ifdef DEBUG
     // Coverage tracking
