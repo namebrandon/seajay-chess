@@ -1,13 +1,13 @@
 #pragma once
 
 /**
- * Phase 2a.3c: Ranked MovePicker - K Size Diagnostic (K=8)
+ * Phase 2a.3d: Ranked MovePicker - Legacy-Aligned Shortlist (Final Fix)
  * 
- * This implementation tests K=8 to isolate K size as residual regression source:
- * - Captures (MVV-LVA scoring)
- * - Non-capture promotions (bonus scoring: Q > R > B/N)
- * - NO quiet moves in shortlist
- * - K=8 instead of K=10 (diagnostic)
+ * This implementation combines all fixes to eliminate regression:
+ * - Captures only (no quiets, no non-capture promotions)
+ * - K=8 (reduced from 10)
+ * - CRITICAL: Shortlist extracted from legacy-ordered moves
+ * - Ensures exact ordering alignment with legacy behavior
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
@@ -16,15 +16,15 @@
  * 
  * Move yield order:
  * 1. TT move (if legal)
- * 2. Top-8 shortlist (captures/promotions only, no quiets)
- * 3. Remainder via legacy ordering (quiets, skipping TT and shortlist)
+ * 2. Top-8 captures from legacy order (exact same order as legacy)
+ * 3. Remainder via legacy ordering (skipping TT and shortlist)
  * 
  * Design principles:
- * - Single-pass O(n), no quadratic work or repeated sorts
- * - No dynamic allocations, fixed-size stack arrays only
- * - In-check parity: bypass shortlist when in check
- * - Clean fallback: feature behind UCI toggle, legacy path intact
- * - Deterministic ordering with clear tie-breaks
+ * - Legacy ordering applied ONCE to all moves
+ * - Shortlist = first K captures from legacy order
+ * - No separate scoring/sorting of shortlist
+ * - Perfect alignment with existing behavior
+ * - No tie-break differences or ordering drift
  */
 
 #include "../core/types.h"

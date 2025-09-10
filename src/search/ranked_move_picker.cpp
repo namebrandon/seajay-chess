@@ -180,7 +180,7 @@ bool RankedMovePicker::isInShortlist(Move move) const {
 }
 
 /**
- * Phase 2a.3c: Shortlist implementation (K=8 diagnostic)
+ * Phase 2a.3d: Legacy-aligned shortlist implementation (final fix)
  */
 RankedMovePicker::RankedMovePicker(const Board& board,
                                    Move ttMove,
@@ -221,53 +221,19 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     m_generatedCount = m_moves.size();
 #endif
     
-    // Phase 2a.3c: Build shortlist with K=8 (captures + promotions, no quiets)
-    if (!m_inCheck) {
-        // Single pass to find top captures and promotions
-        for (const Move& move : m_moves) {
-            // Skip TT move (will be yielded first)
-            if (move == m_ttMove) {
-                continue;
-            }
-            
-            int16_t score = 0;
-            
-            // Score captures (including capture-promotions)
-            if (isCapture(move) || isEnPassant(move)) {
-                score = computeMvvLvaScore(move);
-                // Capture-promotions get both MVV-LVA and promotion bonus
-                if (isPromotion(move)) {
-                    PieceType promoType = promotionType(move);
-                    if (promoType >= KNIGHT && promoType <= QUEEN) {
-                        score += PROMOTION_BONUS[promoType - KNIGHT];
-                    }
-                }
-                // Try to insert capture into shortlist
-                insertIntoShortlist(move, score);
-            }
-            // Score non-capture promotions
-            else if (isPromotion(move)) {
-                score = computePromotionScore(move);
-                // Try to insert promotion into shortlist
-                insertIntoShortlist(move, score);
-            }
-            // Phase 2a.3c: Skip quiet moves (except promotions)
-            // Quiets will still be yielded via legacy ordering after shortlist
-        }
-    }
-    
-    // Order the remainder using legacy path
-    // This ensures we have a complete ordering for all moves
+    // Phase 2a.3d: Order moves using legacy ordering FIRST
+    // This ensures perfect alignment with existing behavior
     static MvvLvaOrdering mvvLva;
     
-    // Optional SEE capture ordering first (prefix-only) when enabled
+    // Apply legacy ordering to all moves (with ttMove=NO_MOVE to avoid special handling)
+    // This gives us the exact legacy order
     if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
         g_seeMoveOrdering.orderMoves(board, m_moves);
     } else {
         mvvLva.orderMoves(board, m_moves);
     }
 
-    // Use history heuristics for quiet moves if available
+    // Apply history heuristics for quiet moves if available
     if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
         float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
         mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
@@ -277,10 +243,35 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
                                     *counterMoves, prevMove, ply, countermoveBonus);
     }
+    
+    // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
+    if (!m_inCheck) {
+        // Walk the legacy-ordered list and take the first K captures
+        for (const Move& move : m_moves) {
+            // Skip TT move (will be yielded first)
+            if (move == m_ttMove) {
+                continue;
+            }
+            
+            // Only take captures for the shortlist (no promotions, no quiets)
+            if ((isCapture(move) || isEnPassant(move)) && m_shortlistSize < SHORTLIST_SIZE) {
+                m_shortlist[m_shortlistSize] = move;
+                m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
+                m_shortlistSize++;
+            }
+            
+            // Stop once we have K captures
+            if (m_shortlistSize >= SHORTLIST_SIZE) {
+                break;
+            }
+        }
+    }
+    
+    // Legacy ordering already applied above - no need to repeat
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.3c: Yield TT move first if legal and not yet yielded
+    // Phase 2a.3d: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
         
@@ -296,7 +287,7 @@ Move RankedMovePicker::next() {
         // If TT move not in list, skip it and continue
     }
     
-    // Phase 2a.3c: Yield shortlist moves (only if not in check)
+    // Phase 2a.3d: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG
