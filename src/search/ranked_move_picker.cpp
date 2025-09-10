@@ -232,8 +232,18 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             mvvLva.orderMoves(board, m_moves);
         }
         
+        // Apply history heuristics for quiet evasions - same as normal path for parity
+        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+            float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, *counterMoveHistory,
+                                        prevMove, ply, countermoveBonus, cmhWeight);
+        } else if (killers && history && counterMoves) {
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, prevMove, ply, countermoveBonus);
+        }
+        
         // No shortlist when in check - we'll iterate legal evasions directly
-        // No history ordering for evasions (keep it simple)
     }
     else {
         // Not in check: normal pseudo-legal generation and shortlist building
