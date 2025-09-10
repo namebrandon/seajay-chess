@@ -1,12 +1,12 @@
 #pragma once
 
 /**
- * Phase 2a.3a: Ranked MovePicker - Captures + Promotions Only (Regression Diagnosis)
+ * Phase 2a.3b: Ranked MovePicker - Captures Only (Residual Regression Diagnosis)
  * 
- * This implementation excludes quiet moves from shortlist to diagnose regression:
- * - Captures (MVV-LVA scoring)
- * - Non-capture promotions (bonus scoring: Q > R > B/N)
- * - NO quiet moves in shortlist (regression diagnosis)
+ * This implementation removes non-capture promotions to isolate residual regression:
+ * - Captures only (MVV-LVA scoring, including capture-promotions)
+ * - NO non-capture promotions in shortlist
+ * - NO quiet moves in shortlist
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
@@ -15,8 +15,8 @@
  * 
  * Move yield order:
  * 1. TT move (if legal)
- * 2. Top-10 shortlist (captures/promotions only, no quiets)
- * 3. Remainder via legacy ordering (including quiets, skipping TT and shortlist)
+ * 2. Top-10 shortlist (captures only)
+ * 3. Remainder via legacy ordering (promotions, quiets, skipping TT and shortlist)
  * 
  * Design principles:
  * - Single-pass O(n), no quadratic work or repeated sorts
