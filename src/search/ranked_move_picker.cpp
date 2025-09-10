@@ -180,7 +180,7 @@ bool RankedMovePicker::isInShortlist(Move move) const {
 }
 
 /**
- * Phase 2a.3b: Shortlist implementation (captures only diagnostic)
+ * Phase 2a.3c: Shortlist implementation (K=8 diagnostic)
  */
 RankedMovePicker::RankedMovePicker(const Board& board,
                                    Move ttMove,
@@ -221,18 +221,20 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     m_generatedCount = m_moves.size();
 #endif
     
-    // Phase 2a.3b: Build shortlist only if NOT in check (captures only diagnostic)
+    // Phase 2a.3c: Build shortlist with K=8 (captures + promotions, no quiets)
     if (!m_inCheck) {
-        // Single pass to find top captures only
+        // Single pass to find top captures and promotions
         for (const Move& move : m_moves) {
             // Skip TT move (will be yielded first)
             if (move == m_ttMove) {
                 continue;
             }
             
-            // Only consider captures (including capture-promotions and en passant)
+            int16_t score = 0;
+            
+            // Score captures (including capture-promotions)
             if (isCapture(move) || isEnPassant(move)) {
-                int16_t score = computeMvvLvaScore(move);
+                score = computeMvvLvaScore(move);
                 // Capture-promotions get both MVV-LVA and promotion bonus
                 if (isPromotion(move)) {
                     PieceType promoType = promotionType(move);
@@ -243,9 +245,14 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                 // Try to insert capture into shortlist
                 insertIntoShortlist(move, score);
             }
-            // Phase 2a.3b: Skip non-capture promotions (diagnostic)
-            // Non-capture promotions will be yielded via legacy ordering
-            // This isolates whether promotions cause the residual regression
+            // Score non-capture promotions
+            else if (isPromotion(move)) {
+                score = computePromotionScore(move);
+                // Try to insert promotion into shortlist
+                insertIntoShortlist(move, score);
+            }
+            // Phase 2a.3c: Skip quiet moves (except promotions)
+            // Quiets will still be yielded via legacy ordering after shortlist
         }
     }
     
@@ -273,7 +280,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.3b: Yield TT move first if legal and not yet yielded
+    // Phase 2a.3c: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
         
@@ -289,7 +296,7 @@ Move RankedMovePicker::next() {
         // If TT move not in list, skip it and continue
     }
     
-    // Phase 2a.3b: Yield shortlist moves (only if not in check)
+    // Phase 2a.3c: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG

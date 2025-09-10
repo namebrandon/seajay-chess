@@ -1,12 +1,13 @@
 #pragma once
 
 /**
- * Phase 2a.3b: Ranked MovePicker - Captures Only (Residual Regression Diagnosis)
+ * Phase 2a.3c: Ranked MovePicker - K Size Diagnostic (K=8)
  * 
- * This implementation removes non-capture promotions to isolate residual regression:
- * - Captures only (MVV-LVA scoring, including capture-promotions)
- * - NO non-capture promotions in shortlist
+ * This implementation tests K=8 to isolate K size as residual regression source:
+ * - Captures (MVV-LVA scoring)
+ * - Non-capture promotions (bonus scoring: Q > R > B/N)
  * - NO quiet moves in shortlist
+ * - K=8 instead of K=10 (diagnostic)
  * 
  * Safety constraints for Phase 2a:
  * - Disabled at root (ply==0) - enforced by caller
@@ -15,8 +16,8 @@
  * 
  * Move yield order:
  * 1. TT move (if legal)
- * 2. Top-10 shortlist (captures only)
- * 3. Remainder via legacy ordering (promotions, quiets, skipping TT and shortlist)
+ * 2. Top-8 shortlist (captures/promotions only, no quiets)
+ * 3. Remainder via legacy ordering (quiets, skipping TT and shortlist)
  * 
  * Design principles:
  * - Single-pass O(n), no quadratic work or repeated sorts
@@ -83,7 +84,7 @@ public:
     
 private:
     // Constants
-    static constexpr int SHORTLIST_SIZE = 10;  // Top-K moves (captures, promotions, quiets)
+    static constexpr int SHORTLIST_SIZE = 8;  // Top-K moves (K=8 diagnostic)
     
     // References to tables (no ownership)
     const Board& m_board;
