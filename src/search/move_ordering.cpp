@@ -126,7 +126,14 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
                 int scoreA = scoreMove(board, a);
                 int scoreB = scoreMove(board, b);
                 
-                return scoreA > scoreB;  // Higher scores first
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                if (scoreA != scoreB) {
+                    return scoreA > scoreB;  // Higher scores first
+                }
+                
+                // Tertiary tie-break: raw move encoding for full determinism
+                // This includes promotion piece in the encoding
+                return a < b;  // Arbitrary but deterministic ordering
             });
     }
     
@@ -235,7 +242,14 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
-                return scoreA > scoreB;  // Higher scores first
+                
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                if (scoreA != scoreB) {
+                    return scoreA > scoreB;  // Higher scores first
+                }
+                
+                // Tertiary tie-break: raw move encoding for full determinism
+                return a < b;  // Arbitrary but deterministic ordering
             });
     }
 }
@@ -323,7 +337,14 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
-                return scoreA > scoreB;  // Higher scores first
+                
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                if (scoreA != scoreB) {
+                    return scoreA > scoreB;  // Higher scores first
+                }
+                
+                // Tertiary tie-break: raw move encoding for full determinism
+                return a < b;  // Arbitrary but deterministic ordering
             });
     }
 }
@@ -419,7 +440,12 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
             Move move;
             int32_t score;  // Use int32_t to prevent overflow
             bool operator<(const MoveScore& other) const {
-                return score > other.score;  // Higher scores first
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                if (score != other.score) {
+                    return score > other.score;  // Higher scores first
+                }
+                // Tertiary tie-break: raw move encoding for full determinism
+                return move < other.move;  // Arbitrary but deterministic ordering
             }
         };
         
@@ -720,12 +746,21 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
                     std::cout << "  " << SafeMoveExecutor::moveToString(b) << ": SEE=" << seeB << "\n";
                 }
                 
-                // Order by SEE value (higher is better)
-                // If equal SEE, fall back to MVV-LVA
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                // Primary: SEE value (higher is better)
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
-                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
+                
+                // Secondary: MVV-LVA score
+                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
+                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
+                if (mvvLvaA != mvvLvaB) {
+                    return mvvLvaA > mvvLvaB;
+                }
+                
+                // Tertiary: raw move encoding for full determinism
+                return a < b;
             });
     }
     
@@ -751,10 +786,19 @@ void SEEMoveOrdering::orderMovesShadowMode(const Board& board, MoveList& moves) 
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
+                
+                // Phase 2a.5a: Deterministic tie-breaking
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
-                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
+                
+                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
+                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
+                if (mvvLvaA != mvvLvaB) {
+                    return mvvLvaA > mvvLvaB;
+                }
+                
+                return a < b;  // Tertiary: raw move encoding
             });
     }
     
@@ -801,11 +845,17 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
                 if (seeA == SEE_INVALID) seeA = MvvLvaOrdering::scoreMove(board, a);
                 if (seeB == SEE_INVALID) seeB = MvvLvaOrdering::scoreMove(board, b);
 
-                // Order by SEE value (higher is better)
+                // Phase 2a.5a: Deterministic tie-breaking cascade
+                // Primary: SEE value (higher is better)
                 if (seeA != seeB) return seeA > seeB;
 
-                // If equal SEE, fall back to MVV-LVA for stability
-                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
+                // Secondary: MVV-LVA score for stability
+                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
+                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
+                if (mvvLvaA != mvvLvaB) return mvvLvaA > mvvLvaB;
+                
+                // Tertiary: raw move encoding for full determinism
+                return a < b;
             });
     }
     
