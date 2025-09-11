@@ -280,16 +280,15 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                 continue;
             }
             
-            // Take captures and promotions for the shortlist (no quiets)
-            // This ensures non-capture promotions aren't delayed
-            if ((isCapture(move) || isEnPassant(move) || isPromotion(move)) && m_shortlistSize < SHORTLIST_SIZE) {
+            // Only take captures for the shortlist (no promotions, no quiets)
+            if ((isCapture(move) || isEnPassant(move)) && m_shortlistSize < SHORTLIST_SIZE) {
                 m_shortlist[m_shortlistSize] = move;
                 m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
                 m_inShortlistMap[i] = true;  // Mark this index as in shortlist
                 m_shortlistSize++;
             }
             
-            // Stop once we have K captures/promotions
+            // Stop once we have K captures
             if (m_shortlistSize >= SHORTLIST_SIZE) {
                 break;
             }
