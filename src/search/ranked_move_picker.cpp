@@ -227,7 +227,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         m_generatedCount = m_moves.size();
 #endif
         
-        // Apply legacy ordering to the evasions (MVV-LVA/SEE only, no history for now)
+        // Apply legacy ordering to the evasions with history (same as non-check path)
         static MvvLvaOrdering mvvLva;
         
         if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
@@ -236,7 +236,18 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             mvvLva.orderMoves(board, m_moves);
         }
         
-        // No history ordering for evasions - testing showed slight regression
+        // Apply history heuristics to evasions for better move ordering
+        // This matches legacy behavior and should improve tactical positions
+        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+            float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, *counterMoveHistory,
+                                        prevMove, ply, countermoveBonus, cmhWeight);
+        } else if (killers && history && counterMoves) {
+            mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                        *counterMoves, prevMove, ply, countermoveBonus);
+        }
+        
         // No shortlist when in check - we'll iterate evasions directly
     }
     else {
