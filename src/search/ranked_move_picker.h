@@ -88,8 +88,10 @@ public:
      * @return Next move, or NO_MOVE when no more moves
      * 
      * Phase 2a.3: Yields TT, then shortlist (captures/quiets/promotions), then remainder
+     * 
+     * Marked with always_inline for performance in hot path
      */
-    Move next();
+    [[gnu::always_inline]] inline Move next();
     
 private:
     // Constants
@@ -132,7 +134,7 @@ private:
     int16_t computeQuietScore(Move move) const;
     int16_t computePromotionScore(Move move) const;
     void insertIntoShortlist(Move move, int16_t score);
-    bool isInShortlist(Move move) const;
+    [[gnu::always_inline]] inline bool isInShortlist(Move move) const;
     
 #ifdef DEBUG
     // Coverage tracking
