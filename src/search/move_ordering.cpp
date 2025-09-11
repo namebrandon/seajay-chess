@@ -715,7 +715,7 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
     
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
-        std::sort(moves.begin(), captureEnd,
+        std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
@@ -755,7 +755,7 @@ void SEEMoveOrdering::orderMovesShadowMode(const Board& board, MoveList& moves) 
         });
     
     if (seeCaptureEnd != seeOrdered.begin()) {
-        std::sort(seeOrdered.begin(), seeCaptureEnd,
+        std::stable_sort(seeOrdered.begin(), seeCaptureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
@@ -801,7 +801,7 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
     
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
-        std::sort(moves.begin(), captureEnd,
+        std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 // Get SEE values without exceptions (SEE is noexcept)
                 SEEValue seeA = m_see.see(board, a);
