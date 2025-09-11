@@ -171,7 +171,7 @@ void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
 /**
  * Check if a move is in the shortlist
  */
-inline bool RankedMovePicker::isInShortlist(Move move) const {
+bool RankedMovePicker::isInShortlist(Move move) const {
     for (int i = 0; i < m_shortlistSize; i++) {
         if (m_shortlist[i] == move) {
             return true;
@@ -296,7 +296,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     }
 }
 
-inline Move RankedMovePicker::next() {
+Move RankedMovePicker::next() {
     // Phase 2a.4: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
         m_ttMoveYielded = true;
