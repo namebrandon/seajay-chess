@@ -207,6 +207,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_limits(limits)
     , m_shortlistSize(0)
     , m_shortlistIndex(0)
+    , m_effectiveShortlistSize(0)  // Will be set based on depth
     , m_inCheck(board.isAttacked(board.kingSquare(board.sideToMove()), ~board.sideToMove()))
     , m_moveIndex(0)
     , m_ttMoveYielded(false)
@@ -217,6 +218,18 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 {
     // Initialize shortlist map to all false
     std::fill(std::begin(m_inShortlistMap), std::end(m_inShortlistMap), false);
+    
+    // Calculate depth-based shortlist size (K)
+    // Shallow depths: less overhead, fewer moves in shortlist
+    // Deeper depths: full shortlist for better move ordering
+    if (depth < 3) {
+        m_effectiveShortlistSize = 0;  // No shortlist at very shallow depths
+    } else if (depth < 6) {
+        m_effectiveShortlistSize = 4;  // Small shortlist at shallow depths
+    } else {
+        m_effectiveShortlistSize = 8;  // Full shortlist at deeper depths
+    }
+    
     // Phase 2a.4: When in check, use optimized check evasion generation
     if (m_inCheck) {
         // Use the same generator as legacy (generateMovesForSearch calls generateCheckEvasions internally)
@@ -282,8 +295,10 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         }
         
         // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
-        // Walk the legacy-ordered list and take the first K captures
-        for (size_t i = 0; i < m_moves.size(); ++i) {
+        // Only build shortlist if K > 0 (depth >= 3)
+        if (m_effectiveShortlistSize > 0) {
+            // Walk the legacy-ordered list and take the first K captures
+            for (size_t i = 0; i < m_moves.size(); ++i) {
             const Move& move = m_moves[i];
             
             // Skip TT move (will be yielded first)
@@ -293,16 +308,17 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             
             // Take captures and promotions for the shortlist (no quiets)
             // This ensures non-capture promotions aren't delayed
-            if ((isCapture(move) || isEnPassant(move) || isPromotion(move)) && m_shortlistSize < SHORTLIST_SIZE) {
+            if ((isCapture(move) || isEnPassant(move) || isPromotion(move)) && m_shortlistSize < m_effectiveShortlistSize) {
                 m_shortlist[m_shortlistSize] = move;
                 m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
                 m_inShortlistMap[i] = true;  // Mark this index as in shortlist
                 m_shortlistSize++;
             }
             
-            // Stop once we have K captures/promotions
-            if (m_shortlistSize >= SHORTLIST_SIZE) {
+            // Stop once we have K captures/promotions (using depth-based K)
+            if (m_shortlistSize >= m_effectiveShortlistSize) {
                 break;
+            }
             }
         }
     }

@@ -93,7 +93,7 @@ public:
     
 private:
     // Constants
-    static constexpr int SHORTLIST_SIZE = 8;  // Top-K moves (K=8 diagnostic)
+    static constexpr int MAX_SHORTLIST_SIZE = 8;  // Maximum K value for deep searches
     
     // References to tables (no ownership)
     const Board& m_board;
@@ -111,10 +111,11 @@ private:
     const SearchLimits* m_limits;
     
     // Phase 2a.3: Shortlist for top moves (captures, promotions, quiets)
-    Move m_shortlist[SHORTLIST_SIZE];
-    int16_t m_shortlistScores[SHORTLIST_SIZE];
+    Move m_shortlist[MAX_SHORTLIST_SIZE];
+    int16_t m_shortlistScores[MAX_SHORTLIST_SIZE];
     int m_shortlistSize;
     int m_shortlistIndex;
+    int m_effectiveShortlistSize;  // Depth-based K value
     bool m_inCheck;  // Flag to bypass shortlist when in check
     
     // Legacy-ordered move list
