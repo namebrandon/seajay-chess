@@ -2,6 +2,7 @@
 #include "move_ordering.h"
 #include <algorithm>
 #include <cassert>
+#include <cstring>  // For std::fill
 
 namespace seajay {
 namespace search {
@@ -214,6 +215,8 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_yieldedCount(0)
 #endif
 {
+    // Initialize shortlist map to all false
+    std::fill(std::begin(m_inShortlistMap), std::end(m_inShortlistMap), false);
     // Phase 2a.4: When in check, use optimized check evasion generation
     if (m_inCheck) {
         // Use the same generator as legacy (generateMovesForSearch calls generateCheckEvasions internally)
@@ -269,7 +272,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         
         // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
         // Walk the legacy-ordered list and take the first K captures
-        for (const Move& move : m_moves) {
+        for (size_t i = 0; i < m_moves.size(); ++i) {
+            const Move& move = m_moves[i];
+            
             // Skip TT move (will be yielded first)
             if (move == m_ttMove) {
                 continue;
@@ -279,6 +284,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             if ((isCapture(move) || isEnPassant(move)) && m_shortlistSize < SHORTLIST_SIZE) {
                 m_shortlist[m_shortlistSize] = move;
                 m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
+                m_inShortlistMap[i] = true;  // Mark this index as in shortlist
                 m_shortlistSize++;
             }
             
@@ -322,6 +328,7 @@ Move RankedMovePicker::next() {
     // For in-check: these are check evasions (MVV-LVA/SEE ordered)
     // For normal: these are pseudo-legal moves (skipping TT and shortlist)
     while (m_moveIndex < m_moves.size()) {
+        size_t currentIndex = m_moveIndex;
         Move move = m_moves[m_moveIndex++];
         
         // Skip TT move since we already yielded it (or tried to)
@@ -330,7 +337,8 @@ Move RankedMovePicker::next() {
         }
         
         // Skip moves that are in the shortlist (already yielded) - only when not in check
-        if (!m_inCheck && isInShortlist(move)) {
+        // Use O(1) lookup instead of linear search
+        if (!m_inCheck && currentIndex < MAX_MOVES && m_inShortlistMap[currentIndex]) {
             continue;
         }
         

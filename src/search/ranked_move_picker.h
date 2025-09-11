@@ -122,6 +122,11 @@ private:
     size_t m_moveIndex;
     bool m_ttMoveYielded;
     
+    // Performance optimization: O(1) lookup for shortlist membership
+    // Index corresponds to position in m_moves array
+    static constexpr size_t MAX_MOVES = 256;  // Max possible moves in a position
+    bool m_inShortlistMap[MAX_MOVES];  // True if move at index is in shortlist
+    
     // Helper methods
     int16_t computeMvvLvaScore(Move move) const;
     int16_t computeQuietScore(Move move) const;
