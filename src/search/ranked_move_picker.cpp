@@ -270,26 +270,39 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                                         *counterMoves, prevMove, ply, countermoveBonus);
         }
         
-        // Phase 2a.3d: Extract first K captures from legacy-ordered list as shortlist
-        // Walk the legacy-ordered list and take the first K captures
+        // Phase 2a.3d + Optimization: Build shortlist in single pass
+        // Since captures are ordered first in legacy ordering, we can extract
+        // the shortlist by just taking the first K captures we encounter
+        // This avoids a second iteration through all moves
+        size_t captureCount = 0;
         for (size_t i = 0; i < m_moves.size(); ++i) {
             const Move& move = m_moves[i];
             
-            // Skip TT move (will be yielded first)
-            if (move == m_ttMove) {
-                continue;
+            // Check if this is a capture (should be at the front after ordering)
+            if (isCapture(move) || isEnPassant(move)) {
+                captureCount++;
+                
+                // Skip TT move (will be yielded first)
+                if (move == m_ttMove) {
+                    continue;
+                }
+                
+                // Add to shortlist if we haven't filled it yet
+                if (m_shortlistSize < SHORTLIST_SIZE) {
+                    m_shortlist[m_shortlistSize] = move;
+                    m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
+                    m_inShortlistMap[i] = true;  // Mark this index as in shortlist
+                    m_shortlistSize++;
+                }
+            } else {
+                // Once we hit non-captures, we can stop looking
+                // Legacy ordering puts all captures first
+                break;
             }
             
-            // Only take captures for the shortlist (no promotions, no quiets)
-            if ((isCapture(move) || isEnPassant(move)) && m_shortlistSize < SHORTLIST_SIZE) {
-                m_shortlist[m_shortlistSize] = move;
-                m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
-                m_inShortlistMap[i] = true;  // Mark this index as in shortlist
-                m_shortlistSize++;
-            }
-            
-            // Stop once we have K captures
-            if (m_shortlistSize >= SHORTLIST_SIZE) {
+            // Early exit if we've seen enough captures to fill shortlist
+            // (even if some were TT move)
+            if (captureCount >= SHORTLIST_SIZE + 1) {  // +1 for possible TT move
                 break;
             }
         }
