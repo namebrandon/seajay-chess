@@ -126,14 +126,8 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
                 int scoreA = scoreMove(board, a);
                 int scoreB = scoreMove(board, b);
                 
-                // Phase 2a.5a: Deterministic tie-breaking cascade
-                if (scoreA != scoreB) {
-                    return scoreA > scoreB;  // Higher scores first
-                }
-                
-                // Tertiary tie-break: raw move encoding for full determinism
-                // This includes promotion piece in the encoding
-                return a < b;  // Arbitrary but deterministic ordering
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
+                return scoreA > scoreB;  // Higher scores first
             });
     }
     
@@ -243,13 +237,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
                 
-                // Phase 2a.5a: Deterministic tie-breaking cascade
-                if (scoreA != scoreB) {
-                    return scoreA > scoreB;  // Higher scores first
-                }
-                
-                // Tertiary tie-break: raw move encoding for full determinism
-                return a < b;  // Arbitrary but deterministic ordering
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
+                return scoreA > scoreB;  // Higher scores first
             });
     }
 }
@@ -338,13 +327,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
                 
-                // Phase 2a.5a: Deterministic tie-breaking cascade
-                if (scoreA != scoreB) {
-                    return scoreA > scoreB;  // Higher scores first
-                }
-                
-                // Tertiary tie-break: raw move encoding for full determinism
-                return a < b;  // Arbitrary but deterministic ordering
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
+                return scoreA > scoreB;  // Higher scores first
             });
     }
 }
@@ -440,12 +424,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
             Move move;
             int32_t score;  // Use int32_t to prevent overflow
             bool operator<(const MoveScore& other) const {
-                // Phase 2a.5a: Deterministic tie-breaking cascade
-                if (score != other.score) {
-                    return score > other.score;  // Higher scores first
-                }
-                // Tertiary tie-break: raw move encoding for full determinism
-                return move < other.move;  // Arbitrary but deterministic ordering
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
+                return score > other.score;  // Higher scores first
             }
         };
         
@@ -746,21 +726,14 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
                     std::cout << "  " << SafeMoveExecutor::moveToString(b) << ": SEE=" << seeB << "\n";
                 }
                 
-                // Phase 2a.5a: Deterministic tie-breaking cascade
+                // Phase 2a.5a: Preserve legacy behavior with stable ordering
                 // Primary: SEE value (higher is better)
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
                 
-                // Secondary: MVV-LVA score
-                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
-                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
-                if (mvvLvaA != mvvLvaB) {
-                    return mvvLvaA > mvvLvaB;
-                }
-                
-                // Tertiary: raw move encoding for full determinism
-                return a < b;
+                // Secondary: MVV-LVA score (preserve existing fallback)
+                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });
     }
     
@@ -787,18 +760,11 @@ void SEEMoveOrdering::orderMovesShadowMode(const Board& board, MoveList& moves) 
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
                 
-                // Phase 2a.5a: Deterministic tie-breaking
+                // Phase 2a.5a: Preserve legacy behavior
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
-                
-                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
-                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
-                if (mvvLvaA != mvvLvaB) {
-                    return mvvLvaA > mvvLvaB;
-                }
-                
-                return a < b;  // Tertiary: raw move encoding
+                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });
     }
     
@@ -845,17 +811,12 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
                 if (seeA == SEE_INVALID) seeA = MvvLvaOrdering::scoreMove(board, a);
                 if (seeB == SEE_INVALID) seeB = MvvLvaOrdering::scoreMove(board, b);
 
-                // Phase 2a.5a: Deterministic tie-breaking cascade
+                // Phase 2a.5a: Preserve legacy behavior
                 // Primary: SEE value (higher is better)
                 if (seeA != seeB) return seeA > seeB;
 
-                // Secondary: MVV-LVA score for stability
-                int mvvLvaA = MvvLvaOrdering::scoreMove(board, a);
-                int mvvLvaB = MvvLvaOrdering::scoreMove(board, b);
-                if (mvvLvaA != mvvLvaB) return mvvLvaA > mvvLvaB;
-                
-                // Tertiary: raw move encoding for full determinism
-                return a < b;
+                // Secondary: MVV-LVA score for stability (preserve existing fallback)
+                return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });
     }
     
