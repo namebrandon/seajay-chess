@@ -123,6 +123,11 @@ int16_t RankedMovePicker::computePromotionScore(Move move) const {
  * Maintains top-K moves sorted by score
  */
 void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
+#ifdef DEBUG
+    // Phase 2a.5b: Pre-condition checks
+    assert(m_shortlistSize >= 0 && m_shortlistSize <= MAX_SHORTLIST_SIZE);
+#endif
+    
     // If shortlist not full, always insert
     if (m_shortlistSize < MAX_SHORTLIST_SIZE) {
         // Find insertion position (keep sorted, highest scores first)
@@ -136,14 +141,26 @@ void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
         
         // Shift elements to make room
         for (int i = m_shortlistSize; i > insertPos; i--) {
+#ifdef DEBUG
+            // Phase 2a.5b: Assert array bounds
+            assert(i > 0 && i <= MAX_SHORTLIST_SIZE);
+            assert(i-1 >= 0 && i-1 < MAX_SHORTLIST_SIZE);
+#endif
             m_shortlist[i] = m_shortlist[i-1];
             m_shortlistScores[i] = m_shortlistScores[i-1];
         }
         
         // Insert the new move
+#ifdef DEBUG
+        assert(insertPos >= 0 && insertPos < MAX_SHORTLIST_SIZE);
+        assert(m_shortlistSize < MAX_SHORTLIST_SIZE);
+#endif
         m_shortlist[insertPos] = move;
         m_shortlistScores[insertPos] = score;
         m_shortlistSize++;
+#ifdef DEBUG
+        assert(m_shortlistSize <= MAX_SHORTLIST_SIZE);
+#endif
     }
     // If shortlist is full, check if this move is better than the worst
     else if (score > m_shortlistScores[MAX_SHORTLIST_SIZE - 1]) {
@@ -158,11 +175,19 @@ void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
         
         // Shift elements (dropping the worst)
         for (int i = MAX_SHORTLIST_SIZE - 1; i > insertPos; i--) {
+#ifdef DEBUG
+            // Phase 2a.5b: Assert array bounds  
+            assert(i > 0 && i < MAX_SHORTLIST_SIZE);
+            assert(i-1 >= 0 && i-1 < MAX_SHORTLIST_SIZE);
+#endif
             m_shortlist[i] = m_shortlist[i-1];
             m_shortlistScores[i] = m_shortlistScores[i-1];
         }
         
         // Insert the new move
+#ifdef DEBUG
+        assert(insertPos >= 0 && insertPos < MAX_SHORTLIST_SIZE);
+#endif
         m_shortlist[insertPos] = move;
         m_shortlistScores[insertPos] = score;
     }
@@ -219,6 +244,10 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     // Initialize shortlist map to all false
     std::fill(std::begin(m_inShortlistMap), std::end(m_inShortlistMap), false);
     
+    // Phase 2a.5b: Initialize arrays to prevent UB
+    std::fill(std::begin(m_shortlist), std::end(m_shortlist), NO_MOVE);
+    std::fill(std::begin(m_shortlistScores), std::end(m_shortlistScores), 0);
+    
     // Calculate depth-based shortlist size (K)
     // Shallow depths: less overhead, fewer moves in shortlist
     // Deeper depths: full shortlist for better move ordering
@@ -229,6 +258,13 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     } else {
         m_effectiveShortlistSize = 8;  // Full shortlist at deeper depths
     }
+    
+#ifdef DEBUG
+    // Phase 2a.5b: Assert shortlist size bounds
+    assert(m_effectiveShortlistSize >= 0 && m_effectiveShortlistSize <= MAX_SHORTLIST_SIZE);
+    assert(m_shortlistSize == 0 && "Shortlist size must be initialized to 0");
+    assert(m_shortlistIndex == 0 && "Shortlist index must be initialized to 0");
+#endif
     
     // Phase 2a.4: When in check, use optimized check evasion generation
     if (m_inCheck) {
@@ -262,6 +298,11 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         }
         
         // No shortlist when in check - we'll iterate evasions directly
+        
+#ifdef DEBUG
+        // Phase 2a.5b: When in check, assert no shortlist
+        assert(m_shortlistSize == 0 && "No shortlist when in check");
+#endif
     }
     else {
         // Not in check: normal pseudo-legal generation and shortlist building
@@ -309,6 +350,11 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             // Take captures and promotions for the shortlist (no quiets)
             // This ensures non-capture promotions aren't delayed
             if ((isCapture(move) || isEnPassant(move) || isPromotion(move)) && m_shortlistSize < m_effectiveShortlistSize) {
+#ifdef DEBUG
+                // Phase 2a.5b: Assert bounds before array write
+                assert(m_shortlistSize >= 0 && m_shortlistSize < MAX_SHORTLIST_SIZE);
+                assert(i < MAX_MOVES && "Move index out of bounds for shortlist map");
+#endif
                 m_shortlist[m_shortlistSize] = move;
                 m_shortlistScores[m_shortlistSize] = 0; // Not used, but initialize
                 m_inShortlistMap[i] = true;  // Mark this index as in shortlist
@@ -345,6 +391,11 @@ Move RankedMovePicker::next() {
     
     // Phase 2a.4: Yield shortlist moves (only if not in check)
     if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
+#ifdef DEBUG
+        // Phase 2a.5b: Assert shortlist bounds
+        assert(m_shortlistIndex >= 0 && m_shortlistIndex < m_shortlistSize);
+        assert(m_shortlistSize <= MAX_SHORTLIST_SIZE);
+#endif
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef DEBUG
         m_yieldedCount++;
@@ -356,6 +407,10 @@ Move RankedMovePicker::next() {
     // For in-check: these are check evasions (MVV-LVA/SEE ordered)
     // For normal: these are pseudo-legal moves (skipping TT and shortlist)
     while (m_moveIndex < m_moves.size()) {
+#ifdef DEBUG
+        // Phase 2a.5b: Assert iterator bounds
+        assert(m_moveIndex <= m_moves.size() && "Move index out of bounds");
+#endif
         size_t currentIndex = m_moveIndex;
         Move move = m_moves[m_moveIndex++];
         
@@ -367,6 +422,10 @@ Move RankedMovePicker::next() {
         // Skip moves that are in the shortlist (already yielded) - only when not in check
         // Use O(1) lookup instead of linear search
         if (!m_inCheck && currentIndex < MAX_MOVES && m_inShortlistMap[currentIndex]) {
+#ifdef DEBUG
+            // Phase 2a.5b: Additional bounds check for paranoia
+            assert(currentIndex < MAX_MOVES && "Current index must be within MAX_MOVES");
+#endif
             continue;
         }
         
