@@ -128,12 +128,24 @@ private:
     static constexpr size_t MAX_MOVES = 256;  // Max possible moves in a position
     bool m_inShortlistMap[MAX_MOVES];  // True if move at index is in shortlist
     
+#ifdef SEARCH_STATS
+    // Phase 2a.6: Telemetry support
+    int m_yieldIndex;  // Current yield index (1-based, 0 = not started)
+#endif
+    
     // Helper methods
     int16_t computeMvvLvaScore(Move move) const;
     int16_t computeQuietScore(Move move) const;
     int16_t computePromotionScore(Move move) const;
     void insertIntoShortlist(Move move, int16_t score);
     bool isInShortlist(Move move) const;
+    
+public:
+#ifdef SEARCH_STATS
+    // Phase 2a.6: Telemetry accessors (compiled out in Release)
+    int currentYieldIndex() const { return m_yieldIndex; }
+    bool wasInShortlist(Move m) const;
+#endif
     
 #ifdef DEBUG
     // Coverage tracking

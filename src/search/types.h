@@ -137,6 +137,9 @@ struct SearchLimits {
     // Phase 2a: Ranked MovePicker
     bool useRankedMovePicker = false;    // Enable ranked move picker (Phase 2a)
     
+    // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
+    bool showMovePickerStats = false;     // Show move picker statistics at end of search
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -467,6 +470,37 @@ struct SearchData {
     // - Prevents time losses while maintaining performance
     static constexpr uint64_t TIME_CHECK_INTERVAL = 2048;  // Check every 2048 nodes
     
+    // Phase 2a.6: Move picker telemetry (compiled out in Release)
+    // This struct tracks effectiveness of the ranked move picker
+    // All fields are thread-local, no atomics needed for single-thread OB
+#ifdef SEARCH_STATS
+    struct MovePickerStats {
+        // Best move rank distribution
+        // [0]=rank 1, [1]=ranks 2-5, [2]=ranks 6-10, [3]=ranks 11+
+        uint64_t bestMoveRank[4] = {0, 0, 0, 0};
+        
+        // Shortlist coverage
+        uint64_t shortlistHits = 0;      // Cutoff moves that were in shortlist
+        
+        // SEE call tracking (expected ~0 in 2a since we don't use SEE yet)
+        uint64_t seeCallsLazy = 0;       // SEE evaluations performed
+        uint64_t capturesTotal = 0;      // Total captures observed
+        
+        // Optional: Additional tracking
+        uint64_t ttFirstYield = 0;       // TT move yielded first
+        uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
+        
+        void reset() {
+            for (int i = 0; i < 4; i++) bestMoveRank[i] = 0;
+            shortlistHits = 0;
+            seeCallsLazy = 0;
+            capturesTotal = 0;
+            ttFirstYield = 0;
+            remainderYields = 0;
+        }
+    } movePickerStats;
+#endif  // SEARCH_STATS
+    
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}
     
@@ -539,6 +573,9 @@ struct SearchData {
         aspiration.reset();      // B0: Reset aspiration stats
         razoring.reset();        // Phase R1: Reset razoring stats
         razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
+#ifdef SEARCH_STATS
+        movePickerStats.reset(); // Phase 2a.6: Reset move picker stats
+#endif
         if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations

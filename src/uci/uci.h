@@ -154,6 +154,7 @@ private:
     bool m_useClusteredTT = false;      // Toggle for clustered TT backend (scaffold only)
     bool m_useStagedMovePicker = false; // Toggle for staged MovePicker (scaffold only)
     bool m_useRankedMovePicker = false; // Toggle for ranked MovePicker (Phase 2a)
+    bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)

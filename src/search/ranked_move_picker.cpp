@@ -236,6 +236,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_inCheck(board.isAttacked(board.kingSquare(board.sideToMove()), ~board.sideToMove()))
     , m_moveIndex(0)
     , m_ttMoveYielded(false)
+#ifdef SEARCH_STATS
+    , m_yieldIndex(0)
+#endif
 #ifdef DEBUG
     , m_generatedCount(0)
     , m_yieldedCount(0)
@@ -381,6 +384,9 @@ Move RankedMovePicker::next() {
         bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
         
         if (ttMoveInList) {
+#ifdef SEARCH_STATS
+            m_yieldIndex++;  // Increment yield index for TT move
+#endif
 #ifdef DEBUG
             m_yieldedCount++;
 #endif
@@ -397,6 +403,9 @@ Move RankedMovePicker::next() {
         assert(m_shortlistSize <= MAX_SHORTLIST_SIZE);
 #endif
         Move move = m_shortlist[m_shortlistIndex++];
+#ifdef SEARCH_STATS
+        m_yieldIndex++;  // Increment yield index for shortlist move
+#endif
 #ifdef DEBUG
         m_yieldedCount++;
 #endif
@@ -429,6 +438,9 @@ Move RankedMovePicker::next() {
             continue;
         }
         
+#ifdef SEARCH_STATS
+        m_yieldIndex++;  // Increment yield index for remainder move
+#endif
 #ifdef DEBUG
         m_yieldedCount++;
 #endif
@@ -458,6 +470,22 @@ Move RankedMovePickerQS::next() {
     // Phase 2a.0: Stub - always return NO_MOVE
     return NO_MOVE;
 }
+
+#ifdef SEARCH_STATS
+/**
+ * Check if a move was in the shortlist
+ * Phase 2a.6: Telemetry support
+ */
+bool RankedMovePicker::wasInShortlist(Move m) const {
+    // Check if move is in our shortlist
+    for (int i = 0; i < m_shortlistSize; i++) {
+        if (m_shortlist[i] == m) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
 
 } // namespace search
 } // namespace seajay
