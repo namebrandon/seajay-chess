@@ -124,7 +124,7 @@ int16_t RankedMovePicker::computePromotionScore(Move move) const {
  */
 void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
     // If shortlist not full, always insert
-    if (m_shortlistSize < SHORTLIST_SIZE) {
+    if (m_shortlistSize < MAX_SHORTLIST_SIZE) {
         // Find insertion position (keep sorted, highest scores first)
         int insertPos = m_shortlistSize;
         for (int i = 0; i < m_shortlistSize; i++) {
@@ -146,10 +146,10 @@ void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
         m_shortlistSize++;
     }
     // If shortlist is full, check if this move is better than the worst
-    else if (score > m_shortlistScores[SHORTLIST_SIZE - 1]) {
+    else if (score > m_shortlistScores[MAX_SHORTLIST_SIZE - 1]) {
         // Find insertion position
-        int insertPos = SHORTLIST_SIZE - 1;
-        for (int i = 0; i < SHORTLIST_SIZE - 1; i++) {
+        int insertPos = MAX_SHORTLIST_SIZE - 1;
+        for (int i = 0; i < MAX_SHORTLIST_SIZE - 1; i++) {
             if (score > m_shortlistScores[i]) {
                 insertPos = i;
                 break;
@@ -157,7 +157,7 @@ void RankedMovePicker::insertIntoShortlist(Move move, int16_t score) {
         }
         
         // Shift elements (dropping the worst)
-        for (int i = SHORTLIST_SIZE - 1; i > insertPos; i--) {
+        for (int i = MAX_SHORTLIST_SIZE - 1; i > insertPos; i--) {
             m_shortlist[i] = m_shortlist[i-1];
             m_shortlistScores[i] = m_shortlistScores[i-1];
         }
