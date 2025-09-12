@@ -933,10 +933,42 @@ eval::Score negamax(Board& board,
                 limit += limits.moveCountHistoryBonus;  // Configurable bonus
             }
             
+            // Phase 2b.3: LMP rank gating - adjust limit based on move rank
+            if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
+                // Get rank from picker if available, otherwise use moveCount as fallback
+                // Note: Using moveCount before legality check is an approximation
+                const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
+                const int K = 5;  // Protected window size
+                
+                if (rank == 1) {
+                    // Rank 1: disable LMP for this move (make limit very high)
+                    limit = 999;
+                } else if (rank >= 2 && rank <= K) {
+                    // Ranks 2-5: make prune less aggressive
+                    limit += 2;
+                } else if (rank >= 6 && rank <= 10) {
+                    // Ranks 6-10: leave limit unchanged
+                    // (no adjustment needed)
+                } else if (rank >= 11) {
+                    // Ranks 11+: make prune more aggressive
+                    limit = std::max(1, limit - 4);
+                }
+            }
+            
             if (moveCount > limit) {
                 info.moveCountPruned++;
                 int b = SearchData::PruneBreakdown::bucketForDepth(depth);
                 info.pruneBreakdown.moveCount[b]++;
+                
+                // Phase 2b.3: Track rank-aware pruning telemetry
+#ifdef SEARCH_STATS
+                if (limits.useRankAwareGates && ply > 0) {
+                    const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
+                    const int bucket = SearchData::RankGateStats::bucketForRank(rank);
+                    info.rankGates.pruned[bucket]++;
+                }
+#endif
+                
                 // Node explosion diagnostics: Track move count pruning
                 if (limits.nodeExplosionDiagnostics) {
                     g_nodeExplosionStats.recordMoveCountPrune(depth, moveCount);
