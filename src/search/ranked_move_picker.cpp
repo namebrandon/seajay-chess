@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>  // For std::fill
+#ifdef DEBUG
+#include <iostream> // DEV one-shot logging (debug builds only)
+#endif
 
 namespace seajay {
 namespace search {
@@ -314,6 +317,14 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             checkers |= ::seajay::rookAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
             const int numCheckers = popCount(checkers);
             const Square checkerSq = (numCheckers == 1) ? lsb(checkers) : NO_SQUARE;
+            Bitboard blockMask = 0;
+            if (numCheckers == 1) {
+                const Piece checkerPiece = board.pieceAt(checkerSq);
+                const PieceType checkerType = typeOf(checkerPiece);
+                if (checkerType == BISHOP || checkerType == ROOK || checkerType == QUEEN) {
+                    blockMask = ::seajay::between(checkerSq, kingSq);
+                }
+            }
             const int epDelta = (stm == WHITE) ? -8 : 8;  // Precompute once
 
             // Perf: predicate avoids expensive work on early rejects
@@ -332,7 +343,60 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                 const Square from = moveFrom(mv);
                 return typeOf(board.pieceAt(from)) != KING;
             };
-            std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
+            auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
+
+#ifdef DEBUG
+            // 2a.8e: Safety checks and one-shot DEV log (debug builds only)
+            // Double-check → generator should provide only king moves
+            if (numCheckers > 1) {
+                size_t nonKing = 0;
+                for (const Move& mv : m_moves) {
+                    if (typeOf(board.pieceAt(moveFrom(mv))) != KING) nonKing++;
+                }
+                assert(nonKing == 0 && "Double check should produce only king moves");
+            }
+
+            // Verify partition correctness: all before class1End satisfy predicate; none after do
+            for (auto it = m_moves.begin(); it != class1End; ++it) {
+                assert(isCaptureOfChecker(*it) && "Front segment must be captures-of-checker");
+            }
+            for (auto it = class1End; it != m_moves.end(); ++it) {
+                assert(!isCaptureOfChecker(*it) && "Back segment must exclude captures-of-checker");
+            }
+
+            // Verify class targeting: any classified block move targets blockMask; captures target checkerSq
+            size_t c1 = 0, c2 = 0, c3 = 0;
+            for (const Move& mv : m_moves) {
+                const Square from = moveFrom(mv);
+                const Square to = moveTo(mv);
+                const bool isK = (typeOf(board.pieceAt(from)) == KING);
+                const bool isC1 = isCaptureOfChecker(mv);
+                const bool isC2 = (!isK && numCheckers == 1 && blockMask && !isCapture(mv) && !isEnPassant(mv) && testBit(blockMask, to));
+                if (isC1) {
+                    // Ensure target matches checkerSq (EP aware already in predicate)
+                    if (!isEnPassant(mv)) {
+                        assert(to == checkerSq && "Class 1 capture must land on checker square");
+                    }
+                    c1++;
+                } else if (isC2) {
+                    // Ensure block squares are on blockMask
+                    assert(testBit(blockMask, to) && "Block move must target block mask");
+                    c2++;
+                } else {
+                    c3++;
+                }
+            }
+
+            // One-shot DEV log for a few positions when toggle is enabled
+            static int logCount = 0;
+            if (logCount < 5) {
+                std::cerr << "info string InCheckClassOrdering: checkers=" << numCheckers
+                          << " c1(capture-checker)=" << c1
+                          << " c2(block)=" << c2
+                          << " c3(king/other)=" << c3 << std::endl;
+                ++logCount;
+            }
+#endif
 
             // No shortlist when in check - we'll iterate evasions directly
 #ifdef DEBUG
