@@ -314,7 +314,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             }
 
             // Helper lambdas to classify without auxiliary arrays
-            auto isCaptureOfChecker = [&](const Move& mv) ALWAYS_INLINE {
+            auto isCaptureOfChecker = [&](const Move& mv) -> bool {
                 if (numCheckers != 1) return false;
                 const Square from = moveFrom(mv);
                 if (typeOf(board.pieceAt(from)) == KING) return false; // King moves not here
@@ -328,7 +328,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                 return (isCapture(mv) || isEnPassant(mv)) && (to == checkerSq);
             };
 
-            auto isBlockMove = [&](const Move& mv) ALWAYS_INLINE {
+            auto isBlockMove = [&](const Move& mv) -> bool {
                 if (numCheckers != 1 || blockMask == 0) return false;
                 const Square from = moveFrom(mv);
                 if (typeOf(board.pieceAt(from)) == KING) return false; // King cannot block
