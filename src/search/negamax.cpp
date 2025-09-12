@@ -1145,6 +1145,47 @@ eval::Score negamax(Board& board,
                     
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
                     
+                    // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
+                    if (limits.useRankAwareGates && !isPvNode && depth >= 4 
+                        && !isCapture(move) && !isPromotion(move)
+                        && move != ttMove
+                        && !info.killers->isKiller(ply, move)
+                        && !(prevMove != NO_MOVE && isCapture(prevMove) && moveTo(prevMove) == moveTo(move))  // Not a recapture
+                        && !(prevMove != NO_MOVE && info.counterMoves && info.counterMoves->getCounterMove(prevMove) == move))  // Not a countermove
+                    {
+                        // Get current move rank (1-based index from picker, or moveCount as fallback)
+#ifdef SEARCH_STATS
+                        const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+#else
+                        const int rank = moveCount;  // Fallback to moveCount when telemetry disabled
+#endif
+                        const int K = 5;  // Protected rank threshold
+                        
+                        // Apply rank-based scaling
+                        int originalReduction = reduction;
+                        if (rank == 1) {
+                            // Rank 1: clamp reduction to 0 (no reduction for best move)
+                            reduction = 0;
+                        } else if (rank <= K) {
+                            // Ranks 2-K: clamp reduction to at most 1
+                            reduction = std::min(reduction, 1);
+                        } else if (rank <= 10) {
+                            // Ranks 6-10: leave base reduction unchanged
+                            // (no change needed)
+                        } else {
+                            // Ranks 11+: add +1 reduction step, cap to depth-1
+                            reduction = std::min(reduction + 1, depth - 1);
+                        }
+                        
+#ifdef SEARCH_STATS
+                        // Track telemetry if we modified the reduction
+                        if (reduction != originalReduction) {
+                            const int bucket = SearchData::RankGateStats::bucketForRank(rank);
+                            info.rankGates.reduced[bucket]++;
+                        }
+#endif
+                    }
+                    
                     // Track LMR statistics
                     info.lmrStats.totalReductions++;
                     // Node explosion diagnostics: Track LMR application
