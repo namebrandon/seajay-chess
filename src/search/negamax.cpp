@@ -1242,7 +1242,7 @@ eval::Score negamax(Board& board,
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
                     
                     // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
-                    // Phase 2b.6: Use depth-aware protected window R(depth)
+                    // Phase 2b.6d: LMR uses capped protected window R_lmr=min(R,8)
                     // SPRT fix: Add !weAreInCheck guard to avoid reducing evasions
                     if (limits.useRankAwareGates && !isPvNode && !weAreInCheck && depth >= 4 
                         && !isCapture(move) && !isPromotion(move)
@@ -1254,18 +1254,19 @@ eval::Score negamax(Board& board,
                         // Get current move rank (1-based index from picker, or moveCount as fallback)
                         // Phase 2b.2-fix: currentYieldIndex() now always available for accurate rank
                         const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
-                        const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
+                        const int R = std::clamp(4 + depth/2, 6, 12);  // Original R(depth)
+                        const int R_lmr = std::min(R, 8);  // Cap at 8 for LMR
                         
-                        // Apply rank-based scaling with depth-aware protection
+                        // Apply rank-based scaling with capped protection window
                         int originalReduction = reduction;
                         if (rank == 1) {
                             // Rank 1: clamp reduction to 0 (no reduction for best move)
                             reduction = 0;
-                        } else if (rank <= R) {
-                            // Ranks 2..R: clamp reduction to at most 1
+                        } else if (rank <= R_lmr) {
+                            // Ranks 2..R_lmr: clamp reduction to at most 1
                             reduction = std::min(reduction, 1);
                         }
-                        // Ranks > R: use base reduction (no change)
+                        // Ranks > R_lmr: use base reduction (no change)
                         // SPRT fix: Still avoiding the +1 tier for now (too aggressive at shallow depths)
                         // Later phases can re-enable with stricter depth/history guards
                         
