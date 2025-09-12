@@ -140,6 +140,9 @@ struct SearchLimits {
     // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
     bool showMovePickerStats = false;     // Show move picker statistics at end of search
     
+    // Phase 2a.8a: In-check class ordering
+    bool useInCheckClassOrdering = false; // Enable class-based ordering for check evasions
+    
     // Default constructor
     SearchLimits() = default;
 };

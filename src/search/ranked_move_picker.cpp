@@ -279,7 +279,16 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         
 #ifdef DEBUG
         m_generatedCount = m_moves.size();
+        // Phase 2a.8a: Assert that we only have evasions when in check
+        // All moves generated should be check evasions
+        assert(m_generatedCount > 0 || board.isCheckmate() && "Must have evasions unless checkmate");
 #endif
+        
+        // Phase 2a.8a: Placeholder for class-based ordering (scaffold only - no behavior change)
+        if (limits && limits->useInCheckClassOrdering) {
+            // Future: Apply class-based ordering here
+            // For now, just fall through to legacy ordering
+        }
         
         // Apply legacy ordering to the evasions with history (same as non-check path)
         static MvvLvaOrdering mvvLva;
@@ -395,6 +404,15 @@ Move RankedMovePicker::next() {
         // For normal: TT must be pseudo-legal (in m_moves)
         bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
         
+#ifdef DEBUG
+        // Phase 2a.8a: Assert TT move validity when in check
+        if (m_inCheck && ttMoveInList) {
+            // TT move must be a legal evasion (present in the evasion list)
+            assert(std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end() 
+                   && "TT move must be in evasion list when in check");
+        }
+#endif
+        
         if (ttMoveInList) {
 #ifdef SEARCH_STATS
             // Increment only when stats are requested to avoid hot-path overhead
@@ -420,6 +438,8 @@ Move RankedMovePicker::next() {
         // Phase 2a.5b: Assert shortlist bounds
         assert(m_shortlistIndex >= 0 && m_shortlistIndex < m_shortlistSize);
         assert(m_shortlistSize <= MAX_SHORTLIST_SIZE);
+        // Phase 2a.8a: Assert we're not in check when using shortlist
+        assert(!m_inCheck && "Shortlist should not be used when in check");
 #endif
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef SEARCH_STATS

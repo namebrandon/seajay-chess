@@ -249,6 +249,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
     std::cout << "option name UseRankedMovePicker type check default false" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
+    std::cout << "option name UseInCheckClassOrdering type check default false" << std::endl;  // Phase 2a.8a
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -632,6 +633,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Phase 2a.6: Pass move picker statistics option
     limits.showMovePickerStats = m_showMovePickerStats;
+    
+    // Phase 2a.8a: Pass in-check class ordering option
+    limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
     
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
@@ -1031,6 +1035,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_showMovePickerStats = false;
             std::cerr << "info string Move picker statistics disabled" << std::endl;
+        }
+    }
+    // Phase 2a.8a: UseInCheckClassOrdering
+    else if (optionName == "UseInCheckClassOrdering") {
+        if (value == "true") {
+            m_useInCheckClassOrdering = true;
+            std::cerr << "info string In-check class ordering enabled" << std::endl;
+        } else if (value == "false") {
+            m_useInCheckClassOrdering = false;
+            std::cerr << "info string In-check class ordering disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)
