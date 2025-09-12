@@ -70,6 +70,7 @@ public:
      * @param depth Current search depth
      * @param countermoveBonus Bonus for countermove ordering
      * @param limits Search limits (for CMH weight)
+     * @param searchData Search data for telemetry (Phase 2a.6b)
      */
     RankedMovePicker(const Board& board,
                      Move ttMove,
@@ -81,7 +82,8 @@ public:
                      int ply,
                      int depth,
                      int countermoveBonus,
-                     const SearchLimits* limits);
+                     const SearchLimits* limits,
+                     SearchData* searchData = nullptr);
     
     /**
      * Get next move in ranked order
@@ -109,6 +111,9 @@ private:
     int m_depth;
     int m_countermoveBonus;
     const SearchLimits* m_limits;
+    
+    // Phase 2a.6b: Search data for telemetry
+    SearchData* m_searchData;
     
     // Phase 2a.3: Shortlist for top moves (captures, promotions, quiets)
     Move m_shortlist[MAX_SHORTLIST_SIZE];
