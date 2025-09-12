@@ -934,23 +934,21 @@ eval::Score negamax(Board& board,
             }
             
             // Phase 2b.3: LMP rank gating - adjust limit based on move rank
+            // Phase 2b.6: Use depth-aware protected window R(depth)
             if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
                 // Get rank from picker if available, otherwise use moveCount as fallback
                 // Note: Using moveCount before legality check is an approximation
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
-                const int K = 5;  // Protected window size
+                const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
                 
-                if (rank == 1) {
-                    // Rank 1: disable LMP for this move (make limit very high)
+                if (rank <= R) {
+                    // Ranks 1..R: disable LMP for protected moves
                     limit = 999;
-                } else if (rank >= 2 && rank <= K) {
-                    // Ranks 2-5: make prune less aggressive
+                } else if (rank <= R + 5) {
+                    // Ranks R+1..R+5: small relax
                     limit += 2;
-                } else if (rank >= 6 && rank <= 10) {
-                    // Ranks 6-10: leave limit unchanged
-                    // (no adjustment needed)
-                } else if (rank >= 11) {
-                    // Ranks 11+: make prune more aggressive
+                } else {
+                    // Ranks > R+5: small tighten
                     limit = std::max(1, limit - 4);
                 }
             }
@@ -1025,6 +1023,7 @@ eval::Score negamax(Board& board,
         }
         
         // Phase 2b.5: Capture SEE gating by rank
+        // Phase 2b.6: Use depth-aware protected window R(depth)
         if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4
             && isCapture(move) && !isPromotion(move)) {
             
@@ -1039,10 +1038,10 @@ eval::Score negamax(Board& board,
             if (!isTTMove && !isKillerMove && !isCounterMove && !isRecapture) {
                 // Get rank from picker if available, otherwise use moveCount+1 (pre-legality)
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
-                const int K = 5;  // Protected window size
+                const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
                 
-                // Only gate late-ranked captures (rank >= 11)
-                if (rank >= 11) {
+                // Only apply gate when rank > max(R, 10) (expands protection at depth)
+                if (rank > std::max(R, 10)) {
                     // Require non-losing SEE for late captures
                     if (!seeGE(board, move, 0)) {
                         // Track telemetry
@@ -1053,7 +1052,6 @@ eval::Score negamax(Board& board,
                         continue;  // Skip this capture
                     }
                 }
-                // Ranks 1-10: no SEE gate (conservative)
             }
         }
         
@@ -1149,24 +1147,25 @@ eval::Score negamax(Board& board,
                     }
                     
                     // Phase 2b.4: Futility margin scaling by rank
+                    // Phase 2b.6: Use depth-aware protected window R(depth)
                     if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 3) {
                         // Get rank from picker if available, otherwise use legalMoveCount
                         // Note: Using legalMoveCount after legality check is accurate
                         const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : legalMoveCount;
-                        const int K = 5;  // Protected window size
+                        const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
                         
-                        if (rank >= 1 && rank <= K) {
-                            // Ranks 1-5: no change to margin (protect top moves)
+                        if (rank <= R) {
+                            // Ranks 1..R: no bump to futilityMargin (protect top moves)
                             // (no adjustment needed)
-                        } else if (rank >= 6 && rank <= 10) {
-                            // Ranks 6-10: modest bump to margin
+                        } else if (rank <= R + 5) {
+                            // Ranks R+1..R+5: modest bump to margin
                             futilityMargin += config.futilityBase / 2;
-                        } else if (rank >= 11) {
-                            // Ranks 11+: bigger (but still modest) bump
+                        } else {
+                            // Ranks > R+5: bigger (but still modest) bump
                             futilityMargin += config.futilityBase;
                         }
                         
-                        // Optional cap to prevent excessive margins
+                        // Keep existing cap to prevent excessive margins
                         futilityMargin = std::min(futilityMargin, config.futilityBase * (effectiveDepth + 1));
                     }
                     
@@ -1243,6 +1242,7 @@ eval::Score negamax(Board& board,
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
                     
                     // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
+                    // Phase 2b.6: Use depth-aware protected window R(depth)
                     // SPRT fix: Add !weAreInCheck guard to avoid reducing evasions
                     if (limits.useRankAwareGates && !isPvNode && !weAreInCheck && depth >= 4 
                         && !isCapture(move) && !isPromotion(move)
@@ -1254,25 +1254,20 @@ eval::Score negamax(Board& board,
                         // Get current move rank (1-based index from picker, or moveCount as fallback)
                         // Phase 2b.2-fix: currentYieldIndex() now always available for accurate rank
                         const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
-                        const int K = 5;  // Protected rank threshold
+                        const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
                         
-                        // Apply rank-based scaling (CONSERVATIVE after SPRT fail)
+                        // Apply rank-based scaling with depth-aware protection
                         int originalReduction = reduction;
                         if (rank == 1) {
                             // Rank 1: clamp reduction to 0 (no reduction for best move)
                             reduction = 0;
-                        } else if (rank <= K) {
-                            // Ranks 2-K: clamp reduction to at most 1
+                        } else if (rank <= R) {
+                            // Ranks 2..R: clamp reduction to at most 1
                             reduction = std::min(reduction, 1);
                         }
-                        // SPRT fix: Remove the +1 tier entirely for now (too aggressive at shallow depths)
+                        // Ranks > R: use base reduction (no change)
+                        // SPRT fix: Still avoiding the +1 tier for now (too aggressive at shallow depths)
                         // Later phases can re-enable with stricter depth/history guards
-                        // else if (rank <= 10) {
-                        //     // Ranks 6-10: leave base reduction unchanged
-                        // } else {
-                        //     // Ranks 11+: DISABLED - was causing over-reduction
-                        //     // Only re-enable with depth >= 8 and low history checks
-                        // }
                         
 #ifdef SEARCH_STATS
                         // Track telemetry if we modified the reduction
