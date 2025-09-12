@@ -167,6 +167,9 @@ How to Contribute to This Plan
 - Do not edit the plan text above. Append your dated notes, measurements, and decisions under “Progress Log”.
 
 Progress Log (append-only)
+- 2025-09-12: Added Phase 6 plan (Search API Refactor) as a separate document to respect the "do not edit above" rule. See:
+  - docs/project_docs/Phase6_Search_API_Refactor.md
+  Summary: Introduces a NodeContext-based Search API with optional excluded-move parameter, verification helper (disabled), TT hygiene clarifications, and DEBUG assertions. Sub‑phases 6a–6g are NoOp by default (toggle-gated) to preserve behavior during Depth Parity work, and prepare for later singular/multicut/probcut phases.
 - 2025-09-07: Initialized plan. Added tools/depth_vs_time.py to repository for depth vs time measurement.
 - 2025-09-07: Added scaffolds for review (not compiled):
   - MovePicker design: docs/project_docs/scaffolds/MovePicker_Design.md
@@ -210,4 +213,4 @@ Progress Log (append-only)
   - UCI integration: UseClusteredTT option switches modes and rebuilds TT
   - Debug tt command shows backend type and clustering-specific stats
   - Verification: bench 19191913 (identical with both modes)
-  - Build successful, UCI options work, ready for OpenBench A/B testing
+  - Build successful, UCI options work, ready for OpenBench A/B testi
