@@ -934,21 +934,22 @@ eval::Score negamax(Board& board,
             }
             
             // Phase 2b.3: LMP rank gating - adjust limit based on move rank
-            // Phase 2b.6: Use depth-aware protected window R(depth)
+            // Phase 2b.6c: LMP uses capped protected window R_lmp=min(R,6)
             if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
                 // Get rank from picker if available, otherwise use moveCount as fallback
                 // Note: Using moveCount before legality check is an approximation
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
-                const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
+                const int R = std::clamp(4 + depth/2, 6, 12);  // Original R(depth)
+                const int R_lmp = std::min(R, 6);  // Cap at 6 for LMP
                 
-                if (rank <= R) {
-                    // Ranks 1..R: disable LMP for protected moves
+                if (rank <= R_lmp) {
+                    // Ranks 1..R_lmp: disable LMP for protected moves
                     limit = 999;
-                } else if (rank <= R + 5) {
-                    // Ranks R+1..R+5: small relax
+                } else if (rank <= R_lmp + 5) {
+                    // Ranks R_lmp+1..R_lmp+5: small relax
                     limit += 2;
                 } else {
-                    // Ranks > R+5: small tighten
+                    // Ranks > R_lmp+5: small tighten
                     limit = std::max(1, limit - 4);
                 }
             }
