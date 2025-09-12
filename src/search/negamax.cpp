@@ -1115,12 +1115,44 @@ eval::Score negamax(Board& board,
                         futilityMargin = config.futilityBase * 4 + (effectiveDepth - 4) * (config.futilityBase / 2);
                     }
                     
+                    // Phase 2b.4: Futility margin scaling by rank
+                    if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 3) {
+                        // Get rank from picker if available, otherwise use legalMoveCount
+                        // Note: Using legalMoveCount after legality check is accurate
+                        const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : legalMoveCount;
+                        const int K = 5;  // Protected window size
+                        
+                        if (rank >= 1 && rank <= K) {
+                            // Ranks 1-5: no change to margin (protect top moves)
+                            // (no adjustment needed)
+                        } else if (rank >= 6 && rank <= 10) {
+                            // Ranks 6-10: modest bump to margin
+                            futilityMargin += config.futilityBase / 2;
+                        } else if (rank >= 11) {
+                            // Ranks 11+: bigger (but still modest) bump
+                            futilityMargin += config.futilityBase;
+                        }
+                        
+                        // Optional cap to prevent excessive margins
+                        futilityMargin = std::min(futilityMargin, config.futilityBase * (effectiveDepth + 1));
+                    }
+                    
                     if (staticEval <= alpha - eval::Score(futilityMargin)) {
                         board.unmakeMove(move, undo);
                         info.futilityPruned++;
                         // Track by effective depth for telemetry
                         int b = SearchData::PruneBreakdown::bucketForDepth(effectiveDepth);
                         info.pruneBreakdown.futilityEff[b]++;
+                        
+                        // Phase 2b.4: Track rank-aware futility pruning telemetry
+#ifdef SEARCH_STATS
+                        if (limits.useRankAwareGates && ply > 0) {
+                            const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : legalMoveCount;
+                            const int bucket = SearchData::RankGateStats::bucketForRank(rank);
+                            info.rankGates.pruned[bucket]++;
+                        }
+#endif
+                        
                         // Node explosion diagnostics: Track futility pruning
                         if (limits.nodeExplosionDiagnostics) {
                             g_nodeExplosionStats.recordFutilityPrune(effectiveDepth, futilityMargin);
