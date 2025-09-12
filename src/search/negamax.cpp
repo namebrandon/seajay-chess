@@ -1024,6 +1024,39 @@ eval::Score negamax(Board& board,
             info.moveOrderingStats.endgameNodes++;
         }
         
+        // Phase 2b.5: Capture SEE gating by rank
+        if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4
+            && isCapture(move) && !isPromotion(move)) {
+            
+            // Check exemptions: TT move, killers, countermoves, recaptures
+            bool isTTMove = (move == ttMove);
+            bool isKillerMove = info.killers->isKiller(ply, move);
+            bool isCounterMove = (prevMove != NO_MOVE && 
+                                  info.counterMoves->getCounterMove(prevMove) == move);
+            bool isRecapture = (prevMove != NO_MOVE && isCapture(prevMove) && 
+                                moveTo(prevMove) == moveTo(move));
+            
+            if (!isTTMove && !isKillerMove && !isCounterMove && !isRecapture) {
+                // Get rank from picker if available, otherwise use moveCount+1 (pre-legality)
+                const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
+                const int K = 5;  // Protected window size
+                
+                // Only gate late-ranked captures (rank >= 11)
+                if (rank >= 11) {
+                    // Require non-losing SEE for late captures
+                    if (!seeGE(board, move, 0)) {
+                        // Track telemetry
+#ifdef SEARCH_STATS
+                        const int bucket = SearchData::RankGateStats::bucketForRank(rank);
+                        info.rankGates.pruned[bucket]++;
+#endif
+                        continue;  // Skip this capture
+                    }
+                }
+                // Ranks 1-10: no SEE gate (conservative)
+            }
+        }
+        
         // Phase 3.2: Try to make the move with lazy legality checking
         Board::UndoInfo undo;
         if (!board.tryMakeMove(move, undo)) {
