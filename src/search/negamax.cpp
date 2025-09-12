@@ -1146,7 +1146,8 @@ eval::Score negamax(Board& board,
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
                     
                     // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
-                    if (limits.useRankAwareGates && !isPvNode && depth >= 4 
+                    // SPRT fix: Add !weAreInCheck guard to avoid reducing evasions
+                    if (limits.useRankAwareGates && !isPvNode && !weAreInCheck && depth >= 4 
                         && !isCapture(move) && !isPromotion(move)
                         && move != ttMove
                         && !info.killers->isKiller(ply, move)
@@ -1158,7 +1159,7 @@ eval::Score negamax(Board& board,
                         const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
                         const int K = 5;  // Protected rank threshold
                         
-                        // Apply rank-based scaling
+                        // Apply rank-based scaling (CONSERVATIVE after SPRT fail)
                         int originalReduction = reduction;
                         if (rank == 1) {
                             // Rank 1: clamp reduction to 0 (no reduction for best move)
@@ -1166,13 +1167,15 @@ eval::Score negamax(Board& board,
                         } else if (rank <= K) {
                             // Ranks 2-K: clamp reduction to at most 1
                             reduction = std::min(reduction, 1);
-                        } else if (rank <= 10) {
-                            // Ranks 6-10: leave base reduction unchanged
-                            // (no change needed)
-                        } else {
-                            // Ranks 11+: add +1 reduction step, cap to depth-1
-                            reduction = std::min(reduction + 1, depth - 1);
                         }
+                        // SPRT fix: Remove the +1 tier entirely for now (too aggressive at shallow depths)
+                        // Later phases can re-enable with stricter depth/history guards
+                        // else if (rank <= 10) {
+                        //     // Ranks 6-10: leave base reduction unchanged
+                        // } else {
+                        //     // Ranks 11+: DISABLED - was causing over-reduction
+                        //     // Only re-enable with depth >= 8 and low history checks
+                        // }
                         
 #ifdef SEARCH_STATS
                         // Track telemetry if we modified the reduction

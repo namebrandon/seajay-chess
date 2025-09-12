@@ -78,7 +78,8 @@ int16_t RankedMovePicker::computeQuietScore(Move move) const {
     }
     
     // Killer move bonus
-    if (m_killers && m_killers->isKiller(move, m_ply)) {
+    // Fix: Correct parameter order is (ply, move) not (move, ply)
+    if (m_killers && m_killers->isKiller(m_ply, move)) {
         score += KILLER_BONUS;
     }
     
