@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>  // For std::fill
-#include <vector>   // For std::vector (Phase 2a.8b)
 
 namespace seajay {
 namespace search {
@@ -288,105 +287,62 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         // Phase 2a.8b: Class-based ordering for check evasions
         if (limits && limits->useInCheckClassOrdering) {
             // Precompute checker information once
-            Square kingSq = board.kingSquare(board.sideToMove());
-            Color oppSide = ~board.sideToMove();
-            
-            // Find checking pieces inline (similar to MoveGenerator::getCheckers but public)
+            const Color stm = board.sideToMove();
+            const Square kingSq = board.kingSquare(stm);
+            const Color oppSide = ~stm;
+
             Bitboard checkers = 0;
-            
-            // Check for pawn checks (pawn attacks from king's square to enemy pawns)
-            Bitboard pawnAttackBB = ::seajay::pawnAttacks(board.sideToMove(), kingSq);
-            checkers |= pawnAttackBB & board.pieces(oppSide, PAWN);
-            
-            // Check for knight checks
-            Bitboard knightAttackBB = MoveGenerator::getKnightAttacks(kingSq);
-            checkers |= knightAttackBB & board.pieces(oppSide, KNIGHT);
-            
-            // Check for bishop/queen checks on diagonals
-            Bitboard bishopAttackBB = ::seajay::bishopAttacks(kingSq, board.occupied());
-            checkers |= bishopAttackBB & (board.pieces(oppSide, BISHOP) | board.pieces(oppSide, QUEEN));
-            
-            // Check for rook/queen checks on ranks/files
-            Bitboard rookAttackBB = ::seajay::rookAttacks(kingSq, board.occupied());
-            checkers |= rookAttackBB & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
-            
-            int numCheckers = popCount(checkers);
-            
-            // For class-based ordering, we need to classify each move
-            // Class 1: Captures of checker (single check only)
-            // Class 2: Blocks (single sliding check only)  
-            // Class 3: King moves
-            
+            // Pawn checks
+            checkers |= ::seajay::pawnAttacks(stm, kingSq) & board.pieces(oppSide, PAWN);
+            // Knight checks
+            checkers |= MoveGenerator::getKnightAttacks(kingSq) & board.pieces(oppSide, KNIGHT);
+            // Bishop/queen diagonal checks
+            checkers |= ::seajay::bishopAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, BISHOP) | board.pieces(oppSide, QUEEN));
+            // Rook/queen orthogonal checks
+            checkers |= ::seajay::rookAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
+
+            const int numCheckers = popCount(checkers);
             Square checkerSq = NO_SQUARE;
             Bitboard blockMask = 0;
-            
             if (numCheckers == 1) {
-                // Single check - can capture checker or block
                 checkerSq = lsb(checkers);
-                
-                // For sliding pieces, compute block squares
-                Piece checkerPiece = board.pieceAt(checkerSq);
-                PieceType checkerType = typeOf(checkerPiece);
-                
+                const Piece checkerPiece = board.pieceAt(checkerSq);
+                const PieceType checkerType = typeOf(checkerPiece);
                 if (checkerType == BISHOP || checkerType == ROOK || checkerType == QUEEN) {
-                    // Can block sliding piece attacks
                     blockMask = ::seajay::between(checkerSq, kingSq);
                 }
             }
-            // Double check: only king moves are valid (all will be class 3)
-            
-            // Classify moves in a single pass
-            enum MoveClass : uint8_t { CAPTURE_CHECKER = 1, BLOCK = 2, KING_MOVE = 3 };
-            std::vector<MoveClass> moveClasses(m_moves.size());
-            
-            for (size_t i = 0; i < m_moves.size(); ++i) {
-                Move move = m_moves[i];
-                Square from = moveFrom(move);
-                Square to = moveTo(move);
-                Piece movingPiece = board.pieceAt(from);
-                
-                if (typeOf(movingPiece) == KING) {
-                    // King move
-                    moveClasses[i] = KING_MOVE;
-                } else if (numCheckers == 1) {
-                    // Single check - can capture or block
-                    if ((isCapture(move) || isEnPassant(move)) && to == checkerSq) {
-                        // Capture of the checking piece
-                        moveClasses[i] = CAPTURE_CHECKER;
-                    } else if (!isCapture(move) && !isEnPassant(move) && testBit(blockMask, to)) {
-                        // Blocking move
-                        moveClasses[i] = BLOCK;
-                    } else {
-                        // Shouldn't happen with correct evasion generation, but safe fallback
-                        moveClasses[i] = KING_MOVE;
-                    }
-                } else {
-                    // Double check - all non-king moves should have been filtered by generator
-                    moveClasses[i] = KING_MOVE;
+
+            // Helper lambdas to classify without auxiliary arrays
+            auto isCaptureOfChecker = [&](const Move& mv) ALWAYS_INLINE {
+                if (numCheckers != 1) return false;
+                const Square from = moveFrom(mv);
+                if (typeOf(board.pieceAt(from)) == KING) return false; // King moves not here
+                const Square to = moveTo(mv);
+                if (isEnPassant(mv)) {
+                    // EP capture square is behind 'to' depending on side to move
+                    const int delta = (stm == WHITE) ? -8 : 8;
+                    Square capturedSq = static_cast<Square>(to + delta);
+                    return capturedSq == checkerSq;
                 }
-            }
-            
-            // Stable partition approach: reorder by class while preserving intra-class order
-            // First partition: separate class 1 from others
-            auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(),
-                [&moveClasses, this](const Move& move) {
-                    size_t idx = &move - &m_moves[0];
-                    return moveClasses[idx] == CAPTURE_CHECKER;
-                });
-            
-            // Second partition: separate class 2 from class 3 in the remainder
-            std::stable_partition(class1End, m_moves.end(),
-                [&moveClasses, this](const Move& move) {
-                    size_t idx = &move - &m_moves[0];
-                    return moveClasses[idx] == BLOCK;
-                });
-            
-            // Now m_moves is ordered as [captures of checker][blocks][king moves]
-            // with original order preserved within each class
-            
+                return (isCapture(mv) || isEnPassant(mv)) && (to == checkerSq);
+            };
+
+            auto isBlockMove = [&](const Move& mv) ALWAYS_INLINE {
+                if (numCheckers != 1 || blockMask == 0) return false;
+                const Square from = moveFrom(mv);
+                if (typeOf(board.pieceAt(from)) == KING) return false; // King cannot block
+                const Square to = moveTo(mv);
+                return !isCapture(mv) && !isEnPassant(mv) && testBit(blockMask, to);
+            };
+
+            // Stable partition: [captures of checker][blocks][king/other]
+            auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
+            std::stable_partition(class1End, m_moves.end(), isBlockMove);
+
             // Skip the legacy ordering below since we've already ordered by class
             // No history/CMH applied in this path as per design
-            
+
             // No shortlist when in check - we'll iterate evasions directly
 #ifdef DEBUG
             // Phase 2a.5b: When in check, assert no shortlist
