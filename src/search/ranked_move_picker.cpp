@@ -286,106 +286,53 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         
         // Phase 2a.8b: Class-based ordering for check evasions
         if (limits && limits->useInCheckClassOrdering) {
-            // Precompute checker information once
+            // Apply legacy ordering first for parity within classes
+            static MvvLvaOrdering mvvLva;
+            if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
+                g_seeMoveOrdering.orderMoves(board, m_moves);
+            } else {
+                mvvLva.orderMoves(board, m_moves);
+            }
+            if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+                float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
+                mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                            *counterMoves, *counterMoveHistory,
+                                            prevMove, ply, countermoveBonus, cmhWeight);
+            } else if (killers && history && counterMoves) {
+                mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
+                                            *counterMoves, prevMove, ply, countermoveBonus);
+            }
+
+            // Now stably bring captures-of-checker to the front; leave remainder in legacy order
             const Color stm = board.sideToMove();
             const Square kingSq = board.kingSquare(stm);
             const Color oppSide = ~stm;
-
             Bitboard checkers = 0;
-            // Pawn checks
             checkers |= ::seajay::pawnAttacks(stm, kingSq) & board.pieces(oppSide, PAWN);
-            // Knight checks
             checkers |= MoveGenerator::getKnightAttacks(kingSq) & board.pieces(oppSide, KNIGHT);
-            // Bishop/queen diagonal checks
             checkers |= ::seajay::bishopAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, BISHOP) | board.pieces(oppSide, QUEEN));
-            // Rook/queen orthogonal checks
             checkers |= ::seajay::rookAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
-
             const int numCheckers = popCount(checkers);
-            Square checkerSq = NO_SQUARE;
-            Bitboard blockMask = 0;
-            if (numCheckers == 1) {
-                checkerSq = lsb(checkers);
-                const Piece checkerPiece = board.pieceAt(checkerSq);
-                const PieceType checkerType = typeOf(checkerPiece);
-                if (checkerType == BISHOP || checkerType == ROOK || checkerType == QUEEN) {
-                    blockMask = ::seajay::between(checkerSq, kingSq);
-                }
-            }
-
-            // Helper lambdas to classify without auxiliary arrays
+            const Square checkerSq = (numCheckers == 1) ? lsb(checkers) : NO_SQUARE;
             auto isCaptureOfChecker = [&](const Move& mv) -> bool {
                 if (numCheckers != 1) return false;
                 const Square from = moveFrom(mv);
-                if (typeOf(board.pieceAt(from)) == KING) return false; // King moves not here
+                if (typeOf(board.pieceAt(from)) == KING) return false;
                 const Square to = moveTo(mv);
                 if (isEnPassant(mv)) {
-                    // EP capture square is behind 'to' depending on side to move
                     const int delta = (stm == WHITE) ? -8 : 8;
                     Square capturedSq = static_cast<Square>(to + delta);
                     return capturedSq == checkerSq;
                 }
                 return (isCapture(mv) || isEnPassant(mv)) && (to == checkerSq);
             };
-
-            auto isBlockMove = [&](const Move& mv) -> bool {
-                if (numCheckers != 1 || blockMask == 0) return false;
-                const Square from = moveFrom(mv);
-                if (typeOf(board.pieceAt(from)) == KING) return false; // King cannot block
-                const Square to = moveTo(mv);
-                return !isCapture(mv) && !isEnPassant(mv) && testBit(blockMask, to);
-            };
-
-            // Stable partition: [captures of checker][blocks][king/other]
-            auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
-            auto class2End = std::stable_partition(class1End, m_moves.end(), isBlockMove);
-
-            // Intra-class ordering for additional strength (preserve stability across classes)
-            // Class 1 (captures of checker): order by SEE (if enabled) or MVV-LVA
-            if (class1End != m_moves.begin()) {
-                if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
-                    std::stable_sort(m_moves.begin(), class1End,
-                        [this](const Move& a, const Move& b) {
-                            SEEValue seeA = ::seajay::see(m_board, a);
-                            SEEValue seeB = ::seajay::see(m_board, b);
-                            if (seeA != seeB) return seeA > seeB;
-                            return MvvLvaOrdering::scoreMove(m_board, a) > MvvLvaOrdering::scoreMove(m_board, b);
-                        });
-                } else {
-                    std::stable_sort(m_moves.begin(), class1End,
-                        [this](const Move& a, const Move& b) {
-                            return MvvLvaOrdering::scoreMove(m_board, a) > MvvLvaOrdering::scoreMove(m_board, b);
-                        });
-                }
-            }
-
-            // Class 2 (blocks): order by quiet history (+optional CMH) to recover prior strength
-            if (class2End != class1End && m_history) {
-                const Color side = m_board.sideToMove();
-                const bool useCMH = (m_counterMoveHistory && m_limits && m_limits->counterMoveHistoryWeight > 0.0f);
-                const int cmhNumerator = useCMH ? static_cast<int>(m_limits->counterMoveHistoryWeight * 2.0f + 0.5f) : 0;
-                constexpr int cmhDen = 2;
-                std::stable_sort(class1End, class2End,
-                    [&](const Move& a, const Move& b) {
-                        int32_t ha = static_cast<int32_t>(m_history->getScore(side, moveFrom(a), moveTo(a))) * 2;
-                        int32_t hb = static_cast<int32_t>(m_history->getScore(side, moveFrom(b), moveTo(b))) * 2;
-                        if (useCMH && m_prevMove != NO_MOVE) {
-                            ha += (static_cast<int32_t>(m_counterMoveHistory->getScore(m_prevMove, a)) * cmhNumerator) / cmhDen;
-                            hb += (static_cast<int32_t>(m_counterMoveHistory->getScore(m_prevMove, b)) * cmhNumerator) / cmhDen;
-                        }
-                        return ha > hb;
-                    });
-            }
-
-            // Skip the legacy ordering below since we've already ordered by class
-            // No history/CMH applied in this path as per design
+            std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
 
             // No shortlist when in check - we'll iterate evasions directly
 #ifdef DEBUG
-            // Phase 2a.5b: When in check, assert no shortlist
             assert(m_shortlistSize == 0 && "No shortlist when in check");
 #endif
-            return;  // Early return to skip legacy ordering
+            return;  // Early return
         }
         
         // Apply legacy ordering to the evasions with history (same as non-check path)
