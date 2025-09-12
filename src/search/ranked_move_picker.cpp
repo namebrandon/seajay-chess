@@ -490,10 +490,18 @@ RankedMovePickerQS::RankedMovePickerQS(const Board& board, Move ttMove)
     : m_board(board)
     , m_ttMove(ttMove)
 {
+    // Phase 2a.7: Verify this is never constructed in Phase 2a
+#ifdef DEBUG
+    assert(false && "RankedMovePickerQS should not be constructed in Phase 2a (QS uses legacy path)");
+#endif
     // Phase 2a.0: No initialization logic yet
 }
 
 Move RankedMovePickerQS::next() {
+    // Phase 2a.7: This should never be called in Phase 2a
+#ifdef DEBUG
+    assert(false && "RankedMovePickerQS::next() should not be called in Phase 2a");
+#endif
     // Phase 2a.0: Stub - always return NO_MOVE
     return NO_MOVE;
 }

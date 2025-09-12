@@ -215,9 +215,19 @@ eval::Score quiescence(
     std::optional<RankedMovePickerQS> rankedPickerQS;
     MoveList moves;
     
-    // Phase 2a: DO NOT use RankedMovePicker in quiescence yet
-    // This will be enabled in a later phase after proven stable
+    // Phase 2a.7: Verify RankedMovePicker is NOT used in quiescence
+    // This path should never be taken in Phase 2a
     if (false && limits.useRankedMovePicker && !isInCheck) {
+#ifdef DEBUG
+        // Phase 2a.7: Assert this path is never taken
+        assert(false && "RankedMovePicker should not be used in quiescence during Phase 2a");
+#endif
+        // One-time log to confirm no ranked QS path (should never print)
+        static bool loggedOnce = false;
+        if (!loggedOnce) {
+            std::cerr << "ERROR: RankedMovePicker path hit in quiescence (should not happen in Phase 2a)" << std::endl;
+            loggedOnce = true;
+        }
         // Use ranked move picker for captures/promotions only
         rankedPickerQS.emplace(board, ttMove);
     }
@@ -334,6 +344,10 @@ eval::Score quiescence(
     size_t moveIndex = 0;
     while (true) {
         if (rankedPickerQS) {
+#ifdef DEBUG
+            // Phase 2a.7: This should never be reached in Phase 2a
+            assert(false && "RankedPickerQS should not be active in Phase 2a");
+#endif
             move = rankedPickerQS->next();
             if (move == NO_MOVE) break;
         } else {
