@@ -362,9 +362,11 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 #endif
                 
 #ifdef SEARCH_STATS
-                // Phase 2a.6b: Track captures observed
-                if (m_searchData && (isCapture(move) || isEnPassant(move))) {
-                    m_searchData->movePickerStats.capturesTotal++;
+                // Phase 2a.6b: Track captures observed (only when stats are requested)
+                if (m_limits && m_limits->showMovePickerStats) {
+                    if (m_searchData && (isCapture(move) || isEnPassant(move))) {
+                        m_searchData->movePickerStats.capturesTotal++;
+                    }
                 }
 #endif
                 
@@ -395,10 +397,13 @@ Move RankedMovePicker::next() {
         
         if (ttMoveInList) {
 #ifdef SEARCH_STATS
-            m_yieldIndex++;  // Increment yield index for TT move
-            // Phase 2a.6b: Track TT first yield
-            if (m_searchData) {
-                m_searchData->movePickerStats.ttFirstYield++;
+            // Increment only when stats are requested to avoid hot-path overhead
+            if (m_limits && m_limits->showMovePickerStats) {
+                m_yieldIndex++;  // Increment yield index for TT move
+                // Phase 2a.6b: Track TT first yield
+                if (m_searchData) {
+                    m_searchData->movePickerStats.ttFirstYield++;
+                }
             }
 #endif
 #ifdef DEBUG
@@ -418,7 +423,9 @@ Move RankedMovePicker::next() {
 #endif
         Move move = m_shortlist[m_shortlistIndex++];
 #ifdef SEARCH_STATS
-        m_yieldIndex++;  // Increment yield index for shortlist move
+        if (m_limits && m_limits->showMovePickerStats) {
+            m_yieldIndex++;  // Increment yield index for shortlist move
+        }
 #endif
 #ifdef DEBUG
         m_yieldedCount++;
@@ -453,10 +460,12 @@ Move RankedMovePicker::next() {
         }
         
 #ifdef SEARCH_STATS
-        m_yieldIndex++;  // Increment yield index for remainder move
-        // Phase 2a.6b: Track remainder yields
-        if (m_searchData) {
-            m_searchData->movePickerStats.remainderYields++;
+        if (m_limits && m_limits->showMovePickerStats) {
+            m_yieldIndex++;  // Increment yield index for remainder move
+            // Phase 2a.6b: Track remainder yields
+            if (m_searchData) {
+                m_searchData->movePickerStats.remainderYields++;
+            }
         }
 #endif
 #ifdef DEBUG

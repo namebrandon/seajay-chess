@@ -795,7 +795,8 @@ eval::Score negamax(Board& board,
             board, ttMove, info.killers, info.history, 
             info.counterMoves, info.counterMoveHistory,
             prevMove, ply, depth, info.countermoveBonus, &limits,
-            &info  // Phase 2a.6c: Pass SearchData for telemetry
+            // Phase 2a.6c: Pass SearchData only when telemetry enabled (belt-and-suspenders)
+            limits.showMovePickerStats ? &info : nullptr
         );
     } else {
         // Generate pseudo-legal moves now that early exits are handled
@@ -1234,7 +1235,8 @@ eval::Score negamax(Board& board,
                     
 #ifdef SEARCH_STATS
                     // Phase 2a.6c: Track cutoff move rank and shortlist coverage
-                    if (rankedPicker && limits.useRankedMovePicker) {
+                    // Gate by UCI toggle to avoid any overhead when disabled
+                    if (rankedPicker && limits.useRankedMovePicker && limits.showMovePickerStats) {
                         int yieldIndex = rankedPicker->currentYieldIndex();
                         
                         // Bucket the yield rank: [1], [2-5], [6-10], [11+]
