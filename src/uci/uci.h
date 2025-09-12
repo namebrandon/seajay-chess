@@ -151,11 +151,11 @@ private:
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
 
     // Depth Parity scaffolds: UCI toggles (no behavior change yet)
-    bool m_useClusteredTT = false;      // Toggle for clustered TT backend (scaffold only)
+    bool m_useClusteredTT = true;       // Default ON: clustered TT backend
     bool m_useStagedMovePicker = false; // Toggle for staged MovePicker (scaffold only)
-    bool m_useRankedMovePicker = false; // Toggle for ranked MovePicker (Phase 2a)
+    bool m_useRankedMovePicker = true;  // Default ON: ranked MovePicker (Phase 2a)
     bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
-    bool m_useInCheckClassOrdering = false; // Toggle for in-check class ordering (Phase 2a.8a)
+    bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
