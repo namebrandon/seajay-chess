@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>  // For std::fill
+#include <vector>   // For std::vector (Phase 2a.8b)
 
 namespace seajay {
 namespace search {
@@ -284,10 +285,114 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         assert(m_generatedCount > 0 || board.isCheckmate() && "Must have evasions unless checkmate");
 #endif
         
-        // Phase 2a.8a: Placeholder for class-based ordering (scaffold only - no behavior change)
+        // Phase 2a.8b: Class-based ordering for check evasions
         if (limits && limits->useInCheckClassOrdering) {
-            // Future: Apply class-based ordering here
-            // For now, just fall through to legacy ordering
+            // Precompute checker information once
+            Square kingSq = board.kingSquare(board.sideToMove());
+            Color oppSide = ~board.sideToMove();
+            
+            // Find checking pieces inline (similar to MoveGenerator::getCheckers but public)
+            Bitboard checkers = 0;
+            
+            // Check for pawn checks (pawn attacks from king's square to enemy pawns)
+            Bitboard pawnAttackBB = ::seajay::pawnAttacks(board.sideToMove(), kingSq);
+            checkers |= pawnAttackBB & board.pieces(oppSide, PAWN);
+            
+            // Check for knight checks
+            Bitboard knightAttackBB = MoveGenerator::getKnightAttacks(kingSq);
+            checkers |= knightAttackBB & board.pieces(oppSide, KNIGHT);
+            
+            // Check for bishop/queen checks on diagonals
+            Bitboard bishopAttackBB = ::seajay::bishopAttacks(kingSq, board.occupied());
+            checkers |= bishopAttackBB & (board.pieces(oppSide, BISHOP) | board.pieces(oppSide, QUEEN));
+            
+            // Check for rook/queen checks on ranks/files
+            Bitboard rookAttackBB = ::seajay::rookAttacks(kingSq, board.occupied());
+            checkers |= rookAttackBB & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
+            
+            int numCheckers = popCount(checkers);
+            
+            // For class-based ordering, we need to classify each move
+            // Class 1: Captures of checker (single check only)
+            // Class 2: Blocks (single sliding check only)  
+            // Class 3: King moves
+            
+            Square checkerSq = NO_SQUARE;
+            Bitboard blockMask = 0;
+            
+            if (numCheckers == 1) {
+                // Single check - can capture checker or block
+                checkerSq = lsb(checkers);
+                
+                // For sliding pieces, compute block squares
+                Piece checkerPiece = board.pieceAt(checkerSq);
+                PieceType checkerType = typeOf(checkerPiece);
+                
+                if (checkerType == BISHOP || checkerType == ROOK || checkerType == QUEEN) {
+                    // Can block sliding piece attacks
+                    blockMask = ::seajay::between(checkerSq, kingSq);
+                }
+            }
+            // Double check: only king moves are valid (all will be class 3)
+            
+            // Classify moves in a single pass
+            enum MoveClass : uint8_t { CAPTURE_CHECKER = 1, BLOCK = 2, KING_MOVE = 3 };
+            std::vector<MoveClass> moveClasses(m_moves.size());
+            
+            for (size_t i = 0; i < m_moves.size(); ++i) {
+                Move move = m_moves[i];
+                Square from = moveFrom(move);
+                Square to = moveTo(move);
+                Piece movingPiece = board.pieceAt(from);
+                
+                if (typeOf(movingPiece) == KING) {
+                    // King move
+                    moveClasses[i] = KING_MOVE;
+                } else if (numCheckers == 1) {
+                    // Single check - can capture or block
+                    if ((isCapture(move) || isEnPassant(move)) && to == checkerSq) {
+                        // Capture of the checking piece
+                        moveClasses[i] = CAPTURE_CHECKER;
+                    } else if (!isCapture(move) && !isEnPassant(move) && testBit(blockMask, to)) {
+                        // Blocking move
+                        moveClasses[i] = BLOCK;
+                    } else {
+                        // Shouldn't happen with correct evasion generation, but safe fallback
+                        moveClasses[i] = KING_MOVE;
+                    }
+                } else {
+                    // Double check - all non-king moves should have been filtered by generator
+                    moveClasses[i] = KING_MOVE;
+                }
+            }
+            
+            // Stable partition approach: reorder by class while preserving intra-class order
+            // First partition: separate class 1 from others
+            auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(),
+                [&moveClasses, this](const Move& move) {
+                    size_t idx = &move - &m_moves[0];
+                    return moveClasses[idx] == CAPTURE_CHECKER;
+                });
+            
+            // Second partition: separate class 2 from class 3 in the remainder
+            std::stable_partition(class1End, m_moves.end(),
+                [&moveClasses, this](const Move& move) {
+                    size_t idx = &move - &m_moves[0];
+                    return moveClasses[idx] == BLOCK;
+                });
+            
+            // Now m_moves is ordered as [captures of checker][blocks][king moves]
+            // with original order preserved within each class
+            
+            // Skip the legacy ordering below since we've already ordered by class
+            // No history/CMH applied in this path as per design
+            
+            // No shortlist when in check - we'll iterate evasions directly
+#ifdef DEBUG
+            // Phase 2a.5b: When in check, assert no shortlist
+            assert(m_shortlistSize == 0 && "No shortlist when in check");
+#endif
+            return;  // Early return to skip legacy ordering
         }
         
         // Apply legacy ordering to the evasions with history (same as non-check path)
