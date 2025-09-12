@@ -255,6 +255,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
+    std::cout << "option name UseRankAwareGates type check default false" << std::endl;  // Phase 2b
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -641,6 +642,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Phase 2a.8a: Pass in-check class ordering option
     limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
+    
+    // Phase 2b: Pass rank-aware gates option
+    limits.useRankAwareGates = m_useRankAwareGates;
     
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
@@ -1050,6 +1054,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useInCheckClassOrdering = false;
             std::cerr << "info string In-check class ordering disabled" << std::endl;
+        }
+    }
+    // Phase 2b: UseRankAwareGates
+    else if (optionName == "UseRankAwareGates") {
+        if (value == "true") {
+            m_useRankAwareGates = true;
+            std::cerr << "info string Rank-aware pruning gates enabled" << std::endl;
+        } else if (value == "false") {
+            m_useRankAwareGates = false;
+            std::cerr << "info string Rank-aware pruning gates disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)

@@ -1008,6 +1008,16 @@ eval::Score negamax(Board& board,
         legalMoveCount++;
         moveCount++;  // Phase B1: Increment moveCount only after confirming legality
         
+        // Phase 2b.1: Rank capture and telemetry (no behavior change)
+#ifdef SEARCH_STATS
+        if (limits.useRankAwareGates && ply > 0) {  // Skip at root, same as RankedMovePicker
+            // Get current move rank (1-based index from picker, or moveCount as fallback)
+            const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+            const int bucket = SearchData::RankGateStats::bucketForRank(rank);
+            info.rankGates.tried[bucket]++;
+        }
+#endif
+        
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         

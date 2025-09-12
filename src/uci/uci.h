@@ -156,6 +156,7 @@ private:
     bool m_useRankedMovePicker = true;  // Default ON: ranked MovePicker (Phase 2a)
     bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
+    bool m_useRankAwareGates = false;   // Phase 2b: rank-aware pruning gates (default OFF)
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)

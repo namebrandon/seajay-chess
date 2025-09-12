@@ -143,6 +143,9 @@ struct SearchLimits {
     // Phase 2a.8a: In-check class ordering
     bool useInCheckClassOrdering = false; // Enable class-based ordering for check evasions
     
+    // Phase 2b: Rank-aware pruning gates
+    bool useRankAwareGates = false;       // Enable rank-aware pruning/reduction gates
+    
     // Default constructor
     SearchLimits() = default;
 };
@@ -502,6 +505,26 @@ struct SearchData {
             remainderYields = 0;
         }
     } movePickerStats;
+    
+    // Phase 2b: Rank-aware gate statistics
+    struct RankGateStats {
+        uint64_t tried[4] = {0, 0, 0, 0};    // Moves tried per rank bucket
+        uint64_t pruned[4] = {0, 0, 0, 0};   // Moves pruned per rank bucket
+        uint64_t reduced[4] = {0, 0, 0, 0};  // Moves reduced per rank bucket
+        
+        void reset() {
+            for (int i = 0; i < 4; i++) {
+                tried[i] = pruned[i] = reduced[i] = 0;
+            }
+        }
+        
+        static ALWAYS_INLINE int bucketForRank(int r) {
+            if (r <= 1) return 0;      // Rank 1
+            if (r <= 5) return 1;      // Ranks 2-5
+            if (r <= 10) return 2;     // Ranks 6-10
+            return 3;                  // Ranks 11+
+        }
+    } rankGates;
 #endif  // SEARCH_STATS
     
     // Constructor
@@ -578,6 +601,7 @@ struct SearchData {
         razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
 #ifdef SEARCH_STATS
         movePickerStats.reset(); // Phase 2a.6: Reset move picker stats
+        rankGates.reset();       // Phase 2b: Reset rank gate stats
 #endif
         if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
