@@ -54,6 +54,11 @@ UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     m_board.clearGameHistory();
     // No need to push - board tracks its own history
+
+    // Set default TT backend and size to match UCI defaults
+    // Default: clustered TT enabled and Hash=128 MB
+    m_tt.setClustered(true);
+    m_tt.resize(128);
 }
 
 UCIEngine::~UCIEngine() {
@@ -242,14 +247,14 @@ void UCIEngine::handleUCI() {
     std::cout << "option name king_mg_f1 type spin default -28 min -50 max 50" << std::endl;  // Center (SPSA: -28)
     
     // Stage 12: Transposition Table options
-    std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
+    std::cout << "option name Hash type spin default 128 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
-    // Depth Parity scaffold toggles (no behavior change yet)
-    std::cout << "option name UseClusteredTT type check default false" << std::endl;
+    // Depth Parity toggles
+    std::cout << "option name UseClusteredTT type check default true" << std::endl;
     std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
-    std::cout << "option name UseRankedMovePicker type check default false" << std::endl;
+    std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
-    std::cout << "option name UseInCheckClassOrdering type check default false" << std::endl;  // Phase 2a.8a
+    std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;

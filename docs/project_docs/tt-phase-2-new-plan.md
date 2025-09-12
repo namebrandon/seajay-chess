@@ -291,6 +291,62 @@ struct RankedMovePicker {
 ## Conclusion
 Phase 2 now proceeds in granular sub‑phases with an SPRT after each functional change. The shortlist improves early decisions; all remainder ordering stays legacy to preserve strength. Only after 2a passes do we introduce rank‑aware pruning gates in 2b.
 
+## Phase 2b — Rank‑Aware Pruning Gates (Plan)
+
+Goal
+- Use move rank (from RankedMovePicker yield index) to scale pruning/reduction heuristics, lowering nodes and improving effective depth without harming tactics.
+
+Guardrails
+- Non‑PV nodes only to start; depth gate (≥ 4).
+- Never gate: TT move, checks, promotions, recaptures; protect killers/countermoves.
+- No reordering; only adjust thresholds/reductions. No changes in quiescence.
+- Behind a single UCI toggle: `UseRankAwareGates` (default false).
+
+Telemetry
+- Track searched/pruned/reduced by rank bucket; PVS re‑search frequency; first‑move cutoff; nodes per depth.
+
+Sub‑Phases (SPRT‑gated)
+1) 2b.0 — Scaffolds (no behavior change)
+   - Add `UseRankAwareGates` toggle; thread rank from picker to negamax; add telemetry structs (compiled‑out in Release).
+   - Commit: "feat: 2b.0 scaffolds; bench <nodes>". SPRT: none.
+
+2) 2b.1 — Rank capture + telemetry (no behavior change)
+   - Compute rank once per move; record buckets for searched/pruned/reduced. No gating.
+   - Commit: "feat: 2b.1 rank capture + telemetry". SPRT: none.
+
+3) 2b.2 — LMR scaling by rank (conservative)
+   - Non‑PV, depth ≥ 4. Buckets: rank 1..K → minimal/no reduction; K+1..10 → normal; 11+ → +1 step reduction (capped). Exempt TT/checks/promotions/recaptures/killers/countermoves.
+   - Commit: "feat: 2b.2 LMR rank scaling". SPRT: [-3.00, 3.00].
+
+4) 2b.3 — Move Count Pruning (LMP) rank gating
+   - Non‑PV, quiets only, depth 4–8. Earlier pruning for late‑rank quiets; disable for top‑rank moves; keep exceptions.
+   - Commit: "feat: 2b.3 LMP rank gating". SPRT: [-3.00, 3.00].
+
+5) 2b.4 — Futility margin scaling by rank (quiets)
+   - Non‑PV quiets; modestly increase margins for late ranks; leave top‑rank unchanged. Depth ≥ 3; guard recaptures/refutations.
+   - Commit: "feat: 2b.4 futility rank margins". SPRT: [-3.00, 3.00].
+
+6) 2b.5 — Capture SEE gating by rank
+   - For late‑rank captures, require SEE ≥ 0 (or small threshold). Always allow recaptures/checks/promotions. If SEEMode=OFF, skip or gate more conservatively.
+   - Commit: "feat: 2b.5 capture SEE gating by rank". SPRT: [-3.00, 3.00].
+
+7) 2b.6 — Depth‑aware protected rank window R(depth)
+   - R(depth) = clamp(4 + depth/2, 6..12). Moves with rank ≤ R bypass pruning and use minimal reduction.
+   - Commit: "feat: 2b.6 protected ranks by depth". SPRT: [-3.00, 3.00].
+
+8) 2b.7 — Re‑search smoothing (PVS)
+   - If late‑rank moves frequently trigger re‑search, reduce aggressiveness one notch at that depth; track PVS re‑search freq by rank.
+   - Commit: "feat: 2b.7 re‑search smoothing". SPRT: [-3.00, 3.00].
+
+9) 2b.8 — Safety + DEBUG asserts
+   - DEBUG asserts ensure gates do not apply to PV/TT/check/promo/recap/killers/countermoves; optional one‑shot DEV log of rank buckets.
+   - Commit: "chore: 2b.8 debug asserts/logs". SPRT: N/A.
+
+SPRT Configuration (default)
+- Dev: `UseClusteredTT=true`, `UseRankedMovePicker=true`, `UseInCheckClassOrdering=true`, `UseRankAwareGates=true`.
+- Base: same, but `UseRankAwareGates=false`.
+- Common: Hash=128, Threads=1, TC 10+0.1, Book UHO_4060_v2, bounds [-3.00, 3.00].
+
 ## Progress Log (2a Postmortem)
 
 - 2025-09-10: 2a.3 regression identified in OpenBench (test 498). Expanding shortlist to include quiets caused a large negative result (≈ −200 nELO): Elo | −209.06 ± 29.49; LLR −3.13. Root cause analysis indicates quiet shortlist over‑prioritization at shallow depth (killer/countermove/history/CMH weights allowed quiets to outrank strong captures), lack of class priority (captures/promotions vs quiets), and no depth gating for quiets.
