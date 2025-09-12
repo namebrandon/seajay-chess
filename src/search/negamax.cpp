@@ -794,7 +794,8 @@ eval::Score negamax(Board& board,
         rankedPicker.emplace(
             board, ttMove, info.killers, info.history, 
             info.counterMoves, info.counterMoveHistory,
-            prevMove, ply, depth, info.countermoveBonus, &limits
+            prevMove, ply, depth, info.countermoveBonus, &limits,
+            &info  // Phase 2a.6c: Pass SearchData for telemetry
         );
     } else {
         // Generate pseudo-legal moves now that early exits are handled
@@ -1230,6 +1231,29 @@ eval::Score negamax(Board& board,
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
                     }
+                    
+#ifdef SEARCH_STATS
+                    // Phase 2a.6c: Track cutoff move rank and shortlist coverage
+                    if (rankedPicker && limits.useRankedMovePicker) {
+                        int yieldIndex = rankedPicker->currentYieldIndex();
+                        
+                        // Bucket the yield rank: [1], [2-5], [6-10], [11+]
+                        if (yieldIndex == 1) {
+                            info.movePickerStats.bestMoveRank[0]++;
+                        } else if (yieldIndex >= 2 && yieldIndex <= 5) {
+                            info.movePickerStats.bestMoveRank[1]++;
+                        } else if (yieldIndex >= 6 && yieldIndex <= 10) {
+                            info.movePickerStats.bestMoveRank[2]++;
+                        } else {
+                            info.movePickerStats.bestMoveRank[3]++;
+                        }
+                        
+                        // Check if the cutoff move was in the shortlist
+                        if (rankedPicker->wasInShortlist(move)) {
+                            info.movePickerStats.shortlistHits++;
+                        }
+                    }
+#endif
                     
                     // Node explosion diagnostics: Track beta cutoff position and move type
                     if (limits.nodeExplosionDiagnostics) {
@@ -1890,6 +1914,23 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         }
         std::cout << std::endl;
     }
+    
+    // Phase 2a.6c: Output move picker statistics if requested
+#ifdef SEARCH_STATS
+    if (limits.showMovePickerStats && limits.useRankedMovePicker) {
+        std::cout << "info string MovePickerStats:";
+        std::cout << " bestMoveRank: [1]=" << info.movePickerStats.bestMoveRank[0];
+        std::cout << " [2-5]=" << info.movePickerStats.bestMoveRank[1];
+        std::cout << " [6-10]=" << info.movePickerStats.bestMoveRank[2];
+        std::cout << " [11+]=" << info.movePickerStats.bestMoveRank[3];
+        std::cout << " shortlistHits=" << info.movePickerStats.shortlistHits;
+        std::cout << " SEE(lazy): calls=" << info.movePickerStats.seeCallsLazy;
+        std::cout << " captures=" << info.movePickerStats.capturesTotal;
+        std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
+        std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
+        std::cout << std::endl;
+    }
+#endif
     
     // B0: One-shot search summary (low overhead)
     if (limits.showSearchStats or limits.showPVSStats) {
