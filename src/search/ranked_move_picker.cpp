@@ -338,7 +338,44 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 
             // Stable partition: [captures of checker][blocks][king/other]
             auto class1End = std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
-            std::stable_partition(class1End, m_moves.end(), isBlockMove);
+            auto class2End = std::stable_partition(class1End, m_moves.end(), isBlockMove);
+
+            // Intra-class ordering for additional strength (preserve stability across classes)
+            // Class 1 (captures of checker): order by SEE (if enabled) or MVV-LVA
+            if (class1End != m_moves.begin()) {
+                if (g_seeMoveOrdering.getMode() != SEEMode::OFF) {
+                    std::stable_sort(m_moves.begin(), class1End,
+                        [this](const Move& a, const Move& b) {
+                            SEEValue seeA = ::seajay::see(m_board, a);
+                            SEEValue seeB = ::seajay::see(m_board, b);
+                            if (seeA != seeB) return seeA > seeB;
+                            return MvvLvaOrdering::scoreMove(m_board, a) > MvvLvaOrdering::scoreMove(m_board, b);
+                        });
+                } else {
+                    std::stable_sort(m_moves.begin(), class1End,
+                        [this](const Move& a, const Move& b) {
+                            return MvvLvaOrdering::scoreMove(m_board, a) > MvvLvaOrdering::scoreMove(m_board, b);
+                        });
+                }
+            }
+
+            // Class 2 (blocks): order by quiet history (+optional CMH) to recover prior strength
+            if (class2End != class1End && m_history) {
+                const Color side = m_board.sideToMove();
+                const bool useCMH = (m_counterMoveHistory && m_limits && m_limits->counterMoveHistoryWeight > 0.0f);
+                const int cmhNumerator = useCMH ? static_cast<int>(m_limits->counterMoveHistoryWeight * 2.0f + 0.5f) : 0;
+                constexpr int cmhDen = 2;
+                std::stable_sort(class1End, class2End,
+                    [&](const Move& a, const Move& b) {
+                        int32_t ha = static_cast<int32_t>(m_history->getScore(side, moveFrom(a), moveTo(a))) * 2;
+                        int32_t hb = static_cast<int32_t>(m_history->getScore(side, moveFrom(b), moveTo(b))) * 2;
+                        if (useCMH && m_prevMove != NO_MOVE) {
+                            ha += (static_cast<int32_t>(m_counterMoveHistory->getScore(m_prevMove, a)) * cmhNumerator) / cmhDen;
+                            hb += (static_cast<int32_t>(m_counterMoveHistory->getScore(m_prevMove, b)) * cmhNumerator) / cmhDen;
+                        }
+                        return ha > hb;
+                    });
+            }
 
             // Skip the legacy ordering below since we've already ordered by class
             // No history/CMH applied in this path as per design
