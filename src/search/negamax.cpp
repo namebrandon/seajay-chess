@@ -1154,11 +1154,8 @@ eval::Score negamax(Board& board,
                         && !(prevMove != NO_MOVE && info.counterMoves && info.counterMoves->getCounterMove(prevMove) == move))  // Not a countermove
                     {
                         // Get current move rank (1-based index from picker, or moveCount as fallback)
-#ifdef SEARCH_STATS
+                        // Phase 2b.2-fix: currentYieldIndex() now always available for accurate rank
                         const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
-#else
-                        const int rank = moveCount;  // Fallback to moveCount when telemetry disabled
-#endif
                         const int K = 5;  // Protected rank threshold
                         
                         // Apply rank-based scaling

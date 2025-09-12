@@ -241,9 +241,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_inCheck(board.isAttacked(board.kingSquare(board.sideToMove()), ~board.sideToMove()))
     , m_moveIndex(0)
     , m_ttMoveYielded(false)
-#ifdef SEARCH_STATS
-    , m_yieldIndex(0)
-#endif
+    , m_yieldIndex(0)  // Phase 2b.2-fix: Always initialize
 #ifdef DEBUG
     , m_generatedCount(0)
     , m_yieldedCount(0)
@@ -529,10 +527,12 @@ Move RankedMovePicker::next() {
 #endif
         
         if (ttMoveInList) {
+            // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
+            m_yieldIndex++;  // Increment yield index for TT move
+            
 #ifdef SEARCH_STATS
-            // Increment only when stats are requested to avoid hot-path overhead
+            // Additional telemetry when stats are requested
             if (m_limits && m_limits->showMovePickerStats) {
-                m_yieldIndex++;  // Increment yield index for TT move
                 // Phase 2a.6b: Track TT first yield
                 if (m_searchData) {
                     m_searchData->movePickerStats.ttFirstYield++;
@@ -557,10 +557,12 @@ Move RankedMovePicker::next() {
         assert(!m_inCheck && "Shortlist should not be used when in check");
 #endif
         Move move = m_shortlist[m_shortlistIndex++];
+        
+        // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
+        m_yieldIndex++;  // Increment yield index for shortlist move
+        
 #ifdef SEARCH_STATS
-        if (m_limits && m_limits->showMovePickerStats) {
-            m_yieldIndex++;  // Increment yield index for shortlist move
-        }
+        // No additional telemetry needed here
 #endif
 #ifdef DEBUG
         m_yieldedCount++;
@@ -594,9 +596,12 @@ Move RankedMovePicker::next() {
             continue;
         }
         
+        // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
+        m_yieldIndex++;  // Increment yield index for remainder move
+        
 #ifdef SEARCH_STATS
+        // Additional telemetry when stats are requested
         if (m_limits && m_limits->showMovePickerStats) {
-            m_yieldIndex++;  // Increment yield index for remainder move
             // Phase 2a.6b: Track remainder yields
             if (m_searchData) {
                 m_searchData->movePickerStats.remainderYields++;

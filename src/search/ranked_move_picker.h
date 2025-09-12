@@ -133,10 +133,9 @@ private:
     static constexpr size_t MAX_MOVES = 256;  // Max possible moves in a position
     bool m_inShortlistMap[MAX_MOVES];  // True if move at index is in shortlist
     
-#ifdef SEARCH_STATS
-    // Phase 2a.6: Telemetry support
+    // Phase 2b.2-fix: Always track yield index for rank-aware gates
+    // Lightweight counter, minimal overhead even in Release builds
     int m_yieldIndex;  // Current yield index (1-based, 0 = not started)
-#endif
     
     // Helper methods
     int16_t computeMvvLvaScore(Move move) const;
@@ -146,9 +145,12 @@ private:
     bool isInShortlist(Move move) const;
     
 public:
-#ifdef SEARCH_STATS
-    // Phase 2a.6: Telemetry accessors (compiled out in Release)
+    // Phase 2b.2-fix: Lightweight accessor for rank-aware gates
+    // Always available to avoid moveCount mismatch with pseudo-legal skips
     int currentYieldIndex() const { return m_yieldIndex; }
+    
+#ifdef SEARCH_STATS
+    // Phase 2a.6: Additional telemetry accessors (compiled out in Release)
     bool wasInShortlist(Move m) const;
 #endif
     
