@@ -314,17 +314,23 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             checkers |= ::seajay::rookAttacks(kingSq, board.occupied()) & (board.pieces(oppSide, ROOK) | board.pieces(oppSide, QUEEN));
             const int numCheckers = popCount(checkers);
             const Square checkerSq = (numCheckers == 1) ? lsb(checkers) : NO_SQUARE;
+            const int epDelta = (stm == WHITE) ? -8 : 8;  // Precompute once
+
+            // Perf: predicate avoids expensive work on early rejects
             auto isCaptureOfChecker = [&](const Move& mv) -> bool {
                 if (numCheckers != 1) return false;
-                const Square from = moveFrom(mv);
-                if (typeOf(board.pieceAt(from)) == KING) return false;
                 const Square to = moveTo(mv);
+                // Fast path: en passant capture of checking pawn
                 if (isEnPassant(mv)) {
-                    const int delta = (stm == WHITE) ? -8 : 8;
-                    Square capturedSq = static_cast<Square>(to + delta);
+                    const Square capturedSq = static_cast<Square>(to + epDelta);
                     return capturedSq == checkerSq;
                 }
-                return (isCapture(mv) || isEnPassant(mv)) && (to == checkerSq);
+                // Regular capture must land on checker square
+                if (to != checkerSq) return false;
+                if (!isCapture(mv)) return false;
+                // Exclude king moves (generator should not produce, but keep safe)
+                const Square from = moveFrom(mv);
+                return typeOf(board.pieceAt(from)) != KING;
             };
             std::stable_partition(m_moves.begin(), m_moves.end(), isCaptureOfChecker);
 
