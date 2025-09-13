@@ -209,7 +209,7 @@ eval::Score quiescence(
         }
         
         // Beta cutoff on stand-pat (if not already returned above)
-        if (!limits.useFastEvalForQsearch && staticEval >= beta) {
+        if (staticEval >= beta) {
             data.standPatCutoffs++;
             return staticEval;
         }
