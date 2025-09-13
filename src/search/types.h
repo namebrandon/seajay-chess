@@ -145,6 +145,9 @@ struct SearchLimits {
     
     // Phase 2b: Rank-aware pruning gates
     bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
+
+    // Benchmark/diagnostics
+    bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench
     
     // Default constructor
     SearchLimits() = default;

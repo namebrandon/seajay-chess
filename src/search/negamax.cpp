@@ -198,7 +198,7 @@ eval::Score negamax(Board& board,
     
     
     // Debug output at root for deeper searches
-    if (ply == 0 && depth >= 4) {
+    if (ply == 0 && depth >= 4 && !limits.suppressDebugOutput) {
         std::cerr << "Negamax: Starting search at depth " << depth << std::endl;
     }
     
@@ -823,7 +823,9 @@ eval::Score negamax(Board& board,
     
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4) {
-        std::cerr << "Root: generated " << moves.size() << " moves, depth=" << depth << "\n";
+        if (!limits.suppressDebugOutput) {
+            std::cerr << "Root: generated " << moves.size() << " moves, depth=" << depth << "\n";
+        }
     }
     
     

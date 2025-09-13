@@ -794,25 +794,33 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
         }
     }
     
-    // Run the benchmark suite
-    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    // Run the SEARCH benchmark suite (deterministic search signature)
+    auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Send final summary as info string for GUI compatibility
     std::ostringstream oss;
     oss << "Benchmark complete: " << result.totalNodes << " nodes, "
         << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
     sendInfo(oss.str());
+    // Plain final line for OpenBench validator
+    std::cout << result.totalNodes << " nodes "
+              << std::fixed << std::setprecision(0) << result.averageNps()
+              << " nps" << std::endl;
 }
 
 void UCIEngine::runBenchmark(int depth) {
-    // Run benchmark directly without UCI loop (for OpenBench)
-    // Use verbose=false to avoid console output conflicts
-    auto result = BenchmarkSuite::runBenchmark(depth, false);
+    // Run search benchmark directly without UCI loop (for OpenBench)
+    // Use verbose=true to show per-position lines as requested
+    auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Output final result as info string (OpenBench format)
     std::cout << "info string Benchmark complete: " << result.totalNodes 
               << " nodes, " << std::fixed << std::setprecision(0) 
               << result.averageNps() << " nps" << std::endl;
+    // Plain final line for OpenBench validator
+    std::cout << result.totalNodes << " nodes "
+              << std::fixed << std::setprecision(0) << result.averageNps()
+              << " nps" << std::endl;
 }
 
 void UCIEngine::sendInfo(const std::string& message) {
