@@ -208,8 +208,7 @@ eval::Score quiescence(
             else {
                 // Do NOT compute full eval yet
                 staticEvalComputed = false;
-                // Set a placeholder (will be computed if needed for pruning)
-                staticEval = fastEval;  // Temporary placeholder, not used for decisions
+                // Do NOT set staticEval - it will be computed when needed
             }
         } else {
             // Toggle OFF - original behavior
@@ -584,6 +583,12 @@ eval::Score quiescence(
                     
                     // Deliverable 2.2: Store in TT with LOWER bound (fail-high)
                     if (tt.isEnabled()) {
+                        // Phase 3C.2 fix: Always compute full eval before TT store
+                        if (!isInCheck && !staticEvalComputed) {
+                            staticEval = eval::evaluate(board);
+                            staticEvalComputed = true;
+                        }
+                        
                         // Adjust mate scores for storage (relative to root)
                         eval::Score scoreToStore = score;
                         if (score.value() >= MATE_BOUND) {
@@ -608,6 +613,12 @@ eval::Score quiescence(
     
     // Deliverable 2.2: Store final result in TT
     if (tt.isEnabled()) {
+        // Phase 3C.2 fix: Always compute full eval before TT store
+        if (!isInCheck && !staticEvalComputed) {
+            staticEval = eval::evaluate(board);
+            staticEvalComputed = true;
+        }
+        
         // Correct TT bound classification using original alpha
         Bound bound;
         // bestMove already tracked during search - use it for TT storage
