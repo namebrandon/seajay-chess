@@ -18,6 +18,7 @@
 #include "../core/move_list.h"
 #include "../core/engine_config.h"    // Phase 4: Runtime configuration
 #include "../evaluation/evaluate.h"
+#include "../evaluation/fast_evaluate.h"  // Phase 3A: Fast eval scaffolding
 #include "../uci/info_builder.h"     // Phase 5: Structured info building
 #include "quiescence.h"  // Stage 14: Quiescence search
 #include <iostream>
@@ -449,6 +450,16 @@ eval::Score negamax(Board& board,
     // Phase 4.2.c: Compute static eval if not in check and haven't gotten it from TT
     // We need this for pruning decisions and to store in TT later
     if (!staticEvalComputed && !weAreInCheck) {
+        // Phase 3A: Hook for fast eval in pruning (no behavior change - still use full eval)
+        if (limits.useFastEvalForPruning) {
+            // Compute fast eval but don't use it yet
+            eval::Score fastEval = eval::fastEvaluate(board);
+#ifndef NDEBUG
+            eval::g_fastEvalStats.fastEvalUsedInPruning++;
+#endif
+            (void)fastEval; // Suppress unused variable warning in Phase 3A
+        }
+        
         staticEval = board.evaluate();
         staticEvalComputed = true;
         // Cache it in search stack for potential reuse

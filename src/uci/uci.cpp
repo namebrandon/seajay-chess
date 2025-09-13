@@ -256,6 +256,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
+    // Phase 3: Fast evaluation toggles
+    std::cout << "option name UseFastEvalForQsearch type check default false" << std::endl;
+    std::cout << "option name UseFastEvalForPruning type check default false" << std::endl;
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -645,6 +648,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Phase 2b: Pass rank-aware gates option
     limits.useRankAwareGates = m_useRankAwareGates;
+    
+    // Phase 3: Pass fast evaluation options
+    limits.useFastEvalForQsearch = m_useFastEvalForQsearch;
+    limits.useFastEvalForPruning = m_useFastEvalForPruning;
     
     // Stage 14 Remediation: Pass runtime node limit
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
@@ -1072,6 +1079,25 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useRankAwareGates = false;
             std::cerr << "info string Rank-aware pruning gates disabled" << std::endl;
+        }
+    }
+    // Phase 3: Fast evaluation toggles
+    else if (optionName == "UseFastEvalForQsearch") {
+        if (value == "true") {
+            m_useFastEvalForQsearch = true;
+            std::cerr << "info string Fast eval for qsearch enabled" << std::endl;
+        } else if (value == "false") {
+            m_useFastEvalForQsearch = false;
+            std::cerr << "info string Fast eval for qsearch disabled" << std::endl;
+        }
+    }
+    else if (optionName == "UseFastEvalForPruning") {
+        if (value == "true") {
+            m_useFastEvalForPruning = true;
+            std::cerr << "info string Fast eval for pruning enabled" << std::endl;
+        } else if (value == "false") {
+            m_useFastEvalForPruning = false;
+            std::cerr << "info string Fast eval for pruning disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)

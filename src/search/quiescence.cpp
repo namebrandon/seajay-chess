@@ -4,6 +4,7 @@
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../evaluation/evaluate.h"
+#include "../evaluation/fast_evaluate.h"  // Phase 3A: Fast eval scaffolding
 #include "../core/transposition_table.h"
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
@@ -177,6 +178,16 @@ eval::Score quiescence(
     eval::Score staticEval;
     bool staticEvalComputed = false;  // Track if we have a real static eval
     if (!isInCheck) {
+        // Phase 3A: Hook for fast eval (no behavior change - still use full eval)
+        if (limits.useFastEvalForQsearch) {
+            // Compute fast eval but don't use it yet
+            eval::Score fastEval = eval::fastEvaluate(board);
+#ifndef NDEBUG
+            eval::g_fastEvalStats.fastEvalUsedInStandPat++;
+#endif
+            (void)fastEval; // Suppress unused variable warning in Phase 3A
+        }
+        
         staticEval = eval::evaluate(board);
         staticEvalComputed = true;
         
@@ -375,7 +386,19 @@ eval::Score quiescence(
                 adjustedMargin = deltaMargin / 2;  // Tighter margin for small captures
             }
             
-            if (staticEval + eval::Score(captureValue + adjustedMargin) < alpha) {
+            // Phase 3A: Hook for fast eval in delta pruning (no behavior change - still use staticEval)
+            eval::Score evalForDelta = staticEval;
+            if (limits.useFastEvalForPruning && staticEvalComputed) {
+                // Compute fast eval but don't use it yet
+                eval::Score fastEval = eval::fastEvaluate(board);
+#ifndef NDEBUG
+                eval::g_fastEvalStats.fastEvalUsedInPruning++;
+#endif
+                (void)fastEval; // Suppress unused variable warning in Phase 3A
+                // Still use staticEval for actual pruning decision in Phase 3A
+            }
+            
+            if (evalForDelta + eval::Score(captureValue + adjustedMargin) < alpha) {
                 data.deltasPruned++;
                 continue;  // Skip this capture - it can't improve our position enough
             }

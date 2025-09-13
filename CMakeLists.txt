@@ -115,6 +115,8 @@ set(CORE_SOURCES
 set(EVAL_SOURCES
     src/evaluation/evaluate.cpp
     src/evaluation/evaluate.h
+    src/evaluation/fast_evaluate.cpp
+    src/evaluation/fast_evaluate.h
     src/evaluation/material.h
     src/evaluation/types.h
     src/evaluation/pst.h

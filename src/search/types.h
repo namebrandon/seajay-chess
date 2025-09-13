@@ -145,6 +145,10 @@ struct SearchLimits {
     
     // Phase 2b: Rank-aware pruning gates
     bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
+    
+    // Phase 3: Fast evaluation toggles
+    bool useFastEvalForQsearch = false;   // Use fast eval in qsearch stand-pat (default OFF)
+    bool useFastEvalForPruning = false;   // Use fast eval for pruning decisions (default OFF)
 
     // Benchmark/diagnostics
     bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench

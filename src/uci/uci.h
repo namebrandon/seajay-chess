@@ -158,6 +158,10 @@ private:
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
     
+    // Phase 3: Fast evaluation toggles
+    bool m_useFastEvalForQsearch = false;  // Use fast eval in qsearch stand-pat (default OFF)
+    bool m_useFastEvalForPruning = false;  // Use fast eval for pruning decisions (default OFF)
+    
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
     int m_aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
