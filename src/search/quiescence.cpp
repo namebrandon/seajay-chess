@@ -179,29 +179,37 @@ eval::Score quiescence(
     eval::Score staticEval;
     bool staticEvalComputed = false;  // Track if we have a real static eval
     if (!isInCheck) {
-        // Phase 3B: Use fast eval with beta confirmation
+        // Phase 3C.2: Use fast eval with proper gating and beta confirmation
         if (limits.useFastEvalForQsearch) {
-            // First compute fast eval (material only)
+            // First compute fast eval (material + PST)
             eval::Score fastEval = eval::fastEvaluate(board);
 #ifndef NDEBUG
             eval::g_fastEvalStats.fastEvalUsedInStandPat++;
 #endif
             
-            // If fast eval >= beta, compute full eval to CONFIRM cutoff
-            // Only return if full eval also confirms the cutoff
+            // Case 1: Fast eval >= beta - need full eval confirmation
             if (fastEval >= beta) {
                 staticEval = eval::evaluate(board);
                 staticEvalComputed = true;
                 
+                // Return only if full eval confirms the beta cutoff
                 if (staticEval >= beta) {
                     data.standPatCutoffs++;
                     return staticEval;
                 }
-                // If full eval doesn't confirm, continue with normal flow
-            } else {
-                // Fast eval < beta, compute full eval for normal processing
+                // If not confirmed, continue with staticEval computed
+            }
+            // Case 2: Fast eval > alpha - compute full eval and continue
+            else if (fastEval > alpha) {
                 staticEval = eval::evaluate(board);
                 staticEvalComputed = true;
+            }
+            // Case 3: Fast eval <= alpha - defer full eval computation
+            else {
+                // Do NOT compute full eval yet
+                staticEvalComputed = false;
+                // Set a placeholder (will be computed if needed for pruning)
+                staticEval = fastEval;  // Temporary placeholder, not used for decisions
             }
         } else {
             // Toggle OFF - original behavior
@@ -230,7 +238,8 @@ eval::Score quiescence(
 #endif
         
         // Beta cutoff on stand-pat (if not already returned above)
-        if (staticEval >= beta) {
+        // Phase 3C.2: Ensure we have full eval before using for beta cutoff
+        if (staticEvalComputed && staticEval >= beta) {
             data.standPatCutoffs++;
             return staticEval;
         }
@@ -246,6 +255,12 @@ eval::Score quiescence(
             coarseDeltaMargin = 600;  // Rook + minor piece
         }
         
+        // Phase 3C.2: Ensure full eval before coarse delta check
+        if (!staticEvalComputed) {
+            staticEval = eval::evaluate(board);
+            staticEvalComputed = true;
+        }
+        
         if (staticEval + eval::Score(coarseDeltaMargin) < alpha) {
             data.deltasPruned++;
             return alpha;  // Fail-hard alpha cutoff
@@ -253,7 +268,10 @@ eval::Score quiescence(
         
         // Update alpha with stand-pat score
         // In quiet positions, we can choose to not make any move
-        alpha = std::max(alpha, staticEval);
+        // Phase 3C.2: Only update alpha with full eval
+        if (staticEvalComputed) {
+            alpha = std::max(alpha, staticEval);
+        }
     } else {
         // In check: no stand-pat, must make a move
         staticEval = eval::Score::minus_infinity();
@@ -424,16 +442,23 @@ eval::Score quiescence(
                 adjustedMargin = deltaMargin / 2;  // Tighter margin for small captures
             }
             
+            // Phase 3C.2: Ensure full eval for per-move delta pruning
+            // (Fast eval for delta pruning comes in Phase 3G, not now)
+            if (!staticEvalComputed) {
+                staticEval = eval::evaluate(board);
+                staticEvalComputed = true;
+            }
+            
             // Phase 3A: Hook for fast eval in delta pruning (no behavior change - still use staticEval)
             eval::Score evalForDelta = staticEval;
             if (limits.useFastEvalForPruning && staticEvalComputed) {
-                // Compute fast eval but don't use it yet
+                // Compute fast eval but don't use it yet (Phase 3G will use it)
                 eval::Score fastEval = eval::fastEvaluate(board);
 #ifndef NDEBUG
                 eval::g_fastEvalStats.fastEvalUsedInPruning++;
 #endif
                 (void)fastEval; // Suppress unused variable warning in Phase 3A
-                // Still use staticEval for actual pruning decision in Phase 3A
+                // Still use staticEval for actual pruning decision in Phase 3C.2
             }
             
             if (evalForDelta + eval::Score(captureValue + adjustedMargin) < alpha) {
@@ -496,6 +521,12 @@ eval::Score quiescence(
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
             if (data.seePruningModeEnum == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
+                // Phase 3C.2: Ensure full eval for SEE equal exchange pruning decisions
+                if (!staticEvalComputed) {
+                    staticEval = eval::evaluate(board);
+                    staticEvalComputed = true;
+                }
+                
                 // Prune equal exchanges based on quiescence depth
                 // At qply 3-4: prune if position is quiet
                 // At qply 5-6: prune more aggressively
