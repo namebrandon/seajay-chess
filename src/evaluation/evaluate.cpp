@@ -1150,8 +1150,9 @@ Score refMaterialPST(const Board& board) {
     // Get material from board
     const Material& material = board.material();
     
-    // Check for insufficient material draws (same as evaluate())
-    if (material.isInsufficientMaterial()) {
+    // Check for insufficient material draws (use board check to match fastEvaluate)
+    // board.isInsufficientMaterial() includes KB-vs-KB same-color check
+    if (board.isInsufficientMaterial()) {
         return Score::draw();
     }
     
