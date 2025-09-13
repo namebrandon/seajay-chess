@@ -260,6 +260,13 @@ eval::Score quiescence(
             staticEvalComputed = true;
         }
         
+        // Phase 3C.2 fix: Re-check stand-pat beta cutoff now that staticEval is available
+        // This catches cases where fastEval <= alpha but true staticEval >= beta
+        if (staticEval >= beta) {
+            data.standPatCutoffs++;
+            return staticEval;
+        }
+        
         if (staticEval + eval::Score(coarseDeltaMargin) < alpha) {
             data.deltasPruned++;
             return alpha;  // Fail-hard alpha cutoff
