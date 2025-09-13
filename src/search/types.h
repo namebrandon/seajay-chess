@@ -527,6 +527,87 @@ struct SearchData {
     } rankGates;
 #endif  // SEARCH_STATS
     
+    // Phase 2b.7: PVS re-search smoothing statistics (thread-local, no locks needed)
+    struct PVSReSearchSmoothing {
+        static constexpr int DEPTH_BUCKET_COUNT = 3;
+        static constexpr int RANK_BUCKET_COUNT = 4;  // Reuse existing buckets: [1], [2-5], [6-10], [11+]
+        
+        // Per-bucket counters: [depthBucket][rankBucket]
+        uint32_t attempts[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};     // Moves searched
+        uint32_t reSearches[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};   // Re-searches triggered
+        
+#ifdef SEARCH_STATS
+        uint32_t smoothingApplied[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};  // Times smoothing applied
+#endif
+        
+        // Depth bucket mapping
+        static ALWAYS_INLINE int depthBucket(int depth) {
+            if (depth <= 6) return 0;   // D1: [4-6]
+            if (depth <= 10) return 1;  // D2: [7-10]
+            return 2;                    // D3: [11+]
+        }
+        
+        // Rank bucket mapping (reuse RankGateStats buckets)
+        static ALWAYS_INLINE int rankBucket(int rank) {
+            if (rank <= 1) return 0;    // Rank 1
+            if (rank <= 5) return 1;    // Ranks 2-5
+            if (rank <= 10) return 2;   // Ranks 6-10
+            return 3;                    // Ranks 11+
+        }
+        
+        // Check if smoothing should be applied for this bucket
+        ALWAYS_INLINE bool shouldApplySmoothing(int depthBucket, int rankBucket) const {
+            uint32_t att = attempts[depthBucket][rankBucket];
+            uint32_t res = reSearches[depthBucket][rankBucket];
+            
+            // Threshold: attempts >= 32 AND reSearches * 100 >= 20 * attempts (20% rate)
+            return att >= 32 && res * 100 >= 20 * att;
+        }
+        
+        // Update counters (called from negamax)
+        ALWAYS_INLINE void recordMove(int depth, int rank, bool didReSearch) {
+            int db = depthBucket(depth);
+            int rb = rankBucket(rank);
+            
+            // Saturating increment to prevent overflow
+            if (attempts[db][rb] < 65535) {
+                attempts[db][rb]++;
+                if (didReSearch && reSearches[db][rb] < 65535) {
+                    reSearches[db][rb]++;
+                }
+            }
+            
+            // Decay when attempts exceeds 64 to keep data fresh
+            if (attempts[db][rb] >= 64) {
+                attempts[db][rb] >>= 1;
+                reSearches[db][rb] >>= 1;
+            }
+        }
+        
+#ifdef SEARCH_STATS
+        // Track when smoothing is applied (for telemetry)
+        ALWAYS_INLINE void recordSmoothingApplied(int depth, int rank) {
+            int db = depthBucket(depth);
+            int rb = rankBucket(rank);
+            if (smoothingApplied[db][rb] < 65535) {
+                smoothingApplied[db][rb]++;
+            }
+        }
+#endif
+        
+        void reset() {
+            for (int d = 0; d < DEPTH_BUCKET_COUNT; d++) {
+                for (int r = 0; r < RANK_BUCKET_COUNT; r++) {
+                    attempts[d][r] = 0;
+                    reSearches[d][r] = 0;
+#ifdef SEARCH_STATS
+                    smoothingApplied[d][r] = 0;
+#endif
+                }
+            }
+        }
+    } pvsReSearchSmoothing;
+    
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}
     
@@ -593,6 +674,8 @@ struct SearchData {
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
+        pvsStats.reset();  // Stage 22: Reset PVS statistics
+        pvsReSearchSmoothing.reset();  // Phase 2b.7: Reset PVS re-search smoothing
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
         pruneBreakdown.reset();  // B0: Reset prune breakdown

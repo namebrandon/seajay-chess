@@ -940,19 +940,44 @@ eval::Score negamax(Board& board,
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
                 const int K = 5;  // Protected window size
                 
-                if (rank == 1) {
-                    // Rank 1: disable LMP for this move (make limit very high)
-                    limit = 999;
-                } else if (rank >= 2 && rank <= K) {
-                    // Ranks 2-5: make prune less aggressive
-                    limit += 2;
-                } else if (rank >= 6 && rank <= 10) {
-                    // Ranks 6-10: leave limit unchanged
-                    // (no adjustment needed)
-                } else if (rank >= 11) {
-                    // Ranks 11+: make prune more aggressive
-                    limit = std::max(1, limit - 4);
+                // Phase 2b.7: Check if PVS re-search smoothing should disable rank-based LMP
+                bool skipRankLMP = false;
+                if (depth >= 4) {  // Smoothing only applies at depth >= 4
+                    // Check if smoothing applies for this move
+                    bool isTTMove = (move == ttMove);
+                    bool isKillerMove = info.killers->isKiller(ply, move);
+                    bool isCounterMove = (prevMove != NO_MOVE && 
+                                          info.counterMoves->getCounterMove(prevMove) == move);
+                    bool isRecapture = (prevMove != NO_MOVE && isCapture(prevMove) && 
+                                        moveTo(prevMove) == moveTo(move));
+                    bool isCheckOrPromo = isPromotion(move);
+                    
+                    if (!isTTMove && !isKillerMove && !isCounterMove && !isRecapture && !isCheckOrPromo) {
+                        int depthBucket = SearchData::PVSReSearchSmoothing::depthBucket(depth);
+                        int rankBucket = SearchData::PVSReSearchSmoothing::rankBucket(rank);
+                        if (info.pvsReSearchSmoothing.shouldApplySmoothing(depthBucket, rankBucket)) {
+                            // Smoothing: disable rank-based early pruning for this move
+                            skipRankLMP = true;
+                        }
+                    }
                 }
+                
+                if (!skipRankLMP) {
+                    if (rank == 1) {
+                        // Rank 1: disable LMP for this move (make limit very high)
+                        limit = 999;
+                    } else if (rank >= 2 && rank <= K) {
+                        // Ranks 2-5: make prune less aggressive
+                        limit += 2;
+                    } else if (rank >= 6 && rank <= 10) {
+                        // Ranks 6-10: leave limit unchanged
+                        // (no adjustment needed)
+                    } else if (rank >= 11) {
+                        // Ranks 11+: make prune more aggressive
+                        limit = std::max(1, limit - 4);
+                    }
+                }
+                // If skipRankLMP is true, use baseline LMP for depth (limit stays unchanged)
             }
             
             if (moveCount > limit) {
@@ -1206,6 +1231,10 @@ eval::Score negamax(Board& board,
         // Track beta cutoff position for move ordering analysis
         bool isCutoffMove = false;
         
+        // Phase 2b.7: Variables for PVS re-search smoothing (declared outside if/else)
+        int moveRank = 0;
+        bool didReSearch = false;
+        
         // Phase B1: Use legalMoveCount to determine if this is the first LEGAL move
         if (legalMoveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
@@ -1220,6 +1249,35 @@ eval::Score negamax(Board& board,
             
             // Phase 3: Late Move Reductions (LMR)
             int reduction = 0;
+            
+            // Phase 2b.7: PVS re-search smoothing - compute early for both LMR and LMP
+            bool applySmoothing = false;
+            // moveRank already declared outside the if/else
+            if (limits.useRankAwareGates && !isPvNode && depth >= 4) {
+                // Get current move rank (1-based from picker, or moveCount as fallback)
+                moveRank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+                
+                // Check if smoothing should apply (only for non-exempt moves)
+                bool isTTMove = (move == ttMove);
+                bool isKillerMove = info.killers->isKiller(ply, move);
+                bool isCounterMove = (prevMove != NO_MOVE && 
+                                      info.counterMoves->getCounterMove(prevMove) == move);
+                bool isRecapture = (prevMove != NO_MOVE && isCapture(prevMove) && 
+                                    moveTo(prevMove) == moveTo(move));
+                bool isCheckOrPromo = isPromotion(move);  // We already know !weAreInCheck
+                
+                if (!isTTMove && !isKillerMove && !isCounterMove && !isRecapture && !isCheckOrPromo) {
+                    int depthBucket = SearchData::PVSReSearchSmoothing::depthBucket(depth);
+                    int rankBucket = SearchData::PVSReSearchSmoothing::rankBucket(moveRank);
+                    applySmoothing = info.pvsReSearchSmoothing.shouldApplySmoothing(depthBucket, rankBucket);
+                    
+#ifdef SEARCH_STATS
+                    if (applySmoothing) {
+                        info.pvsReSearchSmoothing.recordSmoothingApplied(depth, moveRank);
+                    }
+#endif
+                }
+            }
             
             // Calculate LMR reduction (don't reduce at root)
             if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
@@ -1283,6 +1341,14 @@ eval::Score negamax(Board& board,
 #endif
                     }
                     
+                    // Phase 2b.7: Apply PVS re-search smoothing to LMR
+                    if (applySmoothing && reduction > 0) {
+                        // Subtract 1 from any extra reduction added by rank bucket
+                        // Do not go below baseline reduction (i.e., the non-rank-aware reduction)
+                        int baseReduction = getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
+                        reduction = std::max(baseReduction - 1, reduction - 1);
+                    }
+                    
                     // Track LMR statistics
                     info.lmrStats.totalReductions++;
                     // Node explosion diagnostics: Track LMR application
@@ -1298,6 +1364,9 @@ eval::Score negamax(Board& board,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
                             nullptr,  // Phase PV3: Scout searches don't need PV
                             false);  // Scout searches are not PV
+            
+            // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
+            // didReSearch already declared outside the if/else
             
             // If reduced scout fails high, re-search without reduction
             if (score > alpha && reduction > 0) {
@@ -1315,6 +1384,7 @@ eval::Score negamax(Board& board,
             // If scout search fails high, do full window re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
+                didReSearch = true;  // Phase 2b.7: Mark that we did a re-search
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
                 TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
@@ -1330,6 +1400,15 @@ eval::Score negamax(Board& board,
         
         // Unmake the move
         board.unmakeMove(move, undo);
+        
+        // Phase 2b.7: Record PVS re-search statistics for smoothing
+        // Only record for non-PV nodes that were searched (not pruned)
+        if (limits.useRankAwareGates && !isPvNode && depth >= 4 && legalMoveCount > 1) {
+            // Only record if we have moveRank computed (from earlier smoothing check)
+            if (moveRank > 0) {
+                info.pvsReSearchSmoothing.recordMove(depth, moveRank, didReSearch);
+            }
+        }
         
         // Debug: Validate board state is properly restored
 #ifdef DEBUG
