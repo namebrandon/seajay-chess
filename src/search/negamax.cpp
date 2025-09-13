@@ -1243,11 +1243,11 @@ eval::Score negamax(Board& board,
                         futilityMargin = std::min(futilityMargin, config.futilityBase * (effectiveDepth + 1));
                     }
                     
-                    // Phase 3E.1b: Confirm-before-prune fix for fast_eval futility
+                    // Phase 3E.2: Extend confirm-before-prune to effectiveDepth=2
                     // When using fast_eval, require BOTH fast and full eval to agree on pruning
                     bool shouldPrune = false;
                     if (limits.useFastEvalForPruning && 
-                        effectiveDepth == 1 && 
+                        effectiveDepth <= 2 && 
                         std::abs(alpha.value()) < MATE_BOUND - MAX_PLY) {
                         // Fast eval path: require both fast and full eval to agree
                         eval::Score fastEval = eval::fastEvaluate(board);
@@ -1255,7 +1255,7 @@ eval::Score negamax(Board& board,
                             staticEval <= alpha - eval::Score(futilityMargin)) {
                             shouldPrune = true;
 #ifndef NDEBUG
-                            eval::g_fastEvalStats.fastFutilityDepth1Used++;
+                            eval::g_fastEvalStats.fastFutilityDepth1Used++;  // Still using same counter
 #endif
                         }
                     } else {
