@@ -39,14 +39,50 @@ Score fastEvaluate(const Board& board) {
     g_fastEvalStats.fastEvalCalls++;
 #endif
     
-    // Phase 3B: Material-only evaluation
-    // Optional early-out for insufficient material (cheap check)
+    // Phase 3C.1: Material + PST evaluation with phase interpolation
+    // Uses board's incremental values for O(1) computation
+    
+    // Check for insufficient material draws
     if (board.isInsufficientMaterial()) {
         return Score::draw();
     }
     
-    // Return material balance from side-to-move perspective
-    return board.material().balance(board.sideToMove());
+    const Material& material = board.material();
+    const MgEgScore& pstScore = board.pstScore();
+    const Color stm = board.sideToMove();
+    
+    Score totalScore;
+    
+    if (seajay::getConfig().usePSTInterpolation) {
+        // Phase interpolation (identical math to evaluate.cpp)
+        int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
+        int invPhase = 256 - phase;      // Inverse phase for endgame weight
+        
+        // Material with phase interpolation (no rounding, matches evaluate.cpp)
+        Score whiteMat = Score((material.valueMg(WHITE).value() * phase + 
+                                material.valueEg(WHITE).value() * invPhase) / 256);
+        Score blackMat = Score((material.valueMg(BLACK).value() * phase + 
+                                material.valueEg(BLACK).value() * invPhase) / 256);
+        
+        // PST with phase interpolation (with rounding, matches evaluate.cpp)
+        int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
+        Score pstValue = Score(blendedPst);
+        
+        // Combine material and PST from side-to-move perspective
+        // PST is stored from white's perspective, material needs balance calculation
+        Score materialBalance = stm == WHITE ? whiteMat - blackMat : blackMat - whiteMat;
+        Score pstFromStm = stm == WHITE ? pstValue : -pstValue;
+        
+        totalScore = materialBalance + pstFromStm;
+    } else {
+        // No interpolation - use only middlegame values
+        Score materialBalance = material.balanceMg(stm);
+        Score pstFromStm = stm == WHITE ? pstScore.mg : -pstScore.mg;
+        
+        totalScore = materialBalance + pstFromStm;
+    }
+    
+    return totalScore;
 }
 
 Score fastEvaluateMatPST(const Board& board) {

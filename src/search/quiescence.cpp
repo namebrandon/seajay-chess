@@ -210,18 +210,20 @@ eval::Score quiescence(
         }
         
 #ifndef NDEBUG
-        // Phase 3C.0: Shadow parity checking (debug-only, 1/64 sampling)
+        // Phase 3C.1: Shadow parity checking (debug-only, 1/64 sampling)
+        // Now comparing fastEvaluate (which includes Mat+PST) vs refMaterialPST
         if ((data.qsearchNodes & 63) == 0) {
             // Compute both fast and reference evaluations
-            eval::Score fastMatPST = eval::fastEvaluateMatPST(board);
+            eval::Score fastEval = eval::fastEvaluate(board);
             eval::Score refMatPST = eval::refMaterialPST(board);
             
             // Record the difference in the histogram
-            int32_t diff = fastMatPST.value() - refMatPST.value();
+            int32_t diff = fastEval.value() - refMatPST.value();
             eval::g_fastEvalStats.parityHist.record(diff);
             
-            // Optional: Log warning if difference is significant (>8 cp)
-            if (std::abs(diff) > 8) {
+            // Optional: Log warning if difference is significant (>2 cp)
+            // Tighter tolerance now that we expect exact match
+            if (std::abs(diff) > 2) {
                 // Could add detailed logging here if needed for debugging
             }
         }
