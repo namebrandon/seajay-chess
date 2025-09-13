@@ -354,3 +354,33 @@ SPRT Configuration (default)
   - A (promotions‑only toggle) and B (reduce K from 10→8) independently showed small negatives (≈ −10 to −12 nELO over ~3k games).
   - Combined A+B plus parity‑preserving capture shortlist (derive shortlist captures from legacy order with ttMove=NO_MOVE; shortlist K=8) produced effectively neutral results (≈ −3 nELO within ±9 after 3k games). Conclusion: issue primarily due to quiet shortlist; remaining drift addressed by aligning shortlist order with legacy.
   - Lessons recorded above: enforce captures‑first discipline when mixing classes, depth‑gate quiet shortlist (≥ depth 6), keep quiet weights conservative, and use parity‑preserving shortlist derivation from legacy ordering when needed.
+
+## Progress Log (2b Implementation Status - 2025-09-13)
+
+### Completed Phases:
+- **2b.0-2b.1**: Scaffolds and rank telemetry - Successfully implemented
+- **2b.2**: LMR scaling by rank - Initially failed SPRT (LLR -3.05), fixed with more conservative approach:
+  - Added !weAreInCheck guard to avoid reducing check evasions
+  - Removed +1 reduction tier for ranks 11+ (was over-reducing at shallow depths)
+  - Now only protects top ranks: Rank 1 (no reduction), Ranks 2-5 (minimal reduction), Ranks 6+ (unchanged)
+- **2b.3**: LMP rank gating (non-PV, depth 4-8) - Successfully implemented
+- **2b.4**: Futility margin scaling by rank (non-PV quiets, depth≥3) - Successfully implemented
+- **2b.5**: Capture SEE gating by rank (non-PV, depth≥4) - Successfully implemented
+- **2b.7**: PVS re-search smoothing - Successfully implemented with conservative approach:
+  - Tracks re-search rates per depth×rank bucket
+  - Applies smoothing when rate exceeds 20% after 32 attempts
+  - Effects: LMR reduction -1, LMP uses baseline (no rank adjustment)
+
+### Abandoned Phases:
+- **2b.6**: Depth-aware protected rank window R(depth) - ABANDONED due to regressions
+  - Concept: R(depth) = clamp(4 + depth/2, 6..12) with moves rank ≤ R bypassing pruning
+  - Result: Caused performance regressions in testing
+  - Decision: Skipped entirely, moved directly to 2b.7
+
+- **2b.8**: Safety + DEBUG asserts - Implemented but rolled back
+  - Initially added comprehensive DEBUG assertions and one-shot logging
+  - Decision: Rolled back to keep branch clean for SPRT testing
+  - Can be re-added later if needed for debugging
+
+### Final Branch State:
+Branch `feature/20250912-phase-2b-rank-aware-gates` ends at commit f7e7ebb with Phase 2b.7 as the final implementation. All rank-aware gates are behind `UseRankAwareGates` UCI toggle (default false for safety).
