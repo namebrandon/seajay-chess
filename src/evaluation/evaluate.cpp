@@ -1166,11 +1166,11 @@ Score refMaterialPST(const Board& board) {
         int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
         int invPhase = 256 - phase;      // Inverse phase for endgame weight
         
-        // Material with phase interpolation (exact same math)
+        // Material with phase interpolation (exact same math as evaluate() - no rounding)
         Score whiteMat = Score((material.valueMg(WHITE).value() * phase + 
-                                material.valueEg(WHITE).value() * invPhase + 128) >> 8);
+                                material.valueEg(WHITE).value() * invPhase) / 256);
         Score blackMat = Score((material.valueMg(BLACK).value() * phase + 
-                                material.valueEg(BLACK).value() * invPhase + 128) >> 8);
+                                material.valueEg(BLACK).value() * invPhase) / 256);
         
         // PST blend (exact same math as evaluate())
         int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;

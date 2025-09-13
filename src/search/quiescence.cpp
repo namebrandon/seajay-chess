@@ -12,6 +12,7 @@
 #include "ranked_move_picker.h"  // Phase 2a: Ranked move picker
 #include "../core/see.h"  // Stage 15 Day 6: For SEE-based pruning
 #include <algorithm>
+#include <cstdlib>  // For std::abs
 #include <iostream>
 #include <memory>
 #include <optional>  // For stack-allocated RankedMovePickerQS
