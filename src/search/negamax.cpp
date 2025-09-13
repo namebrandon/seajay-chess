@@ -1023,7 +1023,7 @@ eval::Score negamax(Board& board,
         }
         
         // Phase 2b.5: Capture SEE gating by rank
-        // Phase 2b.6: Use depth-aware protected window R(depth)
+        // Phase 2b.6b: SEE gate uses fixed threshold (rank≥11), decoupled from R(depth)
         if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4
             && isCapture(move) && !isPromotion(move)) {
             
@@ -1038,10 +1038,9 @@ eval::Score negamax(Board& board,
             if (!isTTMove && !isKillerMove && !isCounterMove && !isRecapture) {
                 // Get rank from picker if available, otherwise use moveCount+1 (pre-legality)
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
-                const int R = std::clamp(4 + depth/2, 6, 12);  // Depth-aware protected window
                 
-                // Only apply gate when rank > max(R, 10) (expands protection at depth)
-                if (rank > std::max(R, 10)) {
+                // Fixed threshold: only apply SEE gate when rank >= 11
+                if (rank >= 11) {
                     // Require non-losing SEE for late captures
                     if (!seeGE(board, move, 0)) {
                         // Track telemetry
