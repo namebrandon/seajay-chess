@@ -1142,4 +1142,55 @@ bool verifyMaterialIncremental(const Board& board) {
 }
 #endif
 
+#ifndef NDEBUG
+// Phase 3C.0: Reference function for parity checking
+// Computes material + PST using the exact same code paths as evaluate()
+// This is the "ground truth" for shadow parity checking
+Score refMaterialPST(const Board& board) {
+    // Get material from board
+    const Material& material = board.material();
+    
+    // Check for insufficient material draws (same as evaluate())
+    if (material.isInsufficientMaterial()) {
+        return Score::draw();
+    }
+    
+    // Get PST score (same as evaluate())
+    const MgEgScore& pstScore = board.pstScore();
+    
+    Score materialScore;
+    Score pstValue;
+    
+    if (seajay::getConfig().usePSTInterpolation) {
+        // Use exact same phase calculation as evaluate()
+        int phase = phase0to256(board);  // 256 = full MG, 0 = full EG
+        int invPhase = 256 - phase;      // Inverse phase for endgame weight
+        
+        // Material with phase interpolation (exact same math)
+        Score whiteMat = Score((material.valueMg(WHITE).value() * phase + 
+                                material.valueEg(WHITE).value() * invPhase + 128) >> 8);
+        Score blackMat = Score((material.valueMg(BLACK).value() * phase + 
+                                material.valueEg(BLACK).value() * invPhase + 128) >> 8);
+        
+        // PST blend (exact same math as evaluate())
+        int blendedPst = (pstScore.mg.value() * phase + pstScore.eg.value() * invPhase + 128) >> 8;
+        pstValue = Score(blendedPst);
+        
+        // Material balance from side-to-move perspective
+        Color stm = board.sideToMove();
+        materialScore = stm == WHITE ? whiteMat - blackMat : blackMat - whiteMat;
+        
+        // PST from side-to-move perspective
+        pstValue = stm == WHITE ? pstValue : -pstValue;
+    } else {
+        // Original behavior - use only middlegame values
+        materialScore = material.balanceMg(board.sideToMove());
+        pstValue = board.sideToMove() == WHITE ? pstScore.mg : -pstScore.mg;
+    }
+    
+    // Return combined score from side-to-move perspective
+    return materialScore + pstValue;
+}
+#endif
+
 } // namespace seajay::eval

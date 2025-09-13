@@ -22,4 +22,9 @@ Score evaluateWithTrace(const Board& board, EvalTrace& trace);
 bool verifyMaterialIncremental(const Board& board);
 #endif
 
+#ifndef NDEBUG
+// Phase 3C.0: Reference function for material + PST evaluation parity checking
+Score refMaterialPST(const Board& board);
+#endif
+
 } // namespace seajay::eval

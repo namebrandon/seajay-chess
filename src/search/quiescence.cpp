@@ -208,6 +208,24 @@ eval::Score quiescence(
             staticEvalComputed = true;
         }
         
+#ifndef NDEBUG
+        // Phase 3C.0: Shadow parity checking (debug-only, 1/64 sampling)
+        if ((data.qsearchNodes & 63) == 0) {
+            // Compute both fast and reference evaluations
+            eval::Score fastMatPST = eval::fastEvaluateMatPST(board);
+            eval::Score refMatPST = eval::refMaterialPST(board);
+            
+            // Record the difference in the histogram
+            int32_t diff = fastMatPST.value() - refMatPST.value();
+            eval::g_fastEvalStats.parityHist.record(diff);
+            
+            // Optional: Log warning if difference is significant (>8 cp)
+            if (std::abs(diff) > 8) {
+                // Could add detailed logging here if needed for debugging
+            }
+        }
+#endif
+        
         // Beta cutoff on stand-pat (if not already returned above)
         if (staticEval >= beta) {
             data.standPatCutoffs++;
