@@ -14,9 +14,14 @@ Score fastEvaluate(const Board& board) {
     g_fastEvalStats.fastEvalCalls++;
 #endif
     
-    // Phase 3A: Simply call full evaluate() for now
-    // Future phases will implement material + PST + pawn cache
-    return evaluate(board);
+    // Phase 3B: Material-only evaluation
+    // Optional early-out for insufficient material (cheap check)
+    if (board.isInsufficientMaterial()) {
+        return Score::draw();
+    }
+    
+    // Return material balance from side-to-move perspective
+    return board.material().balance(board.sideToMove());
 }
 
 } // namespace eval

@@ -178,21 +178,38 @@ eval::Score quiescence(
     eval::Score staticEval;
     bool staticEvalComputed = false;  // Track if we have a real static eval
     if (!isInCheck) {
-        // Phase 3A: Hook for fast eval (no behavior change - still use full eval)
+        // Phase 3B: Use fast eval with beta confirmation
         if (limits.useFastEvalForQsearch) {
-            // Compute fast eval but don't use it yet
+            // First compute fast eval (material only)
             eval::Score fastEval = eval::fastEvaluate(board);
 #ifndef NDEBUG
             eval::g_fastEvalStats.fastEvalUsedInStandPat++;
 #endif
-            (void)fastEval; // Suppress unused variable warning in Phase 3A
+            
+            // If fast eval >= beta, compute full eval to CONFIRM cutoff
+            // Only return if full eval also confirms the cutoff
+            if (fastEval >= beta) {
+                staticEval = eval::evaluate(board);
+                staticEvalComputed = true;
+                
+                if (staticEval >= beta) {
+                    data.standPatCutoffs++;
+                    return staticEval;
+                }
+                // If full eval doesn't confirm, continue with normal flow
+            } else {
+                // Fast eval < beta, compute full eval for normal processing
+                staticEval = eval::evaluate(board);
+                staticEvalComputed = true;
+            }
+        } else {
+            // Toggle OFF - original behavior
+            staticEval = eval::evaluate(board);
+            staticEvalComputed = true;
         }
         
-        staticEval = eval::evaluate(board);
-        staticEvalComputed = true;
-        
-        // Beta cutoff on stand-pat
-        if (staticEval >= beta) {
+        // Beta cutoff on stand-pat (if not already returned above)
+        if (!limits.useFastEvalForQsearch && staticEval >= beta) {
             data.standPatCutoffs++;
             return staticEval;
         }
