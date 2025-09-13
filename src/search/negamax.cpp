@@ -934,7 +934,7 @@ eval::Score negamax(Board& board,
             }
             
             // Phase 2b.3: LMP rank gating - adjust limit based on move rank
-            // Phase 2b.6: Use depth-aware protected window R(depth)
+            // Phase 2b.6e: Soften LMP adjustments (relax +1, tighten -2)
             if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
                 // Get rank from picker if available, otherwise use moveCount as fallback
                 // Note: Using moveCount before legality check is an approximation
@@ -945,11 +945,11 @@ eval::Score negamax(Board& board,
                     // Ranks 1..R: disable LMP for protected moves
                     limit = 999;
                 } else if (rank <= R + 5) {
-                    // Ranks R+1..R+5: small relax
-                    limit += 2;
+                    // Ranks R+1..R+5: softer relax (was +2, now +1)
+                    limit += 1;
                 } else {
-                    // Ranks > R+5: small tighten
-                    limit = std::max(1, limit - 4);
+                    // Ranks > R+5: softer tighten (was -4, now -2)
+                    limit = std::max(1, limit - 2);
                 }
             }
             
