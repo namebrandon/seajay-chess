@@ -1243,7 +1243,18 @@ eval::Score negamax(Board& board,
                         futilityMargin = std::min(futilityMargin, config.futilityBase * (effectiveDepth + 1));
                     }
                     
-                    if (staticEval <= alpha - eval::Score(futilityMargin)) {
+                    // Phase 3E.1: Use fast_eval for futility at effectiveDepth==1 when enabled
+                    eval::Score evalForFutility = staticEval;  // Default to full eval
+                    if (limits.useFastEvalForPruning && 
+                        effectiveDepth == 1 && 
+                        std::abs(alpha.value()) < MATE_BOUND - MAX_PLY) {
+                        evalForFutility = eval::fastEvaluate(board);
+#ifndef NDEBUG
+                        eval::g_fastEvalStats.fastFutilityDepth1Used++;
+#endif
+                    }
+                    
+                    if (evalForFutility <= alpha - eval::Score(futilityMargin)) {
 #ifndef NDEBUG
                         // Phase 3E.0: Shadow audit for futility pruning
                         // Sample 1/16 nodes to minimize overhead
