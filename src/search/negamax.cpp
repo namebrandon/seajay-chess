@@ -489,6 +489,24 @@ eval::Score negamax(Board& board,
             if (staticEval - margin >= beta) {
                 info.nullMoveStats.staticCutoffs++;
                 
+#ifndef NDEBUG
+                // Phase 3E.0: Shadow audit for reverse futility (static null move)
+                // Sample 1/16 nodes to minimize overhead
+                if ((info.nodes & 15) == 0) {
+                    int depthBucket = std::min(depth, 8);
+                    eval::g_fastEvalStats.pruningAudit.staticNullAttempts[depthBucket]++;
+                    
+                    // Compute what fast_eval would decide with the same margin
+                    eval::Score fastEval = eval::fastEvaluate(board);
+                    bool fastWouldPrune = (fastEval - margin >= beta);
+                    bool fullPrunes = true;  // We're in the pruning block
+                    
+                    if (fastWouldPrune != fullPrunes) {
+                        eval::g_fastEvalStats.pruningAudit.staticNullWouldFlip[depthBucket]++;
+                    }
+                }
+#endif
+                
                 // TT remediation Phase 2.2: Add TT store for static-null pruning
                 // TT pollution fix: Only store at depth >= 2 to reduce low-value writes
                 if (tt && tt->isEnabled() && depth >= 2) {
@@ -722,6 +740,23 @@ eval::Score negamax(Board& board,
                 
                 // Check if static eval + margin is still below alpha
                 if (staticEval + eval::Score(razorMargin) <= alpha) {
+#ifndef NDEBUG
+                    // Phase 3E.0: Shadow audit for razoring
+                    // Sample 1/16 nodes to minimize overhead
+                    if ((info.nodes & 15) == 0) {
+                        int depthBucket = std::min(depth, 2);
+                        eval::g_fastEvalStats.pruningAudit.razorAttempts[depthBucket]++;
+                        
+                        // Compute what fast_eval would decide with the same margin
+                        eval::Score fastEval = eval::fastEvaluate(board);
+                        bool fastWouldRazor = (fastEval + eval::Score(razorMargin) <= alpha);
+                        bool fullRazors = true;  // We're in the razoring block
+                        
+                        if (fastWouldRazor != fullRazors) {
+                            eval::g_fastEvalStats.pruningAudit.razorWouldFlip[depthBucket]++;
+                        }
+                    }
+#endif
                     // Run quiescence search with scout window
                     eval::Score qScore = quiescence(
                         board, 
@@ -1209,6 +1244,25 @@ eval::Score negamax(Board& board,
                     }
                     
                     if (staticEval <= alpha - eval::Score(futilityMargin)) {
+#ifndef NDEBUG
+                        // Phase 3E.0: Shadow audit for futility pruning
+                        // Sample 1/16 nodes to minimize overhead
+                        if ((info.nodes & 15) == 0) {
+                            int depthBucket = std::min(effectiveDepth, 6);
+                            if (depthBucket > 0) {  // Only track positive effective depths
+                                eval::g_fastEvalStats.pruningAudit.futilityAttempts[depthBucket]++;
+                                
+                                // Compute what fast_eval would decide with the same margin
+                                eval::Score fastEval = eval::fastEvaluate(board);
+                                bool fastWouldPrune = (fastEval <= alpha - eval::Score(futilityMargin));
+                                bool fullPrunes = true;  // We're in the pruning block
+                                
+                                if (fastWouldPrune != fullPrunes) {
+                                    eval::g_fastEvalStats.pruningAudit.futilityWouldFlip[depthBucket]++;
+                                }
+                            }
+                        }
+#endif
                         board.unmakeMove(move, undo);
                         info.futilityPruned++;
                         // Track by effective depth for telemetry
@@ -2419,6 +2473,55 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
         g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
         g_nodeExplosionStats.reset();  // Reset for next search
     }
+    
+#ifndef NDEBUG
+    // Phase 3E.0: Display fast eval audit summary (DEBUG-only)
+    // Only print if we have collected samples
+    if (eval::g_fastEvalStats.pruningAudit.staticNullAttempts[1] > 0 ||
+        eval::g_fastEvalStats.pruningAudit.razorAttempts[1] > 0 ||
+        eval::g_fastEvalStats.pruningAudit.futilityAttempts[1] > 0) {
+        
+        std::cerr << "\n=== Fast Eval Audit Summary (Phase 3E.0) ===" << std::endl;
+        
+        // Static null move (reverse futility) summary
+        uint64_t totalStaticNull = 0, totalStaticNullFlips = 0;
+        for (int d = 1; d <= 8; d++) {
+            totalStaticNull += eval::g_fastEvalStats.pruningAudit.staticNullAttempts[d];
+            totalStaticNullFlips += eval::g_fastEvalStats.pruningAudit.staticNullWouldFlip[d];
+        }
+        if (totalStaticNull > 0) {
+            std::cerr << "Static null: " << totalStaticNullFlips << "/" << totalStaticNull 
+                     << " flips (" << (100.0 * totalStaticNullFlips / totalStaticNull) << "%)" << std::endl;
+        }
+        
+        // Razoring summary
+        uint64_t totalRazor = 0, totalRazorFlips = 0;
+        for (int d = 1; d <= 2; d++) {
+            totalRazor += eval::g_fastEvalStats.pruningAudit.razorAttempts[d];
+            totalRazorFlips += eval::g_fastEvalStats.pruningAudit.razorWouldFlip[d];
+        }
+        if (totalRazor > 0) {
+            std::cerr << "Razoring: " << totalRazorFlips << "/" << totalRazor 
+                     << " flips (" << (100.0 * totalRazorFlips / totalRazor) << "%)" << std::endl;
+        }
+        
+        // Futility pruning summary
+        uint64_t totalFutility = 0, totalFutilityFlips = 0;
+        for (int d = 1; d <= 6; d++) {
+            totalFutility += eval::g_fastEvalStats.pruningAudit.futilityAttempts[d];
+            totalFutilityFlips += eval::g_fastEvalStats.pruningAudit.futilityWouldFlip[d];
+        }
+        if (totalFutility > 0) {
+            std::cerr << "Futility: " << totalFutilityFlips << "/" << totalFutility 
+                     << " flips (" << (100.0 * totalFutilityFlips / totalFutility) << "%)" << std::endl;
+        }
+        
+        std::cerr << "==========================================\n" << std::endl;
+        
+        // Reset audit counters for next search
+        eval::g_fastEvalStats.pruningAudit.reset();
+    }
+#endif
     
     // Return the best move found
     // If no iterations completed, bestMove will be invalid

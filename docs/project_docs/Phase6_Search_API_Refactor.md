@@ -77,3 +77,28 @@ Follow-ups (post Phase 6)
 - Phase SE1 (later): Implement true singular extensions using 6d helper.
 - Phase MC1/PC1 (later): Multi-cut and ProbCut built on the same API with their own toggles and SPRTs.
 
+
+Appendix — QSearch Integration Notes (2025‑09‑13)
+- TT eval coupling
+  - Observation: Main search relies heavily on TT.eval written from qsearch (depth 0) for static‑null/futility gates. Any path that stores eval=TT_EVAL_NONE in qsearch degrades pruning globally.
+  - Action in 6e (TT hygiene): Specify invariant “non‑check qsearch stores must include a valid static eval; never store TT_EVAL_NONE unless in check”. Add DEBUG asserts and counters. Avoid overwriting deeper/move‑carrying entries with shallow NO_MOVE heuristic entries.
+
+- Full eval usage inside qsearch
+  - Observation: qsearch computes full eval for multiple decisions (stand‑pat, coarse delta, per‑move delta, equal‑exchange SEE) and before TT stores. This makes QS expensive and central to engine behavior.
+  - Action in 6b/6f: Thread a per‑node staticEval cache via NodeContext or a small helper so each node computes full eval at most once and shares it among decisions and TT store paths. Add a helper ensureStaticEval(ctx, board) used at all sites that require it.
+
+- Stand‑pat confirmation and deferred eval
+  - Observation: When deferring full eval after a low fast‑eval, we must re‑check the stand‑pat beta cutoff once full eval is computed to avoid missing easy cutoffs.
+  - Action in 6f: Centralize stand‑pat handling into a small routine that enforces: beta confirmation requires full eval; any later ensureStaticEval must re‑check stand‑pat cutoff before proceeding to pruning.
+
+- Fast‑eval usage roadmap (ties to Phase 3)
+  - Action for later phases (not 6 default): Prepare API seams so static checks (coarse/delta/null‑move) can take an EvalProvider (full vs fast) selected by toggles, with parity sampling in DEBUG. In 6, define the interface but keep behavior NoOp.
+
+- Telemetry to add (DEBUG‑only, compiled out in Release)
+  - qsearchFullEvalCalls, qsearchNodesWithEvalDeferred, standPatReturns, standPatRechecksAfterDefer.
+  - TT stores from qsearch: counts by bound type and with/without eval present.
+  - Delta/SEE prune rates by qply; equal‑exchange prune rates by qply.
+
+- Move ordering and scope in qsearch
+  - Observation: QS currently performs non‑trivial ordering (discovered‑check prioritization, queen‑promotion front‑loading, in‑check reordering). This adds overhead and sensitivity.
+  - Action in 6f: Keep QS path orthogonal and light; document intended ordering (captures/promotions only when not in check; simple, deterministic ordering), and move complex heuristics to main search where possible. Provide toggles/hooks but default to current behavior (NoOp) in Phase 6.

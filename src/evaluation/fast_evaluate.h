@@ -61,11 +61,43 @@ struct alignas(64) FastEvalStats {
     // Phase 3C.0: Parity checking stats
     ParityHistogram parityHist;
     
+    // Phase 3E.0: Shadow audit counters for pruning decisions
+    // Track where fast_eval would flip pruning decisions vs full eval
+    struct PruningAudit {
+        // Reverse futility (static null move) by depth [1..8]
+        uint64_t staticNullAttempts[9] = {};  // Index 0 unused
+        uint64_t staticNullWouldFlip[9] = {};
+        
+        // Razoring by depth [1..2]
+        uint64_t razorAttempts[3] = {};  // Index 0 unused
+        uint64_t razorWouldFlip[3] = {};
+        
+        // Futility pruning by effective depth [1..6]
+        uint64_t futilityAttempts[7] = {};  // Index 0 unused
+        uint64_t futilityWouldFlip[7] = {};
+        
+        void reset() {
+            for (int i = 0; i < 9; i++) {
+                staticNullAttempts[i] = 0;
+                staticNullWouldFlip[i] = 0;
+            }
+            for (int i = 0; i < 3; i++) {
+                razorAttempts[i] = 0;
+                razorWouldFlip[i] = 0;
+            }
+            for (int i = 0; i < 7; i++) {
+                futilityAttempts[i] = 0;
+                futilityWouldFlip[i] = 0;
+            }
+        }
+    } pruningAudit;
+    
     void reset() {
         fastEvalCalls = 0;
         fastEvalUsedInStandPat = 0;
         fastEvalUsedInPruning = 0;
         parityHist.reset();
+        pruningAudit.reset();
     }
 };
 
