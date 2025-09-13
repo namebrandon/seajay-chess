@@ -255,7 +255,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
-    std::cout << "option name UseRankAwareGates type check default false" << std::endl;  // Phase 2b
+    std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;

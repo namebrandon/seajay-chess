@@ -144,7 +144,7 @@ struct SearchLimits {
     bool useInCheckClassOrdering = false; // Enable class-based ordering for check evasions
     
     // Phase 2b: Rank-aware pruning gates
-    bool useRankAwareGates = false;       // Enable rank-aware pruning/reduction gates
+    bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
     
     // Default constructor
     SearchLimits() = default;
