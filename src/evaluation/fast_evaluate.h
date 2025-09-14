@@ -79,6 +79,10 @@ struct alignas(64) FastEvalStats {
         uint64_t futilityAttempts[7] = {};  // Index 0 unused
         uint64_t futilityWouldFlip[7] = {};
         
+        // Phase 3F.0: Null-move static margin check by depth [1..12]
+        uint64_t nullMoveStaticAttempts[13] = {};  // Index 0 unused
+        uint64_t nullMoveStaticWouldFlip[13] = {};
+        
         void reset() {
             for (int i = 0; i < 9; i++) {
                 staticNullAttempts[i] = 0;
@@ -91,6 +95,10 @@ struct alignas(64) FastEvalStats {
             for (int i = 0; i < 7; i++) {
                 futilityAttempts[i] = 0;
                 futilityWouldFlip[i] = 0;
+            }
+            for (int i = 0; i < 13; i++) {
+                nullMoveStaticAttempts[i] = 0;
+                nullMoveStaticWouldFlip[i] = 0;
             }
         }
     } pruningAudit;

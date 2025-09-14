@@ -569,6 +569,28 @@ eval::Score negamax(Board& board,
             nullMoveReduction++;
         }
         
+        // Phase 3F.0: Shadow audit for null-move static margin check
+        #ifndef NDEBUG
+        if (limits.useFastEvalForPruning && staticEvalComputed) {
+            // Sample 1/16 nodes for audit
+            static thread_local uint32_t nullMoveSampleCounter = 0;
+            nullMoveSampleCounter++;
+            
+            if ((nullMoveSampleCounter & 0xF) == 0) {  // Sample every 16th node
+                eval::Score fastEval = eval::fastEvaluate(board);
+                bool fastWouldAdjust = (fastEval - beta > eval::Score(limits.nullMoveEvalMargin));
+                bool fullWouldAdjust = (staticEval - beta > eval::Score(limits.nullMoveEvalMargin));
+                
+                int depthBucket = std::min(depth, 12);
+                eval::g_fastEvalStats.pruningAudit.nullMoveStaticAttempts[depthBucket]++;
+                
+                if (fastWouldAdjust != fullWouldAdjust) {
+                    eval::g_fastEvalStats.pruningAudit.nullMoveStaticWouldFlip[depthBucket]++;
+                }
+            }
+        }
+        #endif
+        
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
         
