@@ -1243,25 +1243,25 @@ eval::Score negamax(Board& board,
                         futilityMargin = std::min(futilityMargin, config.futilityBase * (effectiveDepth + 1));
                     }
                     
-                    // Phase 3E.2: Extend confirm-before-prune to effectiveDepth=2
-                    // When using fast_eval, require BOTH fast and full eval to agree on pruning
-                    bool shouldPrune = false;
-                    if (limits.useFastEvalForPruning && 
-                        effectiveDepth <= 2 && 
+                    // Phase 3E.2 (adjusted): Keep baseline futility decision using static eval.
+                    // Fast eval is computed only for audit/telemetry when gated; it does NOT alter the decision.
+                    // This preserves baseline pruning behavior while keeping the gate compiled for future work.
+                    const bool basePrune = (staticEval <= alpha - eval::Score(futilityMargin));
+
+                    // Telemetry-only fast-eval sampling under the pruning gate (effectiveDepth <= 2)
+                    if (limits.useFastEvalForPruning &&
+                        effectiveDepth <= 2 &&
                         std::abs(alpha.value()) < MATE_BOUND - MAX_PLY) {
-                        // Fast eval path: require both fast and full eval to agree
-                        eval::Score fastEval = eval::fastEvaluate(board);
-                        if (fastEval <= alpha - eval::Score(futilityMargin) &&
-                            staticEval <= alpha - eval::Score(futilityMargin)) {
-                            shouldPrune = true;
 #ifndef NDEBUG
-                            eval::g_fastEvalStats.fastFutilityDepth1Used++;  // Still using same counter
+                        // Compute fast eval for shadow comparison; do not use to change behavior
+                        eval::Score fastEvalShadow = eval::fastEvaluate(board);
+                        // Optionally record a light-weight usage counter
+                        eval::g_fastEvalStats.fastEvalUsedInPruning++;
+                        (void)fastEvalShadow;
 #endif
-                        }
-                    } else {
-                        // Normal path: use staticEval only
-                        shouldPrune = (staticEval <= alpha - eval::Score(futilityMargin));
                     }
+
+                    bool shouldPrune = basePrune;
                     
                     if (shouldPrune) {
 #ifndef NDEBUG
