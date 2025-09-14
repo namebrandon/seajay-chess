@@ -138,9 +138,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
     // Stage 15 Day 6: SEE-based pruning
-    std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
+    std::cout << "option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
     // Quiescence-only SEE pruning mode
-    std::cout << "option name QSEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
+    std::cout << "option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
@@ -1198,7 +1198,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     // Stage 15 Day 6: Handle SEEPruning option
     else if (optionName == "SEEPruning") {
-        if (value == "off" || value == "conservative" || value == "aggressive") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
             m_seePruning = value;
             
             std::cerr << "info string SEE pruning mode set to: " << value << std::endl;
@@ -1206,6 +1206,8 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             // Additional info for each mode
             if (value == "conservative") {
                 std::cerr << "info string Conservative SEE Pruning: Prune captures with SEE < -100" << std::endl;
+            } else if (value == "moderate") {
+                std::cerr << "info string Moderate SEE Pruning: Threshold ~ -85 with deeper equal-exchange gating" << std::endl;
             } else if (value == "aggressive") {
                 std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50 to -75" << std::endl;
             } else {
@@ -1213,16 +1215,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
-            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
         }
     }
     else if (optionName == "QSEEPruning") {
-        if (value == "off" || value == "conservative" || value == "aggressive") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
             m_seePruningQ = value;
             std::cerr << "info string QSEE pruning mode set to: " << value << std::endl;
         } else {
             std::cerr << "info string Invalid QSEEPruning value: " << value << std::endl;
-            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
         }
     }
     // Stage 18: Handle LMR options

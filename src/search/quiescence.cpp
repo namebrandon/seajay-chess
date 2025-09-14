@@ -20,6 +20,7 @@ namespace seajay::search {
 // Helper functions for SEE pruning mode
 SEEPruningMode parseSEEPruningMode(const std::string& mode) {
     if (mode == "conservative") return SEEPruningMode::CONSERVATIVE;
+    if (mode == "moderate") return SEEPruningMode::MODERATE;
     if (mode == "aggressive") return SEEPruningMode::AGGRESSIVE;
     return SEEPruningMode::OFF;
 }
@@ -27,6 +28,7 @@ SEEPruningMode parseSEEPruningMode(const std::string& mode) {
 std::string seePruningModeToString(SEEPruningMode mode) {
     switch (mode) {
         case SEEPruningMode::CONSERVATIVE: return "conservative";
+        case SEEPruningMode::MODERATE: return "moderate";
         case SEEPruningMode::AGGRESSIVE: return "aggressive";
         default: return "off";
     }
@@ -399,6 +401,12 @@ eval::Score quiescence(
             if (data.seePruningModeEnumQ == SEEPruningMode::CONSERVATIVE) {
                 // Conservative: fixed threshold -100
                 pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
+            } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
+                // Moderate: between conservative and aggressive; gentler depth ramp
+                pruneThreshold = isEndgame ? -50 : SEE_PRUNE_THRESHOLD_MODERATE; // soften in endgame
+                // Increase pruning aggressiveness deeper in qsearch, but slower than aggressive
+                int depthBonus = (qply >= 6 ? 30 : (qply >= 4 ? 15 : 0));
+                pruneThreshold = std::min(pruneThreshold + depthBonus, 0);  // Never prune winning captures
             } else {  // AGGRESSIVE
                 // Aggressive: depth-dependent and game-phase aware
                 // Start with base threshold
@@ -437,23 +445,19 @@ eval::Score quiescence(
             
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
-            if (data.seePruningModeEnumQ == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
-                // Prune equal exchanges based on quiescence depth
-                // At qply 3-4: prune if position is quiet
-                // At qply 5-6: prune more aggressively
-                // At qply 7+: always prune equal exchanges
-                bool pruneEqual = false;
-                if (qply >= 7) {
-                    pruneEqual = true;  // Always prune deep in search
-                } else if (qply >= 5) {
-                    // Prune if we're not finding tactics
-                    pruneEqual = (staticEval >= alpha - eval::Score(50));
-                } else if (qply >= 3) {
-                    // Only prune if position looks very quiet
-                    pruneEqual = (staticEval >= alpha);
+            if (seeValue == 0) {
+                bool applyEqualPrune = false;
+                if (data.seePruningModeEnumQ == SEEPruningMode::AGGRESSIVE) {
+                    // Aggressive profile (existing behavior)
+                    if (qply >= 7) applyEqualPrune = true;
+                    else if (qply >= 5) applyEqualPrune = (staticEval >= alpha - eval::Score(50));
+                    else if (qply >= 3) applyEqualPrune = (staticEval >= alpha);
+                } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
+                    // Moderate: only deeper and with stricter guard
+                    if (qply >= 8) applyEqualPrune = true; // deepest qply
+                    else if (qply >= 6) applyEqualPrune = (staticEval >= alpha); // no -50 cushion
                 }
-                
-                if (pruneEqual) {
+                if (applyEqualPrune) {
                     data.seeStats.seePruned++;
                     data.seeStats.equalExchangePrunes++;
                     continue;

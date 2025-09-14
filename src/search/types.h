@@ -26,7 +26,8 @@ class CounterMoveHistory;
 enum class SEEPruningMode {
     OFF = 0,
     CONSERVATIVE = 1,
-    AGGRESSIVE = 2
+    MODERATE = 2,
+    AGGRESSIVE = 3
 };
 
 // Search time limits and constraints
