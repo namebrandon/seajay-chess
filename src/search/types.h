@@ -122,6 +122,7 @@ struct SearchLimits {
     int moveCountLimit6 = 25;           // Move limit for depth 6 (SPSA-tuned)
     int moveCountLimit7 = 36;           // Move limit for depth 7
     int moveCountLimit8 = 42;           // Move limit for depth 8
+    int moveCountMaxDepth = 8;          // Maximum depth to apply move-count pruning (LMP)
     int moveCountHistoryThreshold = 0;    // History score threshold (SPSA-tuned: disabled)
     int moveCountHistoryBonus = 6;      // Extra moves for good history
     int moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)

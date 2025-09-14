@@ -100,6 +100,10 @@ Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Squa
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
+    // Defensive guard: avoid undefined behavior on invalid squares
+    if (kingSquare >= 64) {
+        return false;
+    }
     // Use shared masks from header for castled/near-castled positions
     Bitboard kingBit = 1ULL << kingSquare;
     if (side == WHITE) {

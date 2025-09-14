@@ -277,6 +277,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MoveCountLimit6 type spin default 25 min 10 max 80" << std::endl;
     std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
     std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
+    std::cout << "option name MoveCountMaxDepth type spin default 8 min 3 max 20" << std::endl;
     std::cout << "option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000" << std::endl;
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
@@ -719,6 +720,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.moveCountLimit6 = m_moveCountLimit6;
     limits.moveCountLimit7 = m_moveCountLimit7;
     limits.moveCountLimit8 = m_moveCountLimit8;
+    limits.moveCountMaxDepth = m_moveCountMaxDepth;
     limits.moveCountHistoryThreshold = m_moveCountHistoryThreshold;
     limits.moveCountHistoryBonus = m_moveCountHistoryBonus;
     limits.moveCountImprovingRatio = m_moveCountImprovingRatio;
@@ -1844,6 +1846,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string MoveCountLimit8 set to " << limit << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid MoveCountLimit8 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "MoveCountMaxDepth") {
+        try {
+            int d = 0;
+            try {
+                double dv = std::stod(value);
+                d = static_cast<int>(std::round(dv));
+            } catch (...) {
+                d = std::stoi(value);
+            }
+            if (d >= 3 && d <= 20) {
+                m_moveCountMaxDepth = d;
+                std::cerr << "info string MoveCountMaxDepth set to " << d << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountMaxDepth value: " << value << std::endl;
         }
     }
     else if (optionName == "MoveCountHistoryThreshold") {
