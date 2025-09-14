@@ -60,12 +60,15 @@ private:
     bool m_useMagicBitboards = true;  // Stage 10: Enable/disable magic bitboards (79x speedup!)
     uint64_t m_qsearchNodeLimit = 0;  // Stage 14 Remediation: Runtime node limit (0 = unlimited)
     int m_maxCheckPly = 6;  // Maximum check extension depth in quiescence search
+    int m_qsearchMaxCaptures = 32;    // Max captures per qsearch node (0 = unlimited)
     
     // Stage 15 Day 5: SEE integration mode
     std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "conservative";  // SEE pruning: off, conservative, aggressive
+    // Quiescence-only SEE pruning mode (overrides SEEPruning in qsearch)
+    std::string m_seePruningQ = "conservative";
     
     // Phase 2.2: Root quiet re-ranking
     int m_rootKingPenalty = 0;  // Penalty for non-capturing, non-castling king moves at root (0 = no penalty)

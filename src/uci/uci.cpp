@@ -125,6 +125,8 @@ void UCIEngine::handleUCI() {
     
     // Stage 14 Remediation: Runtime node limit for quiescence search
     std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
+    // Per-node capture budget for quiescence
+    std::cout << "option name QSearchMaxCaptures type spin default 32 min 4 max 128" << std::endl;
     
     // Maximum check extension depth in quiescence search
     std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
@@ -135,8 +137,10 @@ void UCIEngine::handleUCI() {
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
-    // Stage 15 Day 6: SEE-based pruning in quiescence
+    // Stage 15 Day 6: SEE-based pruning
     std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
+    // Quiescence-only SEE pruning mode
+    std::cout << "option name QSEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
@@ -647,9 +651,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     // Phase 2b: Pass rank-aware gates option
     limits.useRankAwareGates = m_useRankAwareGates;
     
-    // Stage 14 Remediation: Pass runtime node limit
+    // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
     limits.maxCheckPly = m_maxCheckPly;  // Pass maximum check extension depth
+    limits.qsearchMaxCaptures = m_qsearchMaxCaptures;
     
     // Phase 2.2: Pass root king penalty
     limits.rootKingPenalty = m_rootKingPenalty;
@@ -699,8 +704,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.middlegameStability = m_middlegameStability;
     limits.endgameStability = m_endgameStability;
     
-    // Stage 15: Pass SEE pruning mode
+    // Stage 15: Pass SEE pruning modes
     limits.seePruningMode = m_seePruning;
+    limits.seePruningModeQ = m_seePruningQ;
     
     // Stage 22 Phase P3.5: Pass PVS statistics output flag
     limits.showPVSStats = m_showPVSStats;
@@ -1207,6 +1213,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
+            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+        }
+    }
+    else if (optionName == "QSEEPruning") {
+        if (value == "off" || value == "conservative" || value == "aggressive") {
+            m_seePruningQ = value;
+            std::cerr << "info string QSEE pruning mode set to: " << value << std::endl;
+        } else {
+            std::cerr << "info string Invalid QSEEPruning value: " << value << std::endl;
             std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
         }
     }
@@ -2015,6 +2030,17 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_nodeExplosionDiagnostics = false;
             std::cerr << "info string NodeExplosionDiagnostics disabled" << std::endl;
+        }
+    }
+    else if (optionName == "QSearchMaxCaptures") {
+        try {
+            int cap = std::stoi(value);
+            if (cap >= 4 && cap <= 128) {
+                m_qsearchMaxCaptures = cap;
+                std::cerr << "info string QSearchMaxCaptures set to " << cap << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QSearchMaxCaptures value: " << value << std::endl;
         }
     }
     else if (optionName == "EvalExtended") {

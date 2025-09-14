@@ -277,6 +277,9 @@ eval::Score quiescence(
     } else if (!rankedPickerQS) {
         // Not in check and not using RankedMovePicker: only search captures
         MoveGenerator::generateCaptures(board, moves);
+        if (limits.nodeExplosionDiagnostics) {
+            g_nodeExplosionStats.qsearchExplosion.capturesGenerated += moves.size();
+        }
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
@@ -337,7 +340,7 @@ eval::Score quiescence(
     int moveCount = 0;
     
     // Candidate 9: Use reduced capture limit in panic mode
-    const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : MAX_CAPTURES_PER_NODE;
+    const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : (limits.qsearchMaxCaptures > 0 ? limits.qsearchMaxCaptures : MAX_CAPTURES_PER_NODE);
     
     // Phase 2a: Iterate using RankedMovePickerQS or traditional move list
     Move move;
@@ -384,7 +387,7 @@ eval::Score quiescence(
         // Stage 15 Day 6: SEE-based pruning
         // Only prune captures (not promotions or check evasions)
         // Stage 14 Remediation: Use pre-parsed mode from SearchData to avoid string parsing
-        if (data.seePruningModeEnum != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
+        if (data.seePruningModeEnumQ != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
             data.seeStats.totalCaptures++;
             
             // Calculate SEE value for this capture
@@ -393,7 +396,7 @@ eval::Score quiescence(
             
             // Determine pruning threshold based on mode, game phase, and depth
             int pruneThreshold;
-            if (data.seePruningModeEnum == SEEPruningMode::CONSERVATIVE) {
+            if (data.seePruningModeEnumQ == SEEPruningMode::CONSERVATIVE) {
                 // Conservative: fixed threshold -100
                 pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
             } else {  // AGGRESSIVE
@@ -434,7 +437,7 @@ eval::Score quiescence(
             
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
-            if (data.seePruningModeEnum == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
+            if (data.seePruningModeEnumQ == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
                 // Prune equal exchanges based on quiescence depth
                 // At qply 3-4: prune if position is quiet
                 // At qply 5-6: prune more aggressively
@@ -458,6 +461,10 @@ eval::Score quiescence(
             }
         }
         
+        // Record capture searched after pruning on non-check nodes
+        if (limits.nodeExplosionDiagnostics && !isInCheck && isCapture(move)) {
+            g_nodeExplosionStats.qsearchExplosion.capturesSearched++;
+        }
         // Push position to search stack
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         

@@ -1715,8 +1715,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
-    // Stage 14 Remediation: Parse SEE mode once at search start
+    // Stage 14 Remediation: Parse SEE modes once at search start
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
+    info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
     
     // Stage 18: Initialize LMR parameters from limits
     info.lmrParams.enabled = limits.lmrEnabled;
@@ -1773,7 +1774,12 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Use NEW calculation for timeLimit (replacing old)
     info.timeLimit = timeLimits.optimum;
     // Detect depth-only (fixed-depth) searches: treat as infinite time
-    const bool depthOnlySearch = (info.timeLimit == std::chrono::milliseconds::max());
+    // More robust: infer from limits rather than computed optimum alone
+    const bool depthOnlySearch = (
+        limits.movetime == std::chrono::milliseconds(0) &&
+        limits.time[WHITE] == std::chrono::milliseconds(0) &&
+        limits.time[BLACK] == std::chrono::milliseconds(0)
+    );
     
     // Debug logging for time management (Deliverable 2.2b)
     if (limits.movetime == std::chrono::milliseconds(0)) {  // Only log for non-fixed time
@@ -2264,8 +2270,9 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
     
-    // Stage 14 Remediation: Parse SEE mode once at search start to avoid hot path parsing
+    // Stage 14 Remediation: Parse SEE modes once at search start to avoid hot path parsing
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
+    info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
     
     // Stage 18: Initialize LMR parameters from limits
     info.lmrParams.enabled = limits.lmrEnabled;
@@ -2289,6 +2296,12 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
               << ", hard=" << hardLimit.count() << "ms" << std::endl;
     
     Move bestMove;
+    // Detect depth-only (fixed-depth) searches where no time controls are provided
+    const bool depthOnlySearch = (
+        limits.movetime == std::chrono::milliseconds(0) &&
+        limits.time[WHITE] == std::chrono::milliseconds(0) &&
+        limits.time[BLACK] == std::chrono::milliseconds(0)
+    );
     
     // Debug: Show search parameters (removed in release)
     #ifndef NDEBUG
@@ -2358,7 +2371,8 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
             
             // Phase 1c: Use EBF prediction for time management
             // Replace Phase 1b's simple soft limit check with intelligent prediction
-            if (hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
+            // Skip time-based early termination for depth-only searches
+            if (!depthOnlySearch && hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
                 auto elapsed = info.elapsed();
                 
                 // Never exceed hard limit

@@ -102,6 +102,11 @@ struct SearchLimits {
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
+    // Quiescence SEE pruning mode (separate control for qsearch only)
+    std::string seePruningModeQ = "conservative";  // off, conservative, aggressive
+    
+    // Quiescence capture budget per node (0 = unlimited, default 32)
+    int qsearchMaxCaptures = 32;
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool showPVSStats = false;  // Show PVS statistics after each depth
@@ -219,6 +224,8 @@ struct SearchData {
     
     // Stage 14 Remediation: Pre-parsed SEE mode to avoid string parsing in hot path
     SEEPruningMode seePruningModeEnum = SEEPruningMode::OFF;
+    // Separate SEE pruning mode for quiescence
+    SEEPruningMode seePruningModeEnumQ = SEEPruningMode::CONSERVATIVE;
     
     // Stage 15: SEE pruning statistics (thread-local, no atomics needed)
     struct SEEStats {
