@@ -565,13 +565,47 @@ eval::Score negamax(Board& board,
         if (depth >= 12) nullMoveReduction = limits.nullMoveReductionDepth12;
         
         // Dynamic adjustment based on eval margin (UCI configurable)
-        if (staticEvalComputed && staticEval - beta > eval::Score(limits.nullMoveEvalMargin)) {
-            nullMoveReduction++;
+        // Phase 3F.1: Use fast_eval for margin check when verification runs
+        eval::Score evalForNullMargin;
+        if (staticEvalComputed) {
+            evalForNullMargin = staticEval;
+        } else {
+            // Set to minus infinity so margin test won't trigger adjustment
+            evalForNullMargin = eval::Score::minus_infinity();
         }
         
-        // Phase 3F.0: Shadow audit for null-move static margin check
+        // Phase 3F.1: Use fast_eval when verification will run and gate is enabled
+        if (limits.useFastEvalForPruning && 
+            depth >= limits.nullMoveVerifyDepth &&
+            std::abs(beta.value()) < MATE_BOUND - MAX_PLY) {
+            
+            eval::Score fastEval = eval::fastEvaluate(board);
+            evalForNullMargin = fastEval;
+            
+            // Phase 3F.0: Continue shadow audit even when using fast_eval
+            #ifndef NDEBUG
+            if (staticEvalComputed) {
+                // Sample 1/16 nodes for audit
+                static thread_local uint32_t nullMoveSampleCounter = 0;
+                nullMoveSampleCounter++;
+                
+                if ((nullMoveSampleCounter & 0xF) == 0) {  // Sample every 16th node
+                    bool fastWouldAdjust = (fastEval - beta > eval::Score(limits.nullMoveEvalMargin));
+                    bool fullWouldAdjust = (staticEval - beta > eval::Score(limits.nullMoveEvalMargin));
+                    
+                    int depthBucket = std::min(depth, 12);
+                    eval::g_fastEvalStats.pruningAudit.nullMoveStaticAttempts[depthBucket]++;
+                    
+                    if (fastWouldAdjust != fullWouldAdjust) {
+                        eval::g_fastEvalStats.pruningAudit.nullMoveStaticWouldFlip[depthBucket]++;
+                    }
+                }
+            }
+            #endif
+        }
+        // Phase 3F.0: Shadow audit when NOT using fast_eval
         #ifndef NDEBUG
-        if (limits.useFastEvalForPruning && staticEvalComputed) {
+        else if (limits.useFastEvalForPruning && staticEvalComputed) {
             // Sample 1/16 nodes for audit
             static thread_local uint32_t nullMoveSampleCounter = 0;
             nullMoveSampleCounter++;
@@ -590,6 +624,11 @@ eval::Score negamax(Board& board,
             }
         }
         #endif
+        
+        // Apply the margin adjustment using whichever eval we chose
+        if (evalForNullMargin - beta > eval::Score(limits.nullMoveEvalMargin)) {
+            nullMoveReduction++;
+        }
         
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
