@@ -402,10 +402,11 @@ eval::Score quiescence(
                 // Conservative: fixed threshold -100
                 pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
             } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
-                // Moderate: between conservative and aggressive; gentler depth ramp
-                pruneThreshold = isEndgame ? -50 : SEE_PRUNE_THRESHOLD_MODERATE; // soften in endgame
-                // Increase pruning aggressiveness deeper in qsearch, but slower than aggressive
-                int depthBonus = (qply >= 6 ? 30 : (qply >= 4 ? 15 : 0));
+                // Moderate-lite: gentler than previous moderate
+                // Base thresholds
+                pruneThreshold = isEndgame ? -65 : SEE_PRUNE_THRESHOLD_MODERATE; // endgame softened from -50 -> -65
+                // Smaller, later depth ramp: only from qply>=6
+                int depthBonus = (qply >= 8 ? 15 : (qply >= 6 ? 10 : 0));
                 pruneThreshold = std::min(pruneThreshold + depthBonus, 0);  // Never prune winning captures
             } else {  // AGGRESSIVE
                 // Aggressive: depth-dependent and game-phase aware
@@ -453,9 +454,20 @@ eval::Score quiescence(
                     else if (qply >= 5) applyEqualPrune = (staticEval >= alpha - eval::Score(50));
                     else if (qply >= 3) applyEqualPrune = (staticEval >= alpha);
                 } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
-                    // Moderate: only deeper and with stricter guard
-                    if (qply >= 8) applyEqualPrune = true; // deepest qply
-                    else if (qply >= 6) applyEqualPrune = (staticEval >= alpha); // no -50 cushion
+                    // Moderate-lite: only at deepest qplies and with stricter guard
+                    if (qply >= 8) {
+                        applyEqualPrune = (staticEval >= alpha + eval::Score(25));
+                        if (applyEqualPrune) {
+                            // Victim-aware exception: do not prune equal exchanges on pieces (only allow equal pawn trades)
+                            Piece capturedPieceEE = board.pieceAt(to(move));
+                            if (capturedPieceEE != NO_PIECE) {
+                                PieceType victimEE = typeOf(capturedPieceEE);
+                                if (victimEE != PAWN) {
+                                    applyEqualPrune = false;
+                                }
+                            }
+                        }
+                    }
                 }
                 if (applyEqualPrune) {
                     data.seeStats.seePruned++;
