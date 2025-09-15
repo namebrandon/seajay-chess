@@ -65,6 +65,38 @@ Interpretation
   - Conservative SEE pruning may be letting through inexpensive but non-improving captures; equal-exchange pruning only partial.
 - LMP beyond depth 8 can help reduce main-tree width in some positions; however it’s not universally helpful.
 
+Updates 2025-09-14: Local A/B Results and New QSEE Mode
+- Implemented QSEEPruning=moderate UCI mode (commit eec2b62, bench 2327106). Definition: base SEE threshold ≈ -85cp in middlegame (≈ -50cp endgame), gentle depth ramp with qply, and stricter equal-exchange pruning only deeper (qply≥6 guarded; always at qply≥8). Default remains conservative.
+
+- Position 2 (depth 21):
+  - Baseline (LMP=8, QSEE=conservative): total 19,323,555; qsearch 10,142,901 (52.5%); bestmove d4c5.
+  - LMP=12 (conservative): total 17,054,213 (−11.8% vs baseline); qsearch 8,903,741 (52.2%); bestmove d4c5.
+  - QSEE=aggressive (LMP=8): total 11,218,039 (−42.0%); qsearch 5,720,695 (51.0%); bestmove d4c5.
+  - Aggressive + QSearchMaxCaptures=16: identical to aggressive (cap not binding).
+  - QSEE=moderate (LMP=8): total 18,508,007 (−4.2%); qsearch 52.4%; bestmove d4c5.
+
+- Position 1 (depth 18):
+  - Baseline (LMP=8, QSEE=conservative): total 12,206,869; qsearch 5,726,360 (46.9%); bestmove f6h5.
+  - LMP=12 (conservative): total 13,171,254 (+7.9% vs baseline); qsearch 6,242,658 (47.4%); bestmove f6h5.
+  - QSEE=aggressive (LMP=8): total 23,202,778 (+90.0%); bestmove changed to d5d1; harmful.
+  - Aggressive + QSearchMaxCaptures=16: identical to aggressive.
+  - QSEE=moderate (LMP=8): total 9,743,215 (−20.2%); qsearch 47.7%; bestmove f6h5.
+
+- Position 3 (depth 21):
+  - Baseline (LMP=8, QSEE=conservative): total 51,918,262; qsearch 26,219,161 (50.5%); bestmove e2f3.
+  - LMP=12 (conservative): total 68,583,309 (+32.1%); qsearch 50.8%; bestmove e2f3.
+  - QSEE=aggressive (LMP=8): total 50,934,132 (−1.9%); qsearch 50.3%; bestmove e2f3.
+  - Aggressive + QSearchMaxCaptures=16: identical to aggressive.
+  - QSEE=moderate (LMP=8): total 47,168,070 (−9.2%); qsearch 50.6%; bestmove e2f3.
+
+Summary: QSEE=moderate consistently reduced nodes on Positions 1–3 without changing bestmove. QSEE=aggressive regressed on Position 1. LMP=12 is position‑dependent (+ on Pos2, − on Pos1/Pos3). QSearchMaxCaptures=16 did not bind in these cases.
+
+OpenBench (SPRT) Snapshot
+- Standard UHO, 10+0.1, Threads=1, Hash=128MB — Dev (moderate) vs Base (conservative): Elo −2.30 ± 4.51 nELO, LLR −1.77; N=11328. https://openbench.seajay-chess.dev/test/575/
+- Endgame book, same settings: Elo −0.55 ± 4.35 nELO, LLR −0.41; N=6338. https://openbench.seajay-chess.dev/test/576/
+
+Interpretation: Slight negative drift on standard UHO (middlegame/tactical), near‑neutral on endgame. Not conclusive yet; suggests moderate’s qsearch savings need further tuning to be Elo‑neutral at this TC.
+
 Next Steps (Plan)
 1) A/B Matrix on Position 2 (depth 21)
    - Baseline: LMP=8, QSEE=conservative, QMaxCaps=32.
@@ -77,9 +109,9 @@ Next Steps (Plan)
    - Re-check where deeper LMP worsened Position 1; see if qsearch controls still lower total nodes without hurting result quality.
 
 3) QSearch pruning refinements
-   - Consider adaptive qsearchMaxCaptures by qply (tighter deeper) and by material/phase.
-   - Consider stronger SEE thresholds for non-critical captures (guarded by checks, near-mate, TT context).
-   - Review delta-pruning margins by phase; possibly increase in middlegames for low-value captures.
+   - Keep QSEE=aggressive OFF globally (Position 1 regression). Continue evaluating QSEE=moderate.
+   - If middlegame OB confirms small loss: (a) remove equal‑exchange pruning at qply 6–7 (only at qply≥8), and/or (b) soften moderate’s endgame base from ≈−50cp toward −75cp.
+   - Consider adaptive qsearchMaxCaptures by qply/material; revisit delta‑pruning margins in middlegame.
 
 4) Null-move verification telemetry
    - Track verification-trigger rate and cost by depth; if overly frequent at deep plies, raise verifyDepth or gate by NPM/phase.
@@ -88,8 +120,10 @@ Next Steps (Plan)
    - Ensure rank-aware LMP gates respect MoveCountMaxDepth everywhere; A/B small adjustments if unordered.
 
 6) OpenBench A/B
-   - Once local results are promising, run SPRT at 10+0.1 with: (a) LMP=8 vs 12; (b) QSEE conservative vs aggressive; (c) qsearch capture cap variants.
-   - Ensure no tactical regressions; prefer non-regression at standard TC.
+   - Ongoing: Dev (QSEE=moderate, MoveCountMaxDepth=8) vs Base (QSEE=conservative) on UHO and endgame books.
+   - Add capture‑heavy middlegame book in parallel to probe tactical segments.
+   - Bounds: Standard non‑regression [−2.00, 3.00] at 10+0.1; consider [0.00, 5.00] for capture‑heavy test if expecting small gains.
+   - Only consider defaulting to moderate if neutral or positive on standard UHO; otherwise keep as a tunable while we refine.
 
 Risks & Mitigations
 - Over-pruning in qsearch can hide tactics: keep guards for checks, near-mate margins, and avoid pruning when static eval is near alpha/beta boundaries.
@@ -99,4 +133,3 @@ Appendix: Implementation Summary
 - Depth-only guard: both searchIterativeTest() and legacy search() now skip early termination when no time controls are present.
 - QSearch controls: added QSEEPruning (separate mode for quiescence) and QSearchMaxCaptures; wired to SearchLimits and SearchData.
 - Diagnostics: stand-pat increments and capture generation/searched counters wired under NodeExplosionDiagnostics.
-
