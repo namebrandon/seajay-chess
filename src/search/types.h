@@ -8,6 +8,7 @@
 #include "countermoves.h"
 #include <chrono>
 #include <cstdint>
+#include <array>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -475,6 +476,71 @@ struct SearchData {
     // PERFORMANCE: Pointer to thread-local storage (32MB per thread)
     CounterMoveHistory* counterMoveHistory = nullptr;
 
+    // Phase 4.1: Track when history / counter-move history ordering is applied
+    struct HistoryGatingStats {
+        uint64_t basicApplications = 0;          // Times basic history ordering applied
+        uint64_t counterApplications = 0;        // Times counter-move history applied
+        uint64_t basicFirstMoveHits = 0;         // First-legal hits when basic history active
+        uint64_t counterFirstMoveHits = 0;       // First-legal hits when CMH active
+        uint64_t basicCutoffs = 0;               // Quiet cutoffs credited to basic history
+        uint64_t counterCutoffs = 0;             // Cutoffs credited to counter-move history
+        uint64_t basicReSearches = 0;            // PVS re-searches while basic history active
+        uint64_t counterReSearches = 0;          // PVS re-searches while CMH active
+
+        void reset() {
+            basicApplications = counterApplications = 0;
+            basicFirstMoveHits = counterFirstMoveHits = 0;
+            basicCutoffs = counterCutoffs = 0;
+            basicReSearches = counterReSearches = 0;
+        }
+
+        uint64_t totalApplications() const {
+            return basicApplications + counterApplications;
+        }
+
+        uint64_t totalReSearches() const {
+            return basicReSearches + counterReSearches;
+        }
+    } historyStats;
+
+    enum class HistoryContext : uint8_t {
+        None = 0,
+        Basic = 1,
+        Counter = 2
+    };
+
+    std::array<uint8_t, KillerMoves::MAX_PLY> historyContext = {};
+
+    ALWAYS_INLINE void clearHistoryContext(int ply) {
+        if (ply >= 0 && ply < static_cast<int>(historyContext.size())) {
+            historyContext[ply] = static_cast<uint8_t>(HistoryContext::None);
+        }
+    }
+
+    ALWAYS_INLINE void registerHistoryApplication(int ply, HistoryContext ctx) {
+        if (ply >= 0 && ply < static_cast<int>(historyContext.size())) {
+            historyContext[ply] = static_cast<uint8_t>(ctx);
+        }
+        switch (ctx) {
+            case HistoryContext::Basic:
+                historyStats.basicApplications++;
+                break;
+            case HistoryContext::Counter:
+                historyStats.counterApplications++;
+                break;
+            case HistoryContext::None:
+            default:
+                break;
+        }
+    }
+
+    ALWAYS_INLINE HistoryContext historyContextAt(int ply) const {
+        if (ply < 0 || ply >= static_cast<int>(historyContext.size())) {
+            return HistoryContext::None;
+        }
+        return static_cast<HistoryContext>(historyContext[ply]);
+    }
+
     // B0: Legality telemetry (lazy legality path)
     uint64_t illegalPseudoBeforeFirst = 0;  // Pseudo-legal moves rejected before first legal
     uint64_t illegalPseudoTotal = 0;        // Total pseudo-legal moves rejected
@@ -694,6 +760,8 @@ struct SearchData {
         aspiration.reset();      // B0: Reset aspiration stats
         razoring.reset();        // Phase R1: Reset razoring stats
         razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
+        historyStats.reset();    // Phase 4.1: Reset history gating telemetry
+        historyContext.fill(static_cast<uint8_t>(HistoryContext::None));
 #ifdef SEARCH_STATS
         movePickerStats.reset(); // Phase 2a.6: Reset move picker stats
         rankGates.reset();       // Phase 2b: Reset rank gate stats

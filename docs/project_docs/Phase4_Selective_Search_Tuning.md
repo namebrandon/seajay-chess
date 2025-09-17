@@ -61,3 +61,4 @@ Reduce search tree size while preserving tactical strength by refining selective
 ## Progress Log (append-only)
 - 2025-09-17: Phase 4 plan initialized. Baseline telemetry pending.
 - 2025-09-17: Completed Phase 4.0 baseline telemetry (Release build). Depth-vs-time (startpos + 4 FENs), node explosion comparison, and WAC tactical suite (500ms) recorded under `docs/project_docs/telemetry/phase4/`. Baseline results: depth 12–17 at 1s, avg node ratio 6.47× vs Stash, tactical hit rate 78.3%.
+- 2025-09-17: Phase 4.1 (Relax history/CMH gate to depth ≥2) implemented. Added `SearchStats` history telemetry (`hist(...)`), reran depth-vs-time, node explosion, and WAC tactical suite. Tactical: 236/300 (78.7%), CMH activations visible at shallow depth (apps=970, cmh=279 on depth-6 startpos run). Data stored in `docs/project_docs/telemetry/phase4/`.
