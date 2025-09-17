@@ -31,6 +31,7 @@ static constexpr int MAX_CAPTURES_PANIC = 8;        // Reduced captures in panic
 
 // Stage 15 Day 8: SEE-based pruning thresholds (TUNED)
 static constexpr int SEE_PRUNE_THRESHOLD_CONSERVATIVE = -100;  // Conservative: only clearly bad captures
+static constexpr int SEE_PRUNE_THRESHOLD_MODERATE = -85;       // Moderate: between conservative and aggressive
 static constexpr int SEE_PRUNE_THRESHOLD_AGGRESSIVE = -75;     // Aggressive: balanced pruning (tuned)
 static constexpr int SEE_PRUNE_THRESHOLD_ENDGAME = -25;        // Even more aggressive in endgame
 

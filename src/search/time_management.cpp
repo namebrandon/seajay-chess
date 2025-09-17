@@ -116,8 +116,20 @@ TimeLimits calculateTimeLimits(const SearchLimits& limits,
         return result;
     }
     
-    // Hard limit is 3x the optimum, but capped at 50% of remaining time
-    result.hard = std::chrono::milliseconds(result.optimum.count() * 3);
+    // Hard limit is 3x the optimum, but capped at 50% of remaining time.
+    // Guard against overflow and depth-only searches where optimum is effectively infinite.
+    if (result.optimum == std::chrono::milliseconds::max()) {
+        result.hard = std::chrono::milliseconds::max();
+    } else {
+        // Use checked multiplication to avoid UB on large values
+        const auto opt = result.optimum.count();
+        const auto maxCount = std::chrono::milliseconds::max().count();
+        if (opt > 0 && opt > maxCount / 3) {
+            result.hard = std::chrono::milliseconds::max();
+        } else {
+            result.hard = std::chrono::milliseconds(opt * 3);
+        }
+    }
     
     // But never more than 50% of remaining time
     Color stm = board.sideToMove();

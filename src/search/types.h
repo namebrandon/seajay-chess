@@ -26,7 +26,8 @@ class CounterMoveHistory;
 enum class SEEPruningMode {
     OFF = 0,
     CONSERVATIVE = 1,
-    AGGRESSIVE = 2
+    MODERATE = 2,
+    AGGRESSIVE = 3
 };
 
 // Search time limits and constraints
@@ -102,6 +103,11 @@ struct SearchLimits {
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
+    // Quiescence SEE pruning mode (separate control for qsearch only)
+    std::string seePruningModeQ = "conservative";  // off, conservative, aggressive
+    
+    // Quiescence capture budget per node (0 = unlimited, default 32)
+    int qsearchMaxCaptures = 32;
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool showPVSStats = false;  // Show PVS statistics after each depth
@@ -122,6 +128,7 @@ struct SearchLimits {
     int moveCountLimit6 = 25;           // Move limit for depth 6 (SPSA-tuned)
     int moveCountLimit7 = 36;           // Move limit for depth 7
     int moveCountLimit8 = 42;           // Move limit for depth 8
+    int moveCountMaxDepth = 8;          // Maximum depth to apply move-count pruning (LMP)
     int moveCountHistoryThreshold = 0;    // History score threshold (SPSA-tuned: disabled)
     int moveCountHistoryBonus = 6;      // Extra moves for good history
     int moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
@@ -218,6 +225,8 @@ struct SearchData {
     
     // Stage 14 Remediation: Pre-parsed SEE mode to avoid string parsing in hot path
     SEEPruningMode seePruningModeEnum = SEEPruningMode::OFF;
+    // Separate SEE pruning mode for quiescence
+    SEEPruningMode seePruningModeEnumQ = SEEPruningMode::CONSERVATIVE;
     
     // Stage 15: SEE pruning statistics (thread-local, no atomics needed)
     struct SEEStats {

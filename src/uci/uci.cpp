@@ -125,6 +125,8 @@ void UCIEngine::handleUCI() {
     
     // Stage 14 Remediation: Runtime node limit for quiescence search
     std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
+    // Per-node capture budget for quiescence
+    std::cout << "option name QSearchMaxCaptures type spin default 32 min 4 max 128" << std::endl;
     
     // Maximum check extension depth in quiescence search
     std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
@@ -135,8 +137,10 @@ void UCIEngine::handleUCI() {
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
-    // Stage 15 Day 6: SEE-based pruning in quiescence
-    std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
+    // Stage 15 Day 6: SEE-based pruning
+    std::cout << "option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
+    // Quiescence-only SEE pruning mode
+    std::cout << "option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
@@ -277,6 +281,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MoveCountLimit6 type spin default 25 min 10 max 80" << std::endl;
     std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
     std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
+    std::cout << "option name MoveCountMaxDepth type spin default 8 min 3 max 20" << std::endl;
     std::cout << "option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000" << std::endl;
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
@@ -646,9 +651,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     // Phase 2b: Pass rank-aware gates option
     limits.useRankAwareGates = m_useRankAwareGates;
     
-    // Stage 14 Remediation: Pass runtime node limit
+    // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
     limits.maxCheckPly = m_maxCheckPly;  // Pass maximum check extension depth
+    limits.qsearchMaxCaptures = m_qsearchMaxCaptures;
     
     // Phase 2.2: Pass root king penalty
     limits.rootKingPenalty = m_rootKingPenalty;
@@ -698,8 +704,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.middlegameStability = m_middlegameStability;
     limits.endgameStability = m_endgameStability;
     
-    // Stage 15: Pass SEE pruning mode
+    // Stage 15: Pass SEE pruning modes
     limits.seePruningMode = m_seePruning;
+    limits.seePruningModeQ = m_seePruningQ;
     
     // Stage 22 Phase P3.5: Pass PVS statistics output flag
     limits.showPVSStats = m_showPVSStats;
@@ -719,6 +726,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.moveCountLimit6 = m_moveCountLimit6;
     limits.moveCountLimit7 = m_moveCountLimit7;
     limits.moveCountLimit8 = m_moveCountLimit8;
+    limits.moveCountMaxDepth = m_moveCountMaxDepth;
     limits.moveCountHistoryThreshold = m_moveCountHistoryThreshold;
     limits.moveCountHistoryBonus = m_moveCountHistoryBonus;
     limits.moveCountImprovingRatio = m_moveCountImprovingRatio;
@@ -1190,7 +1198,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     // Stage 15 Day 6: Handle SEEPruning option
     else if (optionName == "SEEPruning") {
-        if (value == "off" || value == "conservative" || value == "aggressive") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
             m_seePruning = value;
             
             std::cerr << "info string SEE pruning mode set to: " << value << std::endl;
@@ -1198,6 +1206,8 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             // Additional info for each mode
             if (value == "conservative") {
                 std::cerr << "info string Conservative SEE Pruning: Prune captures with SEE < -100" << std::endl;
+            } else if (value == "moderate") {
+                std::cerr << "info string Moderate SEE Pruning: Threshold ~ -85 with deeper equal-exchange gating" << std::endl;
             } else if (value == "aggressive") {
                 std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50 to -75" << std::endl;
             } else {
@@ -1205,7 +1215,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
-            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
+        }
+    }
+    else if (optionName == "QSEEPruning") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
+            m_seePruningQ = value;
+            std::cerr << "info string QSEE pruning mode set to: " << value << std::endl;
+        } else {
+            std::cerr << "info string Invalid QSEEPruning value: " << value << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
         }
     }
     // Stage 18: Handle LMR options
@@ -1846,6 +1865,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid MoveCountLimit8 value: " << value << std::endl;
         }
     }
+    else if (optionName == "MoveCountMaxDepth") {
+        try {
+            int d = 0;
+            try {
+                double dv = std::stod(value);
+                d = static_cast<int>(std::round(dv));
+            } catch (...) {
+                d = std::stoi(value);
+            }
+            if (d >= 3 && d <= 20) {
+                m_moveCountMaxDepth = d;
+                std::cerr << "info string MoveCountMaxDepth set to " << d << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountMaxDepth value: " << value << std::endl;
+        }
+    }
     else if (optionName == "MoveCountHistoryThreshold") {
         try {
             // SPSA-safe parsing: handle float values from OpenBench
@@ -1996,6 +2032,17 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_nodeExplosionDiagnostics = false;
             std::cerr << "info string NodeExplosionDiagnostics disabled" << std::endl;
+        }
+    }
+    else if (optionName == "QSearchMaxCaptures") {
+        try {
+            int cap = std::stoi(value);
+            if (cap >= 4 && cap <= 128) {
+                m_qsearchMaxCaptures = cap;
+                std::cerr << "info string QSearchMaxCaptures set to " << cap << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QSearchMaxCaptures value: " << value << std::endl;
         }
     }
     else if (optionName == "EvalExtended") {
