@@ -134,6 +134,12 @@ struct alignas(64) FastEvalStats {
     }
 };
 
+// Aggregate telemetry across all worker threads for debug reporting
+FastEvalStats snapshotFastEvalStats();
+
+// Reset telemetry counters on all registered worker threads
+void resetFastEvalStats();
+
 // Thread-local stats to avoid contention
 extern thread_local FastEvalStats g_fastEvalStats;
 #endif

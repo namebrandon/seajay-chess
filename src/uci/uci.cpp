@@ -17,6 +17,7 @@
 #include "../evaluation/evaluate.h"   // For evaluation functions
 #include "../evaluation/eval_trace.h"  // For evaluation tracing
 #include "../evaluation/pst.h"       // For SPSA PST tuning
+#include "../evaluation/fast_evaluate.h"  // Phase 3D: Fast eval telemetry access
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -2296,6 +2297,43 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "Evaluation: " << score.value() << " cp" << std::endl;
             std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
         }
+    } else if (tokens.size() > 1 && tokens[1] == "fast-eval") {
+#ifndef NDEBUG
+        if (tokens.size() > 2 && tokens[2] == "reset") {
+            eval::resetFastEvalStats();
+            std::cout << "info string Fast eval telemetry counters reset" << std::endl;
+            return;
+        }
+
+        auto stats = eval::snapshotFastEvalStats();
+        std::cout << "=== Fast Eval Telemetry ===" << std::endl;
+        std::cout << "Calls: " << stats.fastEvalCalls << std::endl;
+        std::cout << "  Stand-pat uses: " << stats.fastEvalUsedInStandPat << std::endl;
+        std::cout << "  Pruning uses:   " << stats.fastEvalUsedInPruning << std::endl;
+        std::cout << "Pawn cache:" << std::endl;
+        std::cout << "  Hits:    " << stats.pawnCacheHits << std::endl;
+        std::cout << "  Misses:  " << stats.pawnCacheMisses << std::endl;
+        std::cout << "  Stores:  " << stats.pawnCacheShadowStores << std::endl;
+        std::cout << "  Computes:" << stats.pawnCacheShadowComputes << std::endl;
+        std::cout << "Parity sampling:" << std::endl;
+        std::cout << "  Samples:       " << stats.pawnCacheParitySamples << std::endl;
+        std::cout << "  Non-zero diffs:" << stats.pawnCacheParityNonZero << std::endl;
+        std::cout << "  Max abs diff:  " << stats.pawnCacheParityMaxAbs << " cp" << std::endl;
+        std::cout << "  Histogram (centipawn buckets):" << std::endl;
+        std::cout << "    Total samples: " << stats.pawnCacheParityHist.totalSamples
+                  << ", non-zero: " << stats.pawnCacheParityHist.nonZeroDiffCount
+                  << ", max abs: " << stats.pawnCacheParityHist.maxAbsDiff << " cp" << std::endl;
+        for (int i = 0; i < eval::ParityHistogram::NUM_BUCKETS; ++i) {
+            int bucketMin = (i * eval::ParityHistogram::BUCKET_SIZE) - 64;
+            int bucketMax = bucketMin + eval::ParityHistogram::BUCKET_SIZE - 1;
+            std::cout << "    [" << std::setw(4) << bucketMin << ", "
+                      << std::setw(4) << bucketMax << "]: "
+                      << stats.pawnCacheParityHist.buckets[i] << std::endl;
+        }
+        std::cout << "===========================" << std::endl;
+#else
+        std::cout << "Fast eval telemetry is available only in debug builds." << std::endl;
+#endif
     } else if (tokens.size() > 1 && tokens[1] == "tt") {
         // Show TT collision statistics  
         const auto& stats = m_tt.stats();

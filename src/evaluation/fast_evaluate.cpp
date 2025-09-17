@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <mutex>
+#include <vector>
 
 namespace seajay {
 
@@ -14,6 +16,84 @@ namespace eval {
 
 #ifndef NDEBUG
 thread_local FastEvalStats g_fastEvalStats;
+
+namespace {
+
+std::mutex g_fastEvalRegistryMutex;
+std::vector<FastEvalStats*> g_fastEvalRegisteredStats;
+thread_local bool g_fastEvalRegistered = false;
+
+void ensureFastEvalThreadRegistered() {
+    if (!g_fastEvalRegistered) {
+        std::lock_guard<std::mutex> lock(g_fastEvalRegistryMutex);
+        g_fastEvalRegisteredStats.push_back(&g_fastEvalStats);
+        g_fastEvalRegistered = true;
+    }
+}
+
+} // namespace
+
+FastEvalStats snapshotFastEvalStats() {
+    FastEvalStats aggregate;
+    std::lock_guard<std::mutex> lock(g_fastEvalRegistryMutex);
+    for (FastEvalStats* stats : g_fastEvalRegisteredStats) {
+        if (!stats) {
+            continue;
+        }
+        aggregate.fastEvalCalls += stats->fastEvalCalls;
+        aggregate.fastEvalUsedInStandPat += stats->fastEvalUsedInStandPat;
+        aggregate.fastEvalUsedInPruning += stats->fastEvalUsedInPruning;
+        aggregate.pawnCacheShadowStores += stats->pawnCacheShadowStores;
+        aggregate.pawnCacheShadowComputes += stats->pawnCacheShadowComputes;
+        aggregate.pawnCacheHits += stats->pawnCacheHits;
+        aggregate.pawnCacheMisses += stats->pawnCacheMisses;
+        aggregate.pawnCacheParitySamples += stats->pawnCacheParitySamples;
+        aggregate.pawnCacheParityNonZero += stats->pawnCacheParityNonZero;
+        aggregate.pawnCacheParityMaxAbs = std::max(aggregate.pawnCacheParityMaxAbs,
+                                                   stats->pawnCacheParityMaxAbs);
+        aggregate.fastFutilityDepth1Used += stats->fastFutilityDepth1Used;
+
+        aggregate.parityHist.totalSamples += stats->parityHist.totalSamples;
+        aggregate.parityHist.nonZeroDiffCount += stats->parityHist.nonZeroDiffCount;
+        aggregate.parityHist.maxAbsDiff = std::max(aggregate.parityHist.maxAbsDiff,
+                                                   stats->parityHist.maxAbsDiff);
+        for (int i = 0; i < ParityHistogram::NUM_BUCKETS; ++i) {
+            aggregate.parityHist.buckets[i] += stats->parityHist.buckets[i];
+            aggregate.pawnCacheParityHist.buckets[i] += stats->pawnCacheParityHist.buckets[i];
+        }
+        aggregate.pawnCacheParityHist.totalSamples += stats->pawnCacheParityHist.totalSamples;
+        aggregate.pawnCacheParityHist.nonZeroDiffCount += stats->pawnCacheParityHist.nonZeroDiffCount;
+        aggregate.pawnCacheParityHist.maxAbsDiff = std::max(aggregate.pawnCacheParityHist.maxAbsDiff,
+                                                            stats->pawnCacheParityHist.maxAbsDiff);
+
+        for (int i = 1; i < 9; ++i) {
+            aggregate.pruningAudit.staticNullAttempts[i] += stats->pruningAudit.staticNullAttempts[i];
+            aggregate.pruningAudit.staticNullWouldFlip[i] += stats->pruningAudit.staticNullWouldFlip[i];
+        }
+        for (int i = 1; i < 3; ++i) {
+            aggregate.pruningAudit.razorAttempts[i] += stats->pruningAudit.razorAttempts[i];
+            aggregate.pruningAudit.razorWouldFlip[i] += stats->pruningAudit.razorWouldFlip[i];
+        }
+        for (int i = 1; i < 7; ++i) {
+            aggregate.pruningAudit.futilityAttempts[i] += stats->pruningAudit.futilityAttempts[i];
+            aggregate.pruningAudit.futilityWouldFlip[i] += stats->pruningAudit.futilityWouldFlip[i];
+        }
+        for (int i = 1; i < 13; ++i) {
+            aggregate.pruningAudit.nullMoveStaticAttempts[i] += stats->pruningAudit.nullMoveStaticAttempts[i];
+            aggregate.pruningAudit.nullMoveStaticWouldFlip[i] += stats->pruningAudit.nullMoveStaticWouldFlip[i];
+        }
+    }
+    return aggregate;
+}
+
+void resetFastEvalStats() {
+    std::lock_guard<std::mutex> lock(g_fastEvalRegistryMutex);
+    for (FastEvalStats* stats : g_fastEvalRegisteredStats) {
+        if (stats) {
+            stats->reset();
+        }
+    }
+}
 #endif
 
 // Phase calculation (identical to evaluate.cpp for parity)
@@ -119,6 +199,7 @@ Score computePawnScoreFresh(const Board& board) {
 
 Score fastEvaluate(const Board& board) {
 #ifndef NDEBUG
+    ensureFastEvalThreadRegistered();
     g_fastEvalStats.fastEvalCalls++;
 #endif
     

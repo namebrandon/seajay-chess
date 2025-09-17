@@ -18,6 +18,7 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 - DEBUG counters track shadow store/compute counts (`pawnCacheShadowStores`, `pawnCacheShadowComputes`).
 - Phase 3D.2: Added DEBUG parity sampling comparing cached pawn scores against freshly recomputed values, tracking histograms, mismatch counts, and max deviation with 1/64 sampling to keep overhead negligible.
 - Phase 3D.3: Enabled pawn cache consumption when `UseFastEvalForQsearch/Pruning` toggles are set. Fast eval now reuses cached pawn totals (miss → recompute/store, hit → reuse + sampled parity check), global config mirrors UCI toggles, and parity telemetry accounts for the pawn term.
+- Added `debug fast-eval` UCI command to snapshot/reset telemetry so we can monitor cache hit rate, parity histogram, and usage counters during local testing (Phase 3D.5 groundwork).
 
 ## Remaining Phases & Tasks
 ### 3D.1 – Shadow Fill (DONE)
@@ -38,10 +39,9 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 - When `UseFastEvalForPruning=true`, reuse cached pawn score inside pruning contexts that invoke `fastEvaluate`.
 - Ensure null-move audit continues to sample/validate against full eval.
 
-### 3D.5 – Telemetry & Validation
-- Extend `FastEvalStats` dump (DEBUG) to show cache hit rate, miss rate, average reuse per search.
-- Update `uci debug fast-eval` (if available) to print cache telemetry.
-- Run targeted suites:
+### 3D.5 – Telemetry & Validation (IN PROGRESS)
+- ✅ `debug fast-eval` now prints aggregated counters/histogram and supports `reset`.
+- Gather cache hit/miss telemetry via targeted suites:
   - `./tools/depth_vs_time.py --time-ms 1000 ...`
   - `./tools/tactical_test.py ...`
   - Node explosion diagnostics
