@@ -165,36 +165,60 @@ Score fastEvaluate(const Board& board) {
         totalScore = materialBalance + pstFromStm;
     }
     
-    // Phase 3D.1: Shadow-fill pawn cache (store fresh computations, ignore cached value)
-    const uint64_t pawnKey = board.pawnZobristKey();
-    Score cachedPawnScore;
-    [[maybe_unused]] bool cacheHit = g_fastEvalPawnCache.probe(pawnKey, cachedPawnScore);
+    // Phase 3D.3: Use pawn cache when fast-eval toggles are enabled
+    const bool usePawnTerm = seajay::getConfig().useFastEvalForQsearch ||
+                             seajay::getConfig().useFastEvalForPruning;
 
-    Score pawnScore = computePawnScoreFresh(board);
+    if (usePawnTerm) {
+        const uint64_t pawnKey = board.pawnZobristKey();
+        Score cachedPawnScore;
+        const bool cacheHit = g_fastEvalPawnCache.probe(pawnKey, cachedPawnScore);
+        Score pawnScore = Score::zero();
 
 #ifndef NDEBUG
-    g_fastEvalStats.pawnCacheShadowComputes++;
-    if (!cacheHit) {
-        g_fastEvalStats.pawnCacheShadowStores++;
-    } else {
-        g_fastEvalStats.pawnCacheParitySamples++;
-
-        const int32_t diff = pawnScore.value() - cachedPawnScore.value();
-        if (diff != 0) {
-            g_fastEvalStats.pawnCacheParityNonZero++;
-            g_fastEvalStats.pawnCacheParityMaxAbs = std::max(
-                g_fastEvalStats.pawnCacheParityMaxAbs,
-                std::abs(diff));
+        if (cacheHit) {
+            g_fastEvalStats.pawnCacheHits++;
+        } else {
+            g_fastEvalStats.pawnCacheMisses++;
         }
-
-        // Sample 1/64 of hits to build a histogram without high overhead
-        if ((g_fastEvalStats.pawnCacheParitySamples & 63ULL) == 0) {
-            g_fastEvalStats.pawnCacheParityHist.record(diff);
-        }
-    }
 #endif
 
-    g_fastEvalPawnCache.store(pawnKey, pawnScore);
+        if (cacheHit) {
+            pawnScore = cachedPawnScore;
+
+#ifndef NDEBUG
+            g_fastEvalStats.pawnCacheParitySamples++;
+
+            // Sample 1/64 of hits to verify cache correctness without large overhead
+            if ((g_fastEvalStats.pawnCacheParitySamples & 63ULL) == 0) {
+                Score freshSample = computePawnScoreFresh(board);
+                g_fastEvalStats.pawnCacheShadowComputes++;
+
+                const int32_t diff = freshSample.value() - cachedPawnScore.value();
+                if (diff != 0) {
+                    g_fastEvalStats.pawnCacheParityNonZero++;
+                    g_fastEvalStats.pawnCacheParityMaxAbs = std::max(
+                        g_fastEvalStats.pawnCacheParityMaxAbs,
+                        std::abs(diff));
+                }
+
+                g_fastEvalStats.pawnCacheParityHist.record(diff);
+                g_fastEvalPawnCache.store(pawnKey, freshSample);
+                pawnScore = freshSample;
+            }
+#endif
+        } else {
+            pawnScore = computePawnScoreFresh(board);
+            g_fastEvalPawnCache.store(pawnKey, pawnScore);
+
+#ifndef NDEBUG
+            g_fastEvalStats.pawnCacheShadowComputes++;
+            g_fastEvalStats.pawnCacheShadowStores++;
+#endif
+        }
+
+        totalScore += pawnScore;
+    }
 
     return totalScore;
 }
@@ -245,6 +269,12 @@ Score fastEvaluateMatPST(const Board& board) {
     
     return totalScore;
 }
+
+#ifndef NDEBUG
+Score fastEvaluatePawnOnly(const Board& board) {
+    return computePawnScoreFresh(board);
+}
+#endif
 
 } // namespace eval
 

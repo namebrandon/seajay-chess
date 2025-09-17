@@ -1085,18 +1085,22 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     else if (optionName == "UseFastEvalForQsearch") {
         if (value == "true") {
             m_useFastEvalForQsearch = true;
+            seajay::getConfig().useFastEvalForQsearch = true;
             std::cerr << "info string Fast eval for qsearch enabled" << std::endl;
         } else if (value == "false") {
             m_useFastEvalForQsearch = false;
+            seajay::getConfig().useFastEvalForQsearch = false;
             std::cerr << "info string Fast eval for qsearch disabled" << std::endl;
         }
     }
     else if (optionName == "UseFastEvalForPruning") {
         if (value == "true") {
             m_useFastEvalForPruning = true;
+            seajay::getConfig().useFastEvalForPruning = true;
             std::cerr << "info string Fast eval for pruning enabled" << std::endl;
         } else if (value == "false") {
             m_useFastEvalForPruning = false;
+            seajay::getConfig().useFastEvalForPruning = false;
             std::cerr << "info string Fast eval for pruning disabled" << std::endl;
         }
     }

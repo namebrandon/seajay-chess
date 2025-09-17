@@ -11,12 +11,13 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
   - `src/evaluation/pawn_eval.cpp/.h`
   - `src/evaluation/evaluate.cpp`
 
-## Completed to Date (Phase 3D.0–3D.2 Shadow Work)
+## Completed to Date (Phase 3D.0–3D.3)
 - Extracted pawn evaluation logic into shared helpers (`pawn_eval.{cpp,h}`) so both full and fast paths use identical scoring.
 - Added per-thread, 4 KB pawn cache (`FastEvalPawnCache`) in `fast_evaluate.cpp` keyed by `Board::pawnZobristKey` with shadow-fill instrumentation (Phase 3D.1).
-- Fast eval currently computes the pawn term and stores it in the cache (shadow mode); it still returns only material+PST.
+- Fast eval stores pawn totals in the cache and, when toggled on, reuses them so stand-pat/pruning paths see material + PST + cached pawns; toggles off keeps legacy mat+PST behavior.
 - DEBUG counters track shadow store/compute counts (`pawnCacheShadowStores`, `pawnCacheShadowComputes`).
 - Phase 3D.2: Added DEBUG parity sampling comparing cached pawn scores against freshly recomputed values, tracking histograms, mismatch counts, and max deviation with 1/64 sampling to keep overhead negligible.
+- Phase 3D.3: Enabled pawn cache consumption when `UseFastEvalForQsearch/Pruning` toggles are set. Fast eval now reuses cached pawn totals (miss → recompute/store, hit → reuse + sampled parity check), global config mirrors UCI toggles, and parity telemetry accounts for the pawn term.
 
 ## Remaining Phases & Tasks
 ### 3D.1 – Shadow Fill (DONE)
@@ -28,10 +29,10 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 - ✅ Histogram, mismatch count, and max-diff telemetry added to `FastEvalStats` for diagnostics.
 - ✅ Acceptance: tooling in place to flag any divergence beyond rounding noise during upcoming runs.
 
-### 3D.3 – Enable Cache Reads (Gated)
-- Under `UseFastEvalForQsearch=true`, read pawn score from cache when hit; fall back to compute+store on miss.
-- Maintain debug sampling to confirm correctness when using cached value.
-- Measure local benchmarks (bench, depth_vs_time) before SPRT.
+### 3D.3 – Enable Cache Reads (DONE)
+- ✅ Cache hits now reuse stored pawn totals when fast-eval toggles are active; misses recompute + store.
+- ✅ DEBUG parity sampling remains in place (1/64 hits) with histogram + max-abs tracking, and cache hit/miss counters added for telemetry.
+- ✅ Global engine config mirrors UCI toggles so parity checks adjust expected baselines.
 
 ### 3D.4 – Pruning Integration (Optional/Gated)
 - When `UseFastEvalForPruning=true`, reuse cached pawn score inside pruning contexts that invoke `fastEvaluate`.
@@ -62,6 +63,6 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 - Accuracy: ensure no divergence between cached and freshly computed scores; rely on DEBUG parity tooling.
 
 ## Next Immediate Actions
-1. Gather local cache hit/miss + parity telemetry on representative suites to confirm instrumentation coverage.
-2. Implement 3D.3 cache-read path gated by `UseFastEvalForQsearch`, preserving DEBUG parity sampling on hits.
-3. Decide gating strategy (depth/qply guards if needed) based on observed reuse patterns before enabling pruning integration.
+1. Gather local cache hit/miss + parity telemetry on representative suites to confirm instrumentation coverage now that cache reuse is live.
+2. Decide gating strategy (depth/qply guards if needed) before enabling pruning-side consumption (Phase 3D.4).
+3. Prepare tooling updates (`uci debug fast-eval`, CSV dumps) for 3D.5 telemetry once baseline reuse stats are captured.

@@ -6,6 +6,7 @@
 #include "../evaluation/evaluate.h"
 #include "../evaluation/fast_evaluate.h"  // Phase 3A: Fast eval scaffolding
 #include "../core/transposition_table.h"
+#include "../core/engine_config.h"
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
@@ -223,7 +224,11 @@ eval::Score quiescence(
             // Compute both fast and reference evaluations
             eval::Score fastEval = eval::fastEvaluate(board);
             eval::Score refMatPST = eval::refMaterialPST(board);
-            
+            if (seajay::getConfig().useFastEvalForQsearch ||
+                seajay::getConfig().useFastEvalForPruning) {
+                refMatPST += eval::fastEvaluatePawnOnly(board);
+            }
+
             // Record the difference in the histogram
             int32_t diff = fastEval.value() - refMatPST.value();
             eval::g_fastEvalStats.parityHist.record(diff);

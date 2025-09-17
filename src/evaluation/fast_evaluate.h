@@ -18,6 +18,11 @@ Score fastEvaluate(const Board& board);
 // O(1) operation using board's incremental values
 Score fastEvaluateMatPST(const Board& board);
 
+#ifndef NDEBUG
+// Debug helper: recompute pawn term directly for parity checks
+Score fastEvaluatePawnOnly(const Board& board);
+#endif
+
 // Debug counters (compiled out in Release builds)
 #ifndef NDEBUG
 
@@ -59,6 +64,8 @@ struct alignas(64) FastEvalStats {
     uint64_t fastEvalUsedInPruning = 0;
     uint64_t pawnCacheShadowStores = 0;  // Phase 3D.1
     uint64_t pawnCacheShadowComputes = 0;  // Phase 3D.1
+    uint64_t pawnCacheHits = 0;           // Phase 3D.3
+    uint64_t pawnCacheMisses = 0;         // Phase 3D.3
     uint64_t pawnCacheParitySamples = 0;  // Phase 3D.2
     uint64_t pawnCacheParityNonZero = 0;  // Phase 3D.2
     int32_t pawnCacheParityMaxAbs = 0;    // Phase 3D.2
@@ -115,6 +122,8 @@ struct alignas(64) FastEvalStats {
         fastEvalUsedInPruning = 0;
         pawnCacheShadowStores = 0;
         pawnCacheShadowComputes = 0;
+        pawnCacheHits = 0;
+        pawnCacheMisses = 0;
         pawnCacheParitySamples = 0;
         pawnCacheParityNonZero = 0;
         pawnCacheParityMaxAbs = 0;
