@@ -57,12 +57,18 @@ struct alignas(64) FastEvalStats {
     uint64_t fastEvalCalls = 0;
     uint64_t fastEvalUsedInStandPat = 0;
     uint64_t fastEvalUsedInPruning = 0;
+    uint64_t pawnCacheShadowStores = 0;  // Phase 3D.1
+    uint64_t pawnCacheShadowComputes = 0;  // Phase 3D.1
+    uint64_t pawnCacheParitySamples = 0;  // Phase 3D.2
+    uint64_t pawnCacheParityNonZero = 0;  // Phase 3D.2
+    int32_t pawnCacheParityMaxAbs = 0;    // Phase 3D.2
     
     // Phase 3E.1: Counter for fast eval used in futility at depth 1
     uint64_t fastFutilityDepth1Used = 0;
     
     // Phase 3C.0: Parity checking stats
     ParityHistogram parityHist;
+    ParityHistogram pawnCacheParityHist;  // Phase 3D.2
     
     // Phase 3E.0: Shadow audit counters for pruning decisions
     // Track where fast_eval would flip pruning decisions vs full eval
@@ -107,8 +113,14 @@ struct alignas(64) FastEvalStats {
         fastEvalCalls = 0;
         fastEvalUsedInStandPat = 0;
         fastEvalUsedInPruning = 0;
+        pawnCacheShadowStores = 0;
+        pawnCacheShadowComputes = 0;
+        pawnCacheParitySamples = 0;
+        pawnCacheParityNonZero = 0;
+        pawnCacheParityMaxAbs = 0;
         fastFutilityDepth1Used = 0;
         parityHist.reset();
+        pawnCacheParityHist.reset();
         pruningAudit.reset();
     }
 };

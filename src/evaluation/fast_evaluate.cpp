@@ -1,9 +1,12 @@
 #include "fast_evaluate.h"
 #include "evaluate.h"
 #include "pst.h"
+#include "pawn_eval.h"
 #include "../core/engine_config.h"
 #include "../search/game_phase.h"
 #include <algorithm>
+#include <array>
+#include <cstdlib>
 
 namespace seajay {
 
@@ -33,6 +36,86 @@ inline int phase0to256(const Board& board) noexcept {
     // 256 = full middlegame, 0 = pure endgame
     return std::clamp((phase * 256 + TOTAL_PHASE/2) / TOTAL_PHASE, 0, 256);
 }
+
+namespace {
+
+struct alignas(64) PawnCacheEntry {
+    uint64_t key = 0;
+    Score score = Score::zero();
+    bool valid = false;
+};
+
+class FastEvalPawnCache {
+public:
+    static constexpr size_t SIZE = 256;  // 4KB table, per-thread
+
+    void clear() {
+        for (auto& entry : m_entries) {
+            entry.key = 0;
+            entry.score = Score::zero();
+            entry.valid = false;
+        }
+    }
+
+    bool probe(uint64_t key, Score& outScore) const {
+        const auto& entry = m_entries[index(key)];
+        if (entry.valid && entry.key == key) {
+            outScore = entry.score;
+            return true;
+        }
+        return false;
+    }
+
+    void store(uint64_t key, Score score) {
+        auto& entry = m_entries[index(key)];
+        entry.key = key;
+        entry.score = score;
+        entry.valid = true;
+    }
+
+private:
+    static constexpr size_t index(uint64_t key) noexcept {
+        return static_cast<size_t>(key & (SIZE - 1));
+    }
+
+    std::array<PawnCacheEntry, SIZE> m_entries{};
+};
+
+thread_local FastEvalPawnCache g_fastEvalPawnCache;
+
+bool isPureEndgame(const Board& board) {
+    return board.pieces(WHITE, KNIGHT) == 0 &&
+           board.pieces(WHITE, BISHOP) == 0 &&
+           board.pieces(WHITE, ROOK) == 0 &&
+           board.pieces(WHITE, QUEEN) == 0 &&
+           board.pieces(BLACK, KNIGHT) == 0 &&
+           board.pieces(BLACK, BISHOP) == 0 &&
+           board.pieces(BLACK, ROOK) == 0 &&
+           board.pieces(BLACK, QUEEN) == 0;
+}
+
+Score computePawnScoreFresh(const Board& board) {
+    PawnEntry scratchEntry;
+    const PawnEntry& pawnEntry = getOrBuildPawnEntry(board, scratchEntry);
+    const Material& material = board.material();
+    search::GamePhase gamePhase = search::detectGamePhase(board);
+    const bool pureEndgame = isPureEndgame(board);
+
+    return computePawnEval(
+               board,
+               pawnEntry,
+               material,
+               gamePhase,
+               pureEndgame,
+               board.sideToMove(),
+               board.kingSquare(WHITE),
+               board.kingSquare(BLACK),
+               board.pieces(WHITE, PAWN),
+               board.pieces(BLACK, PAWN))
+        .total;
+}
+
+} // namespace
 
 Score fastEvaluate(const Board& board) {
 #ifndef NDEBUG
@@ -82,6 +165,37 @@ Score fastEvaluate(const Board& board) {
         totalScore = materialBalance + pstFromStm;
     }
     
+    // Phase 3D.1: Shadow-fill pawn cache (store fresh computations, ignore cached value)
+    const uint64_t pawnKey = board.pawnZobristKey();
+    Score cachedPawnScore;
+    [[maybe_unused]] bool cacheHit = g_fastEvalPawnCache.probe(pawnKey, cachedPawnScore);
+
+    Score pawnScore = computePawnScoreFresh(board);
+
+#ifndef NDEBUG
+    g_fastEvalStats.pawnCacheShadowComputes++;
+    if (!cacheHit) {
+        g_fastEvalStats.pawnCacheShadowStores++;
+    } else {
+        g_fastEvalStats.pawnCacheParitySamples++;
+
+        const int32_t diff = pawnScore.value() - cachedPawnScore.value();
+        if (diff != 0) {
+            g_fastEvalStats.pawnCacheParityNonZero++;
+            g_fastEvalStats.pawnCacheParityMaxAbs = std::max(
+                g_fastEvalStats.pawnCacheParityMaxAbs,
+                std::abs(diff));
+        }
+
+        // Sample 1/64 of hits to build a histogram without high overhead
+        if ((g_fastEvalStats.pawnCacheParitySamples & 63ULL) == 0) {
+            g_fastEvalStats.pawnCacheParityHist.record(diff);
+        }
+    }
+#endif
+
+    g_fastEvalPawnCache.store(pawnKey, pawnScore);
+
     return totalScore;
 }
 
