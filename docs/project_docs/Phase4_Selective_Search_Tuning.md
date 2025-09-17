@@ -60,3 +60,4 @@ Reduce search tree size while preserving tactical strength by refining selective
 
 ## Progress Log (append-only)
 - 2025-09-17: Phase 4 plan initialized. Baseline telemetry pending.
+- 2025-09-17: Completed Phase 4.0 baseline telemetry (Release build). Depth-vs-time (startpos + 4 FENs), node explosion comparison, and WAC tactical suite (500ms) recorded under `docs/project_docs/telemetry/phase4/`. Baseline results: depth 12–17 at 1s, avg node ratio 6.47× vs Stash, tactical hit rate 78.3%.
