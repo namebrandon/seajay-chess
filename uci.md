@@ -837,9 +837,18 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 **Type:** combo  
 **Default:** conservative  
 **Values:** off, conservative, aggressive  
-**Purpose:** SEE-based pruning aggressiveness in quiescence.  
+**Purpose:** SEE-based pruning aggressiveness in the main search (non-qsearch) where applicable.  
 **SPSA:** Not tunable - combo option  
-**Note:** SPRT testing shows +28.6 ELO for conservative vs off. Aggressive mode shows no additional benefit  
+
+### QSEEPruning
+**Type:** combo  
+**Default:** conservative  
+**Values:** off, conservative, moderate, aggressive  
+**Purpose:** SEE-based pruning aggressiveness in quiescence search only.  
+**Notes:**
+- “conservative” prunes only clearly losing captures (e.g., SEE < −100), generally Elo-neutral and reduces nodes.
+- “moderate”/“aggressive” additionally prune borderline/equal exchanges deeper in qsearch; use with care.
+- Disable with: `setoption name QSEEPruning value off`.
 
 ---
 

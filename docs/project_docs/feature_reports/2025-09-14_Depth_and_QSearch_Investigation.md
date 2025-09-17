@@ -92,10 +92,20 @@ Updates 2025-09-14: Local A/B Results and New QSEE Mode
 Summary: QSEE=moderate consistently reduced nodes on Positions 1–3 without changing bestmove. QSEE=aggressive regressed on Position 1. LMP=12 is position‑dependent (+ on Pos2, − on Pos1/Pos3). QSearchMaxCaptures=16 did not bind in these cases.
 
 OpenBench (SPRT) Snapshot
-- Standard UHO, 10+0.1, Threads=1, Hash=128MB — Dev (moderate) vs Base (conservative): Elo −2.30 ± 4.51 nELO, LLR −1.77; N=11328. https://openbench.seajay-chess.dev/test/575/
-- Endgame book, same settings: Elo −0.55 ± 4.35 nELO, LLR −0.41; N=6338. https://openbench.seajay-chess.dev/test/576/
+- UHO (original moderate), 10+0.1, Threads=1, Hash=128MB — Dev vs Base: Elo −3.28 ± 4.08 nELO, LLR −2.95; N=13764. https://openbench.seajay-chess.dev/test/575/ (updated)
+- UHO (moderate‑lite), same settings — Dev vs Base: Elo −2.24 ± 3.95 nELO, LLR −2.17; N=13780. https://openbench.seajay-chess.dev/test/579/
+- Endgame book, same settings: Elo −0.35 ± 3.08 nELO, LLR −0.96; N=23118. https://openbench.seajay-chess.dev/test/578/ (updated)
+- UHO (conservative), same settings — Dev vs Base: Elo −0.05 ± 2.79 nELO, LLR −0.67; N=28244. https://openbench.seajay-chess.dev/test/580/
+- UHO (aggressive), same settings — Dev vs Base: Elo +0.27 ± 4.37 nELO, LLR −0.06; N=12722. https://openbench.seajay-chess.dev/test/581/
+- Endgame book (aggressive), same settings — Dev vs Base: Elo −2.55 ± 3.10 nELO, LLR −2.95; N=13198. Book=Endgames.epd, TC=10+0.1. https://openbench.seajay-chess.dev/test/582/
 
-Interpretation: Slight negative drift on standard UHO (middlegame/tactical), near‑neutral on endgame. Not conclusive yet; suggests moderate’s qsearch savings need further tuning to be Elo‑neutral at this TC.
+Interpretation: Conservative is neutral on UHO at N≈28k (safe default with node savings). Aggressive is near‑neutral/slightly positive on UHO at N≈13k but fails on endgame (−2.55 ± 3.10; LLR −2.95), so not suitable as a default. Moderate‑lite improves vs original moderate but remains slightly negative on UHO; endgame remains near‑neutral.
+
+Decision (2025-09-15)
+- Adopt QSEEPruning=conservative as the default (already implemented in code and UCI defaults).
+- Do not default to aggressive (endgame regression). Keep as a tunable for targeted A/B only.
+- Keep moderate/moderate‑lite as experimental profiles; not defaulting.
+- Merge `feature/20250914-lmp-max-depth` into `integration/20250912-depth-and-search-speed` now that aggressive endgame results are in.
 
 Next Steps (Plan)
 1) A/B Matrix on Position 2 (depth 21)
@@ -120,10 +130,12 @@ Next Steps (Plan)
    - Ensure rank-aware LMP gates respect MoveCountMaxDepth everywhere; A/B small adjustments if unordered.
 
 6) OpenBench A/B
-   - Ongoing: Dev (QSEE=moderate, MoveCountMaxDepth=8) vs Base (QSEE=conservative) on UHO and endgame books.
+   - Ongoing: Dev (QSEE profiles) vs Base on UHO and endgame books.
    - Add capture‑heavy middlegame book in parallel to probe tactical segments.
    - Bounds: Standard non‑regression [−2.00, 3.00] at 10+0.1; consider [0.00, 5.00] for capture‑heavy test if expecting small gains.
-   - Only consider defaulting to moderate if neutral or positive on standard UHO; otherwise keep as a tunable while we refine.
+   - Current: UHO conservative neutral (test 580), UHO aggressive near‑neutral (test 581). Extend aggressive UHO to ~20–25k.
+   - Endgame aggressive (test 582) running; evaluate neutrality/safety there.
+   - Decision gate: default to conservative if neutral on both UHO/endgame; consider aggressive only if ≥ neutral on UHO and ≥ neutral on endgame at sufficient N.
 
 Risks & Mitigations
 - Over-pruning in qsearch can hide tactics: keep guards for checks, near-mate margins, and avoid pruning when static eval is near alpha/beta boundaries.
