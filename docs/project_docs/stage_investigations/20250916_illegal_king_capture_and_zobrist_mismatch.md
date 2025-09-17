@@ -113,3 +113,10 @@ Bitboard captures = attacks & theirPieces; // includes king square
 ---
 
 *End of log.*
+
+## 9. Update – 2025-09-17
+- **Null-move zobrist bug:** `Board::makeNullMove` was clearing the en passant component using the file index instead of the full square index, leaving the incremental key out of sync once a null move occurred with an en-passant square present. The function now XORs `s_zobristEnPassant` with the square identifier, matching `makeMoveInternal()` and `ZobristKeyManager::computeKey` semantics.
+- **Perft crash during follow-up testing:** `perft_tool` invoked move generation before the magic-bitboard tables were initialised, so the first `isSquareAttacked` dereference hit a null attacks pointer. The tool now includes `magic_bitboards.h` and calls `seajay::magic_v2::ensureMagicsInitialized()` at startup.
+- **Verification:**
+  - Reproduced the original `go movetime` double-run scenario on the new binaries (Release & Debug); no assertions or mismatched keys observed.
+  - `perft_tool startpos 1/2` and `--suite --max-depth 3` complete without crashes.

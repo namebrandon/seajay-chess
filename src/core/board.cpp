@@ -1928,7 +1928,8 @@ void Board::makeNullMove(UndoInfo& undo) {
     
     // Clear en passant if it exists
     if (m_enPassantSquare != NO_SQUARE) {
-        m_zobristKey ^= s_zobristEnPassant[fileOf(m_enPassantSquare)];
+        // Use full square index to stay consistent with computeKey() and makeMoveInternal()
+        m_zobristKey ^= s_zobristEnPassant[m_enPassantSquare];
         m_enPassantSquare = NO_SQUARE;
     }
     

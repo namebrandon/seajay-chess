@@ -17,6 +17,7 @@
 
 #include "../core/board.h"
 #include "../core/perft.h"
+#include "../core/magic_bitboards.h"
 #include "../core/transposition_table.h"
 #include <iostream>
 #include <iomanip>
@@ -134,6 +135,9 @@ void runDivide(Board& board, int depth, bool useTT, TranspositionTable* tt) {
 }
 
 int main(int argc, char* argv[]) {
+    // Ensure magic bitboard tables are initialized before any move generation
+    seajay::magic_v2::ensureMagicsInitialized();
+
     // Parse command line arguments
     bool useTT = false;
     bool showDivide = false;
