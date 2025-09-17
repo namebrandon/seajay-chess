@@ -6,6 +6,7 @@
 #include "../search/game_phase.h"
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <mutex>
 #include <vector>
@@ -119,38 +120,83 @@ inline int phase0to256(const Board& board) noexcept {
 
 namespace {
 
+struct PawnCacheContext {
+    uint8_t sideToMove = 0;
+    uint8_t gamePhase = 0;
+    uint8_t isPureEndgame = 0;
+    uint8_t whiteKingSquare = 0;
+    uint8_t blackKingSquare = 0;
+    uint8_t whiteBlockerCount = 0;
+    std::array<uint8_t, 8> whiteBlockerSquares{};
+    std::array<uint8_t, 8> whiteBlockerPieces{};
+    uint8_t blackBlockerCount = 0;
+    std::array<uint8_t, 8> blackBlockerSquares{};
+    std::array<uint8_t, 8> blackBlockerPieces{};
+};
+
 struct alignas(64) PawnCacheEntry {
     uint64_t key = 0;
     Score score = Score::zero();
     bool valid = false;
+    PawnCacheContext context{};
 };
 
-class FastEvalPawnCache {
-public:
-    static constexpr size_t SIZE = 256;  // 4KB table, per-thread
-
-    void clear() {
-        for (auto& entry : m_entries) {
-            entry.key = 0;
-            entry.score = Score::zero();
-            entry.valid = false;
-        }
-    }
-
-    bool probe(uint64_t key, Score& outScore) const {
-        const auto& entry = m_entries[index(key)];
-        if (entry.valid && entry.key == key) {
-            outScore = entry.score;
-            return true;
-        }
+bool contextsEqual(const PawnCacheContext& cached, const PawnCacheContext& current) {
+    if (cached.sideToMove != current.sideToMove ||
+        cached.gamePhase != current.gamePhase ||
+        cached.isPureEndgame != current.isPureEndgame ||
+        cached.whiteKingSquare != current.whiteKingSquare ||
+        cached.blackKingSquare != current.blackKingSquare ||
+        cached.whiteBlockerCount != current.whiteBlockerCount ||
+        cached.blackBlockerCount != current.blackBlockerCount) {
         return false;
     }
 
-    void store(uint64_t key, Score score) {
+    for (uint8_t i = 0; i < cached.whiteBlockerCount; ++i) {
+        if (cached.whiteBlockerSquares[i] != current.whiteBlockerSquares[i] ||
+            cached.whiteBlockerPieces[i] != current.whiteBlockerPieces[i]) {
+            return false;
+        }
+    }
+
+    for (uint8_t i = 0; i < cached.blackBlockerCount; ++i) {
+        if (cached.blackBlockerSquares[i] != current.blackBlockerSquares[i] ||
+            cached.blackBlockerPieces[i] != current.blackBlockerPieces[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+class FastEvalPawnCache {
+public:
+    static constexpr size_t SIZE = 512;  // 8KB table, per-thread
+
+    void clear() {
+        for (auto& entry : m_entries) {
+            entry = PawnCacheEntry{};
+        }
+    }
+
+    bool probe(uint64_t key, const PawnCacheContext& context, Score& outScore) const {
+        const auto& entry = m_entries[index(key)];
+        if (!entry.valid || entry.key != key) {
+            return false;
+        }
+        if (!contextsEqual(entry.context, context)) {
+            return false;
+        }
+        outScore = entry.score;
+        return true;
+    }
+
+    void store(uint64_t key, Score score, const PawnCacheContext& context) {
         auto& entry = m_entries[index(key)];
         entry.key = key;
         entry.score = score;
         entry.valid = true;
+        entry.context = context;
     }
 
 private:
@@ -163,6 +209,12 @@ private:
 
 thread_local FastEvalPawnCache g_fastEvalPawnCache;
 
+struct BlockerInfo {
+    uint8_t count = 0;
+    std::array<uint8_t, 8> squares{};
+    std::array<uint8_t, 8> pieces{};
+};
+
 bool isPureEndgame(const Board& board) {
     return board.pieces(WHITE, KNIGHT) == 0 &&
            board.pieces(WHITE, BISHOP) == 0 &&
@@ -174,25 +226,76 @@ bool isPureEndgame(const Board& board) {
            board.pieces(BLACK, QUEEN) == 0;
 }
 
-Score computePawnScoreFresh(const Board& board) {
-    PawnEntry scratchEntry;
-    const PawnEntry& pawnEntry = getOrBuildPawnEntry(board, scratchEntry);
-    const Material& material = board.material();
-    search::GamePhase gamePhase = search::detectGamePhase(board);
-    const bool pureEndgame = isPureEndgame(board);
+BlockerInfo gatherBlockerInfo(const Board& board, const PawnEntry& entry, Color color) {
+    BlockerInfo info;
+    Bitboard passers = entry.passedPawns[color];
 
-    return computePawnEval(
-               board,
-               pawnEntry,
-               material,
-               gamePhase,
-               pureEndgame,
-               board.sideToMove(),
-               board.kingSquare(WHITE),
-               board.kingSquare(BLACK),
-               board.pieces(WHITE, PAWN),
-               board.pieces(BLACK, PAWN))
-        .total;
+    while (passers) {
+        Square sq = popLsb(passers);
+        Square blockSq = (color == WHITE) ? Square(static_cast<int>(sq) + 8)
+                                          : Square(static_cast<int>(sq) - 8);
+
+        if (blockSq < SQ_A1 || blockSq > SQ_H8) {
+            continue;
+        }
+
+        if (info.count < 8) {
+            info.squares[info.count] = static_cast<uint8_t>(blockSq);
+            Piece blocker = board.pieceAt(blockSq);
+            info.pieces[info.count] = static_cast<uint8_t>(blocker);
+            ++info.count;
+        }
+    }
+
+    return info;
+}
+
+PawnCacheContext buildPawnCacheContext(const Board& board, const PawnEntry& entry) {
+    PawnCacheContext context;
+    context.sideToMove = static_cast<uint8_t>(board.sideToMove());
+    context.gamePhase = static_cast<uint8_t>(search::detectGamePhase(board));
+    context.isPureEndgame = isPureEndgame(board) ? 1 : 0;
+    context.whiteKingSquare = static_cast<uint8_t>(board.kingSquare(WHITE));
+    context.blackKingSquare = static_cast<uint8_t>(board.kingSquare(BLACK));
+
+    BlockerInfo whiteBlockers = gatherBlockerInfo(board, entry, WHITE);
+    BlockerInfo blackBlockers = gatherBlockerInfo(board, entry, BLACK);
+
+    context.whiteBlockerCount = whiteBlockers.count;
+    context.whiteBlockerSquares = whiteBlockers.squares;
+    context.whiteBlockerPieces = whiteBlockers.pieces;
+    context.blackBlockerCount = blackBlockers.count;
+    context.blackBlockerSquares = blackBlockers.squares;
+    context.blackBlockerPieces = blackBlockers.pieces;
+
+    return context;
+}
+
+Score computePawnScore(const Board& board,
+                       const PawnEntry& pawnEntry,
+                       const PawnCacheContext& context) {
+    const Material& material = board.material();
+    const search::GamePhase gamePhase = static_cast<search::GamePhase>(context.gamePhase);
+    const bool pureEndgame = context.isPureEndgame != 0;
+    const Color sideToMove = static_cast<Color>(context.sideToMove);
+    const Square whiteKingSq = static_cast<Square>(context.whiteKingSquare);
+    const Square blackKingSq = static_cast<Square>(context.blackKingSquare);
+    const Bitboard whitePawns = board.pieces(WHITE, PAWN);
+    const Bitboard blackPawns = board.pieces(BLACK, PAWN);
+
+    PawnEvalSummary pawnSummary = computePawnEval(
+        board,
+        pawnEntry,
+        material,
+        gamePhase,
+        pureEndgame,
+        sideToMove,
+        whiteKingSq,
+        blackKingSq,
+        whitePawns,
+        blackPawns);
+
+    return pawnSummary.total;
 }
 
 } // namespace
@@ -252,9 +355,11 @@ Score fastEvaluate(const Board& board) {
 
     if (usePawnTerm) {
         const uint64_t pawnKey = board.pawnZobristKey();
-        Score cachedPawnScore;
-        const bool cacheHit = g_fastEvalPawnCache.probe(pawnKey, cachedPawnScore);
+        PawnEntry scratchEntry;
+        const PawnEntry& pawnEntry = getOrBuildPawnEntry(board, scratchEntry);
+        PawnCacheContext context = buildPawnCacheContext(board, pawnEntry);
         Score pawnScore = Score::zero();
+        const bool cacheHit = g_fastEvalPawnCache.probe(pawnKey, context, pawnScore);
 
 #ifndef NDEBUG
         if (cacheHit) {
@@ -265,17 +370,15 @@ Score fastEvaluate(const Board& board) {
 #endif
 
         if (cacheHit) {
-            pawnScore = cachedPawnScore;
-
 #ifndef NDEBUG
             g_fastEvalStats.pawnCacheParitySamples++;
 
             // Sample 1/64 of hits to verify cache correctness without large overhead
             if ((g_fastEvalStats.pawnCacheParitySamples & 63ULL) == 0) {
-                Score freshSample = computePawnScoreFresh(board);
+                Score freshSample = computePawnScore(board, pawnEntry, context);
                 g_fastEvalStats.pawnCacheShadowComputes++;
 
-                const int32_t diff = freshSample.value() - cachedPawnScore.value();
+                const int32_t diff = freshSample.value() - pawnScore.value();
                 if (diff != 0) {
                     g_fastEvalStats.pawnCacheParityNonZero++;
                     g_fastEvalStats.pawnCacheParityMaxAbs = std::max(
@@ -284,13 +387,16 @@ Score fastEvaluate(const Board& board) {
                 }
 
                 g_fastEvalStats.pawnCacheParityHist.record(diff);
-                g_fastEvalPawnCache.store(pawnKey, freshSample);
-                pawnScore = freshSample;
+                if (diff != 0) {
+                    g_fastEvalStats.pawnCacheShadowStores++;
+                    g_fastEvalPawnCache.store(pawnKey, freshSample, context);
+                    pawnScore = freshSample;
+                }
             }
 #endif
         } else {
-            pawnScore = computePawnScoreFresh(board);
-            g_fastEvalPawnCache.store(pawnKey, pawnScore);
+            pawnScore = computePawnScore(board, pawnEntry, context);
+            g_fastEvalPawnCache.store(pawnKey, pawnScore, context);
 
 #ifndef NDEBUG
             g_fastEvalStats.pawnCacheShadowComputes++;
@@ -353,7 +459,10 @@ Score fastEvaluateMatPST(const Board& board) {
 
 #ifndef NDEBUG
 Score fastEvaluatePawnOnly(const Board& board) {
-    return computePawnScoreFresh(board);
+    PawnEntry scratchEntry;
+    const PawnEntry& pawnEntry = getOrBuildPawnEntry(board, scratchEntry);
+    PawnCacheContext context = buildPawnCacheContext(board, pawnEntry);
+    return computePawnScore(board, pawnEntry, context);
 }
 #endif
 

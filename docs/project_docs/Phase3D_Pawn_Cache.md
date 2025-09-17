@@ -13,11 +13,12 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 
 ## Completed to Date (Phase 3D.0–3D.3)
 - Extracted pawn evaluation logic into shared helpers (`pawn_eval.{cpp,h}`) so both full and fast paths use identical scoring.
-- Added per-thread, 4 KB pawn cache (`FastEvalPawnCache`) in `fast_evaluate.cpp` keyed by `Board::pawnZobristKey` with shadow-fill instrumentation (Phase 3D.1).
+- Added per-thread, 8 KB pawn cache (`FastEvalPawnCache`) in `fast_evaluate.cpp` keyed by `Board::pawnZobristKey` with shadow-fill instrumentation (Phase 3D.1).
 - Fast eval stores pawn totals in the cache and, when toggled on, reuses them so stand-pat/pruning paths see material + PST + cached pawns; toggles off keeps legacy mat+PST behavior.
 - DEBUG counters track shadow store/compute counts (`pawnCacheShadowStores`, `pawnCacheShadowComputes`).
 - Phase 3D.2: Added DEBUG parity sampling comparing cached pawn scores against freshly recomputed values, tracking histograms, mismatch counts, and max deviation with 1/64 sampling to keep overhead negligible.
 - Phase 3D.3: Enabled pawn cache consumption when `UseFastEvalForQsearch/Pruning` toggles are set. Fast eval now reuses cached pawn totals (miss → recompute/store, hit → reuse + sampled parity check), global config mirrors UCI toggles, and parity telemetry accounts for the pawn term.
+- Added board-context validation (side to move, king squares, game phase, and per-passer blocker fingerprints) to the cache probe so stale entries are rejected. Parity sampling now reports zero divergence once the context matches.
 - Added `debug fast-eval` UCI command to snapshot/reset telemetry so we can monitor cache hit rate, parity histogram, and usage counters during local testing (Phase 3D.5 groundwork).
 
 ## Remaining Phases & Tasks
@@ -41,11 +42,9 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 
 ### 3D.5 – Telemetry & Validation (IN PROGRESS)
 - ✅ `debug fast-eval` now prints aggregated counters/histogram and supports `reset`.
-- Gather cache hit/miss telemetry via targeted suites:
-  - `./tools/depth_vs_time.py --time-ms 1000 ...`
-  - `./tools/tactical_test.py ...`
-  - Node explosion diagnostics
-- Compare qsearch node/time ratios with and without cache.
+- ✅ Debug build restored; two 5-FEN telemetry rounds (750 ms and 500 ms movetime) show 0/23 730 and 0/9 375 parity mismatches respectively, max diff 0 cp. Hit rate ~29% with context guards (23 730 hits vs 58 470 misses in the longer run) prior to cache sizing change; 50-position WAC sample (500 ms) with the 512-entry table yields 76 850 hits / 177 100 misses (~30.3%) with parity still clean.
+- 🔜 Expand telemetry to depth_vs_time and tactical suites to assess node/time impact and refine cache sizing now that correctness holds.
+- 🔜 Compare qsearch timing with cache enabled/disabled once broader telemetry is captured.
 
 ### 3D.6 – SPRT Testing
 - Configuration: `UseFastEvalForQsearch=true`, `UseFastEvalForPruning=false` initially.
@@ -58,11 +57,12 @@ Establish a lightweight, thread-local pawn-structure cache that allows `eval::fa
 - Decide on default toggle state (likely remain off until later consolidation).
 
 ## Open Questions / Risks
-- Cache size: current 256-entry direct-mapped table may need tuning (measure hit rate under heavy Pawn structure churn).
+- Cache size: current 256-entry direct-mapped table may need tuning (measure hit rate under heavy pawn-structure churn now that context gating reduces reuse).
 - Multi-thread safety: thread-local cache avoids contention; confirm no accidental sharing in worker management.
-- Accuracy: ensure no divergence between cached and freshly computed scores; rely on DEBUG parity tooling.
+- Hit rate vs. correctness trade-off: context gating ensures accuracy but lowered hit rate; evaluate whether additional metadata (e.g., clustered sets) or larger table improves reuse.
 
 ## Next Immediate Actions
-1. Gather local cache hit/miss + parity telemetry on representative suites to confirm instrumentation coverage now that cache reuse is live.
-2. Decide gating strategy (depth/qply guards if needed) before enabling pruning-side consumption (Phase 3D.4).
-3. Prepare tooling updates (`uci debug fast-eval`, CSV dumps) for 3D.5 telemetry once baseline reuse stats are captured.
+1. Capture extended telemetry (depth_vs_time, tactical suite, node-explosion) to quantify hit rate and performance impact with context-aware caching.
+2. Review cache sizing and potential associativity tweaks if hit rate remains low on larger suites.
+3. Decide gating strategy (depth/qply guards if needed) before enabling pruning-side consumption (Phase 3D.4).
+4. Once telemetry looks stable, stage `UseFastEvalForPruning` audits, then prep SPRT configuration per 3D.6.
