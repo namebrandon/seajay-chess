@@ -148,6 +148,7 @@ set(SEARCH_SOURCES
     src/search/aspiration_window.h
     src/search/quiescence.cpp
     src/search/quiescence.h
+    src/search/search_scratch.cpp
     src/search/quiescence_performance.cpp
     src/search/quiescence_performance.h
     src/search/lmr.cpp
