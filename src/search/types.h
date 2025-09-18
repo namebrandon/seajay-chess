@@ -2,13 +2,16 @@
 
 #include "../core/types.h"
 #include "../core/transposition_table.h"
+#include "../core/move_list.h"
 #include "../evaluation/types.h"
 #include "killer_moves.h"
 #include "history_heuristic.h"
 #include "countermoves.h"
+#include "principal_variation.h"
 #include <chrono>
 #include <cstdint>
 #include <array>
+#include <algorithm>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -30,6 +33,34 @@ enum class SEEPruningMode {
     MODERATE = 2,
     AGGRESSIVE = 3
 };
+
+// Phase 6 preparation: explicit node context descriptor (currently NoOp)
+struct NodeContext {
+    bool isPv = false;
+    bool isRoot = false;
+    Move excluded = NO_MOVE;
+
+    static NodeContext root() {
+        NodeContext ctx;
+        ctx.isRoot = true;
+        ctx.isPv = true;
+        return ctx;
+    }
+
+    NodeContext makeChild(bool childIsPv) const {
+        NodeContext child = *this;
+        child.isRoot = false;
+        child.isPv = childIsPv;
+        child.excluded = NO_MOVE;
+        return child;
+    }
+};
+
+// Scratch buffer helpers (defined in search_scratch.cpp)
+MoveList& getMoveScratch(int ply);
+TriangularPV* getPvScratch(int ply);
+TriangularPV& getRootPvScratch();
+void resetScratchBuffers();
 
 // Search time limits and constraints
 struct SearchLimits {
@@ -222,6 +253,36 @@ struct SearchData {
     
     // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
     Color rootSideToMove = WHITE;  // Side to move at root (for UCI perspective conversion)
+    
+    static constexpr int SCRATCH_PLY = KillerMoves::MAX_PLY;
+
+    ALWAYS_INLINE MoveList& acquireMoveList(int ply) {
+        const int index = std::clamp(ply, 0, SCRATCH_PLY - 1);
+        auto& list = getMoveScratch(index);
+        list.clear();
+        return list;
+    }
+    
+    ALWAYS_INLINE TriangularPV* acquireChildPV(int ply) {
+        const int index = std::clamp(ply + 1, 0, SCRATCH_PLY);
+        TriangularPV* pv = getPvScratch(index);
+        if (pv) {
+            pv->clear();
+        }
+        return pv;
+    }
+    
+    ALWAYS_INLINE TriangularPV& rootPV() {
+        return getRootPvScratch();
+    }
+    
+    ALWAYS_INLINE const TriangularPV& rootPV() const {
+        return getRootPvScratch();
+    }
+    
+    void clearScratch() {
+        resetScratchBuffers();
+    }
     
     // Time management
     std::chrono::steady_clock::time_point startTime;
@@ -782,6 +843,7 @@ struct SearchData {
     
     // Reset for new search
     void reset() {
+        clearScratch();
         nodes = 0;
         betaCutoffs = 0;
         betaCutoffsFirst = 0;

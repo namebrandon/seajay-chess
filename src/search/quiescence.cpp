@@ -215,7 +215,7 @@ eval::Score quiescence(
     // Phase 2a: Use RankedMovePickerQS for non-check positions
     // Use optional to avoid dynamic allocation (stack allocation instead)
     std::optional<RankedMovePickerQS> rankedPickerQS;
-    MoveList moves;
+    MoveList& moves = data.acquireMoveList(ply);
     
     // Phase 2a.7: Verify RankedMovePicker is NOT used in quiescence
     // This path should never be taken in Phase 2a

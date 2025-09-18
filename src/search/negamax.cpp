@@ -330,8 +330,8 @@ eval::Score negamax(Board& board,
     }
     
     // Phase 3.2: We'll generate pseudo-legal moves later, after TT/null pruning
-    // Declare here to preserve scope; fill later before use
-    MoveList moves;
+    // Obtain per-ply scratch MoveList to avoid deep recursion stack growth
+    MoveList& moves = info.acquireMoveList(ply);
     
     // Sub-phase 4B: Establish correct probe order
     // 1. Check repetition FIRST (fastest, most common draw in search)
@@ -1313,9 +1313,11 @@ eval::Score negamax(Board& board,
             }
         }
         
-        // Phase PV3: Create child PV for recursive calls
-        // Only allocate if we're in a PV node and have a parent PV to update
-        TriangularPV childPV;
+        // Phase PV3: Acquire child PV storage from arena when needed
+        TriangularPV* childPVPtr = nullptr;
+        if (pv != nullptr && isPvNode) {
+            childPVPtr = info.acquireChildPV(ply);
+        }
         
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
@@ -1331,7 +1333,7 @@ eval::Score negamax(Board& board,
         if (legalMoveCount == 1) {
             // First move: search with full window as PV node (apply extension if any)
             // Pass childPV only if we're in a PV node and have a parent PV
-            TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
+            TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
             score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
                             firstMoveChildPV,  // Phase PV3: Pass child PV for PV nodes
@@ -1485,7 +1487,7 @@ eval::Score negamax(Board& board,
                 didReSearch = true;  // Phase 2b.7: Mark that we did a re-search
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
-                TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? &childPV : nullptr;
+                TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
                 score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
                                 reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
@@ -1528,7 +1530,9 @@ eval::Score negamax(Board& board,
             if (pv != nullptr && isPvNode) {
                 // Update PV with best move and child's PV
                 // childPV should have been populated by the successful search
-                pv->updatePV(ply, move, &childPV);
+                if (childPVPtr != nullptr) {
+                    pv->updatePV(ply, move, childPVPtr);
+                }
             }
             
             // At root, store the best move in SearchInfo
@@ -1798,28 +1802,25 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     searchInfo.clear();
     searchInfo.setRootHistorySize(board.gameHistorySize());
     
-    IterativeSearchData info;  // Using new class instead of SearchData
-    
-    // PERFORMANCE FIX: Allocate move ordering tables on stack
-    // These were previously embedded in SearchData (42KB total)
-    // Now allocated separately and pointed to (SearchData only 1KB)
-    KillerMoves killerMoves;
-    HistoryHeuristic historyHeuristic;
-    CounterMoves counterMovesTable;
-    
-    // Phase 4.3.a: Allocate counter-move history on heap
-    // Note: This is 32MB per thread, allocated on heap to avoid stack overflow
+    auto infoPtr = std::make_unique<IterativeSearchData>();
+    IterativeSearchData& info = *infoPtr;  // Stored on heap to keep thread stack lean
+
+    // Allocate move ordering helpers on the heap to avoid per-thread stack pressure
+    auto killerMoves = std::make_unique<KillerMoves>();
+    auto historyHeuristic = std::make_unique<HistoryHeuristic>();
+    auto counterMovesTable = std::make_unique<CounterMoves>();
+
+    // Phase 4.3.a: Allocate counter-move history on heap (32MB per thread)
     std::unique_ptr<CounterMoveHistory> counterMoveHistoryPtr = std::make_unique<CounterMoveHistory>();
-    
-    // Connect pointers to stack-allocated objects
-    info.killers = &killerMoves;
-    info.history = &historyHeuristic;
-    info.counterMoves = &counterMovesTable;
+
+    // Connect helper storage to search data object
+    info.killers = killerMoves.get();
+    info.history = historyHeuristic.get();
+    info.counterMoves = counterMovesTable.get();
     info.counterMoveHistory = counterMoveHistoryPtr.get();
-    
-    // Phase PV1: Stack-allocate triangular PV array for future use
-    // Currently passing nullptr to maintain existing behavior
-    alignas(64) TriangularPV rootPV;
+
+    // Ensure scratch arenas and statistics start clean for this search
+    info.reset();
     
     // UCI Score Conversion FIX: Store root side-to-move for all UCI output
     // This MUST be used for all UCI output, not the changing board.sideToMove() during search
@@ -1950,9 +1951,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             beta = eval::Score::infinity();
         }
         
-        // Phase PV2: Pass rootPV to collect principal variation at root
+        // Phase PV2: Pass root PV arena to collect principal variation at root
         eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                                   &rootPV);  // Phase PV2: Collect PV at root
+                                   &info.rootPV());  // Phase PV2: Collect PV at root
         
         // Stage 13, Deliverable 3.2d: Progressive widening re-search
         if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
@@ -1970,9 +1971,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 beta = window.beta;
                 
                 // Re-search with widened window
-                // Phase PV2: Pass rootPV for re-search at root
+                // Phase PV2: Pass root PV arena for re-search at root
                 score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                              &rootPV);  // Phase PV2: Collect PV at root re-search
+                              &info.rootPV());  // Phase PV2: Collect PV at root re-search
                 
                 // Check if we're now using an infinite window
                 if (window.isInfinite()) {
@@ -1995,9 +1996,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
             // Phase 6: Always send info at iteration completion and record it
-            // Phase PV4: Pass rootPV for full principal variation display
+            // Phase PV4: Pass root PV arena for full principal variation display
             // UCI Score Conversion FIX: Use root side-to-move, not current position's side
-            sendIterationInfo(info, info.rootSideToMove, tt, &rootPV);
+            sendIterationInfo(info, info.rootSideToMove, tt, &info.rootPV());
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
             // Record iteration data for ALL depths (full recording)
