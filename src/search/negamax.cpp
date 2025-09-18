@@ -2509,9 +2509,19 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
             info.stopped = true;
             break;
         }
-        
+
+        // Phase 5.2: Clear attack cache at each iteration start (per spec)
+        if (info.useAttackCache) {
+            t_attackCache.clear();
+
+            // Reset thread-local statistics for this iteration
+            t_attackCacheHits = 0;
+            t_attackCacheMisses = 0;
+            t_attackCacheStores = 0;
+        }
+
         info.depth = depth;
-        
+
         // Track iteration start time
         auto iterationStart = std::chrono::steady_clock::now();
         
@@ -2551,8 +2561,18 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                 info.attackCacheStats.hits = t_attackCacheHits;
                 info.attackCacheStats.misses = t_attackCacheMisses;
                 info.attackCacheStats.stores = t_attackCacheStores;
+
+                // Output attack cache statistics for this iteration
+                if (info.attackCacheStats.probes > 0) {
+                    std::cout << "info string AttackCache: probes=" << info.attackCacheStats.probes
+                              << " hits=" << info.attackCacheStats.hits
+                              << " misses=" << info.attackCacheStats.misses
+                              << " stores=" << info.attackCacheStats.stores
+                              << " hitRate=" << std::fixed << std::setprecision(1)
+                              << info.attackCacheStats.hitRate() << "%" << std::endl;
+                }
             }
-            
+
             // Get EBF from this iteration (if available)
             double currentEBF = info.effectiveBranchingFactor();
             if (currentEBF > 0) {
