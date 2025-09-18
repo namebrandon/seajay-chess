@@ -1843,6 +1843,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         t_attackCacheHits = 0;
         t_attackCacheMisses = 0;
         t_attackCacheStores = 0;
+        t_attackCacheTryProbes = 0;
+        t_attackCacheTryHits = 0;
+        t_attackCacheTryMisses = 0;
+        t_attackCacheTryStores = 0;
     }
 
     // Stage 14 Remediation: Parse SEE modes once at search start
@@ -1944,6 +1948,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             t_attackCacheHits = 0;
             t_attackCacheMisses = 0;
             t_attackCacheStores = 0;
+            t_attackCacheTryProbes = 0;
+            t_attackCacheTryHits = 0;
+            t_attackCacheTryMisses = 0;
+            t_attackCacheTryStores = 0;
         }
 
         info.depth = depth;
@@ -2032,6 +2040,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                 info.attackCacheStats.hits = t_attackCacheHits;
                 info.attackCacheStats.misses = t_attackCacheMisses;
                 info.attackCacheStats.stores = t_attackCacheStores;
+                info.attackCacheStats.tryMakeMove.probes = t_attackCacheTryProbes;
+                info.attackCacheStats.tryMakeMove.hits = t_attackCacheTryHits;
+                info.attackCacheStats.tryMakeMove.misses = t_attackCacheTryMisses;
+                info.attackCacheStats.tryMakeMove.stores = t_attackCacheTryStores;
             }
             
             // Ensure minimum iteration time of 1ms for very fast searches
@@ -2115,7 +2127,15 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                           << " misses=" << info.attackCacheStats.misses
                           << " stores=" << info.attackCacheStats.stores
                           << " hitRate=" << std::fixed << std::setprecision(1)
-                          << info.attackCacheStats.hitRate() << "%" << std::endl;
+                          << info.attackCacheStats.hitRate() << "%";
+
+                const auto& tryStats = info.attackCacheStats.tryMakeMove;
+                if (tryStats.probes > 0) {
+                    std::cout << " tryProbes=" << tryStats.probes
+                              << " tryHitRate=" << std::fixed << std::setprecision(1)
+                              << tryStats.hitRate() << "%";
+                }
+                std::cout << std::endl;
             }
             
             // Output detailed move ordering statistics at depth 5 and 10
@@ -2561,6 +2581,10 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                 info.attackCacheStats.hits = t_attackCacheHits;
                 info.attackCacheStats.misses = t_attackCacheMisses;
                 info.attackCacheStats.stores = t_attackCacheStores;
+                info.attackCacheStats.tryMakeMove.probes = t_attackCacheTryProbes;
+                info.attackCacheStats.tryMakeMove.hits = t_attackCacheTryHits;
+                info.attackCacheStats.tryMakeMove.misses = t_attackCacheTryMisses;
+                info.attackCacheStats.tryMakeMove.stores = t_attackCacheTryStores;
 
                 // Output attack cache statistics for this iteration
                 if (info.attackCacheStats.probes > 0) {
@@ -2569,7 +2593,15 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
                               << " misses=" << info.attackCacheStats.misses
                               << " stores=" << info.attackCacheStats.stores
                               << " hitRate=" << std::fixed << std::setprecision(1)
-                              << info.attackCacheStats.hitRate() << "%" << std::endl;
+                              << info.attackCacheStats.hitRate() << "%";
+
+                    const auto& tryStats = info.attackCacheStats.tryMakeMove;
+                    if (tryStats.probes > 0) {
+                        std::cout << " tryProbes=" << tryStats.probes
+                                  << " tryHitRate=" << std::fixed << std::setprecision(1)
+                                  << tryStats.hitRate() << "%";
+                    }
+                    std::cout << std::endl;
                 }
             }
 

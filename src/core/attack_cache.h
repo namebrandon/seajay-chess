@@ -164,10 +164,13 @@ extern thread_local AttackCache t_attackCache;
 // Phase 5.2: Thread-local control flags and statistics
 extern thread_local bool t_attackCacheEnabled;
 extern thread_local bool t_attackCacheStatsEnabled;
-
 // Phase 5.2: Thread-local statistics counters (for telemetry)
 extern thread_local uint64_t t_attackCacheHits;
 extern thread_local uint64_t t_attackCacheMisses;
 extern thread_local uint64_t t_attackCacheStores;
+extern thread_local uint64_t t_attackCacheTryProbes;
+extern thread_local uint64_t t_attackCacheTryHits;
+extern thread_local uint64_t t_attackCacheTryMisses;
+extern thread_local uint64_t t_attackCacheTryStores;
 
 } // namespace seajay

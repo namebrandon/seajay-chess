@@ -15,5 +15,9 @@ thread_local bool t_attackCacheStatsEnabled = false;
 thread_local uint64_t t_attackCacheHits = 0;
 thread_local uint64_t t_attackCacheMisses = 0;
 thread_local uint64_t t_attackCacheStores = 0;
+thread_local uint64_t t_attackCacheTryProbes = 0;
+thread_local uint64_t t_attackCacheTryHits = 0;
+thread_local uint64_t t_attackCacheTryMisses = 0;
+thread_local uint64_t t_attackCacheTryStores = 0;
 
 } // namespace seajay

@@ -2,6 +2,7 @@
 #include "board_safety.h"
 #include "bitboard.h"
 #include "move_generation.h"
+#include "attack_cache.h"  // Phase 5.3: Attack cache integration for tryMakeMove
 #include "simd_utils.h"  // SIMD optimizations for popcount batching
 #include "../evaluation/evaluate.h"
 #include "../evaluation/pst.h"  // For PST::value
@@ -1229,8 +1230,43 @@ bool Board::tryMakeMove(Move move, UndoInfo& undo) {
     Color us = ~m_sideToMove;  // We just switched sides
     Square kingSquare = this->kingSquare(us);
     
-    if (kingSquare != NO_SQUARE && MoveGenerator::isSquareAttacked(*this, kingSquare, m_sideToMove)) {
-        // Move is illegal - unmake it and return false
+    if (kingSquare != NO_SQUARE) {
+        uint64_t hitsBefore = 0;
+        uint64_t missesBefore = 0;
+        uint64_t storesBefore = 0;
+        uint64_t probesBefore = 0;
+        if (t_attackCacheEnabled) {
+            hitsBefore = t_attackCacheHits;
+            missesBefore = t_attackCacheMisses;
+            storesBefore = t_attackCacheStores;
+            probesBefore = hitsBefore + missesBefore;
+        }
+
+        const bool kingInCheck = MoveGenerator::isSquareAttacked(*this, kingSquare, m_sideToMove);
+
+        if (t_attackCacheEnabled) {
+            const uint64_t hitsAfter = t_attackCacheHits;
+            const uint64_t missesAfter = t_attackCacheMisses;
+            const uint64_t storesAfter = t_attackCacheStores;
+            const uint64_t probesAfter = hitsAfter + missesAfter;
+
+            t_attackCacheTryHits += (hitsAfter - hitsBefore);
+            t_attackCacheTryMisses += (missesAfter - missesBefore);
+            t_attackCacheTryStores += (storesAfter - storesBefore);
+            t_attackCacheTryProbes += (probesAfter - probesBefore);
+        }
+
+        if (kingInCheck) {
+            // Move is illegal - unmake it and return false
+            unmakeMoveInternal(move, undo);
+            
+#ifdef DEBUG
+            validateStateIntegrity();
+#endif
+            return false;
+        }
+    } else {
+        // Defensive: restore state if king missing (should not happen, but avoid returning without unmake)
         unmakeMoveInternal(move, undo);
         
 #ifdef DEBUG
@@ -1238,11 +1274,11 @@ bool Board::tryMakeMove(Move move, UndoInfo& undo) {
 #endif
         return false;
     }
-    
+
 #ifdef DEBUG
     validateStateIntegrity();
 #endif
-    
+
     // Move is legal
     return true;
 }

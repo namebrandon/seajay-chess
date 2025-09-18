@@ -597,13 +597,26 @@ Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
 
 // Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
 bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
-    // Phase 5.2: Try cache first if enabled via UCI
-    if (t_attackCacheEnabled) {
-        // Use enhanced key including king square position for better differentiation
-        // Key format: hash ^ (kingSquare << 1) to distinguish positions with different king placements
-        Square kingSq = board.kingSquare(~attackingColor);  // Defending king's square
-        Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+    const bool cacheEnabled = t_attackCacheEnabled;
+    Square cachedKingSquare = NO_SQUARE;
+    Hash cacheKey = 0;
 
+    auto ensureCacheKey = [&]() {
+        if (cachedKingSquare == NO_SQUARE) {
+            cachedKingSquare = board.kingSquare(~attackingColor);
+            cacheKey = board.zobristKey() ^ (static_cast<Hash>(cachedKingSquare) << 1);
+        }
+    };
+
+    auto recordStore = [&]() {
+        if (t_attackCacheStatsEnabled) {
+            t_attackCacheStores++;
+        }
+    };
+
+    // Phase 5.2: Try cache first if enabled via UCI
+    if (cacheEnabled) {
+        ensureCacheKey();
         auto [hit, isAttacked] = t_attackCache.probe(cacheKey, square, attackingColor);
         if (hit) {
             // Update statistics if tracking is enabled
@@ -624,11 +637,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
     if (knights & getKnightAttacks(square)) {
-        if (t_attackCacheEnabled) {
-            Square kingSq = board.kingSquare(~attackingColor);
-            Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+        if (cacheEnabled) {
+            ensureCacheKey();
             t_attackCache.store(cacheKey, square, attackingColor, true);
-            if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+            recordStore();
         }
         return true;
     }
@@ -638,11 +650,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (pawns) {
         Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
         if (pawns & pawnAttacks) {
-            if (t_attackCacheEnabled) {
-                Square kingSq = board.kingSquare(~attackingColor);
-                Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+            if (cacheEnabled) {
+                ensureCacheKey();
                 t_attackCache.store(cacheKey, square, attackingColor, true);
-                if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+                recordStore();
             }
             return true;
         }
@@ -659,11 +670,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
                                seajay::magicRookAttacks(square, occupied);
         if (queens & queenAttacks) {
-            if (t_attackCacheEnabled) {
-                Square kingSq = board.kingSquare(~attackingColor);
-                Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+            if (cacheEnabled) {
+                ensureCacheKey();
                 t_attackCache.store(cacheKey, square, attackingColor, true);
-                if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+                recordStore();
             }
             return true;
         }
@@ -675,11 +685,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
         if (bishops & bishopAttacks) {
-            if (t_attackCacheEnabled) {
-                Square kingSq = board.kingSquare(~attackingColor);
-                Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+            if (cacheEnabled) {
+                ensureCacheKey();
                 t_attackCache.store(cacheKey, square, attackingColor, true);
-                if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+                recordStore();
             }
             return true;
         }
@@ -691,11 +700,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
         if (rooks & rookAttacks) {
-            if (t_attackCacheEnabled) {
-                Square kingSq = board.kingSquare(~attackingColor);
-                Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+            if (cacheEnabled) {
+                ensureCacheKey();
                 t_attackCache.store(cacheKey, square, attackingColor, true);
-                if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+                recordStore();
             }
             return true;
         }
@@ -704,21 +712,19 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
     if (king & getKingAttacks(square)) {
-        if (t_attackCacheEnabled) {
-            Square kingSq = board.kingSquare(~attackingColor);
-            Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+        if (cacheEnabled) {
+            ensureCacheKey();
             t_attackCache.store(cacheKey, square, attackingColor, true);
-            if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+            recordStore();
         }
         return true;
     }
 
     // Not attacked - cache the negative result
-    if (t_attackCacheEnabled) {
-        Square kingSq = board.kingSquare(~attackingColor);
-        Hash cacheKey = board.zobristKey() ^ (static_cast<Hash>(kingSq) << 1);
+    if (cacheEnabled) {
+        ensureCacheKey();
         t_attackCache.store(cacheKey, square, attackingColor, false);
-        if (t_attackCacheStatsEnabled) t_attackCacheStores++;
+        recordStore();
     }
     return false;
 }

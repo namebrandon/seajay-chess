@@ -774,20 +774,45 @@ struct SearchData {
 
     // Phase 5: Attack Cache statistics (Phase 5.1)
     struct AttackCacheStats {
+        struct Breakdown {
+            uint64_t probes = 0;
+            uint64_t hits = 0;
+            uint64_t misses = 0;
+            uint64_t stores = 0;
+
+            void reset() {
+                probes = 0;
+                hits = 0;
+                misses = 0;
+                stores = 0;
+            }
+
+            double hitRate() const {
+                return probes > 0 ? (100.0 * static_cast<double>(hits) / static_cast<double>(probes)) : 0.0;
+            }
+        };
+
         uint64_t probes = 0;              // Total cache probes
         uint64_t hits = 0;                // Cache hits
         uint64_t misses = 0;              // Cache misses
         uint64_t stores = 0;              // Cache stores
+
+        Breakdown tryMakeMove;            // Phase 5.3: TryMakeMove-specific stats
 
         void reset() {
             probes = 0;
             hits = 0;
             misses = 0;
             stores = 0;
+            tryMakeMove.reset();
         }
 
         double hitRate() const {
-            return probes > 0 ? (100.0 * hits / probes) : 0.0;
+            return probes > 0 ? (100.0 * static_cast<double>(hits) / static_cast<double>(probes)) : 0.0;
+        }
+
+        double tryHitRate() const {
+            return tryMakeMove.hitRate();
         }
     } attackCacheStats;
 
