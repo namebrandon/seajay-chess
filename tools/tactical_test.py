@@ -5,6 +5,7 @@ Improved Tactical Test Suite Evaluation Script for SeaJay Chess Engine
 Properly handles conversion between algebraic and coordinate notation
 """
 
+import argparse
 import subprocess
 import sys
 import re
@@ -111,7 +112,7 @@ def convert_san_to_uci(fen, san_move):
         # We can't reliably convert without a chess library
         return None
 
-def run_engine_search(engine_path, fen, time_ms=2000, depth=0):
+def run_engine_search(engine_path, fen, time_ms=2000, depth=0, uci_options=None):
     """Run the chess engine and get the best move"""
     if depth > 0:
         go_command = f"go depth {depth}"
@@ -121,23 +122,83 @@ def run_engine_search(engine_path, fen, time_ms=2000, depth=0):
     commands = f"uci\nposition fen {fen}\n{go_command}\nquit\n"
     
     try:
-        result = subprocess.run(
-            engine_path,
-            input=commands,
+        proc = subprocess.Popen(
+            [engine_path],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            capture_output=True,
-            timeout=(time_ms/1000 + 5) if depth == 0 else 60
+            bufsize=1
         )
-        
+
+        assert proc.stdin is not None
+        assert proc.stdout is not None
+
+        def send(cmd: str):
+            proc.stdin.write(cmd + "\n")
+            proc.stdin.flush()
+
+        stdout_lines = []
+
+        def read_until(predicate, timeout):
+            start = time.time()
+            while True:
+                line = proc.stdout.readline()
+                if line:
+                    stdout_lines.append(line)
+                    if predicate(line):
+                        return True
+                else:
+                    break
+                if time.time() - start > timeout:
+                    return False
+            return False
+
+        send("uci")
+        read_until(lambda l: l.strip() == "uciok", timeout=5)
+
+        if uci_options:
+            for name, value in uci_options:
+                if value:
+                    send(f"setoption name {name} value {value}")
+                else:
+                    send(f"setoption name {name}")
+
+        send("isready")
+        read_until(lambda l: l.strip() == "readyok", timeout=5)
+
+        send(f"position fen {fen}")
+        send(go_command)
+
+        timeout_sec = (time_ms / 1000 + 5) if depth == 0 else 60
+        start_time = time.time()
+        while True:
+            line = proc.stdout.readline()
+            if line:
+                stdout_lines.append(line)
+                if line.startswith('bestmove'):
+                    break
+            else:
+                break
+            if time.time() - start_time > timeout_sec:
+                raise subprocess.TimeoutExpired(engine_path, timeout_sec)
+
+        send("quit")
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        result_stdout = ''.join(stdout_lines)
+
         # Extract best move
         best_move = None
-        for line in result.stdout.split('\n'):
+        for line in result_stdout.split('\n'):
             if line.startswith('bestmove'):
                 best_move = line.split()[1]
                 break
-        
+
         # Extract statistics from last info line
-        info_lines = [l for l in result.stdout.split('\n') if l.startswith('info') and 'string' not in l]
+        info_lines = [l for l in result_stdout.split('\n') if l.startswith('info') and 'string' not in l]
         if info_lines:
             last_info = info_lines[-1]
             nodes = re.search(r'nodes (\d+)', last_info)
@@ -197,12 +258,38 @@ def moves_match(engine_move, moves_list, fen):
     
     return False
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run SeaJay tactical regression suites")
+    parser.add_argument('engine', nargs='?', default='./bin/seajay', help='Path to UCI engine (default ./bin/seajay)')
+    parser.add_argument('test_file', nargs='?', default='./tests/positions/wacnew.epd', help='EPD test suite file')
+    parser.add_argument('time_per_move', nargs='?', type=int, default=2000, help='Time per move in ms (default 2000)')
+    parser.add_argument('depth_limit', nargs='?', type=int, default=0, help='Optional depth limit (default 0 => time mode)')
+    parser.add_argument('--uci-option', action='append', default=[], help="UCI option in 'name=value' or 'name value' form (repeatable)")
+    return parser.parse_args()
+
+
+def parse_uci_options(option_strings):
+    options = []
+    for raw in option_strings:
+        if '=' in raw:
+            name, value = raw.split('=', 1)
+        else:
+            parts = raw.split(None, 1)
+            if len(parts) == 2:
+                name, value = parts
+            else:
+                name, value = parts[0], ''
+        options.append((name.strip(), value.strip()))
+    return options
+
+
 def main():
-    # Parse arguments
-    engine_path = sys.argv[1] if len(sys.argv) > 1 else "./bin/seajay"
-    test_file = sys.argv[2] if len(sys.argv) > 2 else "./tests/positions/wacnew.epd"
-    time_per_move = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
-    depth_limit = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+    args = parse_args()
+    engine_path = args.engine
+    test_file = args.test_file
+    time_per_move = args.time_per_move
+    depth_limit = args.depth_limit
+    uci_option_pairs = parse_uci_options(args.uci_option)
     
     # Check if chess library is available
     try:
@@ -259,7 +346,7 @@ def main():
                 
                 # Run engine search
                 engine_move, nodes, depth_reached, score = run_engine_search(
-                    engine_path, fen, time_per_move, depth_limit
+                    engine_path, fen, time_per_move, depth_limit, uci_option_pairs
                 )
                 
                 total_nodes += nodes

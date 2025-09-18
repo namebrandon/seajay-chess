@@ -10,6 +10,10 @@
 namespace seajay {
 namespace search {
 
+namespace {
+constexpr int HISTORY_GATING_DEPTH = 2;
+}
+
 // Use the MVV-LVA constants from move_ordering.h
 // VICTIM_VALUES and ATTACKER_VALUES are already defined there
 
@@ -298,7 +302,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
             } else {
                 mvvLva.orderMoves(board, m_moves);
             }
-            if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+            if (depth >= HISTORY_GATING_DEPTH && killers && history && counterMoves && counterMoveHistory) {
                 float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
                 mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
                                             *counterMoves, *counterMoveHistory,
@@ -418,7 +422,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         
         // Apply history heuristics to evasions for better move ordering
         // This matches legacy behavior and should improve tactical positions
-        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+            if (depth >= HISTORY_GATING_DEPTH && killers && history && counterMoves && counterMoveHistory) {
             float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
             mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
                                         *counterMoves, *counterMoveHistory,
@@ -456,7 +460,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
         }
 
         // Apply history heuristics for quiet moves if available
-        if (depth >= 6 && killers && history && counterMoves && counterMoveHistory) {
+        if (depth >= HISTORY_GATING_DEPTH && killers && history && counterMoves && counterMoveHistory) {
             float cmhWeight = limits ? limits->counterMoveHistoryWeight : 1.5f;
             mvvLva.orderMovesWithHistory(board, m_moves, *killers, *history,
                                         *counterMoves, *counterMoveHistory,

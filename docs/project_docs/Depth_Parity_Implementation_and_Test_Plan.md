@@ -214,3 +214,4 @@ Progress Log (append-only)
   - Debug tt command shows backend type and clustering-specific stats
   - Verification: bench 19191913 (identical with both modes)
   - Build successful, UCI options work, ready for OpenBench A/B testi
+- 2025-09-18: Phase 4 selective search tuning wrapped up. History/CMH gating ships at depth ≥2, aggressive null move remains toggle-off after verify-depth guard retest (OB tests 596/597 both FAIL). Branch ready to merge back into `integration/20250912-depth-and-search-speed`; Phase 5 (attack caching) is next.

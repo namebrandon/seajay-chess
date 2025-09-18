@@ -225,6 +225,7 @@ run_engine() {
     local engine_path=$2
     local output_file=$3
     local uci_mode=${4:-true}  # Most engines use UCI
+    local seajay_options="${SEAJAY_UCI_OPTIONS:-}"
 
     if [ "$uci_mode" = true ]; then
         # Robust UCI runner:
@@ -244,6 +245,16 @@ run_engine() {
 
         # Send initialization and search command
         echo "uci" >&3
+
+        if [ "$engine_name" = "SeaJay" ] && [ -n "$seajay_options" ]; then
+            IFS=$'\n' read -r -d '' -a seajay_opts_array < <(printf '%s\0' "$seajay_options")
+            for opt in "${seajay_opts_array[@]}"; do
+                if [ -n "$opt" ]; then
+                    echo "setoption name ${opt}" >&3
+                fi
+            done
+        fi
+
         echo "isready" >&3
         echo "position fen $FEN" >&3
         echo "$SEARCH_CMD" >&3
@@ -268,7 +279,7 @@ run_engine() {
 
 # Run all engines in parallel
 echo -e "${YELLOW}[1/4] Starting SeaJay...${NC}"
-run_engine "SeaJay" "$SEAJAY" "$TEMP_DIR/seajay.out" false &
+run_engine "SeaJay" "$SEAJAY" "$TEMP_DIR/seajay.out" true &
 PID_SEAJAY=$!
 
 echo -e "${YELLOW}[2/4] Starting Stash...${NC}"

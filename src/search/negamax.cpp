@@ -30,6 +30,11 @@
 
 namespace seajay::search {
 
+namespace {
+constexpr int HISTORY_GATING_DEPTH = 2;
+constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
+}
+
 // Phase 3.2: Helper for move generation with lazy legality checking option
 inline MoveList generateLegalMoves(const Board& board) {
     MoveList moves;
@@ -90,7 +95,7 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 // Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then killers, then quiet moves
 template<typename MoveContainer>
 inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
-                      const SearchData* searchData = nullptr, int ply = 0,
+                      SearchData* searchData = nullptr, int ply = 0,
                       Move prevMove = NO_MOVE, int countermoveBonus = 0,
                       const SearchLimits* limits = nullptr, int depth = 0) noexcept {
     // Stage 11: Base MVV-LVA ordering (always available)
@@ -98,9 +103,8 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Stage 19/20/23: Killers, history, countermoves for quiets
     static MvvLvaOrdering mvvLva;
     
-    // Phase 4.3.a-fix2: Depth gating - only use CMH at depth >= 6 to avoid noise
-    // At shallow depths, the CMH table is "cold" and adds more noise than signal
-    // Increased from 4 to 6 for better performance at fast time controls
+    // Phase 4.1: Depth gating - use CMH from depth >= HISTORY_GATING_DEPTH
+    // Below that, fall back to basic history+countermove ordering
     // Optional SEE capture ordering first (prefix-only) when enabled
     if (search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
         // SEE policy orders only captures/promotions prefix; quiets preserved
@@ -110,8 +114,13 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         mvvLva.orderMoves(board, moves);
     }
 
-    if (depth >= 6 && searchData != nullptr && searchData->killers && searchData->history && 
+    if (searchData) {
+        searchData->clearHistoryContext(ply);
+    }
+
+    if (depth >= HISTORY_GATING_DEPTH && searchData != nullptr && searchData->killers && searchData->history && 
         searchData->counterMoves && searchData->counterMoveHistory) {
+        searchData->registerHistoryApplication(ply, SearchData::HistoryContext::Counter);
         // Use counter-move history for enhanced move ordering at sufficient depth
         // Get CMH weight from search limits - should always be available
         float cmhWeight = 1.5f;  // default fallback (shouldn't be hit)
@@ -127,9 +136,12 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
                                     *searchData->counterMoves, *searchData->counterMoveHistory,
                                     prevMove, ply, countermoveBonus, cmhWeight);
     } else if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
+        searchData->registerHistoryApplication(ply, SearchData::HistoryContext::Basic);
         // Fallback to basic countermoves without history
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, prevMove, ply, countermoveBonus);
+    } else if (searchData != nullptr) {
+        searchData->clearHistoryContext(ply);
     }
 
     // Root-specific quiet move tweaks: prefer checks and central pawn pushes
@@ -261,7 +273,10 @@ eval::Score negamax(Board& board,
     if (ply > info.seldepth) {
         info.seldepth = ply;
     }
-    
+
+    // Phase 4.1: Default history context to none before ordering decisions
+    info.clearHistoryContext(ply);
+
     // Terminal node - enter quiescence search or return static evaluation
     if (depth <= 0) {
         // Stage 14: Quiescence search - ALWAYS compiled in, controlled by UCI option
@@ -540,6 +555,56 @@ eval::Score negamax(Board& board,
             nullMoveReduction++;
         }
         
+        // Phase 4.2: Optional extra reduction when eval margin is very large
+        bool aggressiveReductionActive = false;
+        if (limits.useAggressiveNullMove && staticEvalComputed && depth >= 10) {
+            const eval::Score evalGap = staticEval - beta;
+            const int aggressiveThreshold = limits.nullMoveEvalMargin + AGGRESSIVE_NULL_MARGIN_OFFSET;
+            if (evalGap.value() > aggressiveThreshold) {
+                info.nullMoveStats.aggressiveCandidates++;
+
+                bool allowAggressive = true;
+                if (limits.aggressiveNullMinEval > 0 && staticEval.value() < limits.aggressiveNullMinEval) {
+                    allowAggressive = false;
+                }
+                if (allowAggressive && limits.aggressiveNullRequirePositiveBeta && beta.value() <= 0) {
+                    allowAggressive = false;
+                }
+                // Avoid aggressive reductions when we would immediately pay the
+                // verification cost anyway (depth close to verify threshold).
+                if (allowAggressive && depth >= limits.nullMoveVerifyDepth) {
+                    allowAggressive = false;
+                }
+                if (allowAggressive && limits.aggressiveNullMaxApplications > 0 &&
+                    info.nullMoveStats.aggressiveApplied >= static_cast<uint64_t>(limits.aggressiveNullMaxApplications)) {
+                    allowAggressive = false;
+                    info.nullMoveStats.aggressiveCapHits++;
+                }
+
+                bool ttBlocksExtra = false;
+                if (allowAggressive && ttDepth >= depth - 1) {
+                    if ((ttBound == Bound::UPPER || ttBound == Bound::EXACT) && ttScore < beta) {
+                        ttBlocksExtra = true;
+                    }
+                }
+
+                if (!allowAggressive) {
+                    info.nullMoveStats.aggressiveSuppressed++;
+                } else if (ttBlocksExtra) {
+                    info.nullMoveStats.aggressiveBlockedByTT++;
+                } else {
+                    int proposedReduction = std::min(nullMoveReduction + 1, depth - 1);
+                    if (proposedReduction > nullMoveReduction) {
+                        nullMoveReduction = proposedReduction;
+                        aggressiveReductionActive = true;
+                        info.nullMoveStats.aggressiveApplied++;
+                    } else {
+                        info.nullMoveStats.aggressiveSuppressed++;
+                    }
+                }
+            }
+        }
+
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
         
@@ -570,6 +635,9 @@ eval::Score negamax(Board& board,
         // Check for cutoff
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
+            if (aggressiveReductionActive) {
+                info.nullMoveStats.aggressiveCutoffs++;
+            }
             
             // Phase 1.5b: Deeper verification search at configurable depth
             if (depth >= limits.nullMoveVerifyDepth) {  // UCI configurable threshold
@@ -591,6 +659,9 @@ eval::Score negamax(Board& board,
                 if (verifyScore < beta) {
                     // Verification failed, don't trust null move
                     info.nullMoveStats.verificationFails++;
+                    if (aggressiveReductionActive) {
+                        info.nullMoveStats.aggressiveVerifyFails++;
+                    }
                     // Continue with normal search instead of returning
                 } else {
                     // Verification passed, null move cutoff is valid
@@ -618,9 +689,15 @@ eval::Score negamax(Board& board,
                     }
                     
                     if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                        if (aggressiveReductionActive) {
+                            info.nullMoveStats.aggressiveVerifyPasses++;
+                        }
                         return nullScore;
                     } else {
                         // Mate score, return beta instead
+                        if (aggressiveReductionActive) {
+                            info.nullMoveStats.aggressiveVerifyPasses++;
+                        }
                         return beta;
                     }
                 }
@@ -791,12 +868,24 @@ eval::Score negamax(Board& board,
     // Use optional to avoid dynamic allocation (stack allocation instead)
     std::optional<RankedMovePicker> rankedPicker;
     if (limits.useRankedMovePicker && ply > 0) {
+        // Predict whether history/countermove history ordering will be active
+        auto historyCtx = SearchData::HistoryContext::None;
+        const bool hasHistoryInfra = info.killers && info.history && info.counterMoves;
+        if (hasHistoryInfra) {
+            if (info.counterMoveHistory && depth >= HISTORY_GATING_DEPTH) {
+                historyCtx = SearchData::HistoryContext::Counter;
+            } else {
+                historyCtx = SearchData::HistoryContext::Basic;
+            }
+        }
+        if (historyCtx != SearchData::HistoryContext::None) {
+            info.registerHistoryApplication(ply, historyCtx);
+        }
         rankedPicker.emplace(
             board, ttMove, info.killers, info.history, 
             info.counterMoves, info.counterMoveHistory,
             prevMove, ply, depth, info.countermoveBonus, &limits,
-            // Phase 2a.6c: Pass SearchData only when telemetry enabled (belt-and-suspenders)
-            limits.showMovePickerStats ? &info : nullptr
+            &info
         );
     } else {
         // Generate pseudo-legal moves now that early exits are handled
@@ -1386,6 +1475,12 @@ eval::Score negamax(Board& board,
             // If scout search fails high, do full window re-search
             if (score > alpha) {
                 info.pvsStats.reSearches++;
+                auto histCtx = info.historyContextAt(ply);
+                if (histCtx == SearchData::HistoryContext::Basic) {
+                    info.historyStats.basicReSearches++;
+                } else if (histCtx == SearchData::HistoryContext::Counter) {
+                    info.historyStats.counterReSearches++;
+                }
                 didReSearch = true;  // Phase 2b.7: Mark that we did a re-search
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
@@ -1458,8 +1553,42 @@ eval::Score negamax(Board& board,
                 // Return bestScore for fail-soft alpha-beta
                 if (score >= beta) [[unlikely]] {
                     info.betaCutoffs++;  // Track beta cutoffs
+                    auto histCtx = info.historyContextAt(ply);
                     if (moveCount == 1) {
                         info.betaCutoffsFirst++;  // Track first-move cutoffs
+                        if (histCtx == SearchData::HistoryContext::Basic) {
+                            info.historyStats.basicFirstMoveHits++;
+                        } else if (histCtx == SearchData::HistoryContext::Counter) {
+                            info.historyStats.counterFirstMoveHits++;
+                        }
+                    }
+
+                    const bool isCaptureMv = isCapture(move) || isPromotion(move) || isEnPassant(move);
+                    const bool isTTMove = (move == ttMove && ttMove != NO_MOVE);
+                    bool isKillerMove = false;
+                    if (!isCaptureMv && info.killers) {
+                        for (int slot = 0; slot < 2; ++slot) {
+                            if (move == info.killers->getKiller(ply, slot)) {
+                                isKillerMove = true;
+                                break;
+                            }
+                        }
+                    }
+                    bool isCounterMove = false;
+                    if (info.counterMoves && prevMove != NO_MOVE) {
+                        if (move == info.counterMoves->getCounterMove(prevMove)) {
+                            isCounterMove = true;
+                        }
+                    }
+                    if (isCounterMove && info.countermoveBonus > 0) {
+                        info.counterMoveStats.hits++;
+                        info.counterMoveStats.cutoffs++;
+                    }
+                    if (histCtx == SearchData::HistoryContext::Counter && isCounterMove) {
+                        info.historyStats.counterCutoffs++;
+                    } else if (histCtx == SearchData::HistoryContext::Basic &&
+                               !isCaptureMv && !isTTMove && !isKillerMove && !isCounterMove) {
+                        info.historyStats.basicCutoffs++;
                     }
                     
 #ifdef SEARCH_STATS
@@ -1488,22 +1617,7 @@ eval::Score negamax(Board& board,
                     
                     // Node explosion diagnostics: Track beta cutoff position and move type
                     if (limits.nodeExplosionDiagnostics) {
-                        // Determine move type for diagnostic tracking
-                        bool isTTMove = (move == ttMove && ttMove != NO_MOVE);
-                        bool isKiller = false;
-                        bool isCaptureMv = isCapture(move) || isPromotion(move) || isEnPassant(move);
-                        
-                        // Check if it's a killer move
-                        if (!isCaptureMv && info.killers) {
-                            for (int slot = 0; slot < 2; ++slot) {
-                                if (move == info.killers->getKiller(ply, slot)) {
-                                    isKiller = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        g_nodeExplosionStats.recordBetaCutoff(ply, legalMoveCount - 1, isTTMove, isKiller, isCaptureMv);
+                        g_nodeExplosionStats.recordBetaCutoff(ply, legalMoveCount - 1, isTTMove, isKillerMove, isCaptureMv);
                         if (legalMoveCount > 10) {
                             g_nodeExplosionStats.recordLateCutoff(ply, legalMoveCount - 1);
                         }
@@ -1522,9 +1636,9 @@ eval::Score negamax(Board& board,
                     auto& stats = info.moveOrderingStats;
                     
                     // Track which type of move caused cutoff
-                    if (move == ttMove && ttMove != NO_MOVE) {
+                    if (isTTMove) {
                         stats.ttMoveCutoffs++;
-                    } else if (isCapture(move) || isPromotion(move)) {
+                    } else if (isCaptureMv) {
                         if (moveCount == 1) {
                             stats.firstCaptureCutoffs++;
                         }
@@ -1544,12 +1658,10 @@ eval::Score negamax(Board& board,
                                 stats.rxpCutoffs++;
                             }
                         }
-                    } else if (info.killers->isKiller(ply, move)) {
+                    } else if (isKillerMove) {
                         stats.killerCutoffs++;
-                    } else if (info.countermoveBonus > 0 && prevMove != NO_MOVE &&
-                               move == info.counterMoves->getCounterMove(prevMove)) {
+                    } else if (isCounterMove && info.countermoveBonus > 0) {
                         stats.counterMoveCutoffs++;
-                        info.counterMoveStats.hits++;  // Track successful countermove cutoff
                     } else {
                         stats.quietCutoffs++;
                     }
@@ -2194,6 +2306,14 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " null: att=" << info.nullMoveStats.attempts
                   << " cut=" << info.nullMoveStats.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
+                  << " extra(cand=" << info.nullMoveStats.aggressiveCandidates
+                  << ",app=" << info.nullMoveStats.aggressiveApplied
+                  << ",blk=" << info.nullMoveStats.aggressiveBlockedByTT
+                  << ",sup=" << info.nullMoveStats.aggressiveSuppressed
+                  << ",cut=" << info.nullMoveStats.aggressiveCutoffs
+                  << ",vpass=" << info.nullMoveStats.aggressiveVerifyPasses
+                  << ",vfail=" << info.nullMoveStats.aggressiveVerifyFails
+                  << ",cap=" << info.nullMoveStats.aggressiveCapHits << ")"
                   << " no-store=" << info.nullMoveStats.nullMoveNoStore
                   << " static-cut=" << info.nullMoveStats.staticCutoffs
                   << " static-no-store=" << info.nullMoveStats.staticNullNoStore
@@ -2218,6 +2338,12 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << "," << info.pruneBreakdown.moveCount[2] << "," << info.pruneBreakdown.moveCount[3] << "]"
                   << " illegal: first=" << info.illegalPseudoBeforeFirst
                   << " total=" << info.illegalPseudoTotal
+                  << " hist(apps=" << info.historyStats.totalApplications()
+                  << ",basic=" << info.historyStats.basicApplications
+                  << ",cmh=" << info.historyStats.counterApplications
+                  << ",first=" << info.historyStats.basicFirstMoveHits << "+" << info.historyStats.counterFirstMoveHits
+                  << ",cuts=" << info.historyStats.basicCutoffs << "+" << info.historyStats.counterCutoffs
+                  << ",re=" << info.historyStats.totalReSearches() << ")"
                   << std::endl;
     }
     
