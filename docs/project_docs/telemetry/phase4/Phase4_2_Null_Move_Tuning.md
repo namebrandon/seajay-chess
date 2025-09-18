@@ -88,9 +88,3 @@ CSV artefacts:
 ## Status & Next Steps
 - Telemetry scaffolding and candidate packs cover the aggressive null pathway; verify-depth guard delivers consistent local savings but not enough global Elo.
 - Phase 4 concludes with `UseAggressiveNullMove=false`. Revisit only if a new heuristic or Phase 5+ work uncovers a better promotion path.
-
-## Next Steps
-1. Extend telemetry harnesses to accept UCI overrides. ✅
-2. Compile a high-evaluation FEN pack (likely from tactical wins/mates) to trigger the aggressive reduction and capture `extra(...)` activity. ✅ (`aggressive_candidates_default.csv` seeded from WAC suite at depth 10.)
-3. Iterate on gating (consider phase/king-safety filters) to address residual regressions like WAC.225 (+19.7 %) and WAC.290 (+4.1 %). _Pending_
-4. Decide whether Phase 4 SPRT should keep `UseAggressiveNullMove=false` (recommended) while we continue tuning the aggressive guard off-line. _Pending_
