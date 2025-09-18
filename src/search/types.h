@@ -54,7 +54,10 @@ struct SearchLimits {
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     bool useQuiescence = true;  // Enable/disable quiescence search
-    
+
+    // Phase 5.1: Attack cache control
+    bool useAttackCache = false;  // Enable/disable attack cache
+
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
     int aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
@@ -298,7 +301,7 @@ struct SearchData {
         uint64_t zugzwangAvoids = 0;      // Times avoided due to zugzwang detection
         uint64_t verificationFails = 0;   // Verification search failures (for Phase A3)
         uint64_t staticCutoffs = 0;       // Static null move cutoffs (for Phase A4)
-        
+
         // TT remediation Phase 1.2: Track missing TT stores
         uint64_t nullMoveNoStore = 0;     // Null-move cutoffs without TT store
         uint64_t staticNullNoStore = 0;   // Static null returns without TT store
@@ -312,7 +315,7 @@ struct SearchData {
         uint64_t aggressiveVerifyPasses = 0;   // Verification searches that succeeded after aggressive reduction
         uint64_t aggressiveVerifyFails = 0;    // Verification searches that failed after aggressive reduction
         uint64_t aggressiveCapHits = 0;        // Rejections due to hitting the global application cap
-        
+
         void reset() {
             attempts = 0;
             cutoffs = 0;
@@ -707,7 +710,31 @@ struct SearchData {
             }
         }
     } pvsReSearchSmoothing;
-    
+
+    // Phase 5: Attack Cache statistics (Phase 5.1)
+    struct AttackCacheStats {
+        uint64_t probes = 0;              // Total cache probes
+        uint64_t hits = 0;                // Cache hits
+        uint64_t misses = 0;              // Cache misses
+        uint64_t stores = 0;              // Cache stores
+
+        void reset() {
+            probes = 0;
+            hits = 0;
+            misses = 0;
+            stores = 0;
+        }
+
+        double hitRate() const {
+            return probes > 0 ? (100.0 * hits / probes) : 0.0;
+        }
+    } attackCacheStats;
+
+    // Phase 5.1: Attack cache instance (per-thread)
+    // Note: Actual AttackCache instance is thread_local in attack_cache.cpp
+    // This flag controls whether to use it
+    bool useAttackCache = false;
+
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}
     
@@ -776,6 +803,7 @@ struct SearchData {
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
         pvsStats.reset();  // Stage 22: Reset PVS statistics
         pvsReSearchSmoothing.reset();  // Phase 2b.7: Reset PVS re-search smoothing
+        attackCacheStats.reset();  // Phase 5.1: Reset attack cache stats
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
         pruneBreakdown.reset();  // B0: Reset prune breakdown

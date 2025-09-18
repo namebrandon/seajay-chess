@@ -58,6 +58,7 @@ private:
     // UCI options (Stage 14, Deliverable 1.8)
     bool m_useQuiescence = true;  // Enable/disable quiescence search
     bool m_useMagicBitboards = true;  // Stage 10: Enable/disable magic bitboards (79x speedup!)
+    bool m_useAttackCache = false;  // Phase 5.1: Enable/disable attack cache (default: off)
     uint64_t m_qsearchNodeLimit = 0;  // Stage 14 Remediation: Runtime node limit (0 = unlimited)
     int m_maxCheckPly = 6;  // Maximum check extension depth in quiescence search
     int m_qsearchMaxCaptures = 32;    // Max captures per qsearch node (0 = unlimited)

@@ -13,6 +13,7 @@
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
+#include "../core/attack_cache.h"     // Phase 5.1: For attack cache clearing
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // For evaluation functions
 #include "../evaluation/eval_trace.h"  // For evaluation tracing
@@ -122,7 +123,10 @@ void UCIEngine::handleUCI() {
     
     // Stage 14, Deliverable 1.8: UCI option for quiescence search
     std::cout << "option name UseQuiescence type check default true" << std::endl;
-    
+
+    // Phase 5.1: Attack cache option (disabled by default)
+    std::cout << "option name UseAttackCache type check default false" << std::endl;
+
     // Stage 14 Remediation: Runtime node limit for quiescence search
     std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
     // Per-node capture budget for quiescence
@@ -642,7 +646,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
-    
+
+    // Phase 5.1: Pass attack cache option to search
+    limits.useAttackCache = m_useAttackCache;
+
     // Phase 2a: Pass ranked move picker option
     limits.useRankedMovePicker = m_useRankedMovePicker;
     
@@ -891,6 +898,10 @@ void UCIEngine::handleUCINewGame() {
     m_board.setStartingPosition();
     m_board.clearGameHistory();
     m_tt.clear();  // Clear TT for new game
+
+    // Phase 5.1: Clear attack cache for new game
+    t_attackCache.clear();
+
     // No need to push - board tracks its own history
 }
 
@@ -932,6 +943,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useQuiescence = false;
             std::cerr << "info string Quiescence search disabled" << std::endl;
+        }
+    }
+    // Phase 5.1: Handle UseAttackCache option
+    else if (optionName == "UseAttackCache") {
+        if (value == "true") {
+            m_useAttackCache = true;
+            std::cerr << "info string Attack cache enabled" << std::endl;
+        } else if (value == "false") {
+            m_useAttackCache = false;
+            std::cerr << "info string Attack cache disabled" << std::endl;
         }
     }
     // Stage 14 Remediation: Handle QSearchNodeLimit option

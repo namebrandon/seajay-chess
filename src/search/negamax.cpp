@@ -15,6 +15,7 @@
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
+#include "../core/attack_cache.h"    // Phase 5.1: Attack cache
 #include "../core/move_list.h"
 #include "../core/engine_config.h"    // Phase 4: Runtime configuration
 #include "../evaluation/evaluate.h"
@@ -1826,7 +1827,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
-    
+
+    // Phase 5.1: Pass attack cache option to searchData and clear cache
+    info.useAttackCache = limits.useAttackCache;
+    if (info.useAttackCache) {
+        t_attackCache.clear();  // Clear cache at search start
+    }
+
     // Stage 14 Remediation: Parse SEE modes once at search start
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
     info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
@@ -2395,7 +2402,13 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
-    
+
+    // Phase 5.1: Pass attack cache option to searchData and clear cache
+    info.useAttackCache = limits.useAttackCache;
+    if (info.useAttackCache) {
+        t_attackCache.clear();  // Clear cache at search start
+    }
+
     // Stage 14 Remediation: Parse SEE modes once at search start to avoid hot path parsing
     info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
     info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
