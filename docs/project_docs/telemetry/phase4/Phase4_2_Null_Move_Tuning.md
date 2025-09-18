@@ -75,10 +75,19 @@ CSV artefacts:
 - Built `aggressive_candidates_pack.{csv,epd}` from the top 20 WAC failures ranked by `extra(cand=…)` at depth 12 (script: `tools/collect_aggressive_null_candidates.py`).
 - Baseline measurements with the original gating (`null_move_pack_metrics_1s.csv`) were mixed: 12 / 20 saved nodes (avg −11.1 %), 8 / 20 regressed sharply (avg +38.2 %) for a net **+8.6 % nodes**.
 - Raising only `NullMoveEvalMargin` to 240 (`null_move_pack_metrics_margin240.csv`) still averaged +2.2 % nodes and flipped WAC.095 into a +90 % regression.
-- **Prototype gating (default in this branch):**
-  - Added high-eval guard (staticEval ≥ 600 cp), positive-beta requirement, and a 64-application cap.
-  - Updated metrics (`null_move_pack_metrics_1s_newgate.csv`): average **−0.52 % nodes**, with 9 savings (avg −4.6 %) and 6 mild regressions (avg +5.2 %). Biggest remaining outlier is WAC.225 (+19.7 %) where the aggressive path never fires—regular null behaviour dominates.
-  - Defensive FEN (`8/4bk1p/...`) now benefits from the toggle (≈−28 % nodes at 1 s) while keeping counters in check (`extra(cand=152, app=38, cap=0)`).
+- Initial prototype gating (staticEval ≥ 600 cp, positive-beta requirement, 64-application cap) improved the pack to −0.52 % (`null_move_pack_metrics_1s_newgate.csv`), but several outliers remained because verification searches were still triggered immediately after the aggressive fail-high.
+- **Verification-depth guard (2025-09-18):** skipping the extra reduction once `depth >= NullMoveVerifyDepth` brings the pack down to **−0.86 % nodes** while keeping the same thresholds (`null_move_pack_metrics_1s_verify_guard.csv`). Remaining regressions are modest (e.g., WAC.269 −8.4%, WAC.145 −7.4%), and `extra(...)` counters show the 64-application cap is rarely hit.
+- Defensive FEN (`8/4bk1p/...`) stays neutral-to-positive under the guard, with aggressive counters capped well below the limit.
+
+### SPRT Outcomes vs. `integration/20250912-depth-and-search-speed`
+- Test 593 (defaults, toggle off): −6.80 ± 5.70 nELO, LLR −2.95 → SPRT FAIL. The always-on safety fixes alone cost measurable Elo.
+- Test 594 (`UseAggressiveNullMove=true`, early gating): −4.22 ± 4.53 nELO, SPRT FAIL.
+- Test 596 (`UseAggressiveNullMove=true`, Pohl book, pre verify-depth guard): −5.31 ± 5.87 nELO, SPRT FAIL.
+- Test 597 (`UseAggressiveNullMove=true`, verify-depth guard): −1.89 ± 4.22 nELO, SPRT FAIL. Toggle remains disabled by default.
+
+## Status & Next Steps
+- Telemetry scaffolding and candidate packs cover the aggressive null pathway; verify-depth guard delivers consistent local savings but not enough global Elo.
+- Phase 4 concludes with `UseAggressiveNullMove=false`. Revisit only if a new heuristic or Phase 5+ work uncovers a better promotion path.
 
 ## Next Steps
 1. Extend telemetry harnesses to accept UCI overrides. ✅
