@@ -570,6 +570,11 @@ eval::Score negamax(Board& board,
                 if (allowAggressive && limits.aggressiveNullRequirePositiveBeta && beta.value() <= 0) {
                     allowAggressive = false;
                 }
+                // Avoid aggressive reductions when we would immediately pay the
+                // verification cost anyway (depth close to verify threshold).
+                if (allowAggressive && depth >= limits.nullMoveVerifyDepth) {
+                    allowAggressive = false;
+                }
                 if (allowAggressive && limits.aggressiveNullMaxApplications > 0 &&
                     info.nullMoveStats.aggressiveApplied >= static_cast<uint64_t>(limits.aggressiveNullMaxApplications)) {
                     allowAggressive = false;
