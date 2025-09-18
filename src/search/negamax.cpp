@@ -1935,7 +1935,17 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             info.stopped = true;
             break;
         }
-        
+
+        // Phase 5.2: Clear attack cache at each iteration start (per spec)
+        if (info.useAttackCache) {
+            t_attackCache.clear();
+
+            // Reset thread-local statistics for this iteration
+            t_attackCacheHits = 0;
+            t_attackCacheMisses = 0;
+            t_attackCacheStores = 0;
+        }
+
         info.depth = depth;
         board.setSearchMode(true);
         
@@ -2015,6 +2025,14 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             auto iterationEnd = std::chrono::steady_clock::now();
             auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                 iterationEnd - iterationStart).count();
+
+            // Phase 5.2: Accumulate thread-local attack cache statistics into SearchData
+            if (info.useAttackCache) {
+                info.attackCacheStats.probes = t_attackCacheHits + t_attackCacheMisses;
+                info.attackCacheStats.hits = t_attackCacheHits;
+                info.attackCacheStats.misses = t_attackCacheMisses;
+                info.attackCacheStats.stores = t_attackCacheStores;
+            }
             
             // Ensure minimum iteration time of 1ms for very fast searches
             if (iterationTime == 0) {
@@ -2081,13 +2099,23 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             // Stage 23, Phase CM4.1: Enhanced countermove statistics
             if (info.counterMoveStats.updates > 0 || info.counterMoveStats.hits > 0) {
-                double hitRate = info.counterMoveStats.updates > 0 
-                    ? (100.0 * info.counterMoveStats.hits / info.counterMoveStats.updates) 
+                double hitRate = info.counterMoveStats.updates > 0
+                    ? (100.0 * info.counterMoveStats.hits / info.counterMoveStats.updates)
                     : 0.0;
-                std::cout << "info string Countermoves: updates=" << info.counterMoveStats.updates 
+                std::cout << "info string Countermoves: updates=" << info.counterMoveStats.updates
                           << " hits=" << info.counterMoveStats.hits
                           << " hitRate=" << std::fixed << std::setprecision(1) << hitRate << "%"
                           << " bonus=" << info.countermoveBonus << std::endl;
+            }
+
+            // Phase 5.2: Attack cache statistics output
+            if (info.useAttackCache && info.attackCacheStats.probes > 0) {
+                std::cout << "info string AttackCache: probes=" << info.attackCacheStats.probes
+                          << " hits=" << info.attackCacheStats.hits
+                          << " misses=" << info.attackCacheStats.misses
+                          << " stores=" << info.attackCacheStats.stores
+                          << " hitRate=" << std::fixed << std::setprecision(1)
+                          << info.attackCacheStats.hitRate() << "%" << std::endl;
             }
             
             // Output detailed move ordering statistics at depth 5 and 10
@@ -2516,6 +2544,14 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
             auto iterationEnd = std::chrono::steady_clock::now();
             lastIterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                 iterationEnd - iterationStart);
+
+            // Phase 5.2: Accumulate thread-local attack cache statistics into SearchData
+            if (info.useAttackCache) {
+                info.attackCacheStats.probes = t_attackCacheHits + t_attackCacheMisses;
+                info.attackCacheStats.hits = t_attackCacheHits;
+                info.attackCacheStats.misses = t_attackCacheMisses;
+                info.attackCacheStats.stores = t_attackCacheStores;
+            }
             
             // Get EBF from this iteration (if available)
             double currentEBF = info.effectiveBranchingFactor();
