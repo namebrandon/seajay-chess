@@ -1,0 +1,2 @@
+timestamp,engine,test_file,time_ms,total,passed,failed,success_rate,total_nodes,avg_nodes,avg_depth
+2025-09-17_18-14-19,./bin/seajay,./tests/positions/wacnew.epd,500,300,234,66,78.0,95662806,318876,14.5

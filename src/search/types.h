@@ -94,6 +94,10 @@ struct SearchLimits {
     int nullMoveReductionDepth12 = 5; // Reduction at depth >= 12 (SPSA-tuned)
     int nullMoveVerifyDepth = 10;     // Depth threshold for verification search
     int nullMoveEvalMargin = 198;     // Extra reduction when eval >> beta (SPSA-tuned)
+    bool useAggressiveNullMove = false; // Phase 4.2: Extra null-move reduction toggle (default off)
+    int aggressiveNullMinEval = 600;    // Minimum static eval (cp) required to consider aggressive null move
+    int aggressiveNullMaxApplications = 64; // Global cap on aggressive applications per search (0 = unlimited)
+    bool aggressiveNullRequirePositiveBeta = true; // Require beta > 0 before attempting aggressive null
     
     // Futility Pruning parameters
     bool useFutilityPruning = true;     // Enable/disable futility pruning
@@ -298,6 +302,16 @@ struct SearchData {
         // TT remediation Phase 1.2: Track missing TT stores
         uint64_t nullMoveNoStore = 0;     // Null-move cutoffs without TT store
         uint64_t staticNullNoStore = 0;   // Static null returns without TT store
+
+        // Phase 4.2 instrumentation for aggressive reduction
+        uint64_t aggressiveCandidates = 0;     // Positions eligible for aggressive reduction
+        uint64_t aggressiveApplied = 0;        // Times we actually applied the extra reduction
+        uint64_t aggressiveSuppressed = 0;     // Eligible but rejected (gate, cap, etc.)
+        uint64_t aggressiveBlockedByTT = 0;    // Blocked because TT data suggested caution
+        uint64_t aggressiveCutoffs = 0;        // Successful cutoffs following aggressive reduction
+        uint64_t aggressiveVerifyPasses = 0;   // Verification searches that succeeded after aggressive reduction
+        uint64_t aggressiveVerifyFails = 0;    // Verification searches that failed after aggressive reduction
+        uint64_t aggressiveCapHits = 0;        // Rejections due to hitting the global application cap
         
         void reset() {
             attempts = 0;
@@ -307,6 +321,14 @@ struct SearchData {
             staticCutoffs = 0;
             nullMoveNoStore = 0;
             staticNullNoStore = 0;
+            aggressiveCandidates = 0;
+            aggressiveApplied = 0;
+            aggressiveSuppressed = 0;
+            aggressiveBlockedByTT = 0;
+            aggressiveCutoffs = 0;
+            aggressiveVerifyPasses = 0;
+            aggressiveVerifyFails = 0;
+            aggressiveCapHits = 0;
         }
         
         double cutoffRate() const {

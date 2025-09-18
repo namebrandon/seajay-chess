@@ -92,6 +92,10 @@ private:
     int m_nullMoveReductionDepth12 = 5; // Reduction at depth >= 12 (SPSA-tuned)
     int m_nullMoveVerifyDepth = 10;     // Depth threshold for verification search
     int m_nullMoveEvalMargin = 198;     // Extra reduction when eval >> beta (SPSA-tuned)
+    bool m_useAggressiveNullMove = false; // Phase 4.2 toggle (default off)
+    int m_aggressiveNullMinEval = 600;    // Default min eval for aggressive null
+    int m_aggressiveNullMaxApplications = 64; // Default cap on applications
+    bool m_aggressiveNullRequirePositiveBeta = true; // Require beta > 0 by default
     
     // PST Phase Interpolation parameters
     bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation

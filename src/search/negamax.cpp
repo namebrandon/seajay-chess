@@ -32,6 +32,7 @@ namespace seajay::search {
 
 namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
+constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
 }
 
 // Phase 3.2: Helper for move generation with lazy legality checking option
@@ -554,6 +555,51 @@ eval::Score negamax(Board& board,
             nullMoveReduction++;
         }
         
+        // Phase 4.2: Optional extra reduction when eval margin is very large
+        bool aggressiveReductionActive = false;
+        if (limits.useAggressiveNullMove && staticEvalComputed && depth >= 10) {
+            const eval::Score evalGap = staticEval - beta;
+            const int aggressiveThreshold = limits.nullMoveEvalMargin + AGGRESSIVE_NULL_MARGIN_OFFSET;
+            if (evalGap.value() > aggressiveThreshold) {
+                info.nullMoveStats.aggressiveCandidates++;
+
+                bool allowAggressive = true;
+                if (limits.aggressiveNullMinEval > 0 && staticEval.value() < limits.aggressiveNullMinEval) {
+                    allowAggressive = false;
+                }
+                if (allowAggressive && limits.aggressiveNullRequirePositiveBeta && beta.value() <= 0) {
+                    allowAggressive = false;
+                }
+                if (allowAggressive && limits.aggressiveNullMaxApplications > 0 &&
+                    info.nullMoveStats.aggressiveApplied >= static_cast<uint64_t>(limits.aggressiveNullMaxApplications)) {
+                    allowAggressive = false;
+                    info.nullMoveStats.aggressiveCapHits++;
+                }
+
+                bool ttBlocksExtra = false;
+                if (allowAggressive && ttDepth >= depth - 1) {
+                    if ((ttBound == Bound::UPPER || ttBound == Bound::EXACT) && ttScore < beta) {
+                        ttBlocksExtra = true;
+                    }
+                }
+
+                if (!allowAggressive) {
+                    info.nullMoveStats.aggressiveSuppressed++;
+                } else if (ttBlocksExtra) {
+                    info.nullMoveStats.aggressiveBlockedByTT++;
+                } else {
+                    int proposedReduction = std::min(nullMoveReduction + 1, depth - 1);
+                    if (proposedReduction > nullMoveReduction) {
+                        nullMoveReduction = proposedReduction;
+                        aggressiveReductionActive = true;
+                        info.nullMoveStats.aggressiveApplied++;
+                    } else {
+                        info.nullMoveStats.aggressiveSuppressed++;
+                    }
+                }
+            }
+        }
+
         // Ensure we don't reduce too much
         nullMoveReduction = std::min(nullMoveReduction, depth - 1);
         
@@ -584,6 +630,9 @@ eval::Score negamax(Board& board,
         // Check for cutoff
         if (nullScore >= beta) {
             info.nullMoveStats.cutoffs++;
+            if (aggressiveReductionActive) {
+                info.nullMoveStats.aggressiveCutoffs++;
+            }
             
             // Phase 1.5b: Deeper verification search at configurable depth
             if (depth >= limits.nullMoveVerifyDepth) {  // UCI configurable threshold
@@ -605,6 +654,9 @@ eval::Score negamax(Board& board,
                 if (verifyScore < beta) {
                     // Verification failed, don't trust null move
                     info.nullMoveStats.verificationFails++;
+                    if (aggressiveReductionActive) {
+                        info.nullMoveStats.aggressiveVerifyFails++;
+                    }
                     // Continue with normal search instead of returning
                 } else {
                     // Verification passed, null move cutoff is valid
@@ -632,9 +684,15 @@ eval::Score negamax(Board& board,
                     }
                     
                     if (std::abs(nullScore.value()) < MATE_BOUND - MAX_PLY) {
+                        if (aggressiveReductionActive) {
+                            info.nullMoveStats.aggressiveVerifyPasses++;
+                        }
                         return nullScore;
                     } else {
                         // Mate score, return beta instead
+                        if (aggressiveReductionActive) {
+                            info.nullMoveStats.aggressiveVerifyPasses++;
+                        }
                         return beta;
                     }
                 }
@@ -2243,6 +2301,14 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << " null: att=" << info.nullMoveStats.attempts
                   << " cut=" << info.nullMoveStats.cutoffs
                   << " cut%=" << std::fixed << std::setprecision(1) << nullRate
+                  << " extra(cand=" << info.nullMoveStats.aggressiveCandidates
+                  << ",app=" << info.nullMoveStats.aggressiveApplied
+                  << ",blk=" << info.nullMoveStats.aggressiveBlockedByTT
+                  << ",sup=" << info.nullMoveStats.aggressiveSuppressed
+                  << ",cut=" << info.nullMoveStats.aggressiveCutoffs
+                  << ",vpass=" << info.nullMoveStats.aggressiveVerifyPasses
+                  << ",vfail=" << info.nullMoveStats.aggressiveVerifyFails
+                  << ",cap=" << info.nullMoveStats.aggressiveCapHits << ")"
                   << " no-store=" << info.nullMoveStats.nullMoveNoStore
                   << " static-cut=" << info.nullMoveStats.staticCutoffs
                   << " static-no-store=" << info.nullMoveStats.staticNullNoStore

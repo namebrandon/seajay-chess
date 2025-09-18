@@ -154,6 +154,10 @@ void UCIEngine::handleUCI() {
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
+    std::cout << "option name UseAggressiveNullMove type check default false" << std::endl; // Phase 4.2 shadow toggle
+    std::cout << "option name AggressiveNullMinEval type spin default 600 min 0 max 2000" << std::endl;
+    std::cout << "option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000" << std::endl;
+    std::cout << "option name AggressiveNullRequirePositiveBeta type check default true" << std::endl;
     std::cout << "option name NullMoveStaticMargin type spin default 87 min 50 max 300" << std::endl;  // SPSA-tuned
     std::cout << "option name NullMoveMinDepth type spin default 2 min 2 max 5" << std::endl;
     std::cout << "option name NullMoveReductionBase type spin default 4 min 1 max 6" << std::endl;
@@ -678,6 +682,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.nullMoveReductionDepth12 = m_nullMoveReductionDepth12;
     limits.nullMoveVerifyDepth = m_nullMoveVerifyDepth;
     limits.nullMoveEvalMargin = m_nullMoveEvalMargin;
+    limits.useAggressiveNullMove = m_useAggressiveNullMove;
+    limits.aggressiveNullMinEval = m_aggressiveNullMinEval;
+    limits.aggressiveNullMaxApplications = m_aggressiveNullMaxApplications;
+    limits.aggressiveNullRequirePositiveBeta = m_aggressiveNullRequirePositiveBeta;
     
     // Futility pruning parameters
     limits.useFutilityPruning = m_useFutilityPruning;
@@ -1384,6 +1392,54 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Null move pruning disabled" << std::endl;
         } else {
             std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    else if (optionName == "UseAggressiveNullMove") {
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_useAggressiveNullMove = true;
+            std::cerr << "info string Aggressive null-move reductions enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_useAggressiveNullMove = false;
+            std::cerr << "info string Aggressive null-move reductions disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid UseAggressiveNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullMinEval") {
+        try {
+            int parsed = std::stoi(value);
+            if (parsed < 0) parsed = 0;
+            if (parsed > 2000) parsed = 2000;
+            m_aggressiveNullMinEval = parsed;
+            std::cerr << "info string Aggressive null min eval set to: " << parsed << " cp" << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid AggressiveNullMinEval value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullMaxApplications") {
+        try {
+            int parsed = std::stoi(value);
+            if (parsed < 0) parsed = 0;
+            m_aggressiveNullMaxApplications = parsed;
+            std::cerr << "info string Aggressive null application cap set to: " << parsed << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid AggressiveNullMaxApplications value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullRequirePositiveBeta") {
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_aggressiveNullRequirePositiveBeta = true;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_aggressiveNullRequirePositiveBeta = false;
+        } else {
+            std::cerr << "info string Invalid AggressiveNullRequirePositiveBeta value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
