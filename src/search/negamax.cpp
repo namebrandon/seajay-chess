@@ -1829,10 +1829,20 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
 
-    // Phase 5.1: Pass attack cache option to searchData and clear cache
+    // Phase 5.1/5.2: Pass attack cache option to searchData and clear cache
     info.useAttackCache = limits.useAttackCache;
+
+    // Phase 5.2: Set thread-local flags for attack cache
+    t_attackCacheEnabled = info.useAttackCache;
+    t_attackCacheStatsEnabled = info.useAttackCache;  // Enable stats when cache is enabled
+
     if (info.useAttackCache) {
         t_attackCache.clear();  // Clear cache at search start
+
+        // Reset statistics
+        t_attackCacheHits = 0;
+        t_attackCacheMisses = 0;
+        t_attackCacheStores = 0;
     }
 
     // Stage 14 Remediation: Parse SEE modes once at search start
@@ -2404,10 +2414,20 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     info.useQuiescence = limits.useQuiescence;
 
-    // Phase 5.1: Pass attack cache option to searchData and clear cache
+    // Phase 5.1/5.2: Pass attack cache option to searchData and clear cache
     info.useAttackCache = limits.useAttackCache;
+
+    // Phase 5.2: Set thread-local flags for attack cache
+    t_attackCacheEnabled = info.useAttackCache;
+    t_attackCacheStatsEnabled = info.useAttackCache;  // Enable stats when cache is enabled
+
     if (info.useAttackCache) {
         t_attackCache.clear();  // Clear cache at search start
+
+        // Reset statistics
+        t_attackCacheHits = 0;
+        t_attackCacheMisses = 0;
+        t_attackCacheStores = 0;
     }
 
     // Stage 14 Remediation: Parse SEE modes once at search start to avoid hot path parsing

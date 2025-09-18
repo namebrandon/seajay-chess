@@ -3,6 +3,7 @@
 
 #include "uci.h"
 #include "../core/board.h"
+#include "../core/attack_cache.h"  // Phase 5.2: For cache clearing
 #include "../search/search.h"
 #include <sstream>
 #include <iomanip>
@@ -224,6 +225,12 @@ void UCIEngine::handleUCINewGame() {
     
     // Clear any search tables if needed
     // TranspositionTable::clear();  // For future phases
+
+    // Phase 5.2: Clear attack cache on new game
+    t_attackCache.clear();
+    t_attackCacheHits = 0;
+    t_attackCacheMisses = 0;
+    t_attackCacheStores = 0;
     
     std::cout << "info string New game started" << std::endl;
 }
