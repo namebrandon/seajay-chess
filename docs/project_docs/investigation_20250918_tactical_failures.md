@@ -148,6 +148,12 @@ Representative examples (from CSV `position_id`):
 - Result (WAC.014): Move is generated at every iteration; only pruning observed is a single move-count prune when ranked 8th at depth 3. Scores hover between -10 cp and +30 cp and drift negative beyond depth 6, so `b3b4` remains preferred despite the sac being searched. (WAC.207): No pruning, but repeated fail-high cutoffs (scores ≈ 31990) collapse to −280 cp after the full-window re-search, indicating defensive resources appear once the search widens.
 - Notes: Both lines reach the search but evaluation/ordering suppress them—queen sacs arrive late (susceptible to LMP) and never gain enough score, while `Qxg7+` looks winning in reduced windows yet fails under the full search, pointing to evaluation depth rather than generation issues.
 
+### Experiment 2025-09-18E
+- Positions: Same as D
+- Change: Global `KingAttackScale` boost (`setoption … value 200`) to force large king-attack bonuses
+- Result: Depth-12 search finally chooses `Qxh7+` (mate 5), but OpenBench SPRT vs. integration baseline shows −68.6 ±18.6 Elo (10+0.1 TC, 816 games). Global evaluation tweak breaks more than it fixes.
+- Notes: Confirms evaluation knobs alone aren’t a safe solution. Next steps focus on search selectivity (e.g., LMP/LMR adjustments) to keep forcing checks alive without inflating every attack.
+
 ## Risks & Open Questions
 - Forcing adjustments may destabilise search/selectivity trade-offs; need regression monitoring.
 - Potential interaction with recent depth/speed optimisations on parent integration branch.

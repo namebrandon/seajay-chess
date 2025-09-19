@@ -946,6 +946,14 @@ eval::Score negamax(Board& board,
     Move move;
     size_t moveIndex = 0;
     while (true) {
+        bool pendingMoveCountPrune = false;
+        int pendingMoveCountLimit = 0;
+        int pendingMoveCountDepthBucket = 0;
+#ifdef SEARCH_STATS
+        int pendingMoveCountRankBucket = -1;
+#endif
+        int pendingMoveCountValue = moveCount;  // Current legal moves searched before this move
+        int pendingRankValue = -1;
         if (rankedPicker) {
             move = rankedPicker->next();
             if (move == NO_MOVE) break;
@@ -1105,29 +1113,16 @@ eval::Score negamax(Board& board,
             }
             
             if (moveCount > limit) {
-                info.moveCountPruned++;
-                int b = SearchData::PruneBreakdown::bucketForDepth(depth);
-                info.pruneBreakdown.moveCount[b]++;
-                
-                // Phase 2b.3: Track rank-aware pruning telemetry
+                pendingMoveCountPrune = true;
+                pendingMoveCountLimit = limit;
+                pendingMoveCountDepthBucket = SearchData::PruneBreakdown::bucketForDepth(depth);
 #ifdef SEARCH_STATS
                 if (limits.useRankAwareGates && ply > 0) {
                     const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
-                    const int bucket = SearchData::RankGateStats::bucketForRank(rank);
-                    info.rankGates.pruned[bucket]++;
+                    pendingMoveCountRankBucket = SearchData::RankGateStats::bucketForRank(rank);
+                    pendingRankValue = rank;
                 }
 #endif
-                
-                // Node explosion diagnostics: Track move count pruning
-                if (limits.nodeExplosionDiagnostics) {
-                    g_nodeExplosionStats.recordMoveCountPrune(depth, moveCount);
-                }
-                if (debugTrackedMove) {
-                    std::ostringstream extra;
-                    extra << "limit=" << limit << " moveCount=" << moveCount;
-                    logTrackedEvent("prune_move_count", extra.str());
-                }
-                continue;  // Skip this move
             }
             } // End of else block for countermove check
         }
@@ -1230,8 +1225,32 @@ eval::Score negamax(Board& board,
             // Move is illegal (leaves king in check) - skip it
             continue;
         }
-        
-        // Move is legal
+
+        bool givesCheckMove = inCheck(board);
+
+        if (pendingMoveCountPrune && !givesCheckMove) {
+            info.moveCountPruned++;
+            info.pruneBreakdown.moveCount[pendingMoveCountDepthBucket]++;
+
+#ifdef SEARCH_STATS
+            if (pendingMoveCountRankBucket >= 0) {
+                info.rankGates.pruned[pendingMoveCountRankBucket]++;
+            }
+#endif
+            if (limits.nodeExplosionDiagnostics) {
+                g_nodeExplosionStats.recordMoveCountPrune(depth, pendingMoveCountValue);
+            }
+            if (debugTrackedMove) {
+                std::ostringstream extra;
+                extra << "limit=" << pendingMoveCountLimit << " moveCount=" << pendingMoveCountValue
+                      << " rank=" << pendingRankValue;
+                logTrackedEvent("prune_move_count", extra.str());
+            }
+            board.unmakeMove(move, undo);
+            continue;
+        }
+
+        // Move is legal and not pruned by move-count pruning
         legalMoveCount++;
         moveCount++;  // Phase B1: Increment moveCount only after confirming legality
         
