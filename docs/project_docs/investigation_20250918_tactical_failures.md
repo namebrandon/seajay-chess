@@ -75,6 +75,12 @@ Representative examples (from CSV `position_id`):
 - Notes: <pruning logs, eval terms, anomalies>
 ```
 
+### Experiment 2025-09-18A
+- Positions: 54 tactical failures from `tools/tactical_failures_2025-09-18_20-28-06.csv`
+- Change: Baseline measurement with new harness (`100`, `850`, `2000` ms per move)
+- Result: 12 positions solved (best move selected), 15 positions show the correct move in PV but never selected, 27 positions never surface the correct move or PV reference; CSV log at `tools/tactical_investigation_2025-09-18_20-51-44.csv`
+- Notes: "Never-found" set dominated by queen sacrifices (`Qxh7+/Qxg7+`) and rook mating nets; PV-only set often finds the move briefly at low depth before pivoting away (likely pruning/ordering interaction)
+
 ## Risks & Open Questions
 - Forcing adjustments may destabilise search/selectivity trade-offs; need regression monitoring.
 - Potential interaction with recent depth/speed optimisations on parent integration branch.
