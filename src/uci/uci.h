@@ -165,6 +165,7 @@ private:
     bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
+    std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)

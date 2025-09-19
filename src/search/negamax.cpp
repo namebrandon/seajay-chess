@@ -27,6 +27,7 @@
 #include <cassert>
 #include <vector>
 #include <memory>
+#include <sstream>
 
 namespace seajay::search {
 
@@ -951,6 +952,37 @@ eval::Score negamax(Board& board,
             if (moveIndex >= moves.size()) break;
             move = moves[moveIndex++];
         }
+
+        std::string debugMoveUci;
+        bool debugTrackedMove = false;
+        auto logTrackedEvent = [&](const std::string& event, const std::string& extra) {
+            if (!debugTrackedMove) {
+                return;
+            }
+            std::ostringstream oss;
+            oss << "info string DebugMove " << debugMoveUci
+                << " depth=" << depth
+                << " ply=" << ply
+                << " event=" << event;
+            if (!extra.empty()) {
+                oss << ' ' << extra;
+            }
+            std::cout << oss.str() << std::endl;
+        };
+        if (!limits.debugTrackedMoves.empty()) {
+            debugMoveUci = SafeMoveExecutor::moveToString(move);
+            for (const auto& candidate : limits.debugTrackedMoves) {
+                if (debugMoveUci == candidate) {
+                    debugTrackedMove = true;
+                    break;
+                }
+            }
+            if (debugTrackedMove) {
+                std::ostringstream extra;
+                extra << "moveIndex=" << moveCount << " legal=" << legalMoveCount;
+                logTrackedEvent("consider", extra.str());
+            }
+        }
         // Skip excluded move (for singular extension search)
         if (searchInfo.isExcluded(ply, move)) {
             continue;
@@ -1089,6 +1121,11 @@ eval::Score negamax(Board& board,
                 if (limits.nodeExplosionDiagnostics) {
                     g_nodeExplosionStats.recordMoveCountPrune(depth, moveCount);
                 }
+                if (debugTrackedMove) {
+                    std::ostringstream extra;
+                    extra << "limit=" << limit << " moveCount=" << moveCount;
+                    logTrackedEvent("prune_move_count", extra.str());
+                }
                 continue;  // Skip this move
             }
             } // End of else block for countermove check
@@ -1166,6 +1203,11 @@ eval::Score negamax(Board& board,
                         const int bucket = SearchData::RankGateStats::bucketForRank(rank);
                         info.rankGates.pruned[bucket]++;
 #endif
+                        if (debugTrackedMove) {
+                            std::ostringstream extra;
+                            extra << "rank=" << rank << " reason=see";
+                            logTrackedEvent("prune_capture_rank", extra.str());
+                        }
                         continue;  // Skip this capture
                     }
                 }
@@ -1181,6 +1223,9 @@ eval::Score negamax(Board& board,
                 info.illegalPseudoBeforeFirst++;
             }
             info.illegalPseudoTotal++;
+            if (debugTrackedMove) {
+                logTrackedEvent("illegal", "reason=king_in_check");
+            }
             // Move is illegal (leaves king in check) - skip it
             continue;
         }
@@ -1327,6 +1372,7 @@ eval::Score negamax(Board& board,
         // Phase 2b.7: Variables for PVS re-search smoothing (declared outside if/else)
         int moveRank = 0;
         bool didReSearch = false;
+        int appliedReduction = 0;
         
         // Phase B1: Use legalMoveCount to determine if this is the first LEGAL move
         if (legalMoveCount == 1) {
@@ -1392,6 +1438,7 @@ eval::Score negamax(Board& board,
                     bool improving = false; // Conservative: assume not improving
                     
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+                    appliedReduction = reduction;
                     
                     // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
                     // SPRT fix: Add !weAreInCheck guard to avoid reducing evasions
@@ -1432,14 +1479,28 @@ eval::Score negamax(Board& board,
                             info.rankGates.reduced[bucket]++;
                         }
 #endif
+                        if (debugTrackedMove && reduction != originalReduction) {
+                            std::ostringstream extra;
+                            extra << "rank=" << rank
+                                  << " original=" << originalReduction
+                                  << " adjusted=" << reduction;
+                            logTrackedEvent("lmr_scaled", extra.str());
+                        }
+                        appliedReduction = reduction;
                     }
-                    
+
                     // Phase 2b.7: Apply PVS re-search smoothing to LMR
                     if (applySmoothing && reduction > 0) {
                         // Subtract 1 from any extra reduction added by rank bucket
                         // Do not go below baseline reduction (i.e., the non-rank-aware reduction)
                         int baseReduction = getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
                         reduction = std::max(baseReduction - 1, reduction - 1);
+                        appliedReduction = reduction;
+                        if (debugTrackedMove) {
+                            std::ostringstream extra;
+                            extra << "smoothed=" << reduction;
+                            logTrackedEvent("lmr_smoothed", extra.str());
+                        }
                     }
                     
                     // Track LMR statistics
@@ -1495,6 +1556,13 @@ eval::Score negamax(Board& board,
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
             }
+            appliedReduction = reduction;
+            if (debugTrackedMove && reduction > 0) {
+                std::ostringstream extra;
+                extra << "value=" << reduction
+                      << " reSearch=" << (didReSearch ? 1 : 0);
+                logTrackedEvent("lmr_applied", extra.str());
+            }
         }
         
         // Unmake the move
@@ -1519,7 +1587,17 @@ eval::Score negamax(Board& board,
         if (info.stopped) {
             return bestScore;
         }
-        
+
+        if (debugTrackedMove) {
+            std::ostringstream extra;
+            extra << "score=" << score.to_cp()
+                  << " alpha=" << alpha.to_cp()
+                  << " beta=" << beta.to_cp()
+                  << " reduction=" << appliedReduction
+                  << " legalIndex=" << legalMoveCount;
+            logTrackedEvent("score", extra.str());
+        }
+
         // Update best score and move
         if (score > bestScore) {
             bestScore = score;
@@ -1618,6 +1696,11 @@ eval::Score negamax(Board& board,
                         }
                     }
 #endif
+                    if (debugTrackedMove) {
+                        std::ostringstream extra;
+                        extra << "score=" << score.to_cp() << " beta=" << beta.to_cp();
+                        logTrackedEvent("cutoff", extra.str());
+                    }
                     
                     // Node explosion diagnostics: Track beta cutoff position and move type
                     if (limits.nodeExplosionDiagnostics) {
@@ -1720,6 +1803,15 @@ eval::Score negamax(Board& board,
                     
                     break;  // Beta cutoff - no need to search more moves
                 }
+            }
+
+            if (debugTrackedMove) {
+                std::ostringstream extra;
+                extra << "bestScore=" << bestScore.to_cp();
+                if (ply == 0) {
+                    extra << " root=1";
+                }
+                logTrackedEvent("best_update", extra.str());
             }
         }
     }  // End of move iteration loop

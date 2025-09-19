@@ -64,6 +64,7 @@ Representative examples (from CSV `position_id`):
 - `tests/positions/wac_failures_20250918.epd` – subset of 54 failing WAC positions for rapid iteration.
 - `tools/tactical_investigation.py` – targeted harness to probe selected IDs at multiple time controls, logging whether the expected move appears as bestmove or inside any PV.
 - `tools/run_tactical_investigation.sh` – convenience wrapper mirroring `run_wac_test.sh` defaults.
+- `DebugTrackedMoves` UCI option – trace specific UCI moves (e.g., `h3h7`) during search; outputs detailed `info string DebugMove …` diagnostics saved under `docs/project_docs/telemetry/tactical/`.
 
 ## Immediate Action Items
 1. **Create motif-tagged mini suites** derived from the CSV for quick repro (scripts TBD).
@@ -97,6 +98,12 @@ Representative examples (from CSV `position_id`):
 - Change: Depth sweep (`go depth 4…12`) recording first PV move
 - Result: `WAC.120` flips from tactical material grab (`Bxf6`) at depth ≤6 to defensive rook moves (`Re1/Rg1`) from depth ≥7; expected `Rhg1` never reappears. `WAC.212` briefly considers `Bxe5` at depth 4 before freezing on `Rh8-h5` from depth 5 onward, with `Qxg7+` never promoted.
 - Notes: Both cases indicate the expected move may appear during shallow expansion but is discarded as deeper reductions/ordering amplify alternative quiet responses.
+
+### Experiment 2025-09-18D
+- Positions: `WAC.014` (`Qxh7+`) and `WAC.207` (`Qxg7+`)
+- Change: New `DebugTrackedMoves` telemetry across `movetime {100, 850, 2000}`; logs in `docs/project_docs/telemetry/tactical/WAC.{014,207}_mt*_tracked.txt`
+- Result (WAC.014): Move is generated at every iteration; only pruning observed is a single move-count prune when ranked 8th at depth 3. Scores hover between -10 cp and +30 cp and drift negative beyond depth 6, so `b3b4` remains preferred despite the sac being searched. (WAC.207): No pruning, but repeated fail-high cutoffs (scores ≈ 31990) collapse to −280 cp after the full-window re-search, indicating defensive resources appear once the search widens.
+- Notes: Both lines reach the search but evaluation/ordering suppress them—queen sacs arrive late (susceptible to LMP) and never gain enough score, while `Qxg7+` looks winning in reduced windows yet fails under the full search, pointing to evaluation depth rather than generation issues.
 
 ## Risks & Open Questions
 - Forcing adjustments may destabilise search/selectivity trade-offs; need regression monitoring.

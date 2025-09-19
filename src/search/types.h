@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <array>
 #include <algorithm>
+#include <vector>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -182,12 +183,15 @@ struct SearchLimits {
     
     // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
     bool showMovePickerStats = false;     // Show move picker statistics at end of search
-    
+
     // Phase 2a.8a: In-check class ordering
     bool useInCheckClassOrdering = false; // Enable class-based ordering for check evasions
-    
+
     // Phase 2b: Rank-aware pruning gates
     bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
+
+    // Debug instrumentation: track specific moves through the search pipeline
+    std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 
     // Benchmark/diagnostics
     bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench

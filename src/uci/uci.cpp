@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <thread>
 #include <cmath>
+#include <sstream>
+#include <cctype>
 
 using namespace seajay;
 
@@ -173,7 +175,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowPhaseInfo type check default true" << std::endl;
     // B0: One-shot search summary at end of go
     std::cout << "option name SearchStats type check default false" << std::endl;
-    
+    // Debug move tracing option (space/comma separated list of UCI moves)
+    std::cout << "option name DebugTrackedMoves type string default" << std::endl;
+
     // Node explosion diagnostics option
     std::cout << "option name NodeExplosionDiagnostics type check default false" << std::endl;
     
@@ -654,6 +658,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Phase 2b: Pass rank-aware gates option
     limits.useRankAwareGates = m_useRankAwareGates;
+    limits.debugTrackedMoves = m_debugTrackedMoves;
     
     // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
@@ -2079,6 +2084,34 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_showSearchStats = false;
             std::cerr << "info string SearchStats disabled" << std::endl;
+        }
+    }
+    else if (optionName == "DebugTrackedMoves") {
+        m_debugTrackedMoves.clear();
+        std::string normalized = value;
+        std::replace(normalized.begin(), normalized.end(), ',', ' ');
+        std::istringstream ss(normalized);
+        std::string token;
+        while (ss >> token) {
+            if (token == "-" || token == "none") {
+                // Treat explicit reset tokens as a request to clear the list
+                m_debugTrackedMoves.clear();
+                continue;
+            }
+            std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+            if (!token.empty()) {
+                m_debugTrackedMoves.push_back(token);
+            }
+        }
+        if (m_debugTrackedMoves.empty()) {
+            std::cerr << "info string DebugTrackedMoves cleared" << std::endl;
+        } else {
+            std::ostringstream oss;
+            for (size_t i = 0; i < m_debugTrackedMoves.size(); ++i) {
+                if (i) oss << ',';
+                oss << m_debugTrackedMoves[i];
+            }
+            std::cerr << "info string DebugTrackedMoves set to: " << oss.str() << std::endl;
         }
     }
     else if (optionName == "NodeExplosionDiagnostics") {

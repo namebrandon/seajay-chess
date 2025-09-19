@@ -1,0 +1,299 @@
+SeaJay Chess Engine v0.10.1-remediated
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+id name SeaJay v0.10.1-remediated
+id author Brandon Harris
+option name UseMagicBitboards type check default true
+option name UseQuiescence type check default true
+option name QSearchNodeLimit type spin default 0 min 0 max 10000000
+option name QSearchMaxCaptures type spin default 32 min 4 max 128
+option name MaxCheckPly type spin default 6 min 0 max 10
+option name RootKingPenalty type spin default 0 min 0 max 1000
+option name SEEMode type combo default off var off var testing var shadow var production
+option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name LMREnabled type check default true
+option name LMRMinDepth type spin default 2 min 0 max 10
+option name LMRMinMoveNumber type spin default 2 min 0 max 20
+option name LMRBaseReduction type spin default 50 min 0 max 200
+option name LMRDepthFactor type spin default 225 min 100 max 400
+option name LMRHistoryThreshold type spin default 50 min 10 max 90
+option name LMRPvReduction type spin default 1 min 0 max 2
+option name LMRNonImprovingBonus type spin default 1 min 0 max 3
+option name UseNullMove type check default true
+option name UseAggressiveNullMove type check default false
+option name AggressiveNullMinEval type spin default 600 min 0 max 2000
+option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000
+option name AggressiveNullRequirePositiveBeta type check default true
+option name NullMoveStaticMargin type spin default 87 min 50 max 300
+option name NullMoveMinDepth type spin default 2 min 2 max 5
+option name NullMoveReductionBase type spin default 4 min 1 max 6
+option name NullMoveReductionDepth6 type spin default 4 min 2 max 6
+option name NullMoveReductionDepth12 type spin default 5 min 3 max 7
+option name NullMoveVerifyDepth type spin default 10 min 6 max 14
+option name NullMoveEvalMargin type spin default 198 min 100 max 400
+option name UsePSTInterpolation type check default true
+option name ShowPhaseInfo type check default true
+option name SearchStats type check default false
+option name DebugTrackedMoves type string default
+option name NodeExplosionDiagnostics type check default false
+option name EvalExtended type check default false
+option name PawnValueMg type spin default 71 min 50 max 130
+option name KnightValueMg type spin default 325 min 280 max 360
+option name BishopValueMg type spin default 344 min 290 max 370
+option name RookValueMg type spin default 487 min 450 max 570
+option name QueenValueMg type spin default 895 min 850 max 1050
+option name PawnValueEg type spin default 92 min 60 max 140
+option name KnightValueEg type spin default 311 min 270 max 340
+option name BishopValueEg type spin default 327 min 300 max 380
+option name RookValueEg type spin default 510 min 480 max 600
+option name QueenValueEg type spin default 932 min 830 max 1030
+option name UseRazoring type check default true
+option name RazorMargin1 type spin default 274 min 100 max 800
+option name RazorMargin2 type spin default 468 min 200 max 1200
+option name UseFutilityPruning type check default true
+option name FutilityMargin1 type spin default 240 min 50 max 400
+option name FutilityMargin2 type spin default 313 min 100 max 500
+option name FutilityMargin3 type spin default 386 min 150 max 600
+option name FutilityMargin4 type spin default 459 min 200 max 700
+option name pawn_eg_r3_d type spin default 8 min 0 max 30
+option name pawn_eg_r3_e type spin default 7 min 0 max 30
+option name pawn_eg_r4_d type spin default 18 min 10 max 50
+option name pawn_eg_r4_e type spin default 16 min 10 max 50
+option name pawn_eg_r5_d type spin default 29 min 20 max 70
+option name pawn_eg_r5_e type spin default 27 min 20 max 70
+option name pawn_eg_r6_d type spin default 51 min 30 max 100
+option name pawn_eg_r6_e type spin default 48 min 30 max 100
+option name pawn_eg_r7_center type spin default 75 min 50 max 150
+option name knight_eg_center type spin default 15 min 5 max 25
+option name knight_eg_extended type spin default 10 min 0 max 20
+option name knight_eg_edge type spin default -25 min -40 max -10
+option name knight_eg_corner type spin default -40 min -50 max -20
+option name bishop_eg_long_diag type spin default 19 min 10 max 35
+option name bishop_eg_center type spin default 14 min 5 max 25
+option name bishop_eg_edge type spin default -5 min -15 max 5
+option name rook_eg_7th type spin default 20 min 15 max 40
+option name rook_eg_active type spin default 12 min 5 max 20
+option name rook_eg_passive type spin default 5 min 0 max 15
+option name queen_eg_center type spin default 9 min 5 max 20
+option name queen_eg_active type spin default 7 min 0 max 20
+option name queen_eg_back type spin default -5 min -10 max 5
+option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50
+option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40
+option name KingSafetyEnableScoring type spin default 1 min 0 max 1
+option name king_mg_e1 type spin default 21 min -50 max 50
+option name king_mg_b1 type spin default -5 min -50 max 50
+option name king_mg_g1 type spin default 16 min -50 max 50
+option name king_mg_a1 type spin default 25 min -50 max 50
+option name king_mg_h1 type spin default 12 min -50 max 50
+option name king_mg_c1 type spin default 8 min -50 max 50
+option name king_mg_d1 type spin default -27 min -50 max 50
+option name king_mg_f1 type spin default -28 min -50 max 50
+option name Hash type spin default 128 min 1 max 16384
+option name UseTranspositionTable type check default true
+option name UseClusteredTT type check default true
+option name UseStagedMovePicker type check default false
+option name UseRankedMovePicker type check default true
+option name ShowMovePickerStats type check default false
+option name UseInCheckClassOrdering type check default true
+option name UseRankAwareGates type check default true
+option name Threads type spin default 1 min 1 max 1024
+option name AspirationWindow type spin default 13 min 5 max 50
+option name ShowPVSStats type check default false
+option name CountermoveBonus type spin default 7960 min 0 max 20000
+option name MoveCountPruning type check default true
+option name MoveCountLimit3 type spin default 7 min 3 max 50
+option name MoveCountLimit4 type spin default 15 min 5 max 60
+option name MoveCountLimit5 type spin default 20 min 8 max 70
+option name MoveCountLimit6 type spin default 25 min 10 max 80
+option name MoveCountLimit7 type spin default 36 min 12 max 90
+option name MoveCountLimit8 type spin default 42 min 15 max 100
+option name MoveCountMaxDepth type spin default 8 min 3 max 20
+option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000
+option name MoveCountHistoryBonus type spin default 6 min 0 max 20
+option name MoveCountImprovingRatio type spin default 75 min 50 max 100
+option name AspirationMaxAttempts type spin default 5 min 3 max 10
+option name StabilityThreshold type spin default 6 min 3 max 12
+option name UseAspirationWindows type check default true
+option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive
+option name UsePhaseStability type check default true
+option name OpeningStability type spin default 4 min 2 max 8
+option name MiddlegameStability type spin default 6 min 3 max 10
+option name EndgameStability type spin default 8 min 4 max 12
+option name FutilityPruning type check default true
+option name FutilityMaxDepth type spin default 7 min 0 max 10
+option name FutilityBase type spin default 240 min 50 max 500
+option name FutilityScale type spin default 73 min 20 max 200
+info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
+uciok
+info string DebugMove h3h7 depth=1 ply=0 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=0 event=score score=-301 alpha=-301 beta=32000 reduction=0 legalIndex=3
+info depth 1 seldepth 4 score cp 8 nodes 51 nps 3642 time 0 tthits 0.00 hashfull 0 pv a1d1
+info string DebugMove h3h7 depth=2 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=0 event=score score=-301 alpha=-9 beta=32000 reduction=0 legalIndex=4
+info depth 2 seldepth 7 score cp -2 nodes 341 nps 8743 time 0 moveeff 39.53 tthits 28.00 hashfull 0 pv b3b4
+info string Countermoves: updates=26 hits=0 hitRate=0.0% bonus=7960
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=32000 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=2 event=score score=22 alpha=22 beta=23 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=2 event=score score=22 alpha=22 beta=23 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=2 event=score score=22 alpha=22 beta=23 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=3 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=3 ply=0 event=score score=23 alpha=23 beta=32000 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=2 event=score score=23 alpha=23 beta=24 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=2 event=best_update bestScore=23
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=2 event=score score=23 alpha=23 beta=24 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=2 event=best_update bestScore=23
+info string DebugMove h3h7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=2 event=score score=23 alpha=23 beta=24 reduction=0 legalIndex=4
+info depth 3 seldepth 7 score cp 23 ebf 5.69 nodes 632 nps 12153 time 0 moveeff 49.12 tthits 67.26 hashfull 0 pv b3b4 c5d6 a1d1
+info string Countermoves: updates=30 hits=1 hitRate=3.3% bonus=7960
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=-286 alpha=8 beta=38 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=15 legal=15
+info string DebugMove h3h7 depth=4 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=0 event=score score=8 alpha=8 beta=38 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=8 alpha=8 beta=9 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove h3h7 depth=2 ply=2 event=score score=-1053 alpha=8 beta=9 reduction=0 legalIndex=1
+info string DebugMove h3h7 depth=2 ply=2 event=best_update bestScore=-1053
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove h3h7 depth=2 ply=2 event=score score=8 alpha=8 beta=9 reduction=0 legalIndex=1
+info string DebugMove h3h7 depth=2 ply=2 event=best_update bestScore=8
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=8 alpha=8 beta=9 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=-286 alpha=7 beta=8 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=4 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=0 event=score score=7 alpha=7 beta=8 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=2 ply=2 event=score score=7 alpha=7 beta=8 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=7 alpha=7 beta=8 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove h3h7 depth=2 ply=2 event=score score=7 alpha=7 beta=8 reduction=0 legalIndex=1
+info string DebugMove h3h7 depth=2 ply=2 event=best_update bestScore=7
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=7 alpha=7 beta=8 reduction=0 legalIndex=4
+info depth 4 seldepth 10 score cp 7 ebf 2.88 nodes 1416 nps 15560 time 0 moveeff 72.92 tthits 79.47 hashfull 0 pv b3b4 c5d6 a1d1 a8c8
+info string Countermoves: updates=48 hits=10 hitRate=20.8% bonus=7960
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=-8 alpha=-8 beta=22 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=4 event=score score=21 alpha=21 beta=22 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=21 alpha=21 beta=22 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=21 alpha=21 beta=22 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=21 alpha=21 beta=22 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove h3h7 depth=1 ply=4 event=score score=21 alpha=21 beta=22 reduction=0 legalIndex=5
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove h3h7 depth=1 ply=4 event=score score=13 alpha=13 beta=21 reduction=0 legalIndex=5
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=4 event=score score=-8 alpha=-8 beta=17 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=3 ply=2 event=score score=16 alpha=16 beta=22 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=3 ply=2 event=consider moveIndex=8 legal=8
+info string DebugMove h3h7 depth=3 ply=2 event=prune_move_count limit=7 moveCount=8
+info string DebugMove h3h7 depth=5 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=5 ply=0 event=score score=-516 alpha=16 beta=22 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=3 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=3 ply=2 event=score score=-968 alpha=16 beta=17 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=3 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove h3h7 depth=3 ply=2 event=score score=-691 alpha=16 beta=17 reduction=0 legalIndex=1
+info string DebugMove h3h7 depth=3 ply=2 event=best_update bestScore=-691
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=16 alpha=16 beta=17 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=3 ply=2 event=score score=16 alpha=16 beta=17 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=4 event=score score=16 alpha=16 beta=17 reduction=0 legalIndex=4
+info depth 5 seldepth 15 score cp 16 string fail-low(1) bound [-22,23] string unstable ebf 2.80 nodes 2189 nps 16583 time 0 moveeff 68.06 tthits 76.57 hashfull 0 pv b3b4 c5d6 a1d1 a7a5
+info string Countermoves: updates=79 hits=15 hitRate=19.0% bonus=7960
+info string MoveOrdering: totalCutoffs=216 TT=117 Cap=30 Kill=59 nodes=2189
+info string MoveOrdering cutoffs: TT=54.2% 1stCap=13.9% Killer=27.3% Counter=0.5% Quiet=4.2% BadCap=0.0%
+info string Cutoff by index: [0]=68.1% [1]=0.5% [2]=11.6% [3]=14.4% [4]=3.2% [5+]=0.5% [10+]=1.9%
+info string Bad captures: QxP=76 attempts (0.0% cutoff) RxP=2 attempts (0.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove h3h7 depth=2 ply=4 event=score score=6 alpha=6 beta=32 reduction=0 legalIndex=5
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=4 event=score score=-8 alpha=23 beta=24 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=4 event=score score=-8 alpha=18 beta=23 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=7 legal=7
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=2 event=score score=18 alpha=18 beta=32 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=2 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=2 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove h3h7 depth=2 ply=4 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=2
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=2 event=score score=17 alpha=17 beta=18 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=2 ply=4 event=score score=0 alpha=0 beta=17 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=4 event=score score=14 alpha=14 beta=15 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=14 alpha=14 beta=15 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=1 ply=4 event=score score=14 alpha=14 beta=15 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=1 ply=4 event=score score=14 alpha=14 beta=15 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove h3h7 depth=2 ply=4 event=score score=15 alpha=15 beta=16 reduction=0 legalIndex=2
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=2 event=score score=15 alpha=15 beta=17 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove h3h7 depth=6 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=6 ply=0 event=score score=-474 alpha=15 beta=32 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=4 ply=2 event=score score=-883 alpha=15 beta=16 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=2 event=score score=-606 alpha=15 beta=16 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=2 ply=4 event=score score=15 alpha=15 beta=16 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove h3h7 depth=2 ply=4 event=score score=15 alpha=15 beta=16 reduction=0 legalIndex=3
+info string DebugMove h3h7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=4 ply=2 event=score score=15 alpha=15 beta=16 reduction=0 legalIndex=4
+info string DebugMove h3h7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove h3h7 depth=2 ply=4 event=score score=15 alpha=15 beta=16 reduction=0 legalIndex=4
+info string SEE pruning final: 1670/2766 captures pruned (60.4%) [Conservative mode]
+info string SearchStats: depth=6 seldepth=17 nodes=3732 nps=17041 tt: probes=937 hits=718 hit%=76.6 cutoffs=100 stores=791 coll=0 pvs: scout=2679 re%=5.6 null: att=349 cut=186 cut%=53.3 extra(cand=0,app=0,blk=0,sup=0,cut=0,vpass=0,vfail=0,cap=0) no-store=0 static-cut=81 static-no-store=40 prune: fut=1322 mcp=899 razor: att=412 cut=61 cut%=14.8 skips(tact=89,tt=131,eg=0) razor_b=[45,16] asp: att=1 low=1 high=0 fut_b=[0,0,0,0] fut_eff_b=[157,0,0,0] mcp_b=[600,299,0,0] illegal: first=0 total=107 hist(apps=509,basic=285,cmh=224,first=134+139,cuts=15+8,re=149)
+bestmove b3b4

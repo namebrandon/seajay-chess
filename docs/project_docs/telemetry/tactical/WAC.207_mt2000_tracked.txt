@@ -1,0 +1,1395 @@
+SeaJay Chess Engine v0.10.1-remediated
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+id name SeaJay v0.10.1-remediated
+id author Brandon Harris
+option name UseMagicBitboards type check default true
+option name UseQuiescence type check default true
+option name QSearchNodeLimit type spin default 0 min 0 max 10000000
+option name QSearchMaxCaptures type spin default 32 min 4 max 128
+option name MaxCheckPly type spin default 6 min 0 max 10
+option name RootKingPenalty type spin default 0 min 0 max 1000
+option name SEEMode type combo default off var off var testing var shadow var production
+option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name LMREnabled type check default true
+option name LMRMinDepth type spin default 2 min 0 max 10
+option name LMRMinMoveNumber type spin default 2 min 0 max 20
+option name LMRBaseReduction type spin default 50 min 0 max 200
+option name LMRDepthFactor type spin default 225 min 100 max 400
+option name LMRHistoryThreshold type spin default 50 min 10 max 90
+option name LMRPvReduction type spin default 1 min 0 max 2
+option name LMRNonImprovingBonus type spin default 1 min 0 max 3
+option name UseNullMove type check default true
+option name UseAggressiveNullMove type check default false
+option name AggressiveNullMinEval type spin default 600 min 0 max 2000
+option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000
+option name AggressiveNullRequirePositiveBeta type check default true
+option name NullMoveStaticMargin type spin default 87 min 50 max 300
+option name NullMoveMinDepth type spin default 2 min 2 max 5
+option name NullMoveReductionBase type spin default 4 min 1 max 6
+option name NullMoveReductionDepth6 type spin default 4 min 2 max 6
+option name NullMoveReductionDepth12 type spin default 5 min 3 max 7
+option name NullMoveVerifyDepth type spin default 10 min 6 max 14
+option name NullMoveEvalMargin type spin default 198 min 100 max 400
+option name UsePSTInterpolation type check default true
+option name ShowPhaseInfo type check default true
+option name SearchStats type check default false
+option name DebugTrackedMoves type string default
+option name NodeExplosionDiagnostics type check default false
+option name EvalExtended type check default false
+option name PawnValueMg type spin default 71 min 50 max 130
+option name KnightValueMg type spin default 325 min 280 max 360
+option name BishopValueMg type spin default 344 min 290 max 370
+option name RookValueMg type spin default 487 min 450 max 570
+option name QueenValueMg type spin default 895 min 850 max 1050
+option name PawnValueEg type spin default 92 min 60 max 140
+option name KnightValueEg type spin default 311 min 270 max 340
+option name BishopValueEg type spin default 327 min 300 max 380
+option name RookValueEg type spin default 510 min 480 max 600
+option name QueenValueEg type spin default 932 min 830 max 1030
+option name UseRazoring type check default true
+option name RazorMargin1 type spin default 274 min 100 max 800
+option name RazorMargin2 type spin default 468 min 200 max 1200
+option name UseFutilityPruning type check default true
+option name FutilityMargin1 type spin default 240 min 50 max 400
+option name FutilityMargin2 type spin default 313 min 100 max 500
+option name FutilityMargin3 type spin default 386 min 150 max 600
+option name FutilityMargin4 type spin default 459 min 200 max 700
+option name pawn_eg_r3_d type spin default 8 min 0 max 30
+option name pawn_eg_r3_e type spin default 7 min 0 max 30
+option name pawn_eg_r4_d type spin default 18 min 10 max 50
+option name pawn_eg_r4_e type spin default 16 min 10 max 50
+option name pawn_eg_r5_d type spin default 29 min 20 max 70
+option name pawn_eg_r5_e type spin default 27 min 20 max 70
+option name pawn_eg_r6_d type spin default 51 min 30 max 100
+option name pawn_eg_r6_e type spin default 48 min 30 max 100
+option name pawn_eg_r7_center type spin default 75 min 50 max 150
+option name knight_eg_center type spin default 15 min 5 max 25
+option name knight_eg_extended type spin default 10 min 0 max 20
+option name knight_eg_edge type spin default -25 min -40 max -10
+option name knight_eg_corner type spin default -40 min -50 max -20
+option name bishop_eg_long_diag type spin default 19 min 10 max 35
+option name bishop_eg_center type spin default 14 min 5 max 25
+option name bishop_eg_edge type spin default -5 min -15 max 5
+option name rook_eg_7th type spin default 20 min 15 max 40
+option name rook_eg_active type spin default 12 min 5 max 20
+option name rook_eg_passive type spin default 5 min 0 max 15
+option name queen_eg_center type spin default 9 min 5 max 20
+option name queen_eg_active type spin default 7 min 0 max 20
+option name queen_eg_back type spin default -5 min -10 max 5
+option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50
+option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40
+option name KingSafetyEnableScoring type spin default 1 min 0 max 1
+option name king_mg_e1 type spin default 21 min -50 max 50
+option name king_mg_b1 type spin default -5 min -50 max 50
+option name king_mg_g1 type spin default 16 min -50 max 50
+option name king_mg_a1 type spin default 25 min -50 max 50
+option name king_mg_h1 type spin default 12 min -50 max 50
+option name king_mg_c1 type spin default 8 min -50 max 50
+option name king_mg_d1 type spin default -27 min -50 max 50
+option name king_mg_f1 type spin default -28 min -50 max 50
+option name Hash type spin default 128 min 1 max 16384
+option name UseTranspositionTable type check default true
+option name UseClusteredTT type check default true
+option name UseStagedMovePicker type check default false
+option name UseRankedMovePicker type check default true
+option name ShowMovePickerStats type check default false
+option name UseInCheckClassOrdering type check default true
+option name UseRankAwareGates type check default true
+option name Threads type spin default 1 min 1 max 1024
+option name AspirationWindow type spin default 13 min 5 max 50
+option name ShowPVSStats type check default false
+option name CountermoveBonus type spin default 7960 min 0 max 20000
+option name MoveCountPruning type check default true
+option name MoveCountLimit3 type spin default 7 min 3 max 50
+option name MoveCountLimit4 type spin default 15 min 5 max 60
+option name MoveCountLimit5 type spin default 20 min 8 max 70
+option name MoveCountLimit6 type spin default 25 min 10 max 80
+option name MoveCountLimit7 type spin default 36 min 12 max 90
+option name MoveCountLimit8 type spin default 42 min 15 max 100
+option name MoveCountMaxDepth type spin default 8 min 3 max 20
+option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000
+option name MoveCountHistoryBonus type spin default 6 min 0 max 20
+option name MoveCountImprovingRatio type spin default 75 min 50 max 100
+option name AspirationMaxAttempts type spin default 5 min 3 max 10
+option name StabilityThreshold type spin default 6 min 3 max 12
+option name UseAspirationWindows type check default true
+option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive
+option name UsePhaseStability type check default true
+option name OpeningStability type spin default 4 min 2 max 8
+option name MiddlegameStability type spin default 6 min 3 max 10
+option name EndgameStability type spin default 8 min 4 max 12
+option name FutilityPruning type check default true
+option name FutilityMaxDepth type spin default 7 min 0 max 10
+option name FutilityBase type spin default 240 min 50 max 500
+option name FutilityScale type spin default 73 min 20 max 200
+info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
+uciok
+info string DebugMove g4g7 depth=1 ply=0 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=0 event=score score=-755 alpha=-755 beta=32000 reduction=0 legalIndex=4
+info depth 1 seldepth 6 score cp -270 nodes 52 nps 3250 time 0 tthits 0.00 hashfull 0 pv f2f4
+info string DebugMove g4g7 depth=2 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=0 event=score score=-755 alpha=-293 beta=32000 reduction=0 legalIndex=5
+info depth 2 seldepth 7 score cp -293 nodes 213 nps 7344 time 0 moveeff 74.47 tthits 50.98 hashfull 0 pv f2f4 d7d6
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-322 alpha=-322 beta=32000 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-291 alpha=-291 beta=-290 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-291 alpha=-291 beta=-290 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=0 event=score score=-290 alpha=-290 beta=32000 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-290 beta=-289 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-289 beta=32000 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-290 alpha=-254 beta=-253 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info depth 3 seldepth 13 score cp -286 ebf 3.10 nodes 1644 nps 13815 time 0 moveeff 77.23 tthits 80.75 hashfull 0 pv g1f3
+info string Countermoves: updates=8 hits=3 hitRate=37.5% bonus=7960
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-290 alpha=-280 beta=-271 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=4 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=0 event=score score=-783 alpha=-280 beta=-271 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-951 alpha=-280 beta=-279 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-290 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-290 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-999 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-290 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-1041 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=2 event=best_update bestScore=-1041
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=2 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-286 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info depth 4 seldepth 13 score cp -280 ebf 6.57 nodes 3079 nps 16643 time 155 moveeff 88.60 tthits 73.00 hashfull 1 pv g1f3 d4e5 d1c1 f7f5
+info string Countermoves: updates=16 hits=5 hitRate=31.2% bonus=7960
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-295 alpha=-295 beta=-265 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-289 alpha=-289 beta=-288 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-289 alpha=-284 beta=-265 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-278
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-278 alpha=-278 beta=-265 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-279 alpha=-279 beta=-278 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-279 alpha=-279 beta=-278 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=5 ply=0 event=score score=-698 alpha=-278 beta=-265 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-278 beta=-277 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-277
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-270 beta=-265 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-866 alpha=-270 beta=-265 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-271 alpha=-271 beta=-270 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-271 alpha=-271 beta=-270 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-914 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-956 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=2 event=best_update bestScore=-270
+info depth 5 seldepth 15 score cp -270 bound [-301,-271] ebf 4.10 nodes 4903 nps 15226 time 155 moveeff 84.46 tthits 66.36 hashfull 1 pv f2f4
+info string Countermoves: updates=71 hits=17 hitRate=23.9% bonus=7960
+info string MoveOrdering: totalCutoffs=481 TT=327 Cap=96 Kill=44 nodes=4903
+info string MoveOrdering cutoffs: TT=68.0% 1stCap=20.0% Killer=9.1% Counter=0.0% Quiet=2.9% BadCap=0.0%
+info string Cutoff by index: [0]=84.5% [1]=6.0% [2]=3.8% [3]=3.0% [4]=0.6% [5+]=1.0% [10+]=1.2%
+info string Bad captures: QxP=249 attempts (0.0% cutoff) RxP=134 attempts (0.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-286 alpha=-286 beta=-254 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-851 alpha=-277 beta=-276 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-851
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1358 alpha=-277 beta=-276 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-1358
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-781 alpha=-277 beta=-254 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-725 alpha=-277 beta=-276 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-782 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-278
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-728 alpha=-278 beta=-277 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1124 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-286 alpha=-286 beta=-278 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-286
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-728 alpha=-286 beta=-278 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1124 alpha=-286 beta=-285 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-1315 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=6 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=6 ply=0 event=score score=-656 alpha=-286 beta=-254 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-286 alpha=-286 beta=-285 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-289 alpha=-274 beta=-254 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-274 alpha=-274 beta=-273 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-274
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-851 alpha=-274 beta=-254 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-295 alpha=-274 beta=-273 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-920 alpha=-275 beta=-274 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-804 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-276 alpha=-276 beta=-275 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-276 alpha=-276 beta=-275 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-863 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-275
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-898 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-813 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-813
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-275
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-875 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-884 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-852 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-852
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-851 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-851
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-275
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1476 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-1476
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-829 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-846 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-846
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-275
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-858 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-871 alpha=-275 beta=-274 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-967 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-967
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-1141 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-1141
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-840 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-840
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-275
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-1155 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-1155
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-1179 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-1179
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-878 alpha=-275 beta=-274 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=2 event=best_update bestScore=-878
+info depth 6 seldepth 15 score cp -275 bound [-295,-265] string unstable ebf 2.87 nodes 7916 nps 14768 time 343 moveeff 84.26 tthits 60.71 hashfull 1 pv g1f3
+info string Countermoves: updates=159 hits=48 hitRate=30.2% bonus=7960
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-291 alpha=-291 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-275 alpha=-275 beta=-274 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-274 alpha=-274 beta=-273 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-274 alpha=-269 beta=-259 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-269 alpha=-269 beta=-268 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-269
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-835 alpha=-269 beta=-259 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-270 alpha=-270 beta=-269 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-291 alpha=-291 beta=-270 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-291 alpha=-291 beta=-290 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-291 alpha=-291 beta=-290 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-719 alpha=-280 beta=-259 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-281 alpha=-281 beta=-280 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-1230 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=7 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=7 ply=0 event=score score=-614 alpha=-280 beta=-259 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-778 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-820 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1074 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-989 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-643 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-842 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-813 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-1066 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-981 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-790 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-799 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-767 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-822 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-728 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-773 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-775 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-793 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=2 event=score score=31997 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=2 event=cutoff score=31997 beta=-279
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-903 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=3 ply=4 event=score score=31995 alpha=-280 beta=-279 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=3 ply=4 event=cutoff score=31995 beta=-279
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-767 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-777 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-766 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=3 ply=4 event=best_update bestScore=-280
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-761 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1207 alpha=-280 beta=-279 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1207
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-796 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-1751 alpha=-280 beta=-279 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-786 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-1056 alpha=-280 beta=-279 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=2 event=score score=-280 alpha=-280 beta=-279 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-1070 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=5 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=5 ply=2 event=score score=-1094 alpha=-280 beta=-279 reduction=0 legalIndex=4
+info depth 7 seldepth 15 score cp -280 bound [-286,-254] string unstable ebf 1.38 nodes 13296 nps 14724 time 792 moveeff 82.32 tthits 52.96 hashfull 1 pv g1f3 d4f2 d1c1 c8b7
+info string Countermoves: updates=315 hits=98 hitRate=31.1% bonus=7960
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-297 alpha=-297 beta=-296 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-297
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-781 alpha=-297 beta=-263 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-297 alpha=-297 beta=-296 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-297
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-297 alpha=-297 beta=-296 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-264 alpha=-264 beta=-263 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-274 alpha=-264 beta=-263 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-291 alpha=-264 beta=-263 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1399 alpha=-264 beta=-263 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-1399
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-750 alpha=-264 beta=-263 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-264 alpha=-264 beta=-263 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-297 alpha=-297 beta=-264 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-297 alpha=-297 beta=-296 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-297 alpha=-296 beta=-264 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-750 alpha=-296 beta=-264 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-296 alpha=-296 beta=-295 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-295 alpha=-295 beta=-264 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-277 alpha=-277 beta=-276 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-277 alpha=-277 beta=-276 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-277 alpha=-277 beta=-276 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-277 alpha=-277 beta=-276 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-277 alpha=-277 beta=-276 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-277
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-770 alpha=-277 beta=-276 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-283 alpha=-283 beta=-282 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-283 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-278
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-770 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-945 alpha=-279 beta=-278 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1362 alpha=-278 beta=-277 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1362
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-677 alpha=-278 beta=-263 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=best_update bestScore=-278
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-938 alpha=-278 beta=-277 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-278 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-967 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-705 alpha=-278 beta=-277 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-461 alpha=-264 beta=-263 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-684 alpha=-264 beta=-263 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-264 alpha=-264 beta=-263 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-264
+info string DebugMove g4g7 depth=4 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=2 event=score score=-689 alpha=-264 beta=-263 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-725 alpha=-264 beta=-263 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-535 alpha=-246 beta=-229 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-690 alpha=-230 beta=-229 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-230 alpha=-230 beta=-229 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1172 alpha=-230 beta=-229 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-520 alpha=-230 beta=-229 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-230 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-520 alpha=-257 beta=-230 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-677 alpha=-257 beta=-229 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-257 alpha=-257 beta=-256 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-257
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-257 alpha=-257 beta=-256 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-257
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-257 alpha=-257 beta=-256 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=4 event=best_update bestScore=-257
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-736 alpha=-257 beta=-256 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-257 alpha=-257 beta=-256 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-798 alpha=-258 beta=-257 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1399 alpha=-258 beta=-257 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1399
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-724 alpha=-258 beta=-257 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-258 alpha=-258 beta=-257 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-258
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-798 alpha=-263 beta=-258 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1399 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-724 alpha=-263 beta=-258 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=8 ply=0 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=8 ply=0 event=score score=-572 alpha=-263 beta=-229 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1396 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1396
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-736 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-798 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-798
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-838 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-846 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-977 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1288 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1288
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-601 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1447 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-791 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-954 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-602 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=6 legal=6
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-651 alpha=-263 beta=-262 reduction=0 legalIndex=7
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-883 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-830 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1335 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1042 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-681 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1188 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-654 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-482 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-262
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-744 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1498 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-853 alpha=-263 beta=-262 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-962 alpha=-263 beta=-262 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-793 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1171 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-637 alpha=-263 beta=-262 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-262
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-262
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=6 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=3 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=3 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-263
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-782 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-655 alpha=-263 beta=-262 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-263 alpha=-263 beta=-262 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=31995 alpha=-233 beta=-232 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=cutoff score=31995 beta=-232
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-601 alpha=-232 beta=-229 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-232 alpha=-232 beta=-231 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-232 alpha=-232 beta=-231 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-232
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-233 beta=-232 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=6 legal=6
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-233 beta=-232 reduction=0 legalIndex=7
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-482 alpha=-233 beta=-232 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-654 alpha=-233 beta=-232 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-233
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-233 alpha=-233 beta=-232 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-555 alpha=-233 beta=-232 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=6 legal=6
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-263 alpha=-259 beta=-233 reduction=0 legalIndex=7
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-482 alpha=-259 beta=-233 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-263 alpha=-260 beta=-259 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info depth 8 seldepth 17 score cp -263 nodes 24576 nps 14296 time 1627 hashfull 2 pv g1f3
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=31991 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=1 ply=8 event=cutoff score=31991 beta=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=31993 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=cutoff score=31993 beta=-259
+info string DebugMove g4g7 depth=1 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=6 event=score score=31993 alpha=-260 beta=-259 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=6 event=cutoff score=31993 beta=-259
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-654 alpha=-259 beta=-233 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-259 alpha=-259 beta=-258 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=8 event=best_update bestScore=-259
+info string DebugMove g4g7 depth=1 ply=8 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=8 event=score score=-259 alpha=-259 beta=-258 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-555 alpha=-259 beta=-258 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-259 alpha=-259 beta=-258 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=1 ply=4 event=score score=31995 alpha=-260 beta=-259 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=1 ply=4 event=cutoff score=31995 beta=-259
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-260 alpha=-260 beta=-259 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=3 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=3 ply=2 event=score score=-655 alpha=-260 beta=-259 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-655 alpha=-260 beta=-259 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-655 alpha=-262 beta=-260 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=2 ply=2 event=score score=31997 alpha=-262 beta=-261 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=2 ply=2 event=cutoff score=31997 beta=-261
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-860 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1070 alpha=-262 beta=-261 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1070
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1362 alpha=-262 beta=-261 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1362
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-686 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1088 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-1028 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-1052 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=5 legal=5
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=6
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-1014 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-751 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-881 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-262 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-262 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-262
+info string DebugMove g4g7 depth=1 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=1 ply=4 event=score score=-262 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=1 ply=4 event=best_update bestScore=-262
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-922 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-873 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=1 legal=1
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1666 alpha=-262 beta=-261 reduction=0 legalIndex=2
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-744 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=2 legal=2
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-262 alpha=-262 beta=-261 reduction=0 legalIndex=3
+info string DebugMove g4g7 depth=2 ply=6 event=best_update bestScore=-262
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-931 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=0 legal=0
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-1416 alpha=-262 beta=-261 reduction=0 legalIndex=1
+info string DebugMove g4g7 depth=4 ply=4 event=best_update bestScore=-1416
+info string DebugMove g4g7 depth=6 ply=2 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=6 ply=2 event=score score=-748 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-850 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-1490 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-954 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=2 ply=6 event=consider moveIndex=3 legal=3
+info string DebugMove g4g7 depth=2 ply=6 event=score score=-262 alpha=-262 beta=-261 reduction=0 legalIndex=4
+info string DebugMove g4g7 depth=4 ply=4 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=4 ply=4 event=score score=-839 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info string DebugMove g4g7 depth=2 ply=2 event=consider moveIndex=4 legal=4
+info string DebugMove g4g7 depth=2 ply=2 event=score score=-280 alpha=-262 beta=-261 reduction=0 legalIndex=5
+info depth 8 seldepth 17 score cp -262 bound [-291,-259] ebf 1.63 nodes 28166 nps 14777 time 1822 moveeff 82.81 tthits 53.78 hashfull 2 pv f2f4
+info string Countermoves: updates=641 hits=203 hitRate=31.7% bonus=7960
+info string SEE pruning final: 10792/20385 captures pruned (52.9%) [Conservative mode]
+info string SearchStats: depth=8 seldepth=17 nodes=28166 nps=14777 tt: probes=8487 hits=4564 hit%=53.8 cutoffs=515 stores=6953 coll=0 pvs: scout=19763 re%=3.3 null: att=2752 cut=677 cut%=24.6 extra(cand=0,app=0,blk=0,sup=0,cut=0,vpass=0,vfail=0,cap=0) no-store=0 static-cut=2044 static-no-store=991 prune: fut=16212 mcp=12292 razor: att=3536 cut=380 cut%=10.7 skips(tact=1482,tt=1091,eg=3) razor_b=[259,121] asp: att=1 low=0 high=1 fut_b=[0,0,0,0] fut_eff_b=[1774,3,0,0] mcp_b=[6494,5786,12,0] illegal: first=25 total=833 hist(apps=4871,basic=2306,cmh=2565,first=1370+1487,cuts=87+70,re=646)
+bestmove f2f4
