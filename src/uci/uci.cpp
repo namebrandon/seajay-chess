@@ -1686,7 +1686,13 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "KingAttackScale") {
         try {
-            int scale = std::stoi(value);
+            int scale = 0;
+            try {
+                double dv = std::stod(value);
+                scale = static_cast<int>(std::round(dv));
+            } catch (...) {
+                scale = std::stoi(value);
+            }
             if (scale >= 0 && scale <= 500) {
                 seajay::getConfig().kingAttackScale = scale;
                 std::cerr << "info string KingAttackScale set to " << scale << std::endl;
