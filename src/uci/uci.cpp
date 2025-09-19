@@ -209,6 +209,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name FutilityMargin2 type spin default 313 min 100 max 500" << std::endl;
     std::cout << "option name FutilityMargin3 type spin default 386 min 150 max 600" << std::endl;
     std::cout << "option name FutilityMargin4 type spin default 459 min 200 max 700" << std::endl;
+
+    // Offensive king safety scaling
+    std::cout << "option name KingAttackScale type spin default 0 min 0 max 500" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
@@ -1679,6 +1682,17 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid FutilityMargin4 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KingAttackScale") {
+        try {
+            int scale = std::stoi(value);
+            if (scale >= 0 && scale <= 500) {
+                seajay::getConfig().kingAttackScale = scale;
+                std::cerr << "info string KingAttackScale set to " << scale << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KingAttackScale value: " << value << std::endl;
         }
     }
     // Legacy futility options (kept for backwards compatibility)

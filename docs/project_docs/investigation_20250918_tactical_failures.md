@@ -65,6 +65,7 @@ Representative examples (from CSV `position_id`):
 - `tools/tactical_investigation.py` – targeted harness to probe selected IDs at multiple time controls, logging whether the expected move appears as bestmove or inside any PV.
 - `tools/run_tactical_investigation.sh` – convenience wrapper mirroring `run_wac_test.sh` defaults.
 - `DebugTrackedMoves` UCI option – trace specific UCI moves (e.g., `h3h7`) during search; outputs detailed `info string DebugMove …` diagnostics saved under `docs/project_docs/telemetry/tactical/`.
+- `KingAttackScale` UCI option – scales the offensive king-safety component (0 = default scoring). Example: `setoption name KingAttackScale value 200` triples the effect.
 
 **How to Reproduce Current Telemetry**
 - Baseline split (solved / PV-only / never-surfaced):
@@ -157,3 +158,11 @@ Representative examples (from CSV `position_id`):
 - Generation script: `tools/run_wac_test.sh`
 - Related tactical history: `tools/tactical_test_history.csv`
 - Prior branch context: `integration/20250912-depth-and-search-speed`
+- **KingAttackScale sensitivity (WAC.014)**
+  ```bash
+  uci
+  setoption name KingAttackScale value 200
+  position fen r2rb1k1/pp1q1p1p/2n1p1p1/2bp4/5P2/PP1BPR1Q/1BPN2PP/R5K1 w - - 0 1
+  go depth 12
+  ```
+  With scale ≥200 the engine now selects `Qxh7+`; at scale 0 it still prefers `b3b4`. This confirms the sac is evaluation-bound rather than a legality issue.

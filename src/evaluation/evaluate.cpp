@@ -1021,6 +1021,12 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     // King safety is from each side's perspective, so we subtract black's from white's
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
     Score kingSafetyScore = whiteKingSafety - blackKingSafety;
+
+    int kingAttackScale = seajay::getConfig().kingAttackScale;
+    if (kingAttackScale != 0) {
+        int scaledValue = kingSafetyScore.value() * (100 + kingAttackScale) / 100;
+        kingSafetyScore = Score(scaledValue);
+    }
     
     // Trace king safety score
     if constexpr (Traced) {

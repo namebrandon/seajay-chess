@@ -30,6 +30,9 @@ public:
     int futilityMaxDepth = 7;           // Maximum depth for futility pruning (extended from 4 to 7 for Phase 1.1)
     int futilityBase = 150;             // Base margin for futility pruning (reset to original for exponential scaling)
     int futilityScale = 79;             // Scale factor per depth for futility margin (SPSA-tuned from 60)
+
+    // King attack scaling (applied to offensive king-safety evaluation)
+    int kingAttackScale = 0;            // Percentage boost (0 = no change)
     
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
