@@ -171,7 +171,7 @@ Track per phase:
 - 2025-09-18 — `e8700a00c86`: Hoisted cache key computation, added consolidated store bookkeeping, and instrumented `tryMakeMove` counters (Phase 5.3 prep) while keeping functionality unchanged; bench `2136346`.
 
 ### Phase 5.3 – Move validation cache integration (bench `2136346`)
-- 2025-09-18 — (pending commit): `Board::tryMakeMove()` now probes the attack cache before legality checks, short-circuiting on cache hits and forwarding cache misses to a non-probing slow path; telemetry attributes hits/misses/stores per context without double-counting.
+- 2025-09-18 — `d26ef2183ad`: `Board::tryMakeMove()` now probes the attack cache before legality checks, short-circuiting on cache hits and forwarding cache misses to a non-probing slow path; telemetry attributes hits/misses/stores per context without double-counting.
 
 ## Timeline Estimate
 - Phase 5.1: 2 hours (infrastructure)
