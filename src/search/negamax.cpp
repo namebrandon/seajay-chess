@@ -18,6 +18,7 @@
 #include "../core/move_list.h"
 #include "../core/engine_config.h"    // Phase 4: Runtime configuration
 #include "../evaluation/evaluate.h"
+#include "../evaluation/eval_trace.h"
 #include "../uci/info_builder.h"     // Phase 5: Structured info building
 #include "quiescence.h"  // Stage 14: Quiescence search
 #include <iostream>
@@ -1522,18 +1523,18 @@ eval::Score negamax(Board& board,
             // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
             // didReSearch already declared outside the if/else
             
-            // If reduced scout fails high, re-search without reduction
-            if (score > alpha && reduction > 0) {
-                info.lmrStats.reSearches++;
-                // Node explosion diagnostics: Track LMR re-search
-                if (limits.nodeExplosionDiagnostics) {
-                    g_nodeExplosionStats.recordLMRReSearch(depth);
-                }
-                score = -negamax(board, depth - 1 + extension, ply + 1,
-                                -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                                nullptr,  // Phase PV3: Still a scout search
-                                false);  // Still a scout search
+        // If reduced scout fails high, re-search without reduction
+        if (score > alpha && reduction > 0) {
+            info.lmrStats.reSearches++;
+            // Node explosion diagnostics: Track LMR re-search
+            if (limits.nodeExplosionDiagnostics) {
+                g_nodeExplosionStats.recordLMRReSearch(depth);
             }
+            score = -negamax(board, depth - 1 + extension, ply + 1,
+                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                            nullptr,  // Phase PV3: Still a scout search
+                            false);  // Still a scout search
+        }
             
             // If scout search fails high, do full window re-search
             if (score > alpha) {
@@ -1564,10 +1565,31 @@ eval::Score negamax(Board& board,
                 logTrackedEvent("lmr_applied", extra.str());
             }
         }
-        
+
+        int childStaticEval = 0;
+        if (ply + 1 < seajay::MAX_PLY) {
+            childStaticEval = searchInfo.getStackEntry(ply + 1).staticEval;
+        }
+
+        if (debugTrackedMove) {
+            eval::EvalTrace trace;
+            eval::Score evalScore = eval::evaluateWithTrace(board, trace);
+            eval::Score pawnTotal = trace.passedPawns + trace.isolatedPawns + trace.doubledPawns +
+                                   trace.backwardPawns + trace.pawnIslands;
+            std::ostringstream extra;
+            extra << "eval=" << evalScore.to_cp()
+                  << " static=" << childStaticEval
+                  << " mat=" << trace.material.to_cp()
+                  << " pst=" << trace.pst.to_cp()
+                  << " pawns=" << pawnTotal.to_cp()
+                  << " king=" << trace.kingSafety.to_cp()
+                  << " mob=" << trace.mobility.to_cp();
+            logTrackedEvent("eval_trace", extra.str());
+        }
+
         // Unmake the move
         board.unmakeMove(move, undo);
-        
+
         // Phase 2b.7: Record PVS re-search statistics for smoothing
         // Only record for non-PV nodes that were searched (not pruned)
         if (limits.useRankAwareGates && !isPvNode && depth >= 4 && legalMoveCount > 1) {
@@ -1594,6 +1616,7 @@ eval::Score negamax(Board& board,
                   << " alpha=" << alpha.to_cp()
                   << " beta=" << beta.to_cp()
                   << " reduction=" << appliedReduction
+                  << " static=" << childStaticEval
                   << " legalIndex=" << legalMoveCount;
             logTrackedEvent("score", extra.str());
         }

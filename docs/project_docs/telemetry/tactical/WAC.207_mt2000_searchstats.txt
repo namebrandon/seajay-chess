@@ -36,6 +36,7 @@ option name NullMoveEvalMargin type spin default 198 min 100 max 400
 option name UsePSTInterpolation type check default true
 option name ShowPhaseInfo type check default true
 option name SearchStats type check default false
+option name DebugTrackedMoves type string default
 option name NodeExplosionDiagnostics type check default false
 option name EvalExtended type check default false
 option name PawnValueMg type spin default 71 min 50 max 130
@@ -127,12 +128,12 @@ option name FutilityScale type spin default 73 min 20 max 200
 info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
 uciok
 info depth 1 seldepth 6 score cp -270 nodes 52 nps 6500 time 0 tthits 0.00 hashfull 0 pv f2f4
-info depth 2 seldepth 7 score cp -293 nodes 213 nps 17750 time 0 moveeff 74.47 tthits 50.98 hashfull 0 pv f2f4 d7d6
+info depth 2 seldepth 7 score cp -293 nodes 213 nps 16384 time 0 moveeff 74.47 tthits 50.98 hashfull 0 pv f2f4 d7d6
 info depth 3 seldepth 13 score cp -286 ebf 3.10 nodes 1644 nps 109600 time 0 moveeff 77.23 tthits 80.75 hashfull 0 pv g1f3
 info string Countermoves: updates=8 hits=3 hitRate=37.5% bonus=7960
-info depth 4 seldepth 13 score cp -280 ebf 6.57 nodes 3079 nps 181117 time 16 moveeff 88.60 tthits 73.00 hashfull 1 pv g1f3 d4e5 d1c1 f7f5
+info depth 4 seldepth 13 score cp -280 ebf 6.57 nodes 3079 nps 181117 time 17 moveeff 88.60 tthits 73.00 hashfull 1 pv g1f3 d4e5 d1c1 f7f5
 info string Countermoves: updates=16 hits=5 hitRate=31.2% bonus=7960
-info depth 5 seldepth 15 score cp -270 bound [-301,-271] ebf 4.10 nodes 4903 nps 245150 time 16 moveeff 84.46 tthits 66.36 hashfull 1 pv f2f4
+info depth 5 seldepth 15 score cp -270 bound [-301,-271] ebf 4.10 nodes 4903 nps 245150 time 17 moveeff 84.46 tthits 66.36 hashfull 1 pv f2f4
 info string Countermoves: updates=71 hits=17 hitRate=23.9% bonus=7960
 info string MoveOrdering: totalCutoffs=481 TT=327 Cap=96 Kill=44 nodes=4903
 info string MoveOrdering cutoffs: TT=68.0% 1stCap=20.0% Killer=9.1% Counter=0.0% Quiet=2.9% BadCap=0.0%
@@ -141,44 +142,44 @@ info string Bad captures: QxP=249 attempts (0.0% cutoff) RxP=134 attempts (0.0% 
 info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 info depth 6 seldepth 15 score cp -275 bound [-295,-265] string unstable ebf 2.87 nodes 7916 nps 329833 time 21 moveeff 84.26 tthits 60.71 hashfull 1 pv g1f3
 info string Countermoves: updates=159 hits=48 hitRate=30.2% bonus=7960
-info depth 7 seldepth 15 score cp -280 bound [-286,-254] string unstable ebf 1.38 nodes 13296 nps 443200 time 28 moveeff 82.32 tthits 52.96 hashfull 1 pv g1f3 d4f2 d1c1 c8b7
+info depth 7 seldepth 15 score cp -280 bound [-286,-254] string unstable ebf 1.38 nodes 13296 nps 458482 time 27 moveeff 82.32 tthits 52.96 hashfull 1 pv g1f3 d4f2 d1c1 c8b7
 info string Countermoves: updates=315 hits=98 hitRate=31.1% bonus=7960
-info depth 8 seldepth 17 score cp -262 bound [-291,-259] ebf 1.63 nodes 28166 nps 625911 time 44 moveeff 82.81 tthits 53.78 hashfull 2 pv f2f4
+info depth 8 seldepth 17 score cp -262 bound [-291,-259] ebf 1.63 nodes 28166 nps 625911 time 43 moveeff 82.81 tthits 53.78 hashfull 2 pv f2f4
 info string Countermoves: updates=641 hits=203 hitRate=31.7% bonus=7960
-info depth 9 seldepth 20 score cp -251 string fail-high(1) bound [-280,-229] string unstable ebf 2.19 nodes 41588 nps 704881 time 59 moveeff 83.31 tthits 54.14 hashfull 3 pv f2f4 h7h5 g4e2 d8h4
+info depth 9 seldepth 20 score cp -251 string fail-high(1) bound [-280,-229] string unstable ebf 2.19 nodes 41588 nps 681770 time 61 moveeff 83.31 tthits 54.14 hashfull 3 pv f2f4 h7h5 g4e2 d8h4
 info string Countermoves: updates=895 hits=280 hitRate=31.3% bonus=7960
-info depth 10 seldepth 21 score cp -268 bound [-279,-245] string unstable ebf 1.72 nodes 73078 nps 777425 time 91 moveeff 83.91 tthits 51.71 hashfull 5 pv f2f4 d7d6
+info depth 10 seldepth 21 score cp -268 bound [-279,-245] string unstable ebf 1.72 nodes 73078 nps 745693 time 95 moveeff 83.91 tthits 51.71 hashfull 5 pv f2f4 d7d6
 info string Countermoves: updates=1598 hits=512 hitRate=32.0% bonus=7960
 info string MoveOrdering: totalCutoffs=9187 TT=4655 Cap=3236 Kill=774 nodes=73078
 info string MoveOrdering cutoffs: TT=50.7% 1stCap=35.2% Killer=8.4% Counter=0.8% Quiet=3.7% BadCap=1.2%
 info string Cutoff by index: [0]=83.9% [1]=5.0% [2]=3.6% [3]=2.8% [4]=1.7% [5+]=2.0% [10+]=1.0%
 info string Bad captures: QxP=3778 attempts (2.9% cutoff) RxP=2233 attempts (0.0% cutoff)
 info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
-info depth 11 seldepth 21 score cp -281 nodes 118784 nps 808054 time 146 hashfull 9 pv g1f3
-info depth 11 seldepth 21 score cp -281 bound [-269,-233] string unstable ebf 1.96 nodes 158591 nps 821715 time 191 moveeff 83.16 tthits 38.32 hashfull 13 pv g1f3
+info depth 11 seldepth 21 score cp -281 nodes 114688 nps 769718 time 146 hashfull 9 pv g1f3
+info depth 11 seldepth 21 score cp -281 bound [-269,-233] string unstable ebf 1.96 nodes 158591 nps 796939 time 197 moveeff 83.16 tthits 38.32 hashfull 13 pv g1f3
 info string Countermoves: updates=3435 hits=1040 hitRate=30.3% bonus=7960
-info depth 12 seldepth 24 score cp -272 nodes 204800 nps 842798 time 241 hashfull 19 pv g1f3
-info depth 12 seldepth 24 score cp -272 bound [-286,-250] string unstable ebf 2.19 nodes 220314 nps 853930 time 256 moveeff 83.64 tthits 40.08 hashfull 21 pv g1f3 d4e5 f3e5 c6e5 g4f4
+info depth 12 seldepth 24 score cp -272 nodes 208896 nps 825675 time 249 hashfull 21 pv g1f3
+info depth 12 seldepth 24 score cp -272 bound [-286,-250] string unstable ebf 2.19 nodes 220314 nps 840893 time 260 moveeff 83.64 tthits 40.08 hashfull 21 pv g1f3 d4e5 f3e5 c6e5 g4f4
 info string Countermoves: updates=4726 hits=1408 hitRate=29.8% bonus=7960
-info depth 13 seldepth 24 score cp -269 nodes 270336 nps 869247 time 311 hashfull 24 pv g1f3
-info depth 13 seldepth 24 score cp -269 bound [-300,-262] ebf 1.75 nodes 291172 nps 871772 time 333 moveeff 84.08 tthits 41.89 hashfull 25 pv g1f3 d4e5 f3e5 c6e5 g4g3
+info depth 13 seldepth 24 score cp -269 nodes 270336 nps 858209 time 315 hashfull 24 pv g1f3
+info depth 13 seldepth 24 score cp -269 bound [-300,-262] ebf 1.75 nodes 291172 nps 861455 time 337 moveeff 84.08 tthits 41.89 hashfull 25 pv g1f3 d4e5 f3e5 c6e5 g4g3
 info string Countermoves: updates=6304 hits=1796 hitRate=28.5% bonus=7960
-info depth 14 seldepth 24 score cp -269 nodes 339968 nps 885333 time 382 hashfull 27 pv g1f3
-info depth 14 seldepth 24 score cp -269 nodes 380928 nps 873688 time 435 hashfull 33 pv g1f3
-info depth 14 seldepth 24 score cp -269 nodes 421888 nps 866299 time 483 hashfull 36 pv g1f3
-info depth 14 seldepth 27 score cp -269 nodes 466944 nps 863112 time 540 hashfull 40 pv g1f3
-info depth 14 seldepth 27 score cp -269 nodes 512000 nps 859060 time 593 hashfull 43 pv g1f3
-info depth 14 seldepth 27 score cp -269 nodes 557056 nps 854380 time 649 hashfull 49 pv g1f3
-info depth 14 seldepth 27 score cp -256 bound [-291,-253] ebf 1.35 nodes 599419 nps 859998 time 695 moveeff 83.87 tthits 39.32 hashfull 52 pv f2f4
+info depth 14 seldepth 24 score cp -269 nodes 339968 nps 873953 time 387 hashfull 27 pv g1f3
+info depth 14 seldepth 24 score cp -269 nodes 380928 nps 867717 time 438 hashfull 33 pv g1f3
+info depth 14 seldepth 24 score cp -269 nodes 421888 nps 862756 time 486 hashfull 36 pv g1f3
+info depth 14 seldepth 27 score cp -269 nodes 466944 nps 856777 time 544 hashfull 40 pv g1f3
+info depth 14 seldepth 27 score cp -269 nodes 512000 nps 853333 time 596 hashfull 43 pv g1f3
+info depth 14 seldepth 27 score cp -269 nodes 557056 nps 853071 time 650 hashfull 49 pv g1f3
+info depth 14 seldepth 27 score cp -256 bound [-291,-253] ebf 1.35 nodes 599419 nps 858766 time 696 moveeff 83.87 tthits 39.32 hashfull 52 pv f2f4
 info string Countermoves: updates=12981 hits=3905 hitRate=30.1% bonus=7960
-info depth 15 seldepth 27 score cp -256 nodes 643072 nps 858574 time 747 hashfull 57 pv f2f4
-info depth 15 seldepth 27 score cp -256 nodes 684032 nps 852907 time 799 hashfull 62 pv f2f4
-info depth 15 seldepth 27 score cp -256 nodes 724992 nps 849932 time 851 hashfull 64 pv f2f4
-info depth 15 seldepth 27 score cp -256 nodes 770048 nps 850881 time 903 hashfull 65 pv f2f4
-info depth 15 seldepth 27 score cp -274 nodes 811008 nps 846563 time 957 hashfull 68 pv f2f4
-info depth 15 seldepth 27 score cp -273 nodes 987136 nps 850979 time 1160 hashfull 80 pv g1f3
-info depth 15 seldepth 27 score cp -273 bound [-289,-249] string unstable ebf 2.48 nodes 1134456 nps 858785 time 1319 moveeff 83.44 tthits 35.70 hashfull 89 pv g1f3
+info depth 15 seldepth 27 score cp -256 nodes 643072 nps 856287 time 749 hashfull 57 pv f2f4
+info depth 15 seldepth 27 score cp -256 nodes 684032 nps 849729 time 802 hashfull 62 pv f2f4
+info depth 15 seldepth 27 score cp -256 nodes 724992 nps 844979 time 856 hashfull 64 pv f2f4
+info depth 15 seldepth 27 score cp -256 nodes 770048 nps 845277 time 908 hashfull 65 pv f2f4
+info depth 15 seldepth 27 score cp -274 nodes 815104 nps 845543 time 963 hashfull 68 pv f2f4
+info depth 15 seldepth 27 score cp -273 nodes 987136 nps 846600 time 1165 hashfull 80 pv g1f3
+info depth 15 seldepth 27 score cp -273 bound [-289,-249] string unstable ebf 2.48 nodes 1134456 nps 849779 time 1333 moveeff 83.44 tthits 35.70 hashfull 89 pv g1f3
 info string Countermoves: updates=24951 hits=7370 hitRate=29.5% bonus=7960
 info string SEE pruning final: 278206/590959 captures pruned (47.1%) [Conservative mode]
-info string SearchStats: depth=15 seldepth=27 nodes=1134456 nps=858785 tt: probes=458556 hits=163688 hit%=35.7 cutoffs=28532 stores=364076 coll=0 pvs: scout=735716 re%=3.4 null: att=145651 cut=40719 cut%=28.0 extra(cand=0,app=0,blk=0,sup=0,cut=0,vpass=0,vfail=0,cap=0) no-store=0 static-cut=151473 static-no-store=64364 prune: fut=1001622 mcp=595156 razor: att=140587 cut=13006 cut%=9.3 skips(tact=81915,tt=21654,eg=2008) razor_b=[8825,4181] asp: att=1 low=0 high=1 fut_b=[0,0,0,0] fut_eff_b=[152669,9424,338,0] mcp_b=[300628,284045,10483,0] illegal: first=2385 total=58382 hist(apps=224826,basic=86981,cmh=137845,first=48890+74925,cuts=3125+3843,re=24711)
+info string SearchStats: depth=15 seldepth=27 nodes=1134456 nps=849779 tt: probes=458556 hits=163688 hit%=35.7 cutoffs=28532 stores=364076 coll=0 pvs: scout=735716 re%=3.4 null: att=145651 cut=40719 cut%=28.0 extra(cand=0,app=0,blk=0,sup=0,cut=0,vpass=0,vfail=0,cap=0) no-store=0 static-cut=151473 static-no-store=64364 prune: fut=1001622 mcp=595156 razor: att=140587 cut=13006 cut%=9.3 skips(tact=81915,tt=21654,eg=2008) razor_b=[8825,4181] asp: att=1 low=0 high=1 fut_b=[0,0,0,0] fut_eff_b=[152669,9424,338,0] mcp_b=[300628,284045,10483,0] illegal: first=2385 total=58382 hist(apps=224826,basic=86981,cmh=137845,first=48890+74925,cuts=3125+3843,re=24711)
 bestmove g1f3

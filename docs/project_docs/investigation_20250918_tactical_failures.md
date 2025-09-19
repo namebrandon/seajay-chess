@@ -66,6 +66,48 @@ Representative examples (from CSV `position_id`):
 - `tools/run_tactical_investigation.sh` – convenience wrapper mirroring `run_wac_test.sh` defaults.
 - `DebugTrackedMoves` UCI option – trace specific UCI moves (e.g., `h3h7`) during search; outputs detailed `info string DebugMove …` diagnostics saved under `docs/project_docs/telemetry/tactical/`.
 
+**How to Reproduce Current Telemetry**
+- Baseline split (solved / PV-only / never-surfaced):
+  ```bash
+  python3 tools/tactical_investigation.py \
+      --engine bin/seajay \
+      --ids-from-csv tools/tactical_failures_2025-09-18_20-28-06.csv \
+      --time-ms 100 850 2000 \
+      --output tools/tactical_investigation_2025-09-18_20-51-44.csv
+  ```
+- SearchStats telemetry for queen sacs:
+  ```bash
+  python3 - <<'PY'
+  import subprocess, textwrap
+  cases = [
+      ("WAC.014", "r2rb1k1/pp1q1p1p/2n1p1p1/2bp4/5P2/PP1BPR1Q/1BPN2PP/R5K1 w - - 0 1"),
+      ("WAC.207", "r1bq2kr/p1pp1ppp/1pn1p3/4P3/2Pb2Q1/BR6/P4PPP/3K1BNR w - - 0 1"),
+  ]
+  movetimes = [100, 850, 2000]
+  for pid, fen in cases:
+      for mt in movetimes:
+          cmd = f"""uci\nsetoption name SearchStats value true\nposition fen {fen}\ngo movetime {mt}\nquit\n"""
+          out = subprocess.run(['bin/seajay'], input=cmd, text=True, capture_output=True).stdout
+          open(f"docs/project_docs/telemetry/tactical/{pid}_mt{mt}_searchstats.txt", 'w').write(out)
+  PY
+  ```
+- Move-level tracing with eval/cutoff markers (DebugTrackedMoves):
+  ```bash
+  python3 - <<'PY'
+  import subprocess, textwrap
+  cases = [
+      ("WAC.014", "h3h7", "r2rb1k1/pp1q1p1p/2n1p1p1/2bp4/5P2/PP1BPR1Q/1BPN2PP/R5K1 w - - 0 1"),
+      ("WAC.207", "g4g7", "r1bq2kr/p1pp1ppp/1pn1p3/4P3/2Pb2Q1/BR6/P4PPP/3K1BNR w - - 0 1"),
+  ]
+  movetimes = [100, 850, 2000]
+  for pid, move, fen in cases:
+      for mt in movetimes:
+          cmd = f"""uci\nsetoption name DebugTrackedMoves value {move}\nsetoption name SearchStats value true\nposition fen {fen}\ngo movetime {mt}\nquit\n"""
+          out = subprocess.run(['bin/seajay'], input=cmd, text=True, capture_output=True).stdout
+          open(f"docs/project_docs/telemetry/tactical/{pid}_mt{mt}_tracked.txt", 'w').write(out)
+  PY
+  ```
+
 ## Immediate Action Items
 1. **Create motif-tagged mini suites** derived from the CSV for quick repro (scripts TBD).
 2. **Add search instrumentation flag** to dump pruning reasons for a given FEN + PV.
