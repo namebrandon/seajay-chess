@@ -211,7 +211,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name FutilityMargin4 type spin default 459 min 200 max 700" << std::endl;
 
     // Offensive king safety scaling
-    std::cout << "option name KingAttackScale type spin default 0 min 0 max 500" << std::endl;
+    std::cout << "option name KingAttackScale type spin default 2 min 0 max 500" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values

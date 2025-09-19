@@ -32,7 +32,7 @@ public:
     int futilityScale = 79;             // Scale factor per depth for futility margin (SPSA-tuned from 60)
 
     // King attack scaling (applied to offensive king-safety evaluation)
-    int kingAttackScale = 0;            // Percentage boost (0 = no change)
+    int kingAttackScale = 2;            // Percentage boost (2 = default boost for king attack scoring)
     
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
