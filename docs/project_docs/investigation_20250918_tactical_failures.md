@@ -22,6 +22,11 @@
 | Back-rank rook entries | 3 occurrences | 0 executions |
 | Forcing→quiet substitutions | 34 cases | — |
 
+### Current Classification Snapshot (2025-09-18)
+- **Solved outright**: 12/54 (correct move becomes best choice at one of 100/850/2000 ms).
+- **Surfaced in PV only**: 15/54 (correct move observed in a PV line but never selected).
+- **Never surfaced**: 27/54 (correct move absent from bestmove *and* all PVs even at 2000 ms). Dominant motifs: 8 queen sacs on h/g files, 6 rook mating nets, 5 other king-attack forcing lines.
+
 Representative examples (from CSV `position_id`):
 - **Queen sac**: `WAC.014`, `WAC.049`, `WAC.055`, `WAC.207`, `WAC.212`, `WAC.245`
 - **Knight checks**: `WAC.071`, `WAC.157`, `WAC.194`, `WAC.288`, `WAC.290`
@@ -80,6 +85,18 @@ Representative examples (from CSV `position_id`):
 - Change: Baseline measurement with new harness (`100`, `850`, `2000` ms per move)
 - Result: 12 positions solved (best move selected), 15 positions show the correct move in PV but never selected, 27 positions never surface the correct move or PV reference; CSV log at `tools/tactical_investigation_2025-09-18_20-51-44.csv`
 - Notes: "Never-found" set dominated by queen sacrifices (`Qxh7+/Qxg7+`) and rook mating nets; PV-only set often finds the move briefly at low depth before pivoting away (likely pruning/ordering interaction)
+
+### Experiment 2025-09-18B
+- Positions: `WAC.014` (`Qxh7+` sac) and `WAC.207` (`Qxg7+` sac)
+- Change: Enabled `SearchStats` telemetry; `go movetime` at 100/850/2000 ms and captured raw UCI streams (`docs/project_docs/telemetry/tactical/WAC.014_mt{100,850,2000}_searchstats.txt`, `docs/project_docs/telemetry/tactical/WAC.207_mt{100,850,2000}_searchstats.txt`)
+- Result: Neither position ever exposes the sacrifice inside PVs. Logs show extremely heavy futility and null pruning (e.g., `WAC.014` at 2000 ms: futility 1.58 M, null 192 k attempts with 27.7% cut rate) stabilising around the quiet move `b3b4`; `WAC.207` shows persistent negative evals with repeated `f2f4/g1f3` PVs and similar null/futility pressure.
+- Notes: Suggests sacrificial lines are either ranked late (so LMR/futility collapse them) or immediately fail static bounds, preventing them from entering PV chaining.
+
+### Experiment 2025-09-18C
+- Positions: `WAC.120` (PV-only case) and `WAC.212` (PV-only queen sac)
+- Change: Depth sweep (`go depth 4…12`) recording first PV move
+- Result: `WAC.120` flips from tactical material grab (`Bxf6`) at depth ≤6 to defensive rook moves (`Re1/Rg1`) from depth ≥7; expected `Rhg1` never reappears. `WAC.212` briefly considers `Bxe5` at depth 4 before freezing on `Rh8-h5` from depth 5 onward, with `Qxg7+` never promoted.
+- Notes: Both cases indicate the expected move may appear during shallow expansion but is discarded as deeper reductions/ordering amplify alternative quiet responses.
 
 ## Risks & Open Questions
 - Forcing adjustments may destabilise search/selectivity trade-offs; need regression monitoring.

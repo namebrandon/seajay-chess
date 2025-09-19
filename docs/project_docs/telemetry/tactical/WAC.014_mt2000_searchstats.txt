@@ -1,0 +1,189 @@
+SeaJay Chess Engine v0.10.1-remediated
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+id name SeaJay v0.10.1-remediated
+id author Brandon Harris
+option name UseMagicBitboards type check default true
+option name UseQuiescence type check default true
+option name QSearchNodeLimit type spin default 0 min 0 max 10000000
+option name QSearchMaxCaptures type spin default 32 min 4 max 128
+option name MaxCheckPly type spin default 6 min 0 max 10
+option name RootKingPenalty type spin default 0 min 0 max 1000
+option name SEEMode type combo default off var off var testing var shadow var production
+option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name LMREnabled type check default true
+option name LMRMinDepth type spin default 2 min 0 max 10
+option name LMRMinMoveNumber type spin default 2 min 0 max 20
+option name LMRBaseReduction type spin default 50 min 0 max 200
+option name LMRDepthFactor type spin default 225 min 100 max 400
+option name LMRHistoryThreshold type spin default 50 min 10 max 90
+option name LMRPvReduction type spin default 1 min 0 max 2
+option name LMRNonImprovingBonus type spin default 1 min 0 max 3
+option name UseNullMove type check default true
+option name UseAggressiveNullMove type check default false
+option name AggressiveNullMinEval type spin default 600 min 0 max 2000
+option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000
+option name AggressiveNullRequirePositiveBeta type check default true
+option name NullMoveStaticMargin type spin default 87 min 50 max 300
+option name NullMoveMinDepth type spin default 2 min 2 max 5
+option name NullMoveReductionBase type spin default 4 min 1 max 6
+option name NullMoveReductionDepth6 type spin default 4 min 2 max 6
+option name NullMoveReductionDepth12 type spin default 5 min 3 max 7
+option name NullMoveVerifyDepth type spin default 10 min 6 max 14
+option name NullMoveEvalMargin type spin default 198 min 100 max 400
+option name UsePSTInterpolation type check default true
+option name ShowPhaseInfo type check default true
+option name SearchStats type check default false
+option name NodeExplosionDiagnostics type check default false
+option name EvalExtended type check default false
+option name PawnValueMg type spin default 71 min 50 max 130
+option name KnightValueMg type spin default 325 min 280 max 360
+option name BishopValueMg type spin default 344 min 290 max 370
+option name RookValueMg type spin default 487 min 450 max 570
+option name QueenValueMg type spin default 895 min 850 max 1050
+option name PawnValueEg type spin default 92 min 60 max 140
+option name KnightValueEg type spin default 311 min 270 max 340
+option name BishopValueEg type spin default 327 min 300 max 380
+option name RookValueEg type spin default 510 min 480 max 600
+option name QueenValueEg type spin default 932 min 830 max 1030
+option name UseRazoring type check default true
+option name RazorMargin1 type spin default 274 min 100 max 800
+option name RazorMargin2 type spin default 468 min 200 max 1200
+option name UseFutilityPruning type check default true
+option name FutilityMargin1 type spin default 240 min 50 max 400
+option name FutilityMargin2 type spin default 313 min 100 max 500
+option name FutilityMargin3 type spin default 386 min 150 max 600
+option name FutilityMargin4 type spin default 459 min 200 max 700
+option name pawn_eg_r3_d type spin default 8 min 0 max 30
+option name pawn_eg_r3_e type spin default 7 min 0 max 30
+option name pawn_eg_r4_d type spin default 18 min 10 max 50
+option name pawn_eg_r4_e type spin default 16 min 10 max 50
+option name pawn_eg_r5_d type spin default 29 min 20 max 70
+option name pawn_eg_r5_e type spin default 27 min 20 max 70
+option name pawn_eg_r6_d type spin default 51 min 30 max 100
+option name pawn_eg_r6_e type spin default 48 min 30 max 100
+option name pawn_eg_r7_center type spin default 75 min 50 max 150
+option name knight_eg_center type spin default 15 min 5 max 25
+option name knight_eg_extended type spin default 10 min 0 max 20
+option name knight_eg_edge type spin default -25 min -40 max -10
+option name knight_eg_corner type spin default -40 min -50 max -20
+option name bishop_eg_long_diag type spin default 19 min 10 max 35
+option name bishop_eg_center type spin default 14 min 5 max 25
+option name bishop_eg_edge type spin default -5 min -15 max 5
+option name rook_eg_7th type spin default 20 min 15 max 40
+option name rook_eg_active type spin default 12 min 5 max 20
+option name rook_eg_passive type spin default 5 min 0 max 15
+option name queen_eg_center type spin default 9 min 5 max 20
+option name queen_eg_active type spin default 7 min 0 max 20
+option name queen_eg_back type spin default -5 min -10 max 5
+option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50
+option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40
+option name KingSafetyEnableScoring type spin default 1 min 0 max 1
+option name king_mg_e1 type spin default 21 min -50 max 50
+option name king_mg_b1 type spin default -5 min -50 max 50
+option name king_mg_g1 type spin default 16 min -50 max 50
+option name king_mg_a1 type spin default 25 min -50 max 50
+option name king_mg_h1 type spin default 12 min -50 max 50
+option name king_mg_c1 type spin default 8 min -50 max 50
+option name king_mg_d1 type spin default -27 min -50 max 50
+option name king_mg_f1 type spin default -28 min -50 max 50
+option name Hash type spin default 128 min 1 max 16384
+option name UseTranspositionTable type check default true
+option name UseClusteredTT type check default true
+option name UseStagedMovePicker type check default false
+option name UseRankedMovePicker type check default true
+option name ShowMovePickerStats type check default false
+option name UseInCheckClassOrdering type check default true
+option name UseRankAwareGates type check default true
+option name Threads type spin default 1 min 1 max 1024
+option name AspirationWindow type spin default 13 min 5 max 50
+option name ShowPVSStats type check default false
+option name CountermoveBonus type spin default 7960 min 0 max 20000
+option name MoveCountPruning type check default true
+option name MoveCountLimit3 type spin default 7 min 3 max 50
+option name MoveCountLimit4 type spin default 15 min 5 max 60
+option name MoveCountLimit5 type spin default 20 min 8 max 70
+option name MoveCountLimit6 type spin default 25 min 10 max 80
+option name MoveCountLimit7 type spin default 36 min 12 max 90
+option name MoveCountLimit8 type spin default 42 min 15 max 100
+option name MoveCountMaxDepth type spin default 8 min 3 max 20
+option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000
+option name MoveCountHistoryBonus type spin default 6 min 0 max 20
+option name MoveCountImprovingRatio type spin default 75 min 50 max 100
+option name AspirationMaxAttempts type spin default 5 min 3 max 10
+option name StabilityThreshold type spin default 6 min 3 max 12
+option name UseAspirationWindows type check default true
+option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive
+option name UsePhaseStability type check default true
+option name OpeningStability type spin default 4 min 2 max 8
+option name MiddlegameStability type spin default 6 min 3 max 10
+option name EndgameStability type spin default 8 min 4 max 12
+option name FutilityPruning type check default true
+option name FutilityMaxDepth type spin default 7 min 0 max 10
+option name FutilityBase type spin default 240 min 50 max 500
+option name FutilityScale type spin default 73 min 20 max 200
+info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
+uciok
+info depth 1 seldepth 4 score cp 8 nodes 51 nps 6375 time 0 tthits 0.00 hashfull 0 pv a1d1
+info depth 2 seldepth 7 score cp -2 nodes 341 nps 26230 time 0 moveeff 39.53 tthits 28.00 hashfull 0 pv b3b4
+info string Countermoves: updates=26 hits=0 hitRate=0.0% bonus=7960
+info depth 3 seldepth 7 score cp 23 ebf 5.69 nodes 632 nps 42133 time 0 moveeff 49.12 tthits 67.26 hashfull 0 pv b3b4 c5d6 a1d1
+info string Countermoves: updates=30 hits=1 hitRate=3.3% bonus=7960
+info depth 4 seldepth 10 score cp 7 ebf 2.88 nodes 1416 nps 88500 time 0 moveeff 72.92 tthits 79.47 hashfull 0 pv b3b4 c5d6 a1d1 a8c8
+info string Countermoves: updates=48 hits=10 hitRate=20.8% bonus=7960
+info depth 5 seldepth 15 score cp 16 string fail-low(1) bound [-22,23] string unstable ebf 2.80 nodes 2189 nps 128764 time 0 moveeff 68.06 tthits 76.57 hashfull 0 pv b3b4 c5d6 a1d1 a7a5
+info string Countermoves: updates=79 hits=15 hitRate=19.0% bonus=7960
+info string MoveOrdering: totalCutoffs=216 TT=117 Cap=30 Kill=59 nodes=2189
+info string MoveOrdering cutoffs: TT=54.2% 1stCap=13.9% Killer=27.3% Counter=0.5% Quiet=4.2% BadCap=0.0%
+info string Cutoff by index: [0]=68.1% [1]=0.5% [2]=11.6% [3]=14.4% [4]=3.2% [5+]=0.5% [10+]=1.9%
+info string Bad captures: QxP=76 attempts (0.0% cutoff) RxP=2 attempts (0.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 6 seldepth 17 score cp 15 bound [-8,22] ebf 1.56 nodes 3775 nps 198684 time 18 moveeff 70.80 tthits 76.92 hashfull 0 pv b3b4 c5b6
+info string Countermoves: updates=134 hits=28 hitRate=20.9% bonus=7960
+info depth 7 seldepth 17 score cp 24 bound [0,32] ebf 1.84 nodes 8002 nps 347913 time 23 moveeff 70.05 tthits 62.37 hashfull 0 pv b3b4 c5b6 a1d1 a8c8 b4b5
+info string Countermoves: updates=251 hits=54 hitRate=21.5% bonus=7960
+info depth 8 seldepth 17 score cp 20 bound [-1,31] string stable ebf 2.09 nodes 16705 nps 538870 time 31 moveeff 73.33 tthits 60.41 hashfull 0 pv a1d1
+info string Countermoves: updates=584 hits=173 hitRate=29.6% bonus=7960
+info depth 9 seldepth 25 score cp 21 bound [7,41] string unstable ebf 2.26 nodes 45861 nps 727952 time 62 moveeff 75.26 tthits 52.03 hashfull 0 pv b3b4
+info string Countermoves: updates=1473 hits=451 hitRate=30.6% bonus=7960
+info depth 10 seldepth 25 score cp 17 bound [3,37] string unstable ebf 2.77 nodes 64862 nps 772166 time 81 moveeff 77.52 tthits 49.04 hashfull 1 pv b3b4 c5b6 a1d1 a7a5 b4b5 c6e7 b2e5
+info string Countermoves: updates=1966 hits=613 hitRate=31.2% bonus=7960
+info string MoveOrdering: totalCutoffs=7537 TT=3298 Cap=2651 Kill=1170 nodes=64862
+info string MoveOrdering cutoffs: TT=43.8% 1stCap=35.2% Killer=15.5% Counter=1.3% Quiet=3.9% BadCap=0.3%
+info string Cutoff by index: [0]=77.5% [1]=3.1% [2]=5.6% [3]=6.2% [4]=3.3% [5+]=3.5% [10+]=0.7%
+info string Bad captures: QxP=3707 attempts (0.3% cutoff) RxP=474 attempts (2.7% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 11 seldepth 25 score cp 33 bound [3,39] ebf 1.86 nodes 106835 nps 815534 time 130 moveeff 78.13 tthits 47.98 hashfull 4 pv b3b4 c5b6 h3h4
+info string Countermoves: updates=3099 hits=1039 hitRate=33.5% bonus=7960
+info depth 12 seldepth 26 score cp 25 nodes 155648 nps 841340 time 184 hashfull 8 pv b3b4
+info depth 12 seldepth 26 score cp 25 bound [-1,35] string unstable ebf 1.94 nodes 158100 nps 840957 time 184 moveeff 79.31 tthits 47.49 hashfull 8 pv b3b4 c5d6
+info string Countermoves: updates=4371 hits=1494 hitRate=34.2% bonus=7960
+info depth 13 seldepth 26 score cp 25 nodes 200704 nps 839765 time 239 hashfull 11 pv b3b4
+info depth 13 seldepth 26 score cp 28 bound [14,52] ebf 1.42 nodes 220462 nps 854503 time 255 moveeff 80.12 tthits 45.20 hashfull 11 pv b3b4 c5d6 a1d1 a7a5
+info string Countermoves: updates=5746 hits=1876 hitRate=32.6% bonus=7960
+info depth 14 seldepth 26 score cp 28 nodes 266240 nps 858838 time 310 hashfull 14 pv b3b4
+info depth 14 seldepth 26 score cp 28 nodes 307200 nps 843956 time 362 hashfull 17 pv b3b4
+info depth 14 seldepth 26 score cp 28 nodes 352256 nps 838704 time 415 hashfull 18 pv b3b4
+info depth 14 seldepth 28 score cp 28 nodes 397312 nps 839983 time 472 hashfull 28 pv b3b4
+info depth 14 seldepth 28 score cp 28 nodes 446464 nps 848790 time 525 hashfull 30 pv b3b4
+info depth 14 seldepth 28 score cp 34 bound [6,44] ebf 1.44 nodes 492048 nps 860223 time 571 moveeff 79.60 tthits 40.40 hashfull 31 pv b3b4 c5f8
+info string Countermoves: updates=12525 hits=4144 hitRate=33.1% bonus=7960
+info depth 15 seldepth 33 score cp 34 nodes 528384 nps 848128 time 619 hashfull 32 pv b3b4
+info depth 15 seldepth 33 score cp 34 nodes 569344 nps 845979 time 673 hashfull 37 pv b3b4
+info depth 15 seldepth 33 score cp 34 nodes 606208 nps 838461 time 720 hashfull 39 pv b3b4
+info depth 15 seldepth 33 score cp 34 nodes 651264 nps 837100 time 778 hashfull 43 pv b3b4
+info depth 15 seldepth 33 score cp 33 nodes 696320 nps 838939 time 827 hashfull 48 pv b3b4
+info depth 15 seldepth 33 score cp 33 bound [8,48] string stable ebf 2.61 nodes 724255 nps 838258 time 859 moveeff 79.79 tthits 39.30 hashfull 50 pv b3b4 c5f8 a1d1 a8c8 b4b5 c6e7 b2f6
+info string Countermoves: updates=18398 hits=6151 hitRate=33.4% bonus=7960
+info depth 16 seldepth 33 score cp 33 nodes 761856 nps 832629 time 913 hashfull 56 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 806912 nps 834448 time 965 hashfull 65 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 970752 nps 828994 time 1171 hashfull 75 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 1138688 nps 829947 time 1369 hashfull 86 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 1310720 nps 831675 time 1576 hashfull 101 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 1462272 nps 822888 time 1774 hashfull 112 pv b3b4
+info depth 16 seldepth 33 score cp 33 nodes 1622016 nps 819200 time 1977 hashfull 124 pv b3b4
+info string SEE pruning final: 575103/1156891 captures pruned (49.7%) [Conservative mode]
+info string SearchStats: depth=16 seldepth=33 nodes=1644172 nps=820445 tt: probes=598638 hits=200852 hit%=33.6 cutoffs=37990 stores=476171 coll=0 pvs: scout=1089727 re%=4.0 null: att=192685 cut=53354 cut%=27.7 extra(cand=0,app=0,blk=0,sup=0,cut=0,vpass=0,vfail=0,cap=0) no-store=0 static-cut=175886 static-no-store=81866 prune: fut=1582749 mcp=906694 razor: att=204190 cut=18706 cut%=9.2 skips(tact=123959,tt=30078,eg=1080) razor_b=[12613,6093] asp: att=6 low=2 high=0 fut_b=[0,0,0,0] fut_eff_b=[194963,10666,269,0] mcp_b=[465961,423142,17591,0] illegal: first=578 total=60924 hist(apps=312704,basic=130084,cmh=182620,first=67723+101028,cuts=4976+5949,re=43378)
+bestmove b3b4
