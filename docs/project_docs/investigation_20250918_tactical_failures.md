@@ -55,6 +55,11 @@ Representative examples (from CSV `position_id`):
 - Run short-depth vs. high-depth searches to see whether failures disappear with depth (horizon test).
 - For successful replays, record depth, nodes, and move-ordering stats.
 
+### Initial Tooling (2025-09-18)
+- `tests/positions/wac_failures_20250918.epd` – subset of 54 failing WAC positions for rapid iteration.
+- `tools/tactical_investigation.py` – targeted harness to probe selected IDs at multiple time controls, logging whether the expected move appears as bestmove or inside any PV.
+- `tools/run_tactical_investigation.sh` – convenience wrapper mirroring `run_wac_test.sh` defaults.
+
 ## Immediate Action Items
 1. **Create motif-tagged mini suites** derived from the CSV for quick repro (scripts TBD).
 2. **Add search instrumentation flag** to dump pruning reasons for a given FEN + PV.
@@ -80,4 +85,3 @@ Representative examples (from CSV `position_id`):
 - Generation script: `tools/run_wac_test.sh`
 - Related tactical history: `tools/tactical_test_history.csv`
 - Prior branch context: `integration/20250912-depth-and-search-speed`
-
