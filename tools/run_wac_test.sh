@@ -8,7 +8,7 @@ WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Default settings
 ENGINE="${1:-$WORKSPACE_DIR/bin/seajay}"
-TIME_MS="${2:-2000}"  # 1/2 second per position by default
+TIME_MS="${2:-850}"  # 1/2 second per position by default
 
 # Colors
 BLUE='\033[0;34m'

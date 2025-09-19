@@ -1292,9 +1292,9 @@ eval::Score negamax(Board& board,
             int reduction = 0;
             if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth && legalMoveCount > 1) {
                 bool captureMove = false;  // Already checked it's not a capture
-                bool givesCheck = false;
+                bool givesCheck = false;  // Actual check handling below via clamp
                 bool pvNode = isPvNode;
-                
+
                 if (shouldReduceMove(move, depth, moveCount, captureMove,
                                     weAreInCheck, givesCheck, pvNode,
                                     *info.killers, *info.history,
@@ -1303,6 +1303,12 @@ eval::Score negamax(Board& board,
                                     info.lmrParams)) {
                     bool improving = false;
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+
+                    if (givesCheckMove && reduction > 0) {
+                        const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+                        const int clampLimit = (depth <= 6 && rankForClamp <= 10) ? 0 : 1;
+                        reduction = std::min(reduction, clampLimit);
+                    }
                 }
             }
             
@@ -1442,7 +1448,7 @@ eval::Score negamax(Board& board,
             if (ply > 0 && info.lmrParams.enabled && depth >= info.lmrParams.minDepth) {
                 // Determine move properties for LMR
                 bool captureMove = isCapture(move);
-                bool givesCheck = false;  // Phase 3: Skip gives-check detection for now
+                bool givesCheck = false;  // Actual check handling below via clamp
                 bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
                 // Check if we should reduce this move with improved conditions
@@ -1458,6 +1464,22 @@ eval::Score negamax(Board& board,
                     bool improving = false; // Conservative: assume not improving
                     
                     reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+
+                    if (givesCheckMove && reduction > 0) {
+                        const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+                        const int clampLimit = (depth <= 6 && rankForClamp <= 10) ? 0 : 1;
+                        const int originalReduction = reduction;
+                        reduction = std::min(reduction, clampLimit);
+                        if (debugTrackedMove && reduction != originalReduction) {
+                            std::ostringstream extra;
+                            extra << "rank=" << rankForClamp
+                                  << " depth=" << depth
+                                  << " clamp=" << clampLimit
+                                  << " original=" << originalReduction;
+                            logTrackedEvent("lmr_check_clamp", extra.str());
+                        }
+                    }
+
                     appliedReduction = reduction;
                     
                     // Phase 2b.2: LMR scaling by rank (conservative, non-PV, depth≥4)
