@@ -595,138 +595,144 @@ Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
 
 // Phase 3.1: getKingAttacks moved to header for inlining
 
-// Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
-bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
-    const bool cacheEnabled = t_attackCacheEnabled;
-    Square cachedKingSquare = NO_SQUARE;
-    Hash cacheKey = 0;
+namespace {
 
-    auto ensureCacheKey = [&]() {
-        if (cachedKingSquare == NO_SQUARE) {
-            cachedKingSquare = board.kingSquare(~attackingColor);
-            cacheKey = board.zobristKey() ^ (static_cast<Hash>(cachedKingSquare) << 1);
-        }
-    };
-
-    auto recordStore = [&]() {
-        if (t_attackCacheStatsEnabled) {
-            t_attackCacheStores++;
-        }
-    };
-
-    // Phase 5.2: Try cache first if enabled via UCI
-    if (cacheEnabled) {
-        ensureCacheKey();
-        auto [hit, isAttacked] = t_attackCache.probe(cacheKey, square, attackingColor);
-        if (hit) {
-            // Update statistics if tracking is enabled
-            if (t_attackCacheStatsEnabled) {
-                t_attackCacheHits++;
-            }
-            return isAttacked;
-        }
-
-        // Cache miss - will compute and store result below
-        if (t_attackCacheStatsEnabled) {
-            t_attackCacheMisses++;
-        }
+inline Hash makeAttackCacheKey(const Board& board, Color defendingColor) {
+    const Square kingSquare = board.kingSquare(defendingColor);
+    if (kingSquare == NO_SQUARE) {
+        return 0ULL;
     }
-    
-    // Cache miss - compute using Phase 2.1.a optimized algorithm
-    
+    return board.zobristKey() ^ (static_cast<Hash>(kingSquare) << 1);
+}
+
+bool computeSquareAttackedSlow(const Board& board,
+                               Square square,
+                               Color attackingColor,
+                               bool cacheEnabled,
+                               Hash cacheKey,
+                               bool statsEnabled) {
+    Hash resolvedKey = cacheKey;
+    if (cacheEnabled && resolvedKey == 0ULL) {
+        resolvedKey = makeAttackCacheKey(board, ~attackingColor);
+    }
+
+    auto storeResult = [&](bool isAttacked) {
+        if (cacheEnabled && resolvedKey != 0ULL) {
+            t_attackCache.store(resolvedKey, square, attackingColor, isAttacked);
+            if (statsEnabled) {
+                ++t_attackCacheStores;
+            }
+        }
+    };
+
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
-    if (knights & getKnightAttacks(square)) {
-        if (cacheEnabled) {
-            ensureCacheKey();
-            t_attackCache.store(cacheKey, square, attackingColor, true);
-            recordStore();
-        }
+    if (knights & MoveGenerator::getKnightAttacks(square)) {
+        storeResult(true);
         return true;
     }
-    
+
     // 2. Check pawn attacks second (numerous pieces, simple calculation)
     Bitboard pawns = board.pieces(attackingColor, PAWN);
     if (pawns) {
-        Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
+        Bitboard pawnAttacks = MoveGenerator::getPawnAttacks(square, ~attackingColor); // Reverse perspective
         if (pawns & pawnAttacks) {
-            if (cacheEnabled) {
-                ensureCacheKey();
-                t_attackCache.store(cacheKey, square, attackingColor, true);
-                recordStore();
-            }
+            storeResult(true);
             return true;
         }
     }
-    
+
     // 3. Get occupied bitboard once (avoid multiple calls)
     Bitboard occupied = board.occupied();
-    
+
     // 4. Check queen attacks (can attack like both bishop and rook)
     Bitboard queens = board.pieces(attackingColor, QUEEN);
     if (queens) {
-        // Compute combined diagonal and straight attacks for queens
-        // Use direct magic bitboard calls to avoid runtime config check in hot path
-        Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
+        Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) |
                                seajay::magicRookAttacks(square, occupied);
         if (queens & queenAttacks) {
-            if (cacheEnabled) {
-                ensureCacheKey();
-                t_attackCache.store(cacheKey, square, attackingColor, true);
-                recordStore();
-            }
+            storeResult(true);
             return true;
         }
     }
-    
+
     // 5. Check bishop attacks (only if no queen found it on diagonal)
     Bitboard bishops = board.pieces(attackingColor, BISHOP);
     if (bishops) {
-        // Direct magic bitboard call for hot path optimization
         Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
         if (bishops & bishopAttacks) {
-            if (cacheEnabled) {
-                ensureCacheKey();
-                t_attackCache.store(cacheKey, square, attackingColor, true);
-                recordStore();
-            }
+            storeResult(true);
             return true;
         }
     }
-    
+
     // 6. Check rook attacks (only if no queen found it on rank/file)
     Bitboard rooks = board.pieces(attackingColor, ROOK);
     if (rooks) {
-        // Direct magic bitboard call for hot path optimization
         Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
         if (rooks & rookAttacks) {
-            if (cacheEnabled) {
-                ensureCacheKey();
-                t_attackCache.store(cacheKey, square, attackingColor, true);
-                recordStore();
-            }
+            storeResult(true);
             return true;
         }
     }
-    
+
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
-    if (king & getKingAttacks(square)) {
-        if (cacheEnabled) {
-            ensureCacheKey();
-            t_attackCache.store(cacheKey, square, attackingColor, true);
-            recordStore();
-        }
+    if (king & MoveGenerator::getKingAttacks(square)) {
+        storeResult(true);
         return true;
     }
 
-    // Not attacked - cache the negative result
-    if (cacheEnabled) {
-        ensureCacheKey();
-        t_attackCache.store(cacheKey, square, attackingColor, false);
-        recordStore();
-    }
+    storeResult(false);
     return false;
+}
+
+} // namespace
+
+// Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
+bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
+    const bool cacheEnabled = t_attackCacheEnabled;
+    const bool statsEnabled = t_attackCacheStatsEnabled;
+
+    Hash cacheKey = 0ULL;
+    if (cacheEnabled) {
+        cacheKey = makeAttackCacheKey(board, ~attackingColor);
+
+        if (cacheKey != 0ULL) {
+            auto [hit, isAttacked] = t_attackCache.probe(cacheKey, square, attackingColor);
+            if (hit) {
+                if (statsEnabled) {
+                    ++t_attackCacheHits;
+                }
+                return isAttacked;
+            }
+        }
+
+        if (statsEnabled) {
+            ++t_attackCacheMisses;
+        }
+    }
+
+    return computeSquareAttackedSlow(board, square, attackingColor, cacheEnabled, cacheKey, statsEnabled);
+}
+
+bool MoveGenerator::isSquareAttackedAfterCacheProbe(const Board& board,
+                                                    Square square,
+                                                    Color attackingColor,
+                                                    Hash cacheKey,
+                                                    bool recordMiss) {
+    const bool cacheEnabled = t_attackCacheEnabled;
+    const bool statsEnabled = t_attackCacheStatsEnabled;
+
+    if (!cacheEnabled) {
+        return computeSquareAttackedSlow(board, square, attackingColor, false, 0ULL, statsEnabled);
+    }
+
+    if (recordMiss && statsEnabled) {
+        ++t_attackCacheMisses;
+    }
+
+    return computeSquareAttackedSlow(board, square, attackingColor, true, cacheKey, statsEnabled);
 }
 
 

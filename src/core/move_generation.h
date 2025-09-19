@@ -81,6 +81,16 @@ public:
     static bool isSquareAttacked(const Board& board, Square square, Color attackingColor);
     
     /**
+     * Compute attack status after the caller already consulted the cache.
+     * Used by Phase 5.3 tryMakeMove integration to avoid re-probing the cache.
+     */
+    static bool isSquareAttackedAfterCacheProbe(const Board& board,
+                                                Square square,
+                                                Color attackingColor,
+                                                Hash cacheKey,
+                                                bool recordMiss);
+    
+    /**
      * Test if the current side to move is in check
      * 
      * @param board The current board position

@@ -1231,29 +1231,56 @@ bool Board::tryMakeMove(Move move, UndoInfo& undo) {
     Square kingSquare = this->kingSquare(us);
     
     if (kingSquare != NO_SQUARE) {
-        uint64_t hitsBefore = 0;
-        uint64_t missesBefore = 0;
-        uint64_t storesBefore = 0;
-        uint64_t probesBefore = 0;
-        if (t_attackCacheEnabled) {
-            hitsBefore = t_attackCacheHits;
-            missesBefore = t_attackCacheMisses;
-            storesBefore = t_attackCacheStores;
-            probesBefore = hitsBefore + missesBefore;
-        }
-
-        const bool kingInCheck = MoveGenerator::isSquareAttacked(*this, kingSquare, m_sideToMove);
+        bool kingInCheck = false;
 
         if (t_attackCacheEnabled) {
-            const uint64_t hitsAfter = t_attackCacheHits;
-            const uint64_t missesAfter = t_attackCacheMisses;
-            const uint64_t storesAfter = t_attackCacheStores;
-            const uint64_t probesAfter = hitsAfter + missesAfter;
+            const bool statsEnabled = t_attackCacheStatsEnabled;
+            const Hash cacheKey = zobristKey() ^ (static_cast<Hash>(kingSquare) << 1);
+            const auto [cacheHit, cachedValue] = t_attackCache.probe(cacheKey, kingSquare, m_sideToMove);
 
-            t_attackCacheTryHits += (hitsAfter - hitsBefore);
-            t_attackCacheTryMisses += (missesAfter - missesBefore);
-            t_attackCacheTryStores += (storesAfter - storesBefore);
-            t_attackCacheTryProbes += (probesAfter - probesBefore);
+            if (cacheHit) {
+                kingInCheck = cachedValue;
+
+                if (statsEnabled) {
+                    ++t_attackCacheHits;
+                    ++t_attackCacheTryHits;
+                    ++t_attackCacheTryProbes;
+                }
+            } else {
+                uint64_t hitsBefore = 0;
+                uint64_t missesBefore = 0;
+                uint64_t storesBefore = 0;
+
+                if (statsEnabled) {
+                    ++t_attackCacheTryMisses;
+                    ++t_attackCacheTryProbes;
+                    ++t_attackCacheMisses;
+
+                    hitsBefore = t_attackCacheHits;
+                    missesBefore = t_attackCacheMisses;
+                    storesBefore = t_attackCacheStores;
+                }
+
+                kingInCheck = MoveGenerator::isSquareAttackedAfterCacheProbe(
+                    *this,
+                    kingSquare,
+                    m_sideToMove,
+                    cacheKey,
+                    /*recordMiss=*/false);
+
+                if (statsEnabled) {
+                    const uint64_t hitsAfter = t_attackCacheHits;
+                    const uint64_t missesAfter = t_attackCacheMisses;
+                    const uint64_t storesAfter = t_attackCacheStores;
+
+                    t_attackCacheTryHits += (hitsAfter - hitsBefore);
+                    t_attackCacheTryMisses += (missesAfter - missesBefore);
+                    t_attackCacheTryStores += (storesAfter - storesBefore);
+                    t_attackCacheTryProbes += (hitsAfter + missesAfter) - (hitsBefore + missesBefore);
+                }
+            }
+        } else {
+            kingInCheck = MoveGenerator::isSquareAttacked(*this, kingSquare, m_sideToMove);
         }
 
         if (kingInCheck) {

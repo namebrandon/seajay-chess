@@ -158,6 +158,21 @@ Track per phase:
 - If Phase 5.4 shows diminishing returns → stop at optimal size
 - If hit rate <60% → implement set-associative design
 
+## Implementation Log
+
+### Phase 5.1 – Infrastructure (cache disabled)
+- 2025-09-18 — `75adff9163b5`: Introduced the per-thread `AttackCache`, SearchData plumbing, and UCI toggle (`UseAttackCache`, default `false`) without changing behaviour; bench `2136346`.
+- 2025-09-18 — `5e502e5ab57`: Moved search scratch buffers off the stack and centralised allocation to keep headroom for the cache-aware telemetry added in later commits; bench `2136346`.
+
+### Phase 5.2 – `isSquareAttacked()` integration (OpenBench test 605 in flight)
+- 2025-09-18 — `08ffbe7cf76`: Enabled the cache inside `isSquareAttacked()` with a 256-entry direct-mapped table keyed by `(hash ^ kingSquare<<1, square, color)`; cache gated behind `UseAttackCache`; bench `2136346`.
+- 2025-09-18 — `682966ecb15`: Fixed telemetry roll-up and cleared the cache at each iteration so per-depth stats (probes/hits/misses/stores) remain accurate; bench `2136346`.
+- 2025-09-18 — `746d9dd895f`: Mirrored the iteration-level cache resets and stats reporting in the production search loop for consistent telemetry; bench `2136346`.
+- 2025-09-18 — `e8700a00c86`: Hoisted cache key computation, added consolidated store bookkeeping, and instrumented `tryMakeMove` counters (Phase 5.3 prep) while keeping functionality unchanged; bench `2136346`.
+
+### Phase 5.3 – Move validation cache integration (bench `2136346`)
+- 2025-09-18 — (pending commit): `Board::tryMakeMove()` now probes the attack cache before legality checks, short-circuiting on cache hits and forwarding cache misses to a non-probing slow path; telemetry attributes hits/misses/stores per context without double-counting.
+
 ## Timeline Estimate
 - Phase 5.1: 2 hours (infrastructure)
 - Phase 5.2: 3 hours (integration + testing)
