@@ -43,17 +43,23 @@ eval::Score negamax(Board& board,
                    TriangularPV* pv = nullptr);
 
 // Legacy wrapper retained for staging purposes (Phase 6a.x)
-eval::Score negamax(Board& board, 
-                   int depth, 
-                   int ply,
-                   eval::Score alpha,
-                   eval::Score beta,
-                   SearchInfo& searchInfo,
-                   SearchData& info,
-                   const SearchLimits& limits,
-                   TranspositionTable* tt = nullptr,
-                   TriangularPV* pv = nullptr,
-                   bool isPvNode = true);
+ALWAYS_INLINE eval::Score negamax(Board& board, 
+                                  int depth, 
+                                  int ply,
+                                  eval::Score alpha,
+                                  eval::Score beta,
+                                  SearchInfo& searchInfo,
+                                  SearchData& info,
+                                  const SearchLimits& limits,
+                                  TranspositionTable* tt = nullptr,
+                                  TriangularPV* pv = nullptr,
+                                  bool isPvNode = true) {
+    NodeContext context;
+    context.setRoot(ply == 0);
+    context.setPv(isPvNode);
+    context.clearExcluded();
+    return negamax(board, context, depth, ply, alpha, beta, searchInfo, info, limits, tt, pv);
+}
 
 // Iterative deepening search controller
 // Returns the best move found within the given limits

@@ -2536,24 +2536,6 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
 return bestMove;
 }
 
-ALWAYS_INLINE eval::Score negamax(Board& board,
-                                  int depth,
-                                  int ply,
-                                  eval::Score alpha,
-                                  eval::Score beta,
-                                  SearchInfo& searchInfo,
-                                  SearchData& info,
-                                  const SearchLimits& limits,
-                                  TranspositionTable* tt,
-                                  TriangularPV* pv,
-                                  bool isPvNode) {
-    NodeContext context;
-    context.setRoot(ply == 0);
-    context.setPv(isPvNode);
-    context.clearExcluded();
-    return negamax(board, context, depth, ply, alpha, beta, searchInfo, info, limits, tt, pv);
-}
-
 // Iterative deepening search controller (original)
 Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     // Debug output (removed in release builds)
