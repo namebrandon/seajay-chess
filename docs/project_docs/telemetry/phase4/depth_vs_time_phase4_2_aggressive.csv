@@ -1,0 +1,6 @@
+timestamp,engine,engine_path,fen,time_ms,depth,nodes,bestmove,score_cp,tt_hits,hashfull
+2025-09-17_17-36-23,seajay,/workspace/bin/seajay,startpos,1000,14,612065,b1c3,19,44.65,38
+2025-09-17_17-36-23,seajay,/workspace/bin/seajay,8/4bk1p/1p3np1/p2r1p2/6n1/5N2/PP3PKP/2RRB3 b - - 1 29,1000,15,1020383,f6h5,-78,37.31,63
+2025-09-17_17-36-23,seajay,/workspace/bin/seajay,r1bq1rk1/pp3ppp/2nbpn2/2pp4/2PP4/P3PN2/1P1NBPPP/R1BQ1RK1 w - - 1 10,1000,17,618198,d4c5,45,52.03,37
+2025-09-17_17-36-23,seajay,/workspace/bin/seajay,r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17,1000,12,410904,e8f7,108,37.82,31
+2025-09-17_17-36-23,seajay,/workspace/bin/seajay,8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1,1000,16,1228800,b4c4,25,48.76,70

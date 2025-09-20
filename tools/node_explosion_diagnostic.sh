@@ -11,6 +11,36 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
+# Optional UCI overrides for SeaJay
+SEAJAY_OPTION_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --seajay-option)
+            if [[ -n "$2" ]]; then
+                SEAJAY_OPTION_ARGS+=("$2")
+                shift 2
+            else
+                echo "Error: --seajay-option requires an argument (e.g. --seajay-option 'UseAggressiveNullMove value true')" >&2
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            echo "Usage: $0 [--seajay-option 'Name value ...']" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [[ ${#SEAJAY_OPTION_ARGS[@]} -gt 0 ]]; then
+    SEAJAY_UCI_OPTIONS=""
+    for opt in "${SEAJAY_OPTION_ARGS[@]}"; do
+        SEAJAY_UCI_OPTIONS+="${opt}"$'\n'
+    done
+    export SEAJAY_UCI_OPTIONS
+fi
+
 # Test positions array
 declare -a POSITIONS=(
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1:Starting"

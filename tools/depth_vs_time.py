@@ -30,7 +30,7 @@ import time
 from datetime import datetime
 
 
-def uci_run_search(engine_path: str, fen: str, time_ms: int):
+def uci_run_search(engine_path: str, fen: str, time_ms: int, uci_options: dict = None):
     proc = subprocess.Popen(
         [engine_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
     )
@@ -50,6 +50,11 @@ def uci_run_search(engine_path: str, fen: str, time_ms: int):
         if line.strip() == "uciok":
             break
 
+    # Set UCI options if provided
+    if uci_options:
+        for name, value in uci_options.items():
+            send(f"setoption name {name} value {value}")
+    
     send("isready")
     while True:
         line = proc.stdout.readline()
@@ -80,10 +85,14 @@ def uci_run_search(engine_path: str, fen: str, time_ms: int):
     nodes_at_max_depth = 0
     bestmove = None
     score_cp = None
+    tt_hits = None
+    hashfull = None
 
     depth_re = re.compile(r"\bdepth (\d+)")
     nodes_re = re.compile(r"\bnodes (\d+)")
     score_cp_re = re.compile(r"score cp (-?\d+)")
+    tthits_re = re.compile(r"tthits ([\d.]+)")
+    hashfull_re = re.compile(r"hashfull (\d+)")
 
     while True:
         line = proc.stdout.readline()
@@ -103,6 +112,18 @@ def uci_run_search(engine_path: str, fen: str, time_ms: int):
                     if sc:
                         try:
                             score_cp = int(sc.group(1))
+                        except Exception:
+                            pass
+                    tt = tthits_re.search(s)
+                    if tt:
+                        try:
+                            tt_hits = float(tt.group(1))
+                        except Exception:
+                            pass
+                    hf = hashfull_re.search(s)
+                    if hf:
+                        try:
+                            hashfull = int(hf.group(1))
                         except Exception:
                             pass
         elif s.startswith("bestmove "):
@@ -126,6 +147,8 @@ def uci_run_search(engine_path: str, fen: str, time_ms: int):
         "nodes": nodes_at_max_depth,
         "bestmove": bestmove or "",
         "score_cp": score_cp if score_cp is not None else "",
+        "tt_hits": tt_hits if tt_hits is not None else "",
+        "hashfull": hashfull if hashfull is not None else "",
     }
 
 
@@ -135,7 +158,16 @@ def main():
     ap.add_argument("--fen", action="append", required=True, help="FEN string or 'startpos' (repeatable)")
     ap.add_argument("--time-ms", type=int, default=1000, help="Time per move in ms (default 1000)")
     ap.add_argument("--out", default="depth_vs_time.csv", help="Output CSV path")
+    ap.add_argument("--uci-option", action="append", help="UCI option in format name=value (repeatable)")
     args = ap.parse_args()
+    
+    # Parse UCI options
+    uci_options = {}
+    if args.uci_option:
+        for opt in args.uci_option:
+            if '=' in opt:
+                name, value = opt.split('=', 1)
+                uci_options[name] = value
 
     ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     out_path = args.out
@@ -146,7 +178,7 @@ def main():
         eng_name = os.path.basename(eng_path)
         for fen in args.fen:
             try:
-                res = uci_run_search(eng_path, fen, args.time_ms)
+                res = uci_run_search(eng_path, fen, args.time_ms, uci_options)
             except FileNotFoundError:
                 print(f"ERROR: Engine not found: {eng_path}", file=sys.stderr)
                 continue
@@ -163,14 +195,16 @@ def main():
                 "nodes": res["nodes"],
                 "bestmove": res["bestmove"],
                 "score_cp": res["score_cp"],
+                "tt_hits": res["tt_hits"],
+                "hashfull": res["hashfull"],
             })
-            print(f"{eng_name}: depth={res['depth']} nodes={res['nodes']} move={res['bestmove']} fen={(fen if fen=='startpos' else '...')}\n")
+            print(f"{eng_name}: depth={res['depth']} nodes={res['nodes']} tt_hits={res['tt_hits']}% hashfull={res['hashfull']} move={res['bestmove']} fen={(fen if fen=='startpos' else '...')}\n")
 
     # Write CSV
     os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
     with open(out_path, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=[
-            'timestamp','engine','engine_path','fen','time_ms','depth','nodes','bestmove','score_cp'
+            'timestamp','engine','engine_path','fen','time_ms','depth','nodes','bestmove','score_cp','tt_hits','hashfull'
         ])
         w.writeheader()
         for r in rows:

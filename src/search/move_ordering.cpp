@@ -126,6 +126,7 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
                 int scoreA = scoreMove(board, a);
                 int scoreB = scoreMove(board, b);
                 
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
                 return scoreA > scoreB;  // Higher scores first
             });
     }
@@ -235,6 +236,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
+                
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
                 return scoreA > scoreB;  // Higher scores first
             });
     }
@@ -323,6 +326,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                 // Get history scores for both moves
                 int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
                 int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
+                
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
                 return scoreA > scoreB;  // Higher scores first
             });
     }
@@ -419,6 +424,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
             Move move;
             int32_t score;  // Use int32_t to prevent overflow
             bool operator<(const MoveScore& other) const {
+                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
                 return score > other.score;  // Higher scores first
             }
         };
@@ -709,7 +715,7 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
     
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
-        std::sort(moves.begin(), captureEnd,
+        std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
@@ -720,11 +726,13 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
                     std::cout << "  " << SafeMoveExecutor::moveToString(b) << ": SEE=" << seeB << "\n";
                 }
                 
-                // Order by SEE value (higher is better)
-                // If equal SEE, fall back to MVV-LVA
+                // Phase 2a.5a: Preserve legacy behavior with stable ordering
+                // Primary: SEE value (higher is better)
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
+                
+                // Secondary: MVV-LVA score (preserve existing fallback)
                 return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });
     }
@@ -747,10 +755,12 @@ void SEEMoveOrdering::orderMovesShadowMode(const Board& board, MoveList& moves) 
         });
     
     if (seeCaptureEnd != seeOrdered.begin()) {
-        std::sort(seeOrdered.begin(), seeCaptureEnd,
+        std::stable_sort(seeOrdered.begin(), seeCaptureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
                 SEEValue seeB = m_see.see(board, b);
+                
+                // Phase 2a.5a: Preserve legacy behavior
                 if (seeA != seeB) {
                     return seeA > seeB;
                 }
@@ -791,7 +801,7 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
     
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
-        std::sort(moves.begin(), captureEnd,
+        std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 // Get SEE values without exceptions (SEE is noexcept)
                 SEEValue seeA = m_see.see(board, a);
@@ -801,10 +811,11 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
                 if (seeA == SEE_INVALID) seeA = MvvLvaOrdering::scoreMove(board, a);
                 if (seeB == SEE_INVALID) seeB = MvvLvaOrdering::scoreMove(board, b);
 
-                // Order by SEE value (higher is better)
+                // Phase 2a.5a: Preserve legacy behavior
+                // Primary: SEE value (higher is better)
                 if (seeA != seeB) return seeA > seeB;
 
-                // If equal SEE, fall back to MVV-LVA for stability
+                // Secondary: MVV-LVA score for stability (preserve existing fallback)
                 return MvvLvaOrdering::scoreMove(board, a) > MvvLvaOrdering::scoreMove(board, b);
             });
     }

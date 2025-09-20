@@ -2,12 +2,17 @@
 
 #include "../core/types.h"
 #include "../core/transposition_table.h"
+#include "../core/move_list.h"
 #include "../evaluation/types.h"
 #include "killer_moves.h"
 #include "history_heuristic.h"
 #include "countermoves.h"
+#include "principal_variation.h"
 #include <chrono>
 #include <cstdint>
+#include <array>
+#include <algorithm>
+#include <vector>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -26,8 +31,37 @@ class CounterMoveHistory;
 enum class SEEPruningMode {
     OFF = 0,
     CONSERVATIVE = 1,
-    AGGRESSIVE = 2
+    MODERATE = 2,
+    AGGRESSIVE = 3
 };
+
+// Phase 6 preparation: explicit node context descriptor (currently NoOp)
+struct NodeContext {
+    bool isPv = false;
+    bool isRoot = false;
+    Move excluded = NO_MOVE;
+
+    static NodeContext root() {
+        NodeContext ctx;
+        ctx.isRoot = true;
+        ctx.isPv = true;
+        return ctx;
+    }
+
+    NodeContext makeChild(bool childIsPv) const {
+        NodeContext child = *this;
+        child.isRoot = false;
+        child.isPv = childIsPv;
+        child.excluded = NO_MOVE;
+        return child;
+    }
+};
+
+// Scratch buffer helpers (defined in search_scratch.cpp)
+MoveList& getMoveScratch(int ply);
+TriangularPV* getPvScratch(int ply);
+TriangularPV& getRootPvScratch();
+void resetScratchBuffers();
 
 // Search time limits and constraints
 struct SearchLimits {
@@ -92,6 +126,10 @@ struct SearchLimits {
     int nullMoveReductionDepth12 = 5; // Reduction at depth >= 12 (SPSA-tuned)
     int nullMoveVerifyDepth = 10;     // Depth threshold for verification search
     int nullMoveEvalMargin = 198;     // Extra reduction when eval >> beta (SPSA-tuned)
+    bool useAggressiveNullMove = false; // Phase 4.2: Extra null-move reduction toggle (default off)
+    int aggressiveNullMinEval = 600;    // Minimum static eval (cp) required to consider aggressive null move
+    int aggressiveNullMaxApplications = 64; // Global cap on aggressive applications per search (0 = unlimited)
+    bool aggressiveNullRequirePositiveBeta = true; // Require beta > 0 before attempting aggressive null
     
     // Futility Pruning parameters
     bool useFutilityPruning = true;     // Enable/disable futility pruning
@@ -102,6 +140,11 @@ struct SearchLimits {
     
     // Stage 15: SEE pruning mode (read-only during search)
     std::string seePruningMode = "off";  // off, conservative, aggressive
+    // Quiescence SEE pruning mode (separate control for qsearch only)
+    std::string seePruningModeQ = "conservative";  // off, conservative, aggressive
+    
+    // Quiescence capture budget per node (0 = unlimited, default 32)
+    int qsearchMaxCaptures = 32;
     
     // Stage 22 Phase P3.5: PVS statistics output control
     bool showPVSStats = false;  // Show PVS statistics after each depth
@@ -122,6 +165,7 @@ struct SearchLimits {
     int moveCountLimit6 = 25;           // Move limit for depth 6 (SPSA-tuned)
     int moveCountLimit7 = 36;           // Move limit for depth 7
     int moveCountLimit8 = 42;           // Move limit for depth 8
+    int moveCountMaxDepth = 8;          // Maximum depth to apply move-count pruning (LMP)
     int moveCountHistoryThreshold = 0;    // History score threshold (SPSA-tuned: disabled)
     int moveCountHistoryBonus = 6;      // Extra moves for good history
     int moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
@@ -133,6 +177,24 @@ struct SearchLimits {
     
     // Node explosion diagnostics (temporary for debugging)
     bool nodeExplosionDiagnostics = false; // Enable detailed node explosion tracking
+    
+    // Phase 2a: Ranked MovePicker
+    bool useRankedMovePicker = false;    // Enable ranked move picker (Phase 2a)
+    
+    // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
+    bool showMovePickerStats = false;     // Show move picker statistics at end of search
+
+    // Phase 2a.8a: In-check class ordering
+    bool useInCheckClassOrdering = false; // Enable class-based ordering for check evasions
+
+    // Phase 2b: Rank-aware pruning gates
+    bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
+
+    // Debug instrumentation: track specific moves through the search pipeline
+    std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
+
+    // Benchmark/diagnostics
+    bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench
     
     // Default constructor
     SearchLimits() = default;
@@ -193,6 +255,36 @@ struct SearchData {
     // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
     Color rootSideToMove = WHITE;  // Side to move at root (for UCI perspective conversion)
     
+    static constexpr int SCRATCH_PLY = KillerMoves::MAX_PLY;
+
+    ALWAYS_INLINE MoveList& acquireMoveList(int ply) {
+        const int index = std::clamp(ply, 0, SCRATCH_PLY - 1);
+        auto& list = getMoveScratch(index);
+        list.clear();
+        return list;
+    }
+    
+    ALWAYS_INLINE TriangularPV* acquireChildPV(int ply) {
+        const int index = std::clamp(ply + 1, 0, SCRATCH_PLY);
+        TriangularPV* pv = getPvScratch(index);
+        if (pv) {
+            pv->clear();
+        }
+        return pv;
+    }
+    
+    ALWAYS_INLINE TriangularPV& rootPV() {
+        return getRootPvScratch();
+    }
+    
+    ALWAYS_INLINE const TriangularPV& rootPV() const {
+        return getRootPvScratch();
+    }
+    
+    void clearScratch() {
+        resetScratchBuffers();
+    }
+    
     // Time management
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds timeLimit{0};
@@ -203,6 +295,8 @@ struct SearchData {
     
     // Stage 14 Remediation: Pre-parsed SEE mode to avoid string parsing in hot path
     SEEPruningMode seePruningModeEnum = SEEPruningMode::OFF;
+    // Separate SEE pruning mode for quiescence
+    SEEPruningMode seePruningModeEnumQ = SEEPruningMode::CONSERVATIVE;
     
     // Stage 15: SEE pruning statistics (thread-local, no atomics needed)
     struct SEEStats {
@@ -273,6 +367,16 @@ struct SearchData {
         // TT remediation Phase 1.2: Track missing TT stores
         uint64_t nullMoveNoStore = 0;     // Null-move cutoffs without TT store
         uint64_t staticNullNoStore = 0;   // Static null returns without TT store
+
+        // Phase 4.2 instrumentation for aggressive reduction
+        uint64_t aggressiveCandidates = 0;     // Positions eligible for aggressive reduction
+        uint64_t aggressiveApplied = 0;        // Times we actually applied the extra reduction
+        uint64_t aggressiveSuppressed = 0;     // Eligible but rejected (gate, cap, etc.)
+        uint64_t aggressiveBlockedByTT = 0;    // Blocked because TT data suggested caution
+        uint64_t aggressiveCutoffs = 0;        // Successful cutoffs following aggressive reduction
+        uint64_t aggressiveVerifyPasses = 0;   // Verification searches that succeeded after aggressive reduction
+        uint64_t aggressiveVerifyFails = 0;    // Verification searches that failed after aggressive reduction
+        uint64_t aggressiveCapHits = 0;        // Rejections due to hitting the global application cap
         
         void reset() {
             attempts = 0;
@@ -282,6 +386,14 @@ struct SearchData {
             staticCutoffs = 0;
             nullMoveNoStore = 0;
             staticNullNoStore = 0;
+            aggressiveCandidates = 0;
+            aggressiveApplied = 0;
+            aggressiveSuppressed = 0;
+            aggressiveBlockedByTT = 0;
+            aggressiveCutoffs = 0;
+            aggressiveVerifyPasses = 0;
+            aggressiveVerifyFails = 0;
+            aggressiveCapHits = 0;
         }
         
         double cutoffRate() const {
@@ -451,6 +563,71 @@ struct SearchData {
     // PERFORMANCE: Pointer to thread-local storage (32MB per thread)
     CounterMoveHistory* counterMoveHistory = nullptr;
 
+    // Phase 4.1: Track when history / counter-move history ordering is applied
+    struct HistoryGatingStats {
+        uint64_t basicApplications = 0;          // Times basic history ordering applied
+        uint64_t counterApplications = 0;        // Times counter-move history applied
+        uint64_t basicFirstMoveHits = 0;         // First-legal hits when basic history active
+        uint64_t counterFirstMoveHits = 0;       // First-legal hits when CMH active
+        uint64_t basicCutoffs = 0;               // Quiet cutoffs credited to basic history
+        uint64_t counterCutoffs = 0;             // Cutoffs credited to counter-move history
+        uint64_t basicReSearches = 0;            // PVS re-searches while basic history active
+        uint64_t counterReSearches = 0;          // PVS re-searches while CMH active
+
+        void reset() {
+            basicApplications = counterApplications = 0;
+            basicFirstMoveHits = counterFirstMoveHits = 0;
+            basicCutoffs = counterCutoffs = 0;
+            basicReSearches = counterReSearches = 0;
+        }
+
+        uint64_t totalApplications() const {
+            return basicApplications + counterApplications;
+        }
+
+        uint64_t totalReSearches() const {
+            return basicReSearches + counterReSearches;
+        }
+    } historyStats;
+
+    enum class HistoryContext : uint8_t {
+        None = 0,
+        Basic = 1,
+        Counter = 2
+    };
+
+    std::array<uint8_t, KillerMoves::MAX_PLY> historyContext = {};
+
+    ALWAYS_INLINE void clearHistoryContext(int ply) {
+        if (ply >= 0 && ply < static_cast<int>(historyContext.size())) {
+            historyContext[ply] = static_cast<uint8_t>(HistoryContext::None);
+        }
+    }
+
+    ALWAYS_INLINE void registerHistoryApplication(int ply, HistoryContext ctx) {
+        if (ply >= 0 && ply < static_cast<int>(historyContext.size())) {
+            historyContext[ply] = static_cast<uint8_t>(ctx);
+        }
+        switch (ctx) {
+            case HistoryContext::Basic:
+                historyStats.basicApplications++;
+                break;
+            case HistoryContext::Counter:
+                historyStats.counterApplications++;
+                break;
+            case HistoryContext::None:
+            default:
+                break;
+        }
+    }
+
+    ALWAYS_INLINE HistoryContext historyContextAt(int ply) const {
+        if (ply < 0 || ply >= static_cast<int>(historyContext.size())) {
+            return HistoryContext::None;
+        }
+        return static_cast<HistoryContext>(historyContext[ply]);
+    }
+
     // B0: Legality telemetry (lazy legality path)
     uint64_t illegalPseudoBeforeFirst = 0;  // Pseudo-legal moves rejected before first legal
     uint64_t illegalPseudoTotal = 0;        // Total pseudo-legal moves rejected
@@ -463,6 +640,138 @@ struct SearchData {
     // - Balanced between overhead and time control precision
     // - Prevents time losses while maintaining performance
     static constexpr uint64_t TIME_CHECK_INTERVAL = 2048;  // Check every 2048 nodes
+    
+    // Phase 2a.6: Move picker telemetry (compiled out in Release)
+    // This struct tracks effectiveness of the ranked move picker
+    // All fields are thread-local, no atomics needed for single-thread OB
+#ifdef SEARCH_STATS
+    struct MovePickerStats {
+        // Best move rank distribution
+        // [0]=rank 1, [1]=ranks 2-5, [2]=ranks 6-10, [3]=ranks 11+
+        uint64_t bestMoveRank[4] = {0, 0, 0, 0};
+        
+        // Shortlist coverage
+        uint64_t shortlistHits = 0;      // Cutoff moves that were in shortlist
+        
+        // SEE call tracking (expected ~0 in 2a since we don't use SEE yet)
+        uint64_t seeCallsLazy = 0;       // SEE evaluations performed
+        uint64_t capturesTotal = 0;      // Total captures observed
+        
+        // Optional: Additional tracking
+        uint64_t ttFirstYield = 0;       // TT move yielded first
+        uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
+        
+        void reset() {
+            for (int i = 0; i < 4; i++) bestMoveRank[i] = 0;
+            shortlistHits = 0;
+            seeCallsLazy = 0;
+            capturesTotal = 0;
+            ttFirstYield = 0;
+            remainderYields = 0;
+        }
+    } movePickerStats;
+    
+    // Phase 2b: Rank-aware gate statistics
+    struct RankGateStats {
+        uint64_t tried[4] = {0, 0, 0, 0};    // Moves tried per rank bucket
+        uint64_t pruned[4] = {0, 0, 0, 0};   // Moves pruned per rank bucket
+        uint64_t reduced[4] = {0, 0, 0, 0};  // Moves reduced per rank bucket
+        
+        void reset() {
+            for (int i = 0; i < 4; i++) {
+                tried[i] = pruned[i] = reduced[i] = 0;
+            }
+        }
+        
+        static ALWAYS_INLINE int bucketForRank(int r) {
+            if (r <= 1) return 0;      // Rank 1
+            if (r <= 5) return 1;      // Ranks 2-5
+            if (r <= 10) return 2;     // Ranks 6-10
+            return 3;                  // Ranks 11+
+        }
+    } rankGates;
+#endif  // SEARCH_STATS
+    
+    // Phase 2b.7: PVS re-search smoothing statistics (thread-local, no locks needed)
+    struct PVSReSearchSmoothing {
+        static constexpr int DEPTH_BUCKET_COUNT = 3;
+        static constexpr int RANK_BUCKET_COUNT = 4;  // Reuse existing buckets: [1], [2-5], [6-10], [11+]
+        
+        // Per-bucket counters: [depthBucket][rankBucket]
+        uint32_t attempts[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};     // Moves searched
+        uint32_t reSearches[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};   // Re-searches triggered
+        
+#ifdef SEARCH_STATS
+        uint32_t smoothingApplied[DEPTH_BUCKET_COUNT][RANK_BUCKET_COUNT] = {};  // Times smoothing applied
+#endif
+        
+        // Depth bucket mapping
+        static ALWAYS_INLINE int depthBucket(int depth) {
+            if (depth <= 6) return 0;   // D1: [4-6]
+            if (depth <= 10) return 1;  // D2: [7-10]
+            return 2;                    // D3: [11+]
+        }
+        
+        // Rank bucket mapping (reuse RankGateStats buckets)
+        static ALWAYS_INLINE int rankBucket(int rank) {
+            if (rank <= 1) return 0;    // Rank 1
+            if (rank <= 5) return 1;    // Ranks 2-5
+            if (rank <= 10) return 2;   // Ranks 6-10
+            return 3;                    // Ranks 11+
+        }
+        
+        // Check if smoothing should be applied for this bucket
+        ALWAYS_INLINE bool shouldApplySmoothing(int depthBucket, int rankBucket) const {
+            uint32_t att = attempts[depthBucket][rankBucket];
+            uint32_t res = reSearches[depthBucket][rankBucket];
+            
+            // Threshold: attempts >= 32 AND reSearches * 100 >= 20 * attempts (20% rate)
+            return att >= 32 && res * 100 >= 20 * att;
+        }
+        
+        // Update counters (called from negamax)
+        ALWAYS_INLINE void recordMove(int depth, int rank, bool didReSearch) {
+            int db = depthBucket(depth);
+            int rb = rankBucket(rank);
+            
+            // Saturating increment to prevent overflow
+            if (attempts[db][rb] < 65535) {
+                attempts[db][rb]++;
+                if (didReSearch && reSearches[db][rb] < 65535) {
+                    reSearches[db][rb]++;
+                }
+            }
+            
+            // Decay when attempts exceeds 64 to keep data fresh
+            if (attempts[db][rb] >= 64) {
+                attempts[db][rb] >>= 1;
+                reSearches[db][rb] >>= 1;
+            }
+        }
+        
+#ifdef SEARCH_STATS
+        // Track when smoothing is applied (for telemetry)
+        ALWAYS_INLINE void recordSmoothingApplied(int depth, int rank) {
+            int db = depthBucket(depth);
+            int rb = rankBucket(rank);
+            if (smoothingApplied[db][rb] < 65535) {
+                smoothingApplied[db][rb]++;
+            }
+        }
+#endif
+        
+        void reset() {
+            for (int d = 0; d < DEPTH_BUCKET_COUNT; d++) {
+                for (int r = 0; r < RANK_BUCKET_COUNT; r++) {
+                    attempts[d][r] = 0;
+                    reSearches[d][r] = 0;
+#ifdef SEARCH_STATS
+                    smoothingApplied[d][r] = 0;
+#endif
+                }
+            }
+        }
+    } pvsReSearchSmoothing;
     
     // Constructor
     SearchData() : startTime(std::chrono::steady_clock::now()) {}
@@ -511,6 +820,7 @@ struct SearchData {
     
     // Reset for new search
     void reset() {
+        clearScratch();
         nodes = 0;
         betaCutoffs = 0;
         betaCutoffsFirst = 0;
@@ -530,12 +840,20 @@ struct SearchData {
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
+        pvsStats.reset();  // Stage 22: Reset PVS statistics
+        pvsReSearchSmoothing.reset();  // Phase 2b.7: Reset PVS re-search smoothing
         futilityPruned = 0;  // Phase 2.1: Reset futility pruning counter
         moveCountPruned = 0;  // Phase 3: Reset move count pruning counter
         pruneBreakdown.reset();  // B0: Reset prune breakdown
         aspiration.reset();      // B0: Reset aspiration stats
         razoring.reset();        // Phase R1: Reset razoring stats
         razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
+        historyStats.reset();    // Phase 4.1: Reset history gating telemetry
+        historyContext.fill(static_cast<uint8_t>(HistoryContext::None));
+#ifdef SEARCH_STATS
+        movePickerStats.reset(); // Phase 2a.6: Reset move picker stats
+        rankGates.reset();       // Phase 2b: Reset rank gate stats
+#endif
         if (killers) killers->clear();  // Stage 19: Clear killer moves
         // Stage 20 Fix: DON'T clear history here - let it accumulate
         // history.clear();  // REMOVED to preserve history across iterations

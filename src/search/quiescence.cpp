@@ -8,15 +8,19 @@
 #include "discovered_check.h"  // For discovered check detection
 #include <chrono>  // For time management
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
+#include "ranked_move_picker.h"  // Phase 2a: Ranked move picker
 #include "../core/see.h"  // Stage 15 Day 6: For SEE-based pruning
 #include <algorithm>
 #include <iostream>
+#include <memory>
+#include <optional>  // For stack-allocated RankedMovePickerQS
 
 namespace seajay::search {
 
 // Helper functions for SEE pruning mode
 SEEPruningMode parseSEEPruningMode(const std::string& mode) {
     if (mode == "conservative") return SEEPruningMode::CONSERVATIVE;
+    if (mode == "moderate") return SEEPruningMode::MODERATE;
     if (mode == "aggressive") return SEEPruningMode::AGGRESSIVE;
     return SEEPruningMode::OFF;
 }
@@ -24,6 +28,7 @@ SEEPruningMode parseSEEPruningMode(const std::string& mode) {
 std::string seePruningModeToString(SEEPruningMode mode) {
     switch (mode) {
         case SEEPruningMode::CONSERVATIVE: return "conservative";
+        case SEEPruningMode::MODERATE: return "moderate";
         case SEEPruningMode::AGGRESSIVE: return "aggressive";
         default: return "off";
     }
@@ -207,10 +212,32 @@ eval::Score quiescence(
         staticEval = eval::Score::minus_infinity();
     }
     
+    // Phase 2a: Use RankedMovePickerQS for non-check positions
+    // Use optional to avoid dynamic allocation (stack allocation instead)
+    std::optional<RankedMovePickerQS> rankedPickerQS;
+    MoveList& moves = data.acquireMoveList(ply);
+    
+    // Phase 2a.7: Verify RankedMovePicker is NOT used in quiescence
+    // This path should never be taken in Phase 2a
+    if (false && limits.useRankedMovePicker && !isInCheck) {
+#ifdef DEBUG
+        // Phase 2a.7: Assert this path is never taken
+        assert(false && "RankedMovePicker should not be used in quiescence during Phase 2a");
+#endif
+        // One-time log to confirm no ranked QS path (should never print)
+        static bool loggedOnce = false;
+        if (!loggedOnce) {
+            std::cerr << "ERROR: RankedMovePicker path hit in quiescence (should not happen in Phase 2a)" << std::endl;
+            loggedOnce = true;
+        }
+        // Use ranked move picker for captures/promotions only
+        rankedPickerQS.emplace(board, ttMove);
+    }
+    
     // Generate moves based on check status
-    MoveList moves;
     if (isInCheck) {
         // In check: must generate ALL legal moves (not just captures)
+        // Don't use RankedMovePicker in check positions for Phase 2a
         moves = generateLegalMoves(board);
         
         // Check for checkmate/stalemate
@@ -249,54 +276,63 @@ eval::Score quiescence(
                 return false;
             });
         }
-    } else {
-        // Not in check: only search captures
+    } else if (!rankedPickerQS) {
+        // Not in check and not using RankedMovePicker: only search captures
         MoveGenerator::generateCaptures(board, moves);
+        if (limits.nodeExplosionDiagnostics) {
+            g_nodeExplosionStats.qsearchExplosion.capturesGenerated += moves.size();
+        }
     }
     
     // Phase 2.2: Enhanced move ordering with queen promotion prioritization
     // Order: Queen Promotions → Discovered Checks → TT moves → Other captures → Quiet moves
     // Use SEE-based capture ordering when enabled for non-check nodes
-    if (!isInCheck && search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
-        search::g_seeMoveOrdering.orderMoves(board, moves);
-    } else {
-        MvvLvaOrdering mvvLva;
-        mvvLva.orderMoves(board, moves);
+    // Skip ordering if using RankedMovePicker (it handles ordering internally)
+    if (!rankedPickerQS) {
+        if (!isInCheck && search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
+            search::g_seeMoveOrdering.orderMoves(board, moves);
+        } else {
+            MvvLvaOrdering mvvLva;
+            mvvLva.orderMoves(board, moves);
+        }
     }
     
     // Phase 2.2 Missing Item 1: Queen Promotion Prioritization
     // Move queen promotions to the very front (before TT moves)
-    auto queenPromoIt = moves.begin();
-    for (auto it = moves.begin(); it != moves.end(); ++it) {
-        if (isPromotion(*it) && promotionType(*it) == QUEEN) {
-            if (it != queenPromoIt) {
-                std::rotate(queenPromoIt, it, it + 1);
-            }
-            ++queenPromoIt;  // Move insertion point for next queen promotion
-        }
-    }
-    
-    // Deliverable 3.2.3: Discovered Check Detection
-    // Prioritize captures that create discovered checks (after queen promos)
-    if (!isInCheck) {  // Only for capture moves, not check evasions
-        auto discoveredCheckIt = queenPromoIt;
-        for (auto it = queenPromoIt; it != moves.end(); ++it) {
-            if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
-                if (it != discoveredCheckIt) {
-                    std::rotate(discoveredCheckIt, it, it + 1);
+    // Skip if using RankedMovePicker (it handles ordering internally)
+    if (!rankedPickerQS) {
+        auto queenPromoIt = moves.begin();
+        for (auto it = moves.begin(); it != moves.end(); ++it) {
+            if (isPromotion(*it) && promotionType(*it) == QUEEN) {
+                if (it != queenPromoIt) {
+                    std::rotate(queenPromoIt, it, it + 1);
                 }
-                ++discoveredCheckIt;
+                ++queenPromoIt;  // Move insertion point for next queen promotion
             }
         }
-    }
-    
-    // TT Move Ordering (after queen promotions)
-    // If we have a TT move and it's not already a queen promotion, prioritize it
-    if (ttMove != NO_MOVE) {
-        auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
-        if (ttMoveIt != moves.end()) {
-            // Move TT move to front of non-queen-promotion moves
-            std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
+        
+        // Deliverable 3.2.3: Discovered Check Detection
+        // Prioritize captures that create discovered checks (after queen promos)
+        if (!isInCheck) {  // Only for capture moves, not check evasions
+            auto discoveredCheckIt = queenPromoIt;
+            for (auto it = queenPromoIt; it != moves.end(); ++it) {
+                if (isCapture(*it) && isDiscoveredCheck(board, *it)) {
+                    if (it != discoveredCheckIt) {
+                        std::rotate(discoveredCheckIt, it, it + 1);
+                    }
+                    ++discoveredCheckIt;
+                }
+            }
+        }
+        
+        // TT Move Ordering (after queen promotions)
+        // If we have a TT move and it's not already a queen promotion, prioritize it
+        if (ttMove != NO_MOVE) {
+            auto ttMoveIt = std::find(queenPromoIt, moves.end(), ttMove);
+            if (ttMoveIt != moves.end()) {
+                // Move TT move to front of non-queen-promotion moves
+                std::rotate(queenPromoIt, ttMoveIt, ttMoveIt + 1);
+            }
         }
     }
     
@@ -306,9 +342,23 @@ eval::Score quiescence(
     int moveCount = 0;
     
     // Candidate 9: Use reduced capture limit in panic mode
-    const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : MAX_CAPTURES_PER_NODE;
+    const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : (limits.qsearchMaxCaptures > 0 ? limits.qsearchMaxCaptures : MAX_CAPTURES_PER_NODE);
     
-    for (const Move& move : moves) {
+    // Phase 2a: Iterate using RankedMovePickerQS or traditional move list
+    Move move;
+    size_t moveIndex = 0;
+    while (true) {
+        if (rankedPickerQS) {
+#ifdef DEBUG
+            // Phase 2a.7: This should never be reached in Phase 2a
+            assert(false && "RankedPickerQS should not be active in Phase 2a");
+#endif
+            move = rankedPickerQS->next();
+            if (move == NO_MOVE) break;
+        } else {
+            if (moveIndex >= moves.size()) break;
+            move = moves[moveIndex++];
+        }
         // Limit moves per node to prevent explosion (except when in check)
         if (!isInCheck && ++moveCount > maxCaptures) {
             break;
@@ -339,7 +389,7 @@ eval::Score quiescence(
         // Stage 15 Day 6: SEE-based pruning
         // Only prune captures (not promotions or check evasions)
         // Stage 14 Remediation: Use pre-parsed mode from SearchData to avoid string parsing
-        if (data.seePruningModeEnum != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
+        if (data.seePruningModeEnumQ != SEEPruningMode::OFF && !isInCheck && isCapture(move) && !isPromotion(move)) {
             data.seeStats.totalCaptures++;
             
             // Calculate SEE value for this capture
@@ -348,9 +398,16 @@ eval::Score quiescence(
             
             // Determine pruning threshold based on mode, game phase, and depth
             int pruneThreshold;
-            if (data.seePruningModeEnum == SEEPruningMode::CONSERVATIVE) {
+            if (data.seePruningModeEnumQ == SEEPruningMode::CONSERVATIVE) {
                 // Conservative: fixed threshold -100
                 pruneThreshold = SEE_PRUNE_THRESHOLD_CONSERVATIVE;  // -100
+            } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
+                // Moderate-lite: gentler than previous moderate
+                // Base thresholds
+                pruneThreshold = isEndgame ? -65 : SEE_PRUNE_THRESHOLD_MODERATE; // endgame softened from -50 -> -65
+                // Smaller, later depth ramp: only from qply>=6
+                int depthBonus = (qply >= 8 ? 15 : (qply >= 6 ? 10 : 0));
+                pruneThreshold = std::min(pruneThreshold + depthBonus, 0);  // Never prune winning captures
             } else {  // AGGRESSIVE
                 // Aggressive: depth-dependent and game-phase aware
                 // Start with base threshold
@@ -389,23 +446,30 @@ eval::Score quiescence(
             
             // Also consider pruning equal exchanges late in quiescence
             // The deeper we are, the more likely we prune equal exchanges
-            if (data.seePruningModeEnum == SEEPruningMode::AGGRESSIVE && seeValue == 0) {
-                // Prune equal exchanges based on quiescence depth
-                // At qply 3-4: prune if position is quiet
-                // At qply 5-6: prune more aggressively
-                // At qply 7+: always prune equal exchanges
-                bool pruneEqual = false;
-                if (qply >= 7) {
-                    pruneEqual = true;  // Always prune deep in search
-                } else if (qply >= 5) {
-                    // Prune if we're not finding tactics
-                    pruneEqual = (staticEval >= alpha - eval::Score(50));
-                } else if (qply >= 3) {
-                    // Only prune if position looks very quiet
-                    pruneEqual = (staticEval >= alpha);
+            if (seeValue == 0) {
+                bool applyEqualPrune = false;
+                if (data.seePruningModeEnumQ == SEEPruningMode::AGGRESSIVE) {
+                    // Aggressive profile (existing behavior)
+                    if (qply >= 7) applyEqualPrune = true;
+                    else if (qply >= 5) applyEqualPrune = (staticEval >= alpha - eval::Score(50));
+                    else if (qply >= 3) applyEqualPrune = (staticEval >= alpha);
+                } else if (data.seePruningModeEnumQ == SEEPruningMode::MODERATE) {
+                    // Moderate-lite: only at deepest qplies and with stricter guard
+                    if (qply >= 8) {
+                        applyEqualPrune = (staticEval >= alpha + eval::Score(25));
+                        if (applyEqualPrune) {
+                            // Victim-aware exception: do not prune equal exchanges on pieces (only allow equal pawn trades)
+                            Piece capturedPieceEE = board.pieceAt(to(move));
+                            if (capturedPieceEE != NO_PIECE) {
+                                PieceType victimEE = typeOf(capturedPieceEE);
+                                if (victimEE != PAWN) {
+                                    applyEqualPrune = false;
+                                }
+                            }
+                        }
+                    }
                 }
-                
-                if (pruneEqual) {
+                if (applyEqualPrune) {
                     data.seeStats.seePruned++;
                     data.seeStats.equalExchangePrunes++;
                     continue;
@@ -413,6 +477,10 @@ eval::Score quiescence(
             }
         }
         
+        // Record capture searched after pruning on non-check nodes
+        if (limits.nodeExplosionDiagnostics && !isInCheck && isCapture(move)) {
+            g_nodeExplosionStats.qsearchExplosion.capturesSearched++;
+        }
         // Push position to search stack
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
         

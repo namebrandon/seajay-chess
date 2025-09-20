@@ -3,6 +3,7 @@
 #include "../core/types.h"
 #include <array>
 #include <cstring>
+#include <vector>
 #include <algorithm>
 
 namespace seajay::search {

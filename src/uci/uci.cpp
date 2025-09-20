@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <thread>
 #include <cmath>
+#include <sstream>
+#include <cctype>
 
 using namespace seajay;
 
@@ -54,6 +56,11 @@ UCIEngine::UCIEngine() : m_quit(false), m_tt() {
     m_board.fromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     m_board.clearGameHistory();
     // No need to push - board tracks its own history
+
+    // Set default TT backend and size to match UCI defaults
+    // Default: clustered TT enabled and Hash=128 MB
+    m_tt.setClustered(true);
+    m_tt.resize(128);
 }
 
 UCIEngine::~UCIEngine() {
@@ -120,6 +127,8 @@ void UCIEngine::handleUCI() {
     
     // Stage 14 Remediation: Runtime node limit for quiescence search
     std::cout << "option name QSearchNodeLimit type spin default 0 min 0 max 10000000" << std::endl;
+    // Per-node capture budget for quiescence
+    std::cout << "option name QSearchMaxCaptures type spin default 32 min 4 max 128" << std::endl;
     
     // Maximum check extension depth in quiescence search
     std::cout << "option name MaxCheckPly type spin default 6 min 0 max 10" << std::endl;
@@ -130,8 +139,10 @@ void UCIEngine::handleUCI() {
     // Stage 15 Day 5: SEE integration mode option
     std::cout << "option name SEEMode type combo default off var off var testing var shadow var production" << std::endl;
     
-    // Stage 15 Day 6: SEE-based pruning in quiescence
-    std::cout << "option name SEEPruning type combo default conservative var off var conservative var aggressive" << std::endl;
+    // Stage 15 Day 6: SEE-based pruning
+    std::cout << "option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
+    // Quiescence-only SEE pruning mode
+    std::cout << "option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive" << std::endl;
     
     // Stage 18: Late Move Reductions (LMR) options
     std::cout << "option name LMREnabled type check default true" << std::endl;
@@ -145,6 +156,10 @@ void UCIEngine::handleUCI() {
     
     // Stage 21: Null Move Pruning options
     std::cout << "option name UseNullMove type check default true" << std::endl;  // Enabled for Phase A2
+    std::cout << "option name UseAggressiveNullMove type check default false" << std::endl; // Phase 4.2 shadow toggle
+    std::cout << "option name AggressiveNullMinEval type spin default 600 min 0 max 2000" << std::endl;
+    std::cout << "option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000" << std::endl;
+    std::cout << "option name AggressiveNullRequirePositiveBeta type check default true" << std::endl;
     std::cout << "option name NullMoveStaticMargin type spin default 87 min 50 max 300" << std::endl;  // SPSA-tuned
     std::cout << "option name NullMoveMinDepth type spin default 2 min 2 max 5" << std::endl;
     std::cout << "option name NullMoveReductionBase type spin default 4 min 1 max 6" << std::endl;
@@ -160,7 +175,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowPhaseInfo type check default true" << std::endl;
     // B0: One-shot search summary at end of go
     std::cout << "option name SearchStats type check default false" << std::endl;
-    
+    // Debug move tracing option (space/comma separated list of UCI moves)
+    std::cout << "option name DebugTrackedMoves type string default" << std::endl;
+
     // Node explosion diagnostics option
     std::cout << "option name NodeExplosionDiagnostics type check default false" << std::endl;
     
@@ -192,6 +209,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name FutilityMargin2 type spin default 313 min 100 max 500" << std::endl;
     std::cout << "option name FutilityMargin3 type spin default 386 min 150 max 600" << std::endl;
     std::cout << "option name FutilityMargin4 type spin default 459 min 200 max 700" << std::endl;
+
+    // Offensive king safety scaling
+    std::cout << "option name KingAttackScale type spin default 2 min 0 max 500" << std::endl;
     
     // SPSA PST Tuning Options - Simplified approach with zones
     // Pawn endgame values
@@ -242,8 +262,15 @@ void UCIEngine::handleUCI() {
     std::cout << "option name king_mg_f1 type spin default -28 min -50 max 50" << std::endl;  // Center (SPSA: -28)
     
     // Stage 12: Transposition Table options
-    std::cout << "option name Hash type spin default 16 min 1 max 16384" << std::endl;  // TT size in MB
+    std::cout << "option name Hash type spin default 128 min 1 max 16384" << std::endl;  // TT size in MB
     std::cout << "option name UseTranspositionTable type check default true" << std::endl;  // Enable/disable TT
+    // Depth Parity toggles
+    std::cout << "option name UseClusteredTT type check default true" << std::endl;
+    std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
+    std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
+    std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
+    std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
+    std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -265,6 +292,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MoveCountLimit6 type spin default 25 min 10 max 80" << std::endl;
     std::cout << "option name MoveCountLimit7 type spin default 36 min 12 max 90" << std::endl;
     std::cout << "option name MoveCountLimit8 type spin default 42 min 15 max 100" << std::endl;
+    std::cout << "option name MoveCountMaxDepth type spin default 8 min 3 max 20" << std::endl;
     std::cout << "option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000" << std::endl;
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
@@ -622,9 +650,23 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     // Stage 14, Deliverable 1.8: Pass quiescence option to search
     limits.useQuiescence = m_useQuiescence;
     
-    // Stage 14 Remediation: Pass runtime node limit
+    // Phase 2a: Pass ranked move picker option
+    limits.useRankedMovePicker = m_useRankedMovePicker;
+    
+    // Phase 2a.6: Pass move picker statistics option
+    limits.showMovePickerStats = m_showMovePickerStats;
+    
+    // Phase 2a.8a: Pass in-check class ordering option
+    limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
+    
+    // Phase 2b: Pass rank-aware gates option
+    limits.useRankAwareGates = m_useRankAwareGates;
+    limits.debugTrackedMoves = m_debugTrackedMoves;
+    
+    // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
     limits.qsearchNodeLimit = m_qsearchNodeLimit;
     limits.maxCheckPly = m_maxCheckPly;  // Pass maximum check extension depth
+    limits.qsearchMaxCaptures = m_qsearchMaxCaptures;
     
     // Phase 2.2: Pass root king penalty
     limits.rootKingPenalty = m_rootKingPenalty;
@@ -648,6 +690,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.nullMoveReductionDepth12 = m_nullMoveReductionDepth12;
     limits.nullMoveVerifyDepth = m_nullMoveVerifyDepth;
     limits.nullMoveEvalMargin = m_nullMoveEvalMargin;
+    limits.useAggressiveNullMove = m_useAggressiveNullMove;
+    limits.aggressiveNullMinEval = m_aggressiveNullMinEval;
+    limits.aggressiveNullMaxApplications = m_aggressiveNullMaxApplications;
+    limits.aggressiveNullRequirePositiveBeta = m_aggressiveNullRequirePositiveBeta;
     
     // Futility pruning parameters
     limits.useFutilityPruning = m_useFutilityPruning;
@@ -674,8 +720,9 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.middlegameStability = m_middlegameStability;
     limits.endgameStability = m_endgameStability;
     
-    // Stage 15: Pass SEE pruning mode
+    // Stage 15: Pass SEE pruning modes
     limits.seePruningMode = m_seePruning;
+    limits.seePruningModeQ = m_seePruningQ;
     
     // Stage 22 Phase P3.5: Pass PVS statistics output flag
     limits.showPVSStats = m_showPVSStats;
@@ -695,6 +742,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.moveCountLimit6 = m_moveCountLimit6;
     limits.moveCountLimit7 = m_moveCountLimit7;
     limits.moveCountLimit8 = m_moveCountLimit8;
+    limits.moveCountMaxDepth = m_moveCountMaxDepth;
     limits.moveCountHistoryThreshold = m_moveCountHistoryThreshold;
     limits.moveCountHistoryBonus = m_moveCountHistoryBonus;
     limits.moveCountImprovingRatio = m_moveCountImprovingRatio;
@@ -770,25 +818,33 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
         }
     }
     
-    // Run the benchmark suite
-    auto result = BenchmarkSuite::runBenchmark(depth, true);
+    // Run the SEARCH benchmark suite (deterministic search signature)
+    auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Send final summary as info string for GUI compatibility
     std::ostringstream oss;
     oss << "Benchmark complete: " << result.totalNodes << " nodes, "
         << std::fixed << std::setprecision(0) << result.averageNps() << " nps";
     sendInfo(oss.str());
+    // Plain final line for OpenBench validator
+    std::cout << result.totalNodes << " nodes "
+              << std::fixed << std::setprecision(0) << result.averageNps()
+              << " nps" << std::endl;
 }
 
 void UCIEngine::runBenchmark(int depth) {
-    // Run benchmark directly without UCI loop (for OpenBench)
-    // Use verbose=false to avoid console output conflicts
-    auto result = BenchmarkSuite::runBenchmark(depth, false);
+    // Run search benchmark directly without UCI loop (for OpenBench)
+    // Use verbose=true to show per-position lines as requested
+    auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Output final result as info string (OpenBench format)
     std::cout << "info string Benchmark complete: " << result.totalNodes 
               << " nodes, " << std::fixed << std::setprecision(0) 
               << result.averageNps() << " nps" << std::endl;
+    // Plain final line for OpenBench validator
+    std::cout << result.totalNodes << " nodes "
+              << std::fixed << std::setprecision(0) << result.averageNps()
+              << " nps" << std::endl;
 }
 
 void UCIEngine::sendInfo(const std::string& message) {
@@ -968,6 +1024,80 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Transposition table disabled" << std::endl;
         }
     }
+    // Depth Parity: UseClusteredTT - switch between regular and clustered TT
+    else if (optionName == "UseClusteredTT") {
+        // Don't change while searching
+        if (m_searching) {
+            std::cerr << "info string Cannot change TT mode while searching" << std::endl;
+            return;
+        }
+        
+        if (value == "true" && !m_useClusteredTT) {
+            m_useClusteredTT = true;
+            m_tt.setClustered(true);
+            // Resize to rebuild with clustering
+            size_t currentSize = m_tt.sizeInMB();
+            m_tt.resize(currentSize);
+            std::cerr << "info string Clustered TT backend enabled (" << currentSize << " MB)" << std::endl;
+        } else if (value == "false" && m_useClusteredTT) {
+            m_useClusteredTT = false;
+            m_tt.setClustered(false);
+            // Resize to rebuild without clustering
+            size_t currentSize = m_tt.sizeInMB();
+            m_tt.resize(currentSize);
+            std::cerr << "info string Regular TT backend enabled (" << currentSize << " MB)" << std::endl;
+        }
+    }
+    // Depth Parity scaffold: UseStagedMovePicker (no behavior change yet)
+    else if (optionName == "UseStagedMovePicker") {
+        if (value == "true") {
+            m_useStagedMovePicker = true;
+            std::cerr << "info string (scaffold) Staged MovePicker toggle set to true (no effect yet)" << std::endl;
+        } else if (value == "false") {
+            m_useStagedMovePicker = false;
+            std::cerr << "info string (scaffold) Staged MovePicker toggle set to false (no effect yet)" << std::endl;
+        }
+    }
+    // Phase 2a: UseRankedMovePicker
+    else if (optionName == "UseRankedMovePicker") {
+        if (value == "true") {
+            m_useRankedMovePicker = true;
+            std::cerr << "info string Ranked MovePicker enabled (Phase 2a)" << std::endl;
+        } else if (value == "false") {
+            m_useRankedMovePicker = false;
+            std::cerr << "info string Ranked MovePicker disabled" << std::endl;
+        }
+    }
+    // Phase 2a.6: ShowMovePickerStats
+    else if (optionName == "ShowMovePickerStats") {
+        if (value == "true") {
+            m_showMovePickerStats = true;
+            std::cerr << "info string Move picker statistics will be shown at end of search" << std::endl;
+        } else if (value == "false") {
+            m_showMovePickerStats = false;
+            std::cerr << "info string Move picker statistics disabled" << std::endl;
+        }
+    }
+    // Phase 2a.8a: UseInCheckClassOrdering
+    else if (optionName == "UseInCheckClassOrdering") {
+        if (value == "true") {
+            m_useInCheckClassOrdering = true;
+            std::cerr << "info string In-check class ordering enabled" << std::endl;
+        } else if (value == "false") {
+            m_useInCheckClassOrdering = false;
+            std::cerr << "info string In-check class ordering disabled" << std::endl;
+        }
+    }
+    // Phase 2b: UseRankAwareGates
+    else if (optionName == "UseRankAwareGates") {
+        if (value == "true") {
+            m_useRankAwareGates = true;
+            std::cerr << "info string Rank-aware pruning gates enabled" << std::endl;
+        } else if (value == "false") {
+            m_useRankAwareGates = false;
+            std::cerr << "info string Rank-aware pruning gates disabled" << std::endl;
+        }
+    }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)
     else if (optionName == "Threads") {
         try {
@@ -1084,7 +1214,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     // Stage 15 Day 6: Handle SEEPruning option
     else if (optionName == "SEEPruning") {
-        if (value == "off" || value == "conservative" || value == "aggressive") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
             m_seePruning = value;
             
             std::cerr << "info string SEE pruning mode set to: " << value << std::endl;
@@ -1092,6 +1222,8 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             // Additional info for each mode
             if (value == "conservative") {
                 std::cerr << "info string Conservative SEE Pruning: Prune captures with SEE < -100" << std::endl;
+            } else if (value == "moderate") {
+                std::cerr << "info string Moderate SEE Pruning: Threshold ~ -85 with deeper equal-exchange gating" << std::endl;
             } else if (value == "aggressive") {
                 std::cerr << "info string Aggressive SEE Pruning: Prune captures with SEE < -50 to -75" << std::endl;
             } else {
@@ -1099,7 +1231,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } else {
             std::cerr << "info string Invalid SEEPruning value: " << value << std::endl;
-            std::cerr << "info string Valid values: off, conservative, aggressive" << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
+        }
+    }
+    else if (optionName == "QSEEPruning") {
+        if (value == "off" || value == "conservative" || value == "moderate" || value == "aggressive") {
+            m_seePruningQ = value;
+            std::cerr << "info string QSEE pruning mode set to: " << value << std::endl;
+        } else {
+            std::cerr << "info string Invalid QSEEPruning value: " << value << std::endl;
+            std::cerr << "info string Valid values: off, conservative, moderate, aggressive" << std::endl;
         }
     }
     // Stage 18: Handle LMR options
@@ -1259,6 +1400,54 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Null move pruning disabled" << std::endl;
         } else {
             std::cerr << "info string Invalid UseNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    else if (optionName == "UseAggressiveNullMove") {
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_useAggressiveNullMove = true;
+            std::cerr << "info string Aggressive null-move reductions enabled" << std::endl;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_useAggressiveNullMove = false;
+            std::cerr << "info string Aggressive null-move reductions disabled" << std::endl;
+        } else {
+            std::cerr << "info string Invalid UseAggressiveNullMove value: " << value << std::endl;
+            std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullMinEval") {
+        try {
+            int parsed = std::stoi(value);
+            if (parsed < 0) parsed = 0;
+            if (parsed > 2000) parsed = 2000;
+            m_aggressiveNullMinEval = parsed;
+            std::cerr << "info string Aggressive null min eval set to: " << parsed << " cp" << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid AggressiveNullMinEval value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullMaxApplications") {
+        try {
+            int parsed = std::stoi(value);
+            if (parsed < 0) parsed = 0;
+            m_aggressiveNullMaxApplications = parsed;
+            std::cerr << "info string Aggressive null application cap set to: " << parsed << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid AggressiveNullMaxApplications value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "AggressiveNullRequirePositiveBeta") {
+        std::string lowerValue = value;
+        std::transform(lowerValue.begin(), lowerValue.end(), lowerValue.begin(), ::tolower);
+        if (lowerValue == "true" || lowerValue == "1" || lowerValue == "yes" || lowerValue == "on") {
+            m_aggressiveNullRequirePositiveBeta = true;
+        } else if (lowerValue == "false" || lowerValue == "0" || lowerValue == "no" || lowerValue == "off") {
+            m_aggressiveNullRequirePositiveBeta = false;
+        } else {
+            std::cerr << "info string Invalid AggressiveNullRequirePositiveBeta value: " << value << std::endl;
             std::cerr << "info string Valid values: true, false, 1, 0, yes, no, on, off (case-insensitive)" << std::endl;
         }
     }
@@ -1493,6 +1682,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid FutilityMargin4 value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "KingAttackScale") {
+        try {
+            int scale = 0;
+            try {
+                double dv = std::stod(value);
+                scale = static_cast<int>(std::round(dv));
+            } catch (...) {
+                scale = std::stoi(value);
+            }
+            if (scale >= 0 && scale <= 500) {
+                seajay::getConfig().kingAttackScale = scale;
+                std::cerr << "info string KingAttackScale set to " << scale << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid KingAttackScale value: " << value << std::endl;
         }
     }
     // Legacy futility options (kept for backwards compatibility)
@@ -1740,6 +1946,23 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid MoveCountLimit8 value: " << value << std::endl;
         }
     }
+    else if (optionName == "MoveCountMaxDepth") {
+        try {
+            int d = 0;
+            try {
+                double dv = std::stod(value);
+                d = static_cast<int>(std::round(dv));
+            } catch (...) {
+                d = std::stoi(value);
+            }
+            if (d >= 3 && d <= 20) {
+                m_moveCountMaxDepth = d;
+                std::cerr << "info string MoveCountMaxDepth set to " << d << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid MoveCountMaxDepth value: " << value << std::endl;
+        }
+    }
     else if (optionName == "MoveCountHistoryThreshold") {
         try {
             // SPSA-safe parsing: handle float values from OpenBench
@@ -1883,6 +2106,34 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string SearchStats disabled" << std::endl;
         }
     }
+    else if (optionName == "DebugTrackedMoves") {
+        m_debugTrackedMoves.clear();
+        std::string normalized = value;
+        std::replace(normalized.begin(), normalized.end(), ',', ' ');
+        std::istringstream ss(normalized);
+        std::string token;
+        while (ss >> token) {
+            if (token == "-" || token == "none") {
+                // Treat explicit reset tokens as a request to clear the list
+                m_debugTrackedMoves.clear();
+                continue;
+            }
+            std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+            if (!token.empty()) {
+                m_debugTrackedMoves.push_back(token);
+            }
+        }
+        if (m_debugTrackedMoves.empty()) {
+            std::cerr << "info string DebugTrackedMoves cleared" << std::endl;
+        } else {
+            std::ostringstream oss;
+            for (size_t i = 0; i < m_debugTrackedMoves.size(); ++i) {
+                if (i) oss << ',';
+                oss << m_debugTrackedMoves[i];
+            }
+            std::cerr << "info string DebugTrackedMoves set to: " << oss.str() << std::endl;
+        }
+    }
     else if (optionName == "NodeExplosionDiagnostics") {
         if (value == "true") {
             m_nodeExplosionDiagnostics = true;
@@ -1890,6 +2141,17 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_nodeExplosionDiagnostics = false;
             std::cerr << "info string NodeExplosionDiagnostics disabled" << std::endl;
+        }
+    }
+    else if (optionName == "QSearchMaxCaptures") {
+        try {
+            int cap = std::stoi(value);
+            if (cap >= 4 && cap <= 128) {
+                m_qsearchMaxCaptures = cap;
+                std::cerr << "info string QSearchMaxCaptures set to " << cap << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid QSearchMaxCaptures value: " << value << std::endl;
         }
     }
     else if (optionName == "EvalExtended") {
@@ -2161,16 +2423,66 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
         }
     } else if (tokens.size() > 1 && tokens[1] == "tt") {
-        // Show TT collision statistics
+        // Show TT collision statistics  
         const auto& stats = m_tt.stats();
         std::cout << "=== TT Collision Diagnostics ===" << std::endl;
-        std::cout << "Probes: " << stats.probes.load() << std::endl;
-        std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
-        std::cout << "Stores: " << stats.stores.load() << std::endl;
-        std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
-        std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
-        std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
-                  << " (" << stats.collisionRate() << "%)" << std::endl;
+        
+        if (m_tt.isClustered()) {
+            std::cout << "Backend: Clustered (4-way)" << std::endl;
+#ifdef TT_STATS_ENABLED
+            std::cout << "Probes: " << stats.probes.load() << std::endl;
+            std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores.load() << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Avg scan length: " << stats.avgScanLength() << std::endl;
+            std::cout << "Replacement reasons:" << std::endl;
+            std::cout << "  Empty: " << stats.replacedEmpty.load() << std::endl;
+            std::cout << "  Old gen: " << stats.replacedOldGen.load() << std::endl;
+            std::cout << "  Shallower: " << stats.replacedShallower.load() << std::endl;
+            std::cout << "  Non-exact: " << stats.replacedNonExact.load() << std::endl;
+            std::cout << "  No-move: " << stats.replacedNoMove.load() << std::endl;
+            std::cout << "  Oldest: " << stats.replacedOldest.load() << std::endl;
+#else
+            std::cout << "Probes: " << stats.probes << std::endl;
+            std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Avg scan length: " << stats.avgScanLength() << std::endl;
+            std::cout << "Replacement reasons:" << std::endl;
+            std::cout << "  Empty: " << stats.replacedEmpty << std::endl;
+            std::cout << "  Old gen: " << stats.replacedOldGen << std::endl;
+            std::cout << "  Shallower: " << stats.replacedShallower << std::endl;
+            std::cout << "  Non-exact: " << stats.replacedNonExact << std::endl;
+            std::cout << "  No-move: " << stats.replacedNoMove << std::endl;
+            std::cout << "  Oldest: " << stats.replacedOldest << std::endl;
+#endif
+        } else {
+            std::cout << "Backend: Regular (single-entry)" << std::endl;
+#ifdef TT_STATS_ENABLED
+            std::cout << "Probes: " << stats.probes.load() << std::endl;
+            std::cout << "Hits: " << stats.hits.load() << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores.load() << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions.load() << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+#else
+            std::cout << "Probes: " << stats.probes << std::endl;
+            std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
+            std::cout << "Stores: " << stats.stores << std::endl;
+            std::cout << "Store-side collisions: " << stats.collisions << std::endl;
+            std::cout << "Probe empties: " << stats.probeEmpties << std::endl;
+            std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches 
+                      << " (" << stats.collisionRate() << "%)" << std::endl;
+#endif
+        }
+        
         std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;
         std::cout << "\n(Run a search first, then check 'info string' output for missing TT store stats)" << std::endl;
     } else {

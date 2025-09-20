@@ -21,6 +21,7 @@ struct SearchStack {
     bool isPvNode = false;      // Track if this is a PV node (Phase P1)
     int searchedMoves = 0;      // Count of moves already searched (Phase P1)
     Move excludedMove = NO_MOVE; // Move to exclude in singular search
+    bool gaveCheck = false;      // Whether the move leading to this node delivered check
 };
 
 // Search-specific information tracking
@@ -36,6 +37,8 @@ public:
         for (int i = 0; i < MAX_PLY; ++i) {
             m_searchStack[i] = SearchStack{};
         }
+        m_extensionApplied.fill(0);
+        m_extensionTotal.fill(0);
     }
     
     // Set the game history size at root (where game ends, search begins)
@@ -49,6 +52,7 @@ public:
             m_searchStack[ply].zobristKey = zobrist;
             m_searchStack[ply].move = move;
             m_searchStack[ply].ply = ply;
+            m_searchStack[ply].gaveCheck = false;  // Reset; set after legality if needed
         }
     }
     
@@ -67,6 +71,42 @@ public:
     // Get search stack entry
     const SearchStack& getStackEntry(int ply) const {
         return m_searchStack[ply];
+    }
+
+    void setGaveCheck(int ply, bool gaveCheck) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].gaveCheck = gaveCheck;
+        }
+    }
+
+    bool moveGaveCheck(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].gaveCheck;
+        }
+        return false;
+    }
+
+    void setExtensionApplied(int ply, int extension) {
+        if (ply < 0 || ply >= MAX_PLY) {
+            return;
+        }
+        m_extensionApplied[ply] = extension;
+        int parentTotal = (ply > 0) ? m_extensionTotal[ply - 1] : 0;
+        m_extensionTotal[ply] = parentTotal + extension;
+    }
+
+    int extensionApplied(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_extensionApplied[ply];
+        }
+        return 0;
+    }
+
+    int totalExtensions(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_extensionTotal[ply];
+        }
+        return 0;
     }
     
     // Current search ply
@@ -172,6 +212,8 @@ public:
     
 private:
     std::array<SearchStack, MAX_PLY> m_searchStack;
+    std::array<int, MAX_PLY> m_extensionApplied{};
+    std::array<int, MAX_PLY> m_extensionTotal{};
     int m_searchPly;
     size_t m_rootGameHistorySize;  // Where game history ends
 };

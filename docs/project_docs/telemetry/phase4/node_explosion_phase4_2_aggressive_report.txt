@@ -1,0 +1,125 @@
+Node Explosion Diagnostic Report
+Generated: Wed Sep 17 06:17:51 PM CDT 2025
+========================================
+
+
+Position: Starting
+FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+----------------------------------------
+  Depth 5:
+    SeaJay:  1648 nodes
+    Stash:   328 nodes (ratio: 5.02x)
+    Komodo:  1394 nodes (ratio: 1.18x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 7:
+    SeaJay:  8249 nodes
+    Stash:   2013 nodes (ratio: 4.09x)
+    Komodo:  5118 nodes (ratio: 1.61x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 10:
+    SeaJay:  49353 nodes
+    Stash:   16841 nodes (ratio: 2.93x)
+    Komodo:  25961 nodes (ratio: 1.90x)
+    Laser:    nodes (ratio: N/Ax)
+
+Position: Middlegame
+FEN: r1b1k2r/pp4pp/3Bpp2/3p4/6q1/8/PQ3PPP/2R1R1K1 b kq - 3 17
+----------------------------------------
+  Depth 5:
+    SeaJay:  4998 nodes
+    Stash:   760 nodes (ratio: 6.57x)
+    Komodo:  1339 nodes (ratio: 3.73x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 7:
+    SeaJay:  15381 nodes
+    Stash:   1419 nodes (ratio: 10.83x)
+    Komodo:  5413 nodes (ratio: 2.84x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 10:
+    SeaJay:  64809 nodes
+    Stash:   8228 nodes (ratio: 7.87x)
+    Komodo:  39741 nodes (ratio: 1.63x)
+    Laser:    nodes (ratio: N/Ax)
+
+Position: Endgame
+FEN: 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
+----------------------------------------
+  Depth 5:
+    SeaJay:  1313 nodes
+    Stash:   185 nodes (ratio: 7.09x)
+    Komodo:  1803 nodes (ratio: .72x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 7:
+    SeaJay:  10386 nodes
+    Stash:   665 nodes (ratio: 15.61x)
+    Komodo:  3706 nodes (ratio: 2.80x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 10:
+    SeaJay:  51343 nodes
+    Stash:   3800 nodes (ratio: 13.51x)
+    Komodo:  32275 nodes (ratio: 1.59x)
+    Laser:    nodes (ratio: N/Ax)
+
+Position: Tactical
+FEN: r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4
+----------------------------------------
+  Depth 5:
+    SeaJay:  1410 nodes
+    Stash:   674 nodes (ratio: 2.09x)
+    Komodo:  1440 nodes (ratio: .97x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 7:
+    SeaJay:  8592 nodes
+    Stash:   1534 nodes (ratio: 5.60x)
+    Komodo:  6211 nodes (ratio: 1.38x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 10:
+    SeaJay:  71185 nodes
+    Stash:   33509 nodes (ratio: 2.12x)
+    Komodo:  30686 nodes (ratio: 2.31x)
+    Laser:    nodes (ratio: N/Ax)
+
+Position: Complex
+FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+----------------------------------------
+  Depth 5:
+    SeaJay:  4911 nodes
+    Stash:   1165 nodes (ratio: 4.21x)
+    Komodo:  2355 nodes (ratio: 2.08x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 7:
+    SeaJay:  21826 nodes
+    Stash:   3747 nodes (ratio: 5.82x)
+    Komodo:  14630 nodes (ratio: 1.49x)
+    Laser:    nodes (ratio: N/Ax)
+  Depth 10:
+    SeaJay:  113809 nodes
+    Stash:   30297 nodes (ratio: 3.75x)
+    Komodo:  105122 nodes (ratio: 1.08x)
+    Laser:    nodes (ratio: N/Ax)
+
+========================================
+SUMMARY ANALYSIS
+========================================
+
+Average node explosion ratios:
+  vs Stash:  6.47x
+  vs Komodo: 1.82x
+  vs Laser:  N/Ax
+
+Worst explosion cases:
+  Endgame @ depth 7: 15.61x vs Stash
+  Endgame @ depth 10: 13.51x vs Stash
+  Middlegame @ depth 7: 10.83x vs Stash
+
+========================================
+DIAGNOSTIC RECOMMENDATIONS
+========================================
+  CRITICAL: Extreme node explosion detected (>5x vs Stash)
+  • Priority: Check quiescence search and pruning conditions
+  • Likely culprits: SEE, delta pruning, or move ordering
+
+Next steps:
+  1. Add instrumentation to measure pruning effectiveness
+  2. Profile quiescence search specifically
+  3. Check move ordering statistics

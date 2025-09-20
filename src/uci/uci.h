@@ -60,12 +60,15 @@ private:
     bool m_useMagicBitboards = true;  // Stage 10: Enable/disable magic bitboards (79x speedup!)
     uint64_t m_qsearchNodeLimit = 0;  // Stage 14 Remediation: Runtime node limit (0 = unlimited)
     int m_maxCheckPly = 6;  // Maximum check extension depth in quiescence search
+    int m_qsearchMaxCaptures = 32;    // Max captures per qsearch node (0 = unlimited)
     
     // Stage 15 Day 5: SEE integration mode
     std::string m_seeMode = "off";  // SEE mode: off, testing, shadow, production
     
     // Stage 15 Day 6: SEE-based pruning in quiescence
     std::string m_seePruning = "conservative";  // SEE pruning: off, conservative, aggressive
+    // Quiescence-only SEE pruning mode (overrides SEEPruning in qsearch)
+    std::string m_seePruningQ = "conservative";
     
     // Phase 2.2: Root quiet re-ranking
     int m_rootKingPenalty = 0;  // Penalty for non-capturing, non-castling king moves at root (0 = no penalty)
@@ -89,6 +92,10 @@ private:
     int m_nullMoveReductionDepth12 = 5; // Reduction at depth >= 12 (SPSA-tuned)
     int m_nullMoveVerifyDepth = 10;     // Depth threshold for verification search
     int m_nullMoveEvalMargin = 198;     // Extra reduction when eval >> beta (SPSA-tuned)
+    bool m_useAggressiveNullMove = false; // Phase 4.2 toggle (default off)
+    int m_aggressiveNullMinEval = 600;    // Default min eval for aggressive null
+    int m_aggressiveNullMaxApplications = 64; // Default cap on applications
+    bool m_aggressiveNullRequirePositiveBeta = true; // Require beta > 0 by default
     
     // PST Phase Interpolation parameters
     bool m_usePSTInterpolation = true;  // Enable/disable PST phase interpolation
@@ -143,12 +150,22 @@ private:
     int m_moveCountLimit6 = 25;           // Move limit for depth 6 (SPSA-tuned)
     int m_moveCountLimit7 = 36;           // Move limit for depth 7
     int m_moveCountLimit8 = 42;           // Move limit for depth 8
+    int m_moveCountMaxDepth = 8;          // Maximum depth to apply move-count pruning
     int m_moveCountHistoryThreshold = 0;    // History score threshold (SPSA-tuned: disabled)
     int m_moveCountHistoryBonus = 6;      // Extra moves for good history
     int m_moveCountImprovingRatio = 75;   // Percentage of moves when not improving (75 = 3/4)
     
     // Multi-threading support (stub for OpenBench compatibility)
     int m_threads = 1;                  // Number of threads requested (currently always uses 1)
+
+    // Depth Parity scaffolds: UCI toggles (no behavior change yet)
+    bool m_useClusteredTT = true;       // Default ON: clustered TT backend
+    bool m_useStagedMovePicker = false; // Toggle for staged MovePicker (scaffold only)
+    bool m_useRankedMovePicker = true;  // Default ON: ranked MovePicker (Phase 2a)
+    bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
+    bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
+    bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
+    std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
     int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # analyze_position.sh - Four-engine position analysis utility for SeaJay debugging
-# Usage: ./analyze_position.sh "FEN" depth|time [value] [--save-report]
+# Usage: ./analyze_position.sh "FEN" depth|time [value] [--timeout SECONDS] [--save-report]
 # Example: ./analyze_position.sh "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" depth 10
 # Example: ./analyze_position.sh "r1b1k2r/pp3ppp/3Bp3/3p4/6q1/8/1PP2PPP/22R1R1K1 b kq - 5 17" time 5 --save-report
 
@@ -22,9 +22,9 @@ NC='\033[0m' # No Color
 
 # Parse arguments
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 \"FEN\" depth|time [value] [--save-report]"
-    echo "  depth mode: $0 \"FEN\" depth 10"
-    echo "  time mode:  $0 \"FEN\" time 5"
+    echo "Usage: $0 \"FEN\" depth|time [value] [--timeout SECONDS] [--save-report]"
+    echo "  depth mode: $0 \"FEN\" depth 10 [--timeout 3600]"
+    echo "  time mode:  $0 \"FEN\" time 5   [--timeout 10]"
     echo "  Save report: $0 \"FEN\" depth 10 --save-report"
     exit 1
 fi
@@ -33,11 +33,18 @@ FEN="$1"
 MODE="$2"
 VALUE="${3:-10}"  # Default depth 10 or time 10 seconds
 SAVE_REPORT=false
+USER_TIMEOUT=""
 
-# Check for --save-report flag
-for arg in "$@"; do
-    if [ "$arg" = "--save-report" ]; then
+# Parse optional flags from argv (order-insensitive)
+args=("$@")
+for ((i=0; i<${#args[@]}; i++)); do
+    if [ "${args[i]}" = "--save-report" ]; then
         SAVE_REPORT=true
+    fi
+    if [ "${args[i]}" = "--timeout" ]; then
+        if [ $((i+1)) -lt ${#args[@]} ]; then
+            USER_TIMEOUT="${args[i+1]}"
+        fi
     fi
 done
 
@@ -85,6 +92,9 @@ echo -e "${BOLD}FEN:${NC} $FEN"
 echo -e "${BOLD}Side to move:${NC} ${SIDE_COLOR}$SIDE_TEXT${NC}"
 echo -e "${BOLD}Search mode:${NC} $MODE = $VALUE"
 echo -e "${BOLD}Temp directory:${NC} $TEMP_DIR"
+if [ -n "$USER_TIMEOUT" ]; then
+    echo -e "${BOLD}Safety timeout:${NC} $USER_TIMEOUT seconds (override)"
+fi
 if [ "$SAVE_REPORT" = true ]; then
     echo -e "${BOLD}Report will be saved to:${NC} $REPORT_FILE"
 fi
@@ -181,18 +191,27 @@ interpret_score() {
 if [ "$MODE" = "depth" ]; then
     SEARCH_CMD="go depth $VALUE"
     SEARCH_FILTER="info depth $VALUE"
-    # Give more time for deeper searches
-    if [ "$VALUE" -gt 15 ]; then
-        TIMEOUT=60
-    elif [ "$VALUE" -gt 10 ]; then
-        TIMEOUT=30
+    # Option B: make TIMEOUT configurable; default large (3600s) for deep analysis
+    if [ -n "$USER_TIMEOUT" ]; then
+        TIMEOUT="$USER_TIMEOUT"
     else
-        TIMEOUT=15
+        TIMEOUT=3600
     fi
 else
     SEARCH_CMD="go movetime $((VALUE * 1000))"
     SEARCH_FILTER="info depth"
-    TIMEOUT=$((VALUE + 5))
+    # Keep modest margin for time mode unless overridden
+    if [ -n "$USER_TIMEOUT" ]; then
+        TIMEOUT="$USER_TIMEOUT"
+    else
+        TIMEOUT=$((VALUE + 5))
+    fi
+fi
+
+# Validate TIMEOUT is a positive integer
+if ! echo "$TIMEOUT" | grep -Eq '^[0-9]+$'; then
+    echo "Error: --timeout must be a positive integer (seconds). Got: '$TIMEOUT'"
+    exit 1
 fi
 
 echo -e "${BOLD}----------------------------------------"
@@ -206,23 +225,52 @@ run_engine() {
     local engine_path=$2
     local output_file=$3
     local uci_mode=${4:-true}  # Most engines use UCI
+    local seajay_options="${SEAJAY_UCI_OPTIONS:-}"
 
     if [ "$uci_mode" = true ]; then
+        # Robust UCI runner:
+        # - Launch engine with a FIFO for stdin
+        # - Stream stdout to file
+        # - Tail output to detect 'bestmove' and then send 'quit'
+        # - Fallback kill after TIMEOUT seconds
+        local fifo="${TEMP_DIR}/${engine_name}.in"
+        mkfifo "$fifo"
+
+        # Start engine with timeout wrapper
+        timeout "$TIMEOUT" "$engine_path" <"$fifo" >"$output_file" 2>&1 &
+        local eng_pid=$!
+
+        # Open FIFO for writing on FD 3 (kept open for lifetime of engine)
+        exec 3>"$fifo"
+
+        # Send initialization and search command
+        echo "uci" >&3
+
+        if [ "$engine_name" = "SeaJay" ] && [ -n "$seajay_options" ]; then
+            IFS=$'\n' read -r -d '' -a seajay_opts_array < <(printf '%s\0' "$seajay_options")
+            for opt in "${seajay_opts_array[@]}"; do
+                if [ -n "$opt" ]; then
+                    echo "setoption name ${opt}" >&3
+                fi
+            done
+        fi
+
+        echo "isready" >&3
+        echo "position fen $FEN" >&3
+        echo "$SEARCH_CMD" >&3
+
+        # Watch for bestmove and then send quit
         (
-            echo "uci"
-            sleep 0.1
-            echo "isready"
-            sleep 0.2
-            echo "position fen $FEN"
-            sleep 0.1
-            echo "$SEARCH_CMD"
-            if [ "$MODE" = "depth" ]; then
-                sleep $((TIMEOUT - 5))
-            else
-                sleep $((VALUE + 1))
-            fi
-            echo "quit"
-        ) | timeout $TIMEOUT "$engine_path" > "$output_file" 2>&1
+            tail -F "$output_file" 2>/dev/null | grep -m1 '^bestmove' >/dev/null && echo "quit" >&3
+        ) &
+        local watcher_pid=$!
+
+        # Safety: ensure engine is not left running past TIMEOUT (timeout already applied)
+        # Wait for engine to exit, then cleanup watcher and FIFO writer FD
+        wait "$eng_pid" 2>/dev/null
+        kill "$watcher_pid" >/dev/null 2>&1 || true
+        exec 3>&-
+        rm -f "$fifo"
     else
         # For engines that don't use standard UCI (if any)
         echo -e "position fen $FEN\n$SEARCH_CMD\nquit" | timeout $TIMEOUT "$engine_path" > "$output_file" 2>&1
@@ -231,7 +279,7 @@ run_engine() {
 
 # Run all engines in parallel
 echo -e "${YELLOW}[1/4] Starting SeaJay...${NC}"
-run_engine "SeaJay" "$SEAJAY" "$TEMP_DIR/seajay.out" false &
+run_engine "SeaJay" "$SEAJAY" "$TEMP_DIR/seajay.out" true &
 PID_SEAJAY=$!
 
 echo -e "${YELLOW}[2/4] Starting Stash...${NC}"

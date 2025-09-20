@@ -209,6 +209,27 @@ The following parameters were optimized for better king safety and castling deci
 **Purpose:** Enables null move pruning.  
 **SPSA:** Not tunable - generally beneficial  
 
+### UseAggressiveNullMove
+**Type:** check  
+**Default:** false  
+**Purpose:** Enables the Phase 4.2 extra null-move reduction when the eval-beta margin is large at depth ≥10. Guarded by TT context and instrumented via `extra(...)` counters in `SearchStats`.  
+**Note:** Leave disabled for baseline runs; toggling to `true` is intended for shadow A/B experiments once telemetry supports promotion.  
+
+### AggressiveNullMinEval
+**Type:** spin  
+**Default:** 600  
+**Purpose:** Minimum static evaluation (centipawns) required before the aggressive null-move reduction will be considered. Ensures the side to move is already winning comfortably.
+
+### AggressiveNullMaxApplications
+**Type:** spin  
+**Default:** 64  
+**Purpose:** Caps the number of aggressive null-move applications per search to avoid runaway behaviour. Set to `0` to remove the cap.
+
+### AggressiveNullRequirePositiveBeta
+**Type:** check  
+**Default:** true  
+**Purpose:** When enabled, the aggressive reduction only triggers if the current beta window is already positive (i.e., the side to move is up material/positionally winning).
+
 ### NullMoveStaticMargin ⭐
 **Type:** spin  
 **Default:** 90  
@@ -837,9 +858,18 @@ MoveCountLimit8, int, 42.0, 15.0, 80.0, 4.0, 0.002
 **Type:** combo  
 **Default:** conservative  
 **Values:** off, conservative, aggressive  
-**Purpose:** SEE-based pruning aggressiveness in quiescence.  
+**Purpose:** SEE-based pruning aggressiveness in the main search (non-qsearch) where applicable.  
 **SPSA:** Not tunable - combo option  
-**Note:** SPRT testing shows +28.6 ELO for conservative vs off. Aggressive mode shows no additional benefit  
+
+### QSEEPruning
+**Type:** combo  
+**Default:** conservative  
+**Values:** off, conservative, moderate, aggressive  
+**Purpose:** SEE-based pruning aggressiveness in quiescence search only.  
+**Notes:**
+- “conservative” prunes only clearly losing captures (e.g., SEE < −100), generally Elo-neutral and reduces nodes.
+- “moderate”/“aggressive” additionally prune borderline/equal exchanges deeper in qsearch; use with care.
+- Disable with: `setoption name QSEEPruning value off`.
 
 ---
 

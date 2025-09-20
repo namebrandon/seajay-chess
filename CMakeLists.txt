@@ -134,6 +134,8 @@ set(SEARCH_SOURCES
     src/search/types.h
     src/search/move_ordering.cpp
     src/search/move_ordering.h
+    src/search/ranked_move_picker.cpp
+    src/search/ranked_move_picker.h
     src/search/killer_moves.cpp
     src/search/killer_moves.h
     src/search/history_heuristic.cpp
@@ -146,6 +148,7 @@ set(SEARCH_SOURCES
     src/search/aspiration_window.h
     src/search/quiescence.cpp
     src/search/quiescence.h
+    src/search/search_scratch.cpp
     src/search/quiescence_performance.cpp
     src/search/quiescence_performance.h
     src/search/lmr.cpp
@@ -196,6 +199,10 @@ install(TARGETS seajay DESTINATION bin)
 
 # Testing setup
 enable_testing()
+
+# Stage 1 (Check Extensions): discovered check regression tests
+add_executable(test_discovered_check tests/unit/search/discovered_check_tests.cpp)
+target_link_libraries(test_discovered_check seajay_core)
 
 # Unit tests - DISABLED (not needed for production)
 # add_executable(test_board tests/unit/test_board.cpp)

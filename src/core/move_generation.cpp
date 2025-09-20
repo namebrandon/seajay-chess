@@ -206,7 +206,8 @@ void MoveGenerator::generatePawnCaptures(const Board& board, MoveList& moves) {
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourPawns = board.pieces(us, PAWN);
-    Bitboard theirPieces = board.pieces(them);
+    // Mask out the opponent king so pseudo-legal lists never remove it during search
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     Square epSquare = board.enPassantSquare();
     
     while (ourPawns) {
@@ -305,7 +306,7 @@ void MoveGenerator::generateKnightCaptures(const Board& board, MoveList& moves) 
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourKnights = board.pieces(us, KNIGHT);
-    Bitboard theirPieces = board.pieces(them);
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     
     while (ourKnights) {
         Square from = popLsb(ourKnights);
@@ -346,7 +347,7 @@ void MoveGenerator::generateBishopCaptures(const Board& board, MoveList& moves) 
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourBishops = board.pieces(us, BISHOP);
-    Bitboard theirPieces = board.pieces(them);
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     Bitboard occupied = board.occupied();
     
     while (ourBishops) {
@@ -388,7 +389,7 @@ void MoveGenerator::generateRookCaptures(const Board& board, MoveList& moves) {
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourRooks = board.pieces(us, ROOK);
-    Bitboard theirPieces = board.pieces(them);
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     Bitboard occupied = board.occupied();
     
     while (ourRooks) {
@@ -430,7 +431,7 @@ void MoveGenerator::generateQueenCaptures(const Board& board, MoveList& moves) {
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourQueens = board.pieces(us, QUEEN);
-    Bitboard theirPieces = board.pieces(them);
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     Bitboard occupied = board.occupied();
     
     while (ourQueens) {
@@ -472,7 +473,7 @@ void MoveGenerator::generateKingCaptures(const Board& board, MoveList& moves) {
     Color us = board.sideToMove();
     Color them = ~us;
     Bitboard ourKing = board.pieces(us, KING);
-    Bitboard theirPieces = board.pieces(them);
+    Bitboard theirPieces = board.pieces(them) & ~board.pieces(them, KING);
     
     if (ourKing) {
         Square from = lsb(ourKing);
