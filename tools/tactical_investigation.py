@@ -12,8 +12,6 @@ import csv
 import re
 import subprocess
 import sys
-import time
-from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -79,7 +77,13 @@ def parse_epd(epd_path: Path) -> Dict[str, Tuple[str, List[str]]]:
     return mapping
 
 
-def run_engine(engine_path: Path, fen: str, time_ms: int, depth: int = 0) -> EngineResult:
+def run_engine(
+    engine_path: Path,
+    fen: str,
+    time_ms: int,
+    depth: int = 0,
+    timeout_ms: int = 120_000,
+) -> EngineResult:
     go_cmd = f"go depth {depth}" if depth > 0 else f"go movetime {time_ms}"
     proc = subprocess.Popen(
         [str(engine_path)],
@@ -91,69 +95,47 @@ def run_engine(engine_path: Path, fen: str, time_ms: int, depth: int = 0) -> Eng
     )
     assert proc.stdin is not None and proc.stdout is not None
 
-    def send(cmd: str) -> None:
-        proc.stdin.write(cmd + "\n")
-        proc.stdin.flush()
+    commands = [
+        "uci",
+        "isready",
+        f"position fen {fen}",
+        go_cmd,
+        "quit",
+    ]
+    script = "\n".join(commands) + "\n"
 
-    stdout_lines: List[str] = []
-    info_lines: List[str] = []
+    timeout_sec = None
+    if timeout_ms > 0:
+        timeout_sec = max(timeout_ms / 1000.0, 1.0)
 
-    def readline_with_timeout(timeout: float) -> Optional[str]:
-        start = time.time()
-        while True:
-            line = proc.stdout.readline()
-            if line:
-                stdout_lines.append(line)
-                if line.startswith("info "):
-                    info_lines.append(line.strip())
-                return line
-            if time.time() - start > timeout:
-                return None
+    try:
+        output, _ = proc.communicate(script, timeout=timeout_sec)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, _ = proc.communicate()
+        raise RuntimeError("Engine invocation timed out")
 
-    send("uci")
-    while True:
-        line = readline_with_timeout(5)
-        if not line:
-            raise RuntimeError("Engine did not respond to UCI")
-        if line.strip() == "uciok":
-            break
+    lines = output.splitlines()
+    info_lines = [line for line in lines if line.startswith("info ")]
 
-    send("isready")
-    while True:
-        line = readline_with_timeout(5)
-        if not line:
-            raise RuntimeError("Engine did not become ready")
-        if line.strip() == "readyok":
-            break
-
-    send(f"position fen {fen}")
-    send(go_cmd)
-
-    timeout = (time_ms / 1000) + 10 if depth == 0 else 60
-    start = time.time()
     bestmove: Optional[str] = None
-    while True:
-        line = readline_with_timeout(timeout)
-        if line is None:
-            raise RuntimeError("Engine search timed out")
+    for line in reversed(lines):
         if line.startswith("bestmove"):
             parts = line.split()
             if len(parts) >= 2:
                 bestmove = parts[1]
             break
-        if time.time() - start > timeout:
-            raise RuntimeError("Engine search exceeded timeout")
-
-    send("quit")
-    try:
-        proc.wait(timeout=2)
-    except subprocess.TimeoutExpired:
-        proc.kill()
 
     if not bestmove:
         raise RuntimeError("Engine failed to report bestmove")
 
-    return EngineResult(bestmove=bestmove, info_lines=info_lines, raw_output="".join(stdout_lines))
+    if not any(line.strip() == "uciok" for line in lines):
+        raise RuntimeError("Engine did not complete UCI handshake")
+
+    if not any(line.strip() == "readyok" for line in lines):
+        raise RuntimeError("Engine did not return readyok")
+
+    return EngineResult(bestmove=bestmove, info_lines=info_lines, raw_output=output)
 
 
 def build_expected_moves(fen: str, san_moves: Sequence[str]) -> Tuple[List[str], Dict[str, str]]:
@@ -179,12 +161,13 @@ def analyse_position(
     san_moves: Sequence[str],
     time_controls: Sequence[int],
     depth: int = 0,
+    timeout_ms: int = 120_000,
 ) -> List[Dict[str, object]]:
     expected_uci, _ = build_expected_moves(fen, san_moves)
     results: List[Dict[str, object]] = []
 
     for time_ms in time_controls:
-        engine_result = run_engine(engine_path, fen, time_ms, depth)
+        engine_result = run_engine(engine_path, fen, time_ms, depth, timeout_ms)
         summary = engine_result.summary()
         bestmove = engine_result.bestmove
         board_for_san = chess.Board(fen)
@@ -238,6 +221,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--depth", type=int, default=0, help="Fixed search depth (overrides movetime when > 0)")
     parser.add_argument("--output", help="Optional CSV output path")
     parser.add_argument("--verbose", action="store_true", help="Print detailed per-run info")
+    parser.add_argument(
+        "--timeout-ms",
+        type=int,
+        default=120_000,
+        help="Maximum wall-clock time per engine invocation (default: 120000 ms)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -269,7 +258,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     for pos_id in ids:
         fen, san_moves = data[pos_id]
-        analyses = analyse_position(engine_path, fen, san_moves, args.time_ms, args.depth)
+        analyses = analyse_position(
+            engine_path,
+            fen,
+            san_moves,
+            args.time_ms,
+            args.depth,
+            args.timeout_ms,
+        )
         for entry in analyses:
             row = {
                 "position_id": pos_id,

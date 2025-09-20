@@ -270,6 +270,9 @@ eval::Score negamax(Board& board,
     
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
+
+    // Stage 0: Keep extension totals in sync for current node (parent sets applied count)
+    searchInfo.setExtensionApplied(ply, searchInfo.extensionApplied(ply));
     
     // Update selective depth (maximum depth reached)
     if (ply > info.seldepth) {
@@ -976,6 +979,10 @@ eval::Score negamax(Board& board,
             if (!extra.empty()) {
                 oss << ' ' << extra;
             }
+            const int extHere = searchInfo.extensionApplied(ply);
+            const int extTotal = searchInfo.totalExtensions(ply);
+            oss << " extHere=" << extHere
+                << " extTotal=" << extTotal;
             std::cout << oss.str() << std::endl;
         };
         if (!limits.debugTrackedMoves.empty()) {
@@ -1017,7 +1024,10 @@ eval::Score negamax(Board& board,
         // Phase 3.1 CONSERVATIVE: Move Count Pruning (Late Move Pruning)
         // Only prune at depths 3+ to avoid tactical blindness at shallow depths
         // Much more conservative limits to avoid over-pruning
-        if (limits.useMoveCountPruning && !isPvNode && !weAreInCheck && depth >= 3 && depth <= limits.moveCountMaxDepth && moveCount > 1
+        bool parentGaveCheck = (ply > 0) ? searchInfo.moveGaveCheck(ply - 1) : false;
+
+        if (limits.useMoveCountPruning && !isPvNode && !weAreInCheck && !parentGaveCheck
+            && depth >= 3 && depth <= limits.moveCountMaxDepth && moveCount > 1
             && !isCapture(move) && !isPromotion(move) && !info.killers->isKiller(ply, move)) {
             
             // Phase 3.3: Countermove Consideration
@@ -1227,8 +1237,9 @@ eval::Score negamax(Board& board,
         }
 
         bool givesCheckMove = inCheck(board);
+        bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
 
-        if (pendingMoveCountPrune && !givesCheckMove) {
+        if (pendingMoveCountPrune && !givesCheckMove && !wasCaptureMove) {
             info.moveCountPruned++;
             info.pruneBreakdown.moveCount[pendingMoveCountDepthBucket]++;
 
@@ -1243,7 +1254,8 @@ eval::Score negamax(Board& board,
             if (debugTrackedMove) {
                 std::ostringstream extra;
                 extra << "limit=" << pendingMoveCountLimit << " moveCount=" << pendingMoveCountValue
-                      << " rank=" << pendingRankValue;
+                      << " rank=" << pendingRankValue
+                      << " capture=" << (wasCaptureMove ? 1 : 0);
                 logTrackedEvent("prune_move_count", extra.str());
             }
             board.unmakeMove(move, undo);
@@ -1266,7 +1278,9 @@ eval::Score negamax(Board& board,
         
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
-        
+
+        searchInfo.setGaveCheck(ply, givesCheckMove);
+
         // Calculate extension for this move (currently just check extension)
         int extension = 0;
         // Check extension could be added here if needed
@@ -1391,10 +1405,19 @@ eval::Score negamax(Board& board,
         
         // Phase P3: Principal Variation Search (PVS) with LMR integration
         eval::Score score;
-        
+
         // Track beta cutoff position for move ordering analysis
         bool isCutoffMove = false;
-        
+
+        // Record extension metadata for the child node before searching it
+        searchInfo.setExtensionApplied(ply + 1, extension);
+        if (debugTrackedMove && extension != 0) {
+            std::ostringstream extra;
+            extra << "value=" << extension
+                  << " total=" << searchInfo.totalExtensions(ply + 1);
+            logTrackedEvent("extension_apply", extra.str());
+        }
+
         // Phase 2b.7: Variables for PVS re-search smoothing (declared outside if/else)
         int moveRank = 0;
         bool didReSearch = false;
