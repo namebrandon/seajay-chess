@@ -164,7 +164,15 @@ private:
 };
 
 // Global SEE calculator instance (thread-local for SMP safety)
-inline thread_local SEECalculator g_seeCalculator;
+// Note: On Windows, inline thread_local can cause linker issues with LTO
+// Use extern declaration in header and define in implementation file
+#ifdef _WIN32
+    // Windows: declare as extern to avoid multiple definition errors
+    extern thread_local SEECalculator g_seeCalculator;
+#else
+    // Unix: inline thread_local works fine
+    inline thread_local SEECalculator g_seeCalculator;
+#endif
 
 // Convenience functions
 [[nodiscard]] inline SEEValue see(const Board& board, Move move) noexcept {
