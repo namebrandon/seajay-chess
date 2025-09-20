@@ -73,6 +73,7 @@ static_assert(MAX_CAPTURES_PER_NODE > 0 && MAX_CAPTURES_PER_NODE <= 256,
  */
 eval::Score quiescence(
     Board& board,
+    NodeContext context,
     int ply,
     int qply,  // quiescence-local depth
     eval::Score alpha,
@@ -84,5 +85,24 @@ eval::Score quiescence(
     int checkPly = 0,
     bool inPanicMode = false
 );
+
+ALWAYS_INLINE eval::Score quiescence(
+    Board& board,
+    int ply,
+    int qply,
+    eval::Score alpha,
+    eval::Score beta,
+    seajay::SearchInfo& searchInfo,
+    SearchData& data,
+    const SearchLimits& limits,
+    seajay::TranspositionTable& tt,
+    int checkPly = 0,
+    bool inPanicMode = false) {
+    NodeContext ctx;
+    ctx.setRoot(false);
+    ctx.setPv(true);
+    ctx.clearExcluded();
+    return quiescence(board, ctx, ply, qply, alpha, beta, searchInfo, data, limits, tt, checkPly, inPanicMode);
+}
 
 } // namespace seajay::search

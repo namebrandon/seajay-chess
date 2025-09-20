@@ -306,6 +306,11 @@ eval::Score negamax(Board& board,
                 g_nodeExplosionStats.recordQuiescenceEntry(ply);
             }
             // Use quiescence search to resolve tactical sequences
+            if (limits.useSearchNodeAPIRefactor) {
+                NodeContext qContext = context;
+                qContext.clearExcluded();
+                return quiescence(board, qContext, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
+            }
             return quiescence(board, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
         }
         // Fallback: return static evaluation (only if quiescence disabled via UCI)
@@ -817,19 +822,37 @@ eval::Score negamax(Board& board,
                 // Check if static eval + margin is still below alpha
                 if (staticEval + eval::Score(razorMargin) <= alpha) {
                     // Run quiescence search with scout window
-                    eval::Score qScore = quiescence(
-                        board, 
-                        ply, 
-                        0,                    // qsearch depth starts at 0
-                        alpha,                // alpha
-                        alpha + eval::Score(1), // alpha+1 (scout window)
-                        searchInfo, 
-                        info, 
-                        limits, 
-                        *tt, 
-                        0,                    // initialAlpha (not used in scout)
-                        false                 // panicMode
-                    );
+                    eval::Score qScore;
+                    if (limits.useSearchNodeAPIRefactor) {
+                        NodeContext qContext = context;
+                        qContext.clearExcluded();
+                        qScore = quiescence(
+                            board,
+                            qContext,
+                            ply,
+                            0,                    // qsearch depth starts at 0
+                            alpha,
+                            alpha + eval::Score(1), // alpha+1 (scout window)
+                            searchInfo,
+                            info,
+                            limits,
+                            *tt,
+                            0,
+                            false);
+                    } else {
+                        qScore = quiescence(
+                            board,
+                            ply,
+                            0,
+                            alpha,
+                            alpha + eval::Score(1),
+                            searchInfo,
+                            info,
+                            limits,
+                            *tt,
+                            0,
+                            false);
+                    }
                     
                     // If quiescence still fails low, we can return
                     if (qScore <= alpha) {
