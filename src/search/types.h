@@ -169,6 +169,9 @@ struct SearchLimits {
     // Phase 2b: Rank-aware pruning gates
     bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
 
+    // Phase 6: Search Node API refactor toggle (default OFF)
+    bool useSearchNodeAPIRefactor = false;
+
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 

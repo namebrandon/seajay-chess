@@ -16,7 +16,7 @@
 |-------|--------|--------|-------|-------|
 | 6a.1 - NodeContext header | Completed | d8a11a4 | 2350511 | Header-only introduction of packed context struct, no call sites updated yet. |
 | 6a.2 - Negamax overload | Completed | 45cd9fa | 2350511 | Added NodeContext overload plus legacy wrapper; behaviour unchanged. |
-| 6b.1 - Context through main negamax | Completed | HEAD | 2350511 | Threaded NodeContext through primary negamax recursion; behaviour preserved with toggles OFF. |
+| 6b.1 - Context through main negamax | Completed | HEAD | 2350511 | Threaded NodeContext through primary negamax recursion with `UseSearchNodeAPIRefactor` toggle defaulting to OFF. |
 | 6b.2 - Context through quiescence | Pending | - | - | Update qsearch entry points. |
 | 6b.3 - Helper propagation | Pending | - | - | Cover helper utilities (move ordering, pruning). |
 | 6c - Excluded-move plumbing | Pending | - | - | Replace legacy flags with context; SPRT required once toggled. |
@@ -30,7 +30,7 @@
 |-------|-------|-------|-------|
 | 6a.1 | `./build.sh Release` | 2350511 | Build succeeded with existing warnings (TT loop signedness, SEE unused vars, misleading indentation). |
 | 6a.2 | `./build.sh Release` | 2350511 | NodeContext overload compiles cleanly; legacy wrapper verified via bench parity. |
-| 6b.1 | `./build.sh Release` | 2350511 | Context threaded through core recursion; bench parity maintained. |
+| 6b.1 | `./build.sh Release` | 2350511 | Context threaded through core recursion; bench parity maintained (toggle OFF). `bench` also verified with toggle ON. |
 
 ## Key Learnings / Risks
 - Build script reported a `buffer overflow detected` during static library link, but completed successfully; monitor on subsequent stages in case the new header exacerbates existing issue.
@@ -38,4 +38,4 @@
 
 ## Next Actions
 1. Merge Stage 6b.1 back into integration branch after review.
-2. Kick off Stage 6b.2: propagate `NodeContext` through quiescence search.
+2. Kick off Stage 6b.2: propagate `NodeContext` through quiescence search (respecting `UseSearchNodeAPIRefactor`).
