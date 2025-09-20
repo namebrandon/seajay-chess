@@ -619,8 +619,10 @@ eval::Score negamax(Board& board,
         searchInfo.setNullMove(ply, true);
         
         // Search with adaptive reduction (null window around beta)
+        const NodeContext nullContext = makeChildContext(context, false);
         eval::Score nullScore = -negamax(
             board,
+            nullContext,
             depth - 1 - nullMoveReduction,
             ply + 1,
             -beta,
@@ -629,8 +631,7 @@ eval::Score negamax(Board& board,
             info,
             limits,
             tt,
-            nullptr,  // Phase PV1: Pass nullptr for now
-            false  // Phase P2: Null move searches are never PV nodes
+            nullptr  // Phase PV1: Pass nullptr for now
         );
         
         // Unmake null move
@@ -647,8 +648,12 @@ eval::Score negamax(Board& board,
             // Phase 1.5b: Deeper verification search at configurable depth
             if (depth >= limits.nullMoveVerifyDepth) {  // UCI configurable threshold
                 // Verification search at depth - R (one ply deeper than null move)
+                NodeContext verifyContext = context;
+                verifyContext.setPv(false);
+                verifyContext.clearExcluded();
                 eval::Score verifyScore = negamax(
                     board,
+                    verifyContext,
                     depth - nullMoveReduction,  // depth - R (matches Stockfish/Laser)
                     ply,
                     beta - eval::Score(1),
@@ -657,8 +662,7 @@ eval::Score negamax(Board& board,
                     info,
                     limits,
                     tt,
-                    nullptr,  // Phase PV1: Pass nullptr for now
-                    false
+                    nullptr  // Phase PV1: Pass nullptr for now
                 );
                 
                 if (verifyScore < beta) {
@@ -1296,6 +1300,7 @@ eval::Score negamax(Board& board,
                               info.counterMoves->getCounterMove(prevMove) == move);
         // Determine whether the CHILD would be a PV node: at a PV parent, only the first legal move is PV
         bool childIsPV = (isPvNode && legalMoveCount == 1);
+        const NodeContext childContext = makeChildContext(context, childIsPV);
         
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
@@ -1428,10 +1433,9 @@ eval::Score negamax(Board& board,
             // First move: search with full window as PV node (apply extension if any)
             // Pass childPV only if we're in a PV node and have a parent PV
             TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
-            score = -negamax(board, depth - 1 + extension, ply + 1,
+            score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
-                            firstMoveChildPV,  // Phase PV3: Pass child PV for PV nodes
-                            isPvNode);  // Phase P3: First move inherits PV status
+                            firstMoveChildPV);  // Phase PV3: Pass child PV for PV nodes
         } else {
             // Later moves: use PVS with LMR
             
@@ -1579,10 +1583,9 @@ eval::Score negamax(Board& board,
             
             // Scout search (possibly reduced, with extension)
             info.pvsStats.scoutSearches++;
-            score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
+            score = -negamax(board, childContext, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr,  // Phase PV3: Scout searches don't need PV
-                            false);  // Scout searches are not PV
+                            nullptr);  // Phase PV3: Scout searches don't need PV
             
             // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
             // didReSearch already declared outside the if/else
@@ -1594,10 +1597,9 @@ eval::Score negamax(Board& board,
             if (limits.nodeExplosionDiagnostics) {
                 g_nodeExplosionStats.recordLMRReSearch(depth);
             }
-            score = -negamax(board, depth - 1 + extension, ply + 1,
+            score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr,  // Phase PV3: Still a scout search
-                            false);  // Still a scout search
+                            nullptr);  // Phase PV3: Still a scout search
         }
             
             // If scout search fails high, do full window re-search
@@ -1613,10 +1615,9 @@ eval::Score negamax(Board& board,
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
                 TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
-                score = -negamax(board, depth - 1 + extension, ply + 1,
+                score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
-                                false);  // B1 Fix: Re-search is NOT a PV node!
+                                reSearchChildPV);  // B1 Fix: Re-search is NOT a PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;

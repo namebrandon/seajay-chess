@@ -55,7 +55,7 @@ git push
 |-------|--------|--------|------|-------|-------|
 | 6a.1 | feature/phase6-stage-6a1 | Completed | Not Required | 2350511 | NodeContext structure |
 | 6a.2 | feature/phase6-stage-6a2 | Completed | Not Required | 2350511 | Negamax overload wrapper (NodeContext) |
-| 6b.1 | feature/phase6-stage-6b1 | Pending | Optional | - | Thread context - main |
+| 6b.1 | feature/phase6-stage-6b1 | Completed | Optional | 2350511 | Thread context - main |
 | 6b.2 | feature/phase6-stage-6b2 | Pending | Not Required | - | Thread context - qsearch |
 | 6b.3 | feature/phase6-stage-6b3 | Pending | Optional | - | Thread context - helpers |
 | 6c | feature/phase6-stage-6c | Pending | Required | - | Replace excluded checks |
