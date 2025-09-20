@@ -8,6 +8,7 @@
 #include "history_heuristic.h"
 #include "countermoves.h"
 #include "principal_variation.h"
+#include "node_context.h"
 #include <chrono>
 #include <cstdint>
 #include <array>
@@ -33,28 +34,6 @@ enum class SEEPruningMode {
     CONSERVATIVE = 1,
     MODERATE = 2,
     AGGRESSIVE = 3
-};
-
-// Phase 6 preparation: explicit node context descriptor (currently NoOp)
-struct NodeContext {
-    bool isPv = false;
-    bool isRoot = false;
-    Move excluded = NO_MOVE;
-
-    static NodeContext root() {
-        NodeContext ctx;
-        ctx.isRoot = true;
-        ctx.isPv = true;
-        return ctx;
-    }
-
-    NodeContext makeChild(bool childIsPv) const {
-        NodeContext child = *this;
-        child.isRoot = false;
-        child.isPv = childIsPv;
-        child.excluded = NO_MOVE;
-        return child;
-    }
 };
 
 // Scratch buffer helpers (defined in search_scratch.cpp)
