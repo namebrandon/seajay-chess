@@ -7,15 +7,15 @@
 
 ## Timeline
 - Start Date: 2025-09-20
-- Current Branch: `feature/phase6-stage-6a1`
+- Current Branch: `feature/phase6-stage-6a2`
 - Base Commit: `ab6816e273129fc524f3024455db2694be3fb06c` (integration/phase6-search-api-refactor tip)
 - Bench Baseline: 2350511 nodes (`bin/seajay`, Release build)
 
 ## Stage Progress
 | Stage | Status | Commit | Bench | Notes |
 |-------|--------|--------|-------|-------|
-| 6a.1 - NodeContext header | Completed | HEAD | 2350511 | Header-only introduction of packed context struct, no call sites updated yet. |
-| 6a.2 - Negamax overload | Pending | - | - | Will add `NodeContext` overload wrapper. |
+| 6a.1 - NodeContext header | Completed | d8a11a4 | 2350511 | Header-only introduction of packed context struct, no call sites updated yet. |
+| 6a.2 - Negamax overload | Completed | HEAD | 2350511 | Added NodeContext overload plus legacy wrapper; behaviour unchanged. |
 | 6b.1 - Context through main negamax | Pending | - | - | Thread context through primary recursion. |
 | 6b.2 - Context through quiescence | Pending | - | - | Update qsearch entry points. |
 | 6b.3 - Helper propagation | Pending | - | - | Cover helper utilities (move ordering, pruning). |
@@ -29,11 +29,12 @@
 | Stage | Build | Bench | Notes |
 |-------|-------|-------|-------|
 | 6a.1 | `./build.sh Release` | 2350511 | Build succeeded with existing warnings (TT loop signedness, SEE unused vars, misleading indentation). |
+| 6a.2 | `./build.sh Release` | 2350511 | NodeContext overload compiles cleanly; legacy wrapper verified via bench parity. |
 
 ## Key Learnings / Risks
 - Build script reported a `buffer overflow detected` during static library link, but completed successfully; monitor on subsequent stages in case the new header exacerbates existing issue.
 - No behaviour change yet; all toggles remain OFF.
 
 ## Next Actions
-1. Finalise 6a.1 (`NodeContext` header) and merge via stage branch once reviewed.
-2. Proceed to 6a.2 after confirming no regressions with header integration.
+1. Merge Stage 6a.2 back into integration branch after review.
+2. Begin Stage 6b.1: propagate `NodeContext` through main negamax recursion.

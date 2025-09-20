@@ -198,8 +198,9 @@ constexpr int MATE_SCORE = 30000;
 constexpr int MATE_BOUND = 29000;
 
 // Core negamax search implementation
-eval::Score negamax(Board& board, 
-                   int depth, 
+eval::Score negamax(Board& board,
+                   NodeContext context,
+                   int depth,
                    int ply,
                    eval::Score alpha,
                    eval::Score beta,
@@ -207,10 +208,9 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt,
-                   TriangularPV* pv,
-                   bool isPvNode) {
-    
-    
+                   TriangularPV* pv) {
+    const bool isPvNode = context.isPv();
+
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4 && !limits.suppressDebugOutput) {
         std::cerr << "Negamax: Starting search at depth " << depth << std::endl;
@@ -2533,7 +2533,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         g_nodeExplosionStats.reset();  // Reset for next search
     }
     
-    return bestMove;
+return bestMove;
 }
 
 // Iterative deepening search controller (original)
