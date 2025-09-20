@@ -200,6 +200,10 @@ install(TARGETS seajay DESTINATION bin)
 # Testing setup
 enable_testing()
 
+# Stage 1 (Check Extensions): discovered check regression tests
+add_executable(test_discovered_check tests/unit/search/discovered_check_tests.cpp)
+target_link_libraries(test_discovered_check seajay_core)
+
 # Unit tests - DISABLED (not needed for production)
 # add_executable(test_board tests/unit/test_board.cpp)
 # target_link_libraries(test_board seajay_core)
