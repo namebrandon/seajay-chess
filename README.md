@@ -13,7 +13,7 @@ Unlike traditional chess engines focused on competitive performance, SeaJay prio
 
 We recognize that AI-assisted development represents a different approach from traditional programming methods. While this differs from the conventional path of directly applying years of C++ expertise and domain knowledge, effectively directing AI systems through complex chess engine logic presents its own unique challenges. Successfully guiding AI to implement sophisticated algorithms and handle edge cases requires developing a distinct skillset around prompt engineering, iterative refinement, and systematic validation. We believe both traditional and AI-assisted approaches have their respective merits and challenges in chess engine development.
 
-SeaJay has been under active development since August 2025, and the rough ELO estimate as of August 2025 is ~2300.
+SeaJay has been under active development since August 2025, and the rough ELO estimate as of September 2025 is ~2450.
 
 
 

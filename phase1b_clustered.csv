@@ -1,4 +1,0 @@
-timestamp,engine,engine_path,fen,time_ms,depth,nodes,bestmove,score_cp,tt_hits,hashfull
-2025-09-07_11-30-43,seajay,/workspace/bin/seajay,rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1,1000,15,752580,e2e4,18,49.48,52
-2025-09-07_11-30-43,seajay,/workspace/bin/seajay,r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1,1000,12,440273,d5e6,-68,49.79,29
-2025-09-07_11-30-43,seajay,/workspace/bin/seajay,8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1,1000,15,730263,e2e3,22,50.15,35
