@@ -11,6 +11,11 @@ namespace seajay {
 // Thread-local storage for swap list
 thread_local SEECalculator::SwapList SEECalculator::m_swapList;
 
+// Windows: Define the thread-local SEE calculator here to avoid multiple definition errors
+#ifdef _WIN32
+thread_local SEECalculator g_seeCalculator;
+#endif
+
 // Day 4.3: Constructor initializes cache
 SEECalculator::SEECalculator() 
     : m_cache(std::make_unique<SEECacheEntry[]>(SEE_CACHE_SIZE)) {
