@@ -6,15 +6,26 @@
 #include <cassert>
 #include <climits>
 
+// Platform-specific aligned memory allocation
+#ifdef _WIN32
+    #include <malloc.h>  // For _aligned_malloc/_aligned_free on Windows
+    #define ALIGNED_ALLOC(alignment, size) _aligned_malloc(size, alignment)
+    #define ALIGNED_FREE(ptr) _aligned_free(ptr)
+#else
+    // Unix-like systems (Linux, macOS) use std::aligned_alloc
+    #define ALIGNED_ALLOC(alignment, size) std::aligned_alloc(alignment, size)
+    #define ALIGNED_FREE(ptr) std::free(ptr)
+#endif
+
 namespace seajay {
 
 // AlignedBuffer implementation
 AlignedBuffer::AlignedBuffer(size_t size) : m_size(size) {
     if (size > 0) {
         // Allocate 64-byte aligned memory for cache line optimization
-        // C standard requires size to be a multiple of alignment
+        // Note: On Unix, size must be multiple of alignment; Windows doesn't require this
         size_t alignedSize = (size + 63) & ~size_t(63);  // Round up to multiple of 64
-        m_data = std::aligned_alloc(64, alignedSize);
+        m_data = ALIGNED_ALLOC(64, alignedSize);
         if (!m_data) {
             throw std::bad_alloc();
         }
@@ -49,9 +60,9 @@ void AlignedBuffer::resize(size_t newSize) {
         free();
         m_size = newSize;
         if (newSize > 0) {
-            // C standard requires size to be a multiple of alignment
+            // Note: On Unix, size must be multiple of alignment; Windows doesn't require this
             size_t alignedSize = (newSize + 63) & ~size_t(63);  // Round up to multiple of 64
-            m_data = std::aligned_alloc(64, alignedSize);
+            m_data = ALIGNED_ALLOC(64, alignedSize);
             if (!m_data) {
                 m_size = 0;
                 throw std::bad_alloc();
@@ -69,7 +80,7 @@ void AlignedBuffer::clear() {
 
 void AlignedBuffer::free() {
     if (m_data) {
-        std::free(m_data);
+        ALIGNED_FREE(m_data);
         m_data = nullptr;
         m_size = 0;
     }
