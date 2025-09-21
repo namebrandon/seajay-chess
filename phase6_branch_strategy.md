@@ -61,7 +61,7 @@ git push
 | 6c | feature/phase6-stage-6c | Completed | Required | 2350511 | Replace stack-based excluded checks with NodeContext + `EnableExcludedMoveParam` toggle |
 | 6d | feature/phase6-stage-6d | Completed | Not Required | 2350511 | Verification helper scaffold (NoOp) |
 | 6e | feature/phase6-stage-6e | Completed | Not Required | 2350511 | TT hygiene guard refinements |
-| 6f | feature/phase6-stage-6f | In Progress | Not Required | 2350511 | PV clarity/root safety asserts |
+| 6f | feature/phase6-stage-6f | Completed | Not Required | 2350511 | PV clarity/root safety asserts merged after neutral SPRT |
 | 6g | feature/phase6-stage-6g | Pending | Required | - | Integration |
 
 ## Key Principles
