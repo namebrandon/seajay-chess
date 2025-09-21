@@ -122,6 +122,9 @@ fi
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
     if command -v mingw32-make >/dev/null 2>&1; then
         MAKE_CMD="$(command -v mingw32-make)"
+    else
+        echo "ERROR: mingw32-make not found. Install it via 'pacman -S mingw-w64-x86_64-make' from MSYS2." >&2
+        exit 1
     fi
 fi
 
@@ -159,7 +162,15 @@ echo "=========================================="
 echo "Build complete!"
 
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
-    echo "Binary: /workspace/bin/seajay.exe"
+    BINARY_NAME="seajay.exe"
+else
+    BINARY_NAME="seajay"
+fi
+
+RELATIVE_BINARY_PATH="../bin/${BINARY_NAME}"
+
+if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
+    echo "Binary: ${RELATIVE_BINARY_PATH}"
     echo ""
     echo "Windows notes:"
     echo "  ✓ Static linking enabled for standalone executable"
@@ -168,7 +179,7 @@ if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
         echo "  ⚠ May require msys-2.0.dll if run outside MSYS shell"
     fi
 else
-    echo "Binary: /workspace/bin/seajay"
+    echo "Binary: ${RELATIVE_BINARY_PATH}"
 fi
 
 echo ""
@@ -178,9 +189,5 @@ echo "  setoption name QSearchNodeLimit value 10000   # Testing mode equivalent"
 echo "  setoption name QSearchNodeLimit value 100000  # Tuning mode equivalent"
 echo ""
 echo "To verify build, run:"
-if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
-    echo "  echo 'uci' | /workspace/bin/seajay.exe"
-else
-    echo "  echo 'uci' | /workspace/bin/seajay"
-fi
+echo "  echo 'uci' | ${RELATIVE_BINARY_PATH}"
 echo "=========================================="

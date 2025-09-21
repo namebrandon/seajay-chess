@@ -183,7 +183,9 @@ target_link_libraries(seajay seajay_core)
 
 # Copy seajay binary to bin directory after build
 add_custom_command(TARGET seajay POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:seajay> ${CMAKE_BINARY_DIR}/../bin/seajay
+    COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:seajay>
+            ${CMAKE_BINARY_DIR}/../bin/$<TARGET_FILE_NAME:seajay>
     COMMENT "Copying seajay to bin directory"
 )
 
