@@ -58,8 +58,16 @@ echo "Using Make build system (OpenBench compatible)..."
 unset CXXFLAGS
 unset CFLAGS
 
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-make -j seajay
+# Ensure GNU make owns the jobserver descriptors so GCC LTO can schedule
+# its worker threads correctly. A prior MAKEFLAGS export (e.g. -jN)
+# without jobserver auth fds will make lto-wrapper crash, so clear it.
+unset MAKEFLAGS
+
+MAKEFLAGS= cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+# Parallel builds currently trip GCC's LTO jobserver hand-off on this
+# environment (and on MSYS/MinGW). Running sequentially keeps the link
+# step stable and still finishes within a minute.
+MAKEFLAGS= make seajay
 
 echo ""
 echo "=========================================="
