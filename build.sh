@@ -109,6 +109,9 @@ echo "Using Make build system (OpenBench compatible)..."
 unset CXXFLAGS
 unset CFLAGS
 unset MAKEFLAGS
+unset CMAKE_GENERATOR
+unset CMAKE_GENERATOR_TOOLSET
+unset CMAKE_GENERATOR_INSTANCE
 
 EXTRA_CMAKE_ARGS=()
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
