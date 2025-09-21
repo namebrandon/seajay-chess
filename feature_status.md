@@ -22,7 +22,7 @@
 | 6c - Excluded-move plumbing | Completed | dac2c68 | 2350511 | NodeContext drives excluded move toggle; legacy stack mirrors via `EnableExcludedMoveParam` (default OFF). |
 | 6d - Verification helper | Completed | c048813 | 2350511 | Verification helper scaffold merged; returns neutral score until singular logic arrives. |
 | 6e - TT hygiene review | Completed | 3ed5786 | 2350511 | Tightened TT replacement guards to avoid NO_MOVE pollution; documentation refreshed. |
-| 6f - PV clarity/root safety | Completed | 73f939c | 2350511 | DEBUG-only NodeContext asserts validated via SPRT (neutral); protects PV and excluded move invariants. |
+| 6f - PV clarity/root safety | Completed | 73f939c | 2350511 | DEBUG-only NodeContext asserts validated via SPRT (neutral); protects PV and excluded move invariants; toggle-on (`EnableExcludedMoveParam=true`, `UseSearchNodeAPIRefactor=true`) bench run neutral at 2350511 nodes. |
 | 6g - Integration cleanup | Pending | - | - | Final toggles + documentation sweep. |
 
 ## Testing Summary
@@ -36,7 +36,7 @@
 | 6c | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added `EnableExcludedMoveParam` toggle; bench parity confirmed with both toggles OFF and ON (2350511 nodes). |
 | 6d | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | New verification helper compiles cleanly (NoOp); bench unchanged. |
 | 6e | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | TT hygiene guard adjustments; validated with bench parity. |
-| 6f | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added root/PV/excluded context asserts; bench parity confirmed locally and SPRT reported neutral outcome. |
+| 6f | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added root/PV/excluded context asserts; bench parity confirmed locally; SPRT and toggle-on (EnableExcludedMoveParam/UseSearchNodeAPIRefactor) runs reported neutral outcome. |
 
 ## Key Learnings / Risks
 - Build script reported a `buffer overflow detected` during static library link, but rerunning the single-threaded LTO link succeeds; continue monitoring toolchain instability.
