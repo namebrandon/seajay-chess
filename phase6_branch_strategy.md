@@ -58,8 +58,8 @@ git push
 | 6b.1 | feature/phase6-stage-6b1 | Completed | Optional | 2350511 | Thread context - main (`UseSearchNodeAPIRefactor` toggle) |
 | 6b.2 | feature/phase6-stage-6b2 | Completed | Not Required | 2350511 | Thread context - qsearch (toggle parity confirmed). |
 | 6b.3 | feature/phase6-stage-6b3 | Completed | Optional | 2350511 | Thread context - helpers (LMR wrappers parity). |
-| 6c | feature/phase6-stage-6c | In Progress | Required | 2350511 | Replace stack-based excluded checks with NodeContext + `EnableExcludedMoveParam` toggle |
-| 6d | feature/phase6-stage-6d | Pending | Not Required | - | Verification helper |
+| 6c | feature/phase6-stage-6c | Completed | Required | 2350511 | Replace stack-based excluded checks with NodeContext + `EnableExcludedMoveParam` toggle |
+| 6d | feature/phase6-stage-6d | In Progress | Not Required | 2350511 | Verification helper scaffold (NoOp) |
 | 6e | feature/phase6-stage-6e | Pending | Not Required | - | TT hygiene |
 | 6f | feature/phase6-stage-6f | Pending | Not Required | - | PV clarity |
 | 6g | feature/phase6-stage-6g | Pending | Required | - | Integration |

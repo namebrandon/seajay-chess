@@ -12,6 +12,7 @@
 #include "principal_variation.h"     // PV tracking infrastructure
 #include "countermove_history.h"     // Phase 4.3.a: Counter-move history
 #include "node_explosion_stats.h"     // Node explosion diagnostics
+#include "singular_extension.h"       // Stage 6d: verification helper scaffold
 #include "../core/board.h"
 #include "../core/board_safety.h"
 #include "../core/move_generation.h"
