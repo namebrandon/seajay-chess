@@ -10,6 +10,7 @@
 #include "move_ordering.h"  // For MVV-LVA ordering and VICTIM_VALUES - ALWAYS NEEDED
 #include "ranked_move_picker.h"  // Phase 2a: Ranked move picker
 #include "../core/see.h"  // Stage 15 Day 6: For SEE-based pruning
+#include <cassert>
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -39,6 +40,7 @@ constexpr int MATE_BOUND = 29000;
 
 eval::Score quiescence(
     Board& board,
+    NodeContext context,
     int ply,
     int qply,
     eval::Score alpha,
@@ -50,6 +52,11 @@ eval::Score quiescence(
     int checkPly,
     bool inPanicMode)
 {
+#ifdef DEBUG
+    assert(!context.hasExcludedMove() && "Quiescence search cannot operate with an excluded move");
+#endif
+    [[maybe_unused]] const bool isPvNode = context.isPv();
+
     // Store original alpha for correct TT bound classification
     const eval::Score originalAlpha = alpha;
     // REMOVED emergency cutoff - it was destroying tactical play
@@ -340,6 +347,7 @@ eval::Score quiescence(
     eval::Score bestScore = isInCheck ? eval::Score::minus_infinity() : alpha;
     Move bestMove = NO_MOVE;  // Track the best move found for TT storage
     int moveCount = 0;
+    int legalMoveCount = 0;
     
     // Candidate 9: Use reduced capture limit in panic mode
     const int maxCaptures = inPanicMode ? MAX_CAPTURES_PANIC : (limits.qsearchMaxCaptures > 0 ? limits.qsearchMaxCaptures : MAX_CAPTURES_PER_NODE);
@@ -488,8 +496,13 @@ eval::Score quiescence(
         Board::UndoInfo undo;
         board.makeMove(move, undo);
         
+        legalMoveCount++;
+
+        bool childIsPv = context.isPv() && (legalMoveCount == 1);
+        NodeContext childContext = makeChildContext(context, childIsPv);
+
         // Recursive quiescence search with check ply tracking and panic mode propagation
-        eval::Score score = -quiescence(board, ply + 1, qply + 1, -beta, -alpha, 
+        eval::Score score = -quiescence(board, childContext, ply + 1, qply + 1, -beta, -alpha,
                                        searchInfo, data, limits, tt, newCheckPly, inPanicMode);
         
         // Unmake the move
