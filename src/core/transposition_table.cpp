@@ -164,7 +164,8 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             
             if (entry.key32 == key32) {
                 // Same position - update if appropriate
-                if (move == NO_MOVE && entry.move != NO_MOVE && depth <= entry.depth) {
+                const bool entryIsFresh = entry.generation() == m_generation;
+                if (move == NO_MOVE && entry.move != NO_MOVE && entryIsFresh && depth <= entry.depth) {
                     return;  // Don't overwrite move with NO_MOVE
                 }
                 cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
@@ -191,11 +192,19 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         
         // Store in best victim slot
         TTEntry* victim = &cluster[bestVictim];
+
+        // Stage 6e: Preserve valuable move-carrying entries when the incoming
+        // data is a shallow heuristic (NO_MOVE) in the current generation.
+        const bool victimIsFresh = victim->generation() == m_generation;
+        if (move == NO_MOVE && victim->move != NO_MOVE && victimIsFresh && depth < victim->depth) {
+            return;
+        }
+
 #ifdef TT_STATS_ENABLED
         if (!victim->isEmpty() && victim->key32 != key32) {
             m_stats.collisions++;
         }
-        // Track replacement reason
+        // Track replacement reason once we've confirmed we will overwrite
         if (victim->generation() != m_generation) {
             m_stats.replacedOldGen++;
         } else if (victim->depth < depth) {
@@ -232,8 +241,9 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         } else if (entry->key32 == key32) {
             // Same position - update based on depth and generation
             
-            // TT pollution fix: Protect entries with moves from NO_MOVE overwrites
-            if (move == NO_MOVE && entry->move != NO_MOVE && depth <= entry->depth) {
+            // TT pollution fix: Protect entries with moves from shallow NO_MOVE overwrites
+            const bool entryIsFresh = entry->generation() == m_generation;
+            if (move == NO_MOVE && entry->move != NO_MOVE && entryIsFresh && depth <= entry->depth) {
                 // Don't replace a valuable move-carrying entry with a NO_MOVE heuristic
                 canReplace = false;
             } else if (entry->generation() != m_generation) {

@@ -7,7 +7,7 @@
 
 ## Timeline
 - Start Date: 2025-09-20
-- Current Branch: `feature/phase6-stage-6d`
+- Current Branch: `feature/phase6-stage-6e`
 - Base Commit: `ab6816e273129fc524f3024455db2694be3fb06c` (integration/phase6-search-api-refactor tip)
 - Bench Baseline: 2350511 nodes (`bin/seajay`, Release build)
 
@@ -20,8 +20,8 @@
 | 6b.2 - Context through quiescence | Completed | 1460ac9 | 2350511 | Quiescence plumbing guarded by NodeContext with parity verified (toggle OFF/ON both 2350511 nodes). |
 | 6b.3 - Helper propagation | Completed | d8e7c58 | 2350511 | LMR helpers now use NodeContext-aware wrappers; toggle OFF/ON benches match at 2350511 nodes. |
 | 6c - Excluded-move plumbing | Completed | dac2c68 | 2350511 | NodeContext drives excluded move toggle; legacy stack mirrors via `EnableExcludedMoveParam` (default OFF). |
-| 6d - Verification helper | In Progress | WIP | 2350511 | Implementing disabled verification helper scaffold for singular extensions. |
-| 6e - TT hygiene review | Pending | - | - | Document/store safeguards. |
+| 6d - Verification helper | Completed | c048813 | 2350511 | Verification helper scaffold merged; returns neutral score until singular logic arrives. |
+| 6e - TT hygiene review | In Progress | WIP | 2350511 | Tightening TT replacement guards to avoid NO_MOVE pollution; documentation refresh. |
 | 6f - PV clarity/root safety | Pending | - | - | Assert PV/root propagation invariants. |
 | 6g - Integration cleanup | Pending | - | - | Final toggles + documentation sweep. |
 
@@ -35,12 +35,14 @@
 | 6b.3 | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Required single-threaded LTO link steps; bench parity maintained with toggle OFF/ON. |
 | 6c | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added `EnableExcludedMoveParam` toggle; bench parity confirmed with both toggles OFF and ON (2350511 nodes). |
 | 6d | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | New verification helper compiles cleanly (NoOp); bench unchanged. |
+| 6e | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | TT hygiene guard adjustments; validated with bench parity. |
 
 ## Key Learnings / Risks
 - Build script reported a `buffer overflow detected` during static library link, but rerunning the single-threaded LTO link succeeds; continue monitoring toolchain instability.
 - `EnableExcludedMoveParam` toggle now mirrors NodeContext state into legacy telemetry without behavioural impact (default OFF).
 - Verification helper scaffold returns neutral score while feature remains disabled; stats counters only active in DEBUG builds.
+- TT replacement policy now explicitly preserves fresh move-carrying entries when incoming data is a shallow NO_MOVE heuristic, reducing pollution risk.
 
 ## Next Actions
-1. Flesh out Stage 6d helper documentation and prepare merge notes once scaffold reviewed.
-2. Draft plan for Stage 6e TT hygiene adjustments now that verification hook exists.
+1. Prepare Stage 6e merge notes once TT hygiene review is approved.
+2. Map follow-up experiments for TTEntry excluded-move caching once singular extensions require it.
