@@ -5,7 +5,7 @@
 </div>
 
 
-# SeaJay 
+# SeaJay
 
 SeaJay is a UCI-compatible chess engine developed as an exploration of human-AI collaboration in software development. Named after a fictional hybrid of a Bluejay (known for memory and complex planning) and a Seagull (adaptable problem-solvers), SeaJay represents a fusion of human vision and AI implementation.
 
@@ -21,7 +21,7 @@ SeaJay has been under active development since August 2025, and the rough ELO es
 
 #### Transparent Attribution
 
-Every line of code in SeaJay is AI-generated, and we openly acknowledge this. We believe in complete transparency about AI's role in development, celebrating human-AI collaboration as a core feature of the project. 
+Every line of code in SeaJay is AI-generated, and we openly acknowledge this. We believe in complete transparency about AI's role in development, celebrating human-AI collaboration as a core feature of the project.
 
 #### Human-Guided Intelligence
 
@@ -101,7 +101,7 @@ SeaJay currently builds reliably on Windows through the MSYS2 UCRT64 environment
        base base-devel git cmake python \
        mingw-w64-ucrt-x86_64-{binutils,cmake,gcc,gcc-libgfortran,gdb,gdb-multiarch,make,ninja,pkgconf,tools-git,winpthreads,winstorecompat-git}
    ```
-   The development machine that validated the Windows fix also had the following packages available:
+   The development machine that validated the Windows build also had the following packages available:
    ```
    base 2022.06-1
    base-devel 2024.11-1
