@@ -5,6 +5,7 @@
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <memory>
 #include <atomic>
 #include <mutex>
 #include "../core/board.h"
@@ -50,7 +51,7 @@ private:
     // Thread management for search
     // Note: Designed for forward compatibility with LazySMP
     // Currently single search thread, but atomic stop flag will work with multiple threads
-    std::thread m_searchThread;
+    std::unique_ptr<std::thread> m_searchThread;
     std::atomic<bool> m_searching{false};
     std::atomic<bool> m_stopRequested{false};  // Global stop flag for all search threads (LazySMP ready)
     std::mutex m_searchMutex;  // Protects search state changes
