@@ -331,6 +331,7 @@ Assert Test: Run DEBUG build on test suite, verify no assertions
 6g — Integration + Rollout Steps
 - Keep 6a–6f under `UseSearchNodeAPIRefactor=false` by default.
 - Provide a DEV mode where it is true but ctx.excluded = NO_MOVE everywhere, to validate the new API under real search.
+- Release bench validation (toggle OFF: 2350511 nodes @ 1.84M nps, toggle ON with `EnableExcludedMoveParam=false`: 2350511 nodes @ 1.75M nps).
 - Acceptance: once DEV runs show parity and no stability issues, set default to false and proceed to the next feature phase that uses the API.
 
 **C++ Developer Notes:**
@@ -512,4 +513,3 @@ Follow-ups (post Phase 6)
        // Verify ABI passes in registers with inline assembly check
    }
    ```
-

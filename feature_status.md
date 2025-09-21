@@ -23,7 +23,7 @@
 | 6d - Verification helper | Completed | c048813 | 2350511 | Verification helper scaffold merged; returns neutral score until singular logic arrives. |
 | 6e - TT hygiene review | Completed | 3ed5786 | 2350511 | Tightened TT replacement guards to avoid NO_MOVE pollution; documentation refreshed. |
 | 6f - PV clarity/root safety | Completed | 73f939c | 2350511 | DEBUG-only NodeContext asserts validated via SPRT (neutral); protects PV and excluded move invariants; toggle-on (`EnableExcludedMoveParam=true`, `UseSearchNodeAPIRefactor=true`) bench run neutral at 2350511 nodes. |
-| 6g - Integration cleanup | Pending | - | - | Final toggles + documentation sweep. |
+| 6g - Integration cleanup | Completed | HEAD | 2350511 | DEV-mode validation complete; release bench parity confirmed with sequential build tooling. |
 
 ## Testing Summary
 | Stage | Build | Bench | Notes |
@@ -37,14 +37,15 @@
 | 6d | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | New verification helper compiles cleanly (NoOp); bench unchanged. |
 | 6e | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | TT hygiene guard adjustments; validated with bench parity. |
 | 6f | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added root/PV/excluded context asserts; bench parity confirmed locally; SPRT and toggle-on (EnableExcludedMoveParam/UseSearchNodeAPIRefactor) runs reported neutral outcome. |
+| 6g | `./build.sh Release` + `./build.sh Debug` | 2350511 | Sequential make avoids LTO jobserver crash; release bench parity verified with toggles OFF (1836718 nps) and ON (UseSearchNodeAPIRefactor=true, EnableExcludedMoveParam=false @ 1747382 nps). |
 
 ## Key Learnings / Risks
-- Build script reported a `buffer overflow detected` during static library link, but rerunning the single-threaded LTO link succeeds; continue monitoring toolchain instability.
+- LTO jobserver failures traced to inherited `MAKEFLAGS` without descriptors; sequential make invocation in build.sh now provides stable Release/Debug builds.
 - `EnableExcludedMoveParam` toggle now mirrors NodeContext state into legacy telemetry without behavioural impact (default OFF).
 - Verification helper scaffold returns neutral score while feature remains disabled; stats counters only active in DEBUG builds.
 - TT replacement policy now explicitly preserves fresh move-carrying entries when incoming data is a shallow NO_MOVE heuristic, reducing pollution risk.
 - DEBUG-only NodeContext asserts now guard root invariants and prevent pruning logic from running when an excluded move is active.
 
 ## Next Actions
-1. Prep Stage 6g integration sweep (toggle audit, documentation, rollout notes).
-2. Monitor DEBUG builds for any asserted edge cases before enabling new API paths.
+1. Request SPRT with `UseSearchNodeAPIRefactor=true`, `EnableExcludedMoveParam=false` to confirm parity before rollout.
+2. Draft Phase SE1 (singular extension enablement) plan once Stage 6 is signed off.
