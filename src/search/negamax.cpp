@@ -277,6 +277,9 @@ eval::Score negamax(Board& board,
     
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
+    // Stage 6c: Mirror NodeContext excluded value for legacy stack consumers (TODO: remove after Phase 6 rollout)
+    const Move legacyExcluded = limits.enableExcludedMoveParam ? context.excludedMove() : NO_MOVE;
+    searchInfo.setExcludedMove(ply, legacyExcluded);
 
     // Stage 0: Keep extension totals in sync for current node (parent sets applied count)
     searchInfo.setExtensionApplied(ply, searchInfo.extensionApplied(ply));
@@ -1045,9 +1048,12 @@ eval::Score negamax(Board& board,
                 logTrackedEvent("consider", extra.str());
             }
         }
-        // Skip excluded move (for singular extension search)
-        if (searchInfo.isExcluded(ply, move)) {
-            continue;
+        // Skip excluded move when threaded via NodeContext (singular extension scaffold)
+        if (limits.enableExcludedMoveParam) {
+            const Move excluded = context.excludedMove();
+            if (excluded != NO_MOVE && move == excluded) {
+                continue;
+            }
         }
         
         // Phase B1: Don't increment moveCount here - wait until we know move is legal
@@ -1346,8 +1352,9 @@ eval::Score negamax(Board& board,
 #ifdef DEBUG
         assert(!childContext.isRoot() && "Child context should never retain root flag");
         assert(childContext.isPv() == childIsPV && "Child context PV flag mismatch");
-        // No excluded move should be threaded yet in Stage 6b
-        assert(!childContext.hasExcludedMove() && "Child context unexpectedly carries excluded move");
+        if (!limits.enableExcludedMoveParam) {
+            assert(!childContext.hasExcludedMove() && "Child context unexpectedly carries excluded move");
+        }
 #endif
         
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck

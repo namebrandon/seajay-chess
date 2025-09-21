@@ -171,6 +171,7 @@ struct SearchLimits {
 
     // Phase 6: Search Node API refactor toggle (default OFF)
     bool useSearchNodeAPIRefactor = false;
+    bool enableExcludedMoveParam = false; // Phase 6c: Thread excluded move via NodeContext (default OFF)
 
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
