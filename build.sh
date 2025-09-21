@@ -119,9 +119,17 @@ fi
 
 CMAKE_ARGS=("-DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
 CMAKE_ARGS+=("${EXTRA_CMAKE_ARGS[@]}")
+
+GENERATOR="Unix Makefiles"
+if [[ "${ENVIRONMENT}" == "mingw" ]]; then
+    GENERATOR="MinGW Makefiles"
+elif [[ "${ENVIRONMENT}" == "msys" ]]; then
+    GENERATOR="MSYS Makefiles"
+fi
+
 CMAKE_ARGS+=("..")
 
-MAKEFLAGS= cmake "${CMAKE_ARGS[@]}"
+MAKEFLAGS= cmake -G "${GENERATOR}" "${CMAKE_ARGS[@]}"
 
 # Parallel builds currently trip GCC's LTO jobserver hand-off on this
 # environment (and on MSYS/MinGW). Running sequentially keeps the link
