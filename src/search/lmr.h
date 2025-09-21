@@ -43,6 +43,11 @@ void initLMRTable();
 int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params,
                    bool isPvNode = false, bool improving = true);
 
+ALWAYS_INLINE int getLMRReduction(int depth, int moveNumber, const SearchData::LMRParams& params,
+                                  const NodeContext& context, bool improving = true) {
+    return getLMRReduction(depth, moveNumber, params, context.isPv(), improving);
+}
+
 /**
  * Check if a move is eligible for reduction
  * 
@@ -68,5 +73,15 @@ bool shouldReduceMove(Move move, int depth, int moveNumber, bool isCapture,
                      const CounterMoves& counterMoves, Move prevMove,
                      int ply, Color sideToMove,
                      const SearchData::LMRParams& params);
+
+ALWAYS_INLINE bool shouldReduceMove(Move move, int depth, int moveNumber, bool isCapture,
+                                   bool inCheck, bool givesCheck, const NodeContext& context,
+                                   const KillerMoves& killers, const HistoryHeuristic& history,
+                                   const CounterMoves& counterMoves, Move prevMove,
+                                   int ply, Color sideToMove,
+                                   const SearchData::LMRParams& params) {
+    return shouldReduceMove(move, depth, moveNumber, isCapture, inCheck, givesCheck, context.isPv(),
+                            killers, history, counterMoves, prevMove, ply, sideToMove, params);
+}
 
 } // namespace seajay::search

@@ -1,210 +1,5 @@
-#include "negamax.h"
-#include "search_info.h"
-#include "iterative_search_data.h"  // Stage 13 addition
-#include "time_management.h"        // Stage 13, Deliverable 2.2a
-#include "aspiration_window.h"       // Stage 13, Deliverable 3.2b
-#include "window_growth_mode.h"      // Stage 13 Remediation Phase 4
-#include "game_phase.h"              // Stage 13 Remediation Phase 4
-#include "move_ordering.h"  // Stage 11: MVV-LVA ordering (always enabled)
-#include "ranked_move_picker.h"      // Phase 2a: Ranked move picker
-#include <optional>                   // For stack-allocated RankedMovePicker
-#include "lmr.h"            // Stage 18: Late Move Reductions
-#include "principal_variation.h"     // PV tracking infrastructure
-#include "countermove_history.h"     // Phase 4.3.a: Counter-move history
-#include "node_explosion_stats.h"     // Node explosion diagnostics
-#include "singular_extension.h"       // Stage 6d: verification helper scaffold
-#include "../core/board.h"
-#include "../core/board_safety.h"
-#include "../core/move_generation.h"
-#include "../core/move_list.h"
-#include "../core/engine_config.h"    // Phase 4: Runtime configuration
-#include "../evaluation/evaluate.h"
-#include "../evaluation/eval_trace.h"
-#include "../uci/info_builder.h"     // Phase 5: Structured info building
-#include "quiescence.h"  // Stage 14: Quiescence search
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
-#include <iterator>
-#include <cassert>
-#include <vector>
-#include <memory>
-#include <sstream>
-
-namespace seajay::search {
-
-namespace {
-constexpr int HISTORY_GATING_DEPTH = 2;
-constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
-}
-
-
-// Phase 3.2: Helper for move generation with lazy legality checking option
-inline MoveList generateLegalMoves(const Board& board) {
-    MoveList moves;
-    MoveGenerator::generateLegalMoves(board, moves);
-    return moves;
-}
-
-inline MoveList generateMovesForSearch(const Board& board, bool checkLegal = false) {
-    MoveList moves;
-    MoveGenerator::generateMovesForSearch(board, moves, checkLegal);
-    return moves;
-}
-
-// Simple move ordering without MVV-LVA (fallback)
-template<typename MoveContainer>
-inline void orderMovesSimple(MoveContainer& moves) noexcept {
-    auto first = moves.begin();
-    auto last = moves.end();
-    auto partition_point = first;
-    
-    // Phase 1: Move all promotions to the front
-    // Queen promotions have highest priority
-    for (auto it = first; it != last; ++it) {
-        if (isPromotion(*it)) {
-            // If it's a queen promotion, move it to the very front
-            if (promotionType(*it) == QUEEN) {
-                if (it != first) {
-                    // Move queen promotion to front
-                    Move temp = *it;
-                    std::move_backward(first, it, it + 1);
-                    *first = temp;
-                    partition_point = std::next(first);
-                }
-            } else if (it != partition_point) {
-                // Other promotions go after queen promotions
-                std::iter_swap(it, partition_point);
-                ++partition_point;
-            } else {
-                ++partition_point;
-            }
-        }
-    }
-    
-    // Phase 2: Move captures after promotions
-    for (auto it = partition_point; it != last; ++it) {
-        if (isCapture(*it) && !isPromotion(*it)) {  // Skip promotion-captures (already ordered)
-            if (it != partition_point) {
-                std::iter_swap(it, partition_point);
-            }
-            ++partition_point;
-        }
-    }
-    
-    // Quiet moves remain at the end (no need to explicitly order them)
-}
-
-// Move ordering function for alpha-beta pruning efficiency
-// Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then killers, then quiet moves
-template<typename MoveContainer>
-inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
-                      SearchData* searchData = nullptr, int ply = 0,
-                      Move prevMove = NO_MOVE, int countermoveBonus = 0,
-                      const SearchLimits* limits = nullptr, int depth = 0) noexcept {
-    // Stage 11: Base MVV-LVA ordering (always available)
-    // Stage 15: Optional SEE ordering for captures when enabled via UCI
-    // Stage 19/20/23: Killers, history, countermoves for quiets
-    static MvvLvaOrdering mvvLva;
-    
-    // Phase 4.1: Depth gating - use CMH from depth >= HISTORY_GATING_DEPTH
-    // Below that, fall back to basic history+countermove ordering
-    // Optional SEE capture ordering first (prefix-only) when enabled
-    if (search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
-        // SEE policy orders only captures/promotions prefix; quiets preserved
-        search::g_seeMoveOrdering.orderMoves(board, moves);
-    } else {
-        // Default capture ordering
-        mvvLva.orderMoves(board, moves);
-    }
-
-    if (searchData) {
-        searchData->clearHistoryContext(ply);
-    }
-
-    if (depth >= HISTORY_GATING_DEPTH && searchData != nullptr && searchData->killers && searchData->history && 
-        searchData->counterMoves && searchData->counterMoveHistory) {
-        searchData->registerHistoryApplication(ply, SearchData::HistoryContext::Counter);
-        // Use counter-move history for enhanced move ordering at sufficient depth
-        // Get CMH weight from search limits - should always be available
-        float cmhWeight = 1.5f;  // default fallback (shouldn't be hit)
-        if (limits != nullptr) {
-            cmhWeight = limits->counterMoveHistoryWeight;
-        } else {
-            // This shouldn't happen in normal search - log if in debug mode
-            #ifdef DEBUG
-            std::cerr << "Warning: SearchLimits not available in orderMoves, using default CMH weight" << std::endl;
-            #endif
-        }
-        mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
-                                    *searchData->counterMoves, *searchData->counterMoveHistory,
-                                    prevMove, ply, countermoveBonus, cmhWeight);
-    } else if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
-        searchData->registerHistoryApplication(ply, SearchData::HistoryContext::Basic);
-        // Fallback to basic countermoves without history
-        mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
-                                    *searchData->counterMoves, prevMove, ply, countermoveBonus);
-    } else if (searchData != nullptr) {
-        searchData->clearHistoryContext(ply);
-    }
-
-    // Root-specific quiet move tweaks: prefer checks and central pawn pushes
-    // Phase 2.2: Apply toggleable king penalty, excluding castling
-    if (ply == 0 && !moves.empty() && limits != nullptr) {
-        // Find where quiet moves start (after captures/promotions)
-        auto quietStart = std::find_if(moves.begin(), moves.end(),
-            [](const Move& m) { return !isPromotion(m) && !isCapture(m) && !isEnPassant(m); });
-        if (quietStart != moves.end()) {
-            auto scoreQuiet = [&board, limits](const Move& m) -> int {
-                int score = 0;
-                
-                // Phase 2.2: Penalize non-capturing, non-castling king moves at root
-                // Use UCI-controlled penalty value
-                Piece fromPiece = board.pieceAt(moveFrom(m));
-                if (fromPiece != NO_PIECE && typeOf(fromPiece) == KING) {
-                    // Explicitly exclude castling from penalty
-                    if (!isCastling(m)) {
-                        score -= limits->rootKingPenalty;
-                    }
-                }
-                
-                // Central pawn push bonus (d4/e4/d5/e5)
-                Square to = moveTo(m);
-                if (to == 27 || to == 28 || to == 35 || to == 36) {
-                    if (fromPiece != NO_PIECE && typeOf(fromPiece) == PAWN) {
-                        score += 120;
-                    }
-                }
-                return score;
-            };
-            std::stable_sort(quietStart, moves.end(),
-                [&](const Move& a, const Move& b) { return scoreQuiet(a) > scoreQuiet(b); });
-        }
-    }
-
-    // Sub-phase 4E: TT Move Ordering
-    // Put TT move first AFTER all other ordering (only do this once!)
-    if (ttMove != NO_MOVE) {
-        auto it = std::find(moves.begin(), moves.end(), ttMove);
-        if (it != moves.end() && it != moves.begin()) {
-            // Move TT move to front
-            Move temp = *it;
-            std::move_backward(moves.begin(), it, it + 1);
-            *moves.begin() = temp;
-        }
-    }
-}
-
-// Mate score constants for TT integration
-constexpr int MATE_SCORE = 30000;
-constexpr int MATE_BOUND = 29000;
-
-#include "negamax_legacy.inc"
-
-// Core negamax search implementation
-eval::Score negamax(Board& board,
-                   NodeContext context,
-                   int depth,
+static eval::Score negamax_legacy(Board& board, 
+                   int depth, 
                    int ply,
                    eval::Score alpha,
                    eval::Score beta,
@@ -212,28 +7,10 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt,
-                   TriangularPV* pv) {
-    if (!limits.useSearchNodeAPIRefactor) {
-        return negamax_legacy(board, depth, ply, alpha, beta, searchInfo, info, limits, tt, pv, context.isPv());
-    }
-
-    const bool isPvNode = context.isPv();
-
-#ifdef DEBUG
-    if (ply == 0) {
-        assert(context.isRoot() && "Root context flag lost at ply 0");
-        assert(isPvNode && "Root node must be treated as PV");
-    } else {
-        assert(!context.isRoot() && "Non-root ply flagged as root in context");
-    }
-#endif
-
-#ifdef DEBUG
-    if (!isPvNode) {
-        assert(!context.hasExcludedMove() && "Excluded move should only appear on PV-like nodes in future stages");
-    }
-#endif
-
+                   TriangularPV* pv,
+                   bool isPvNode) {
+    
+    
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4 && !limits.suppressDebugOutput) {
         std::cerr << "Negamax: Starting search at depth " << depth << std::endl;
@@ -293,9 +70,6 @@ eval::Score negamax(Board& board,
     
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
-    // Stage 6c: Mirror NodeContext excluded value for legacy stack consumers (TODO: remove after Phase 6 rollout)
-    const Move legacyExcluded = limits.enableExcludedMoveParam ? context.excludedMove() : NO_MOVE;
-    searchInfo.setExcludedMove(ply, legacyExcluded);
 
     // Stage 0: Keep extension totals in sync for current node (parent sets applied count)
     searchInfo.setExtensionApplied(ply, searchInfo.extensionApplied(ply));
@@ -325,11 +99,6 @@ eval::Score negamax(Board& board,
                 g_nodeExplosionStats.recordQuiescenceEntry(ply);
             }
             // Use quiescence search to resolve tactical sequences
-            if (limits.useSearchNodeAPIRefactor) {
-                NodeContext qContext = context;
-                qContext.clearExcluded();
-                return quiescence(board, qContext, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
-            }
             return quiescence(board, ply, 0, alpha, beta, searchInfo, info, limits, *tt, 0, inPanicMode);
         }
         // Fallback: return static evaluation (only if quiescence disabled via UCI)
@@ -650,15 +419,8 @@ eval::Score negamax(Board& board,
         searchInfo.setNullMove(ply, true);
         
         // Search with adaptive reduction (null window around beta)
-        const NodeContext nullContext = makeChildContext(context, false);
-#ifdef DEBUG
-        assert(!nullContext.isRoot() && "Null move context must not be marked as root");
-        assert(!nullContext.isPv() && "Null move context must never be PV");
-        assert(!nullContext.hasExcludedMove() && "Null move context should not carry excluded move");
-#endif
         eval::Score nullScore = -negamax(
             board,
-            nullContext,
             depth - 1 - nullMoveReduction,
             ply + 1,
             -beta,
@@ -667,7 +429,8 @@ eval::Score negamax(Board& board,
             info,
             limits,
             tt,
-            nullptr  // Phase PV1: Pass nullptr for now
+            nullptr,  // Phase PV1: Pass nullptr for now
+            false  // Phase P2: Null move searches are never PV nodes
         );
         
         // Unmake null move
@@ -684,19 +447,8 @@ eval::Score negamax(Board& board,
             // Phase 1.5b: Deeper verification search at configurable depth
             if (depth >= limits.nullMoveVerifyDepth) {  // UCI configurable threshold
                 // Verification search at depth - R (one ply deeper than null move)
-                NodeContext verifyContext = context;
-                verifyContext.setPv(false);
-                verifyContext.clearExcluded();
-#ifdef DEBUG
-                assert(verifyContext.isRoot() == context.isRoot() &&
-                       "Null-move verification should preserve root flag");
-#endif
-#ifdef DEBUG
-                assert(!verifyContext.hasExcludedMove() && "Null-move verify should clear excluded move");
-#endif
                 eval::Score verifyScore = negamax(
                     board,
-                    verifyContext,
                     depth - nullMoveReduction,  // depth - R (matches Stockfish/Laser)
                     ply,
                     beta - eval::Score(1),
@@ -705,7 +457,8 @@ eval::Score negamax(Board& board,
                     info,
                     limits,
                     tt,
-                    nullptr  // Phase PV1: Pass nullptr for now
+                    nullptr,  // Phase PV1: Pass nullptr for now
+                    false
                 );
                 
                 if (verifyScore < beta) {
@@ -841,37 +594,19 @@ eval::Score negamax(Board& board,
                 // Check if static eval + margin is still below alpha
                 if (staticEval + eval::Score(razorMargin) <= alpha) {
                     // Run quiescence search with scout window
-                    eval::Score qScore;
-                    if (limits.useSearchNodeAPIRefactor) {
-                        NodeContext qContext = context;
-                        qContext.clearExcluded();
-                        qScore = quiescence(
-                            board,
-                            qContext,
-                            ply,
-                            0,                    // qsearch depth starts at 0
-                            alpha,
-                            alpha + eval::Score(1), // alpha+1 (scout window)
-                            searchInfo,
-                            info,
-                            limits,
-                            *tt,
-                            0,
-                            false);
-                    } else {
-                        qScore = quiescence(
-                            board,
-                            ply,
-                            0,
-                            alpha,
-                            alpha + eval::Score(1),
-                            searchInfo,
-                            info,
-                            limits,
-                            *tt,
-                            0,
-                            false);
-                    }
+                    eval::Score qScore = quiescence(
+                        board, 
+                        ply, 
+                        0,                    // qsearch depth starts at 0
+                        alpha,                // alpha
+                        alpha + eval::Score(1), // alpha+1 (scout window)
+                        searchInfo, 
+                        info, 
+                        limits, 
+                        *tt, 
+                        0,                    // initialAlpha (not used in scout)
+                        false                 // panicMode
+                    );
                     
                     // If quiescence still fails low, we can return
                     if (qScore <= alpha) {
@@ -1064,12 +799,9 @@ eval::Score negamax(Board& board,
                 logTrackedEvent("consider", extra.str());
             }
         }
-        // Skip excluded move when threaded via NodeContext (singular extension scaffold)
-        if (limits.enableExcludedMoveParam) {
-            const Move excluded = context.excludedMove();
-            if (excluded != NO_MOVE && move == excluded) {
-                continue;
-            }
+        // Skip excluded move (for singular extension search)
+        if (searchInfo.isExcluded(ply, move)) {
+            continue;
         }
         
         // Phase B1: Don't increment moveCount here - wait until we know move is legal
@@ -1145,10 +877,6 @@ eval::Score negamax(Board& board,
             
             // Phase 2b.3: LMP rank gating - adjust limit based on move rank
             if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
-#ifdef DEBUG
-                assert(!context.hasExcludedMove() &&
-                       "Rank-aware LMP gating should not run when an excluded move is active");
-#endif
                 // Get rank from picker if available, otherwise use moveCount as fallback
                 // Note: Using moveCount before legality check is an approximation
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
@@ -1258,10 +986,6 @@ eval::Score negamax(Board& board,
         // Phase 2b.5: Capture SEE gating by rank
         if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4
             && isCapture(move) && !isPromotion(move)) {
-#ifdef DEBUG
-            assert(!context.hasExcludedMove() &&
-                   "Rank-aware capture gating should not run when an excluded move is active");
-#endif
             
             // Check exemptions: TT move, killers, countermoves, recaptures
             bool isTTMove = (move == ttMove);
@@ -1316,10 +1040,6 @@ eval::Score negamax(Board& board,
         bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
 
         if (pendingMoveCountPrune && !givesCheckMove && !wasCaptureMove) {
-#ifdef DEBUG
-            assert(!context.hasExcludedMove() &&
-                   "Move count pruning should bypass nodes with excluded move context");
-#endif
             info.moveCountPruned++;
             info.pruneBreakdown.moveCount[pendingMoveCountDepthBucket]++;
 
@@ -1355,7 +1075,7 @@ eval::Score negamax(Board& board,
             info.rankGates.tried[bucket]++;
         }
 #endif
-
+        
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
 
@@ -1376,26 +1096,11 @@ eval::Score negamax(Board& board,
                               info.counterMoves->getCounterMove(prevMove) == move);
         // Determine whether the CHILD would be a PV node: at a PV parent, only the first legal move is PV
         bool childIsPV = (isPvNode && legalMoveCount == 1);
-        NodeContext childContext = makeChildContext(context, childIsPV);
-#ifdef DEBUG
-        childContext.clearExcluded();
-#endif
-#ifdef DEBUG
-        assert(!childContext.isRoot() && "Child context should never retain root flag");
-        assert(childContext.isPv() == childIsPV && "Child context PV flag mismatch");
-        if (!limits.enableExcludedMoveParam) {
-            assert(!childContext.hasExcludedMove() && "Child context unexpectedly carries excluded move");
-        }
-#endif
         
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
             && !isKillerMove && !isCounterMove) {
-#ifdef DEBUG
-            assert(!context.hasExcludedMove() &&
-                   "Futility pruning should bypass nodes with excluded move context");
-#endif
             
             // Calculate what reduction this move would get from LMR
             int reduction = 0;
@@ -1404,25 +1109,14 @@ eval::Score negamax(Board& board,
                 bool givesCheck = false;  // Actual check handling below via clamp
                 bool pvNode = isPvNode;
 
-                bool allowReduction = limits.useSearchNodeAPIRefactor
-                    ? shouldReduceMove(move, depth, moveCount, captureMove,
-                                       weAreInCheck, givesCheck, context,
-                                       *info.killers, *info.history,
-                                       *info.counterMoves, prevMove,
-                                       ply, board.sideToMove(),
-                                       info.lmrParams)
-                    : shouldReduceMove(move, depth, moveCount, captureMove,
-                                       weAreInCheck, givesCheck, pvNode,
-                                       *info.killers, *info.history,
-                                       *info.counterMoves, prevMove,
-                                       ply, board.sideToMove(),
-                                       info.lmrParams);
-
-                if (allowReduction) {
+                if (shouldReduceMove(move, depth, moveCount, captureMove,
+                                    weAreInCheck, givesCheck, pvNode,
+                                    *info.killers, *info.history,
+                                    *info.counterMoves, prevMove,
+                                    ply, board.sideToMove(),
+                                    info.lmrParams)) {
                     bool improving = false;
-                    reduction = limits.useSearchNodeAPIRefactor
-                        ? getLMRReduction(depth, moveCount, info.lmrParams, context, improving)
-                        : getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
 
                     if (givesCheckMove && reduction > 0) {
                         const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
@@ -1534,9 +1228,10 @@ eval::Score negamax(Board& board,
             // First move: search with full window as PV node (apply extension if any)
             // Pass childPV only if we're in a PV node and have a parent PV
             TriangularPV* firstMoveChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
-            score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+            score = -negamax(board, depth - 1 + extension, ply + 1,
                             -beta, -alpha, searchInfo, info, limits, tt,
-                            firstMoveChildPV);  // Phase PV3: Pass child PV for PV nodes
+                            firstMoveChildPV,  // Phase PV3: Pass child PV for PV nodes
+                            isPvNode);  // Phase P3: First move inherits PV status
         } else {
             // Later moves: use PVS with LMR
             
@@ -1580,29 +1275,18 @@ eval::Score negamax(Board& board,
                 bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
                 // Check if we should reduce this move with improved conditions
-                bool allowReduction = limits.useSearchNodeAPIRefactor
-                    ? shouldReduceMove(move, depth, moveCount, captureMove,
-                                       weAreInCheck, givesCheck, context,
-                                       *info.killers, *info.history,
-                                       *info.counterMoves, prevMove,
-                                       ply, board.sideToMove(),
-                                       info.lmrParams)
-                    : shouldReduceMove(move, depth, moveCount, captureMove,
-                                       weAreInCheck, givesCheck, pvNode,
-                                       *info.killers, *info.history,
-                                       *info.counterMoves, prevMove,
-                                       ply, board.sideToMove(),
-                                       info.lmrParams);
-
-                if (allowReduction) {
+                if (shouldReduceMove(move, depth, moveCount, captureMove, 
+                                    weAreInCheck, givesCheck, pvNode, 
+                                    *info.killers, *info.history, 
+                                    *info.counterMoves, prevMove,
+                                    ply, board.sideToMove(),
+                                    info.lmrParams)) {
                     // Calculate reduction amount
                     // For now, assume not improving to be conservative
                     // (future enhancement: track eval history for proper improving detection)
                     bool improving = false; // Conservative: assume not improving
-
-                    reduction = limits.useSearchNodeAPIRefactor
-                        ? getLMRReduction(depth, moveCount, info.lmrParams, context, improving)
-                        : getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+                    
+                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
 
                     if (givesCheckMove && reduction > 0) {
                         const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
@@ -1674,9 +1358,7 @@ eval::Score negamax(Board& board,
                     if (applySmoothing && reduction > 0) {
                         // Subtract 1 from any extra reduction added by rank bucket
                         // Do not go below baseline reduction (i.e., the non-rank-aware reduction)
-                        int baseReduction = limits.useSearchNodeAPIRefactor
-                            ? getLMRReduction(depth, moveCount, info.lmrParams, context, false)
-                            : getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
+                        int baseReduction = getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
                         reduction = std::max(baseReduction - 1, reduction - 1);
                         appliedReduction = reduction;
                         if (debugTrackedMove) {
@@ -1697,9 +1379,10 @@ eval::Score negamax(Board& board,
             
             // Scout search (possibly reduced, with extension)
             info.pvsStats.scoutSearches++;
-            score = -negamax(board, childContext, depth - 1 - reduction + extension, ply + 1,
+            score = -negamax(board, depth - 1 - reduction + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr);  // Phase PV3: Scout searches don't need PV
+                            nullptr,  // Phase PV3: Scout searches don't need PV
+                            false);  // Scout searches are not PV
             
             // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
             // didReSearch already declared outside the if/else
@@ -1711,9 +1394,10 @@ eval::Score negamax(Board& board,
             if (limits.nodeExplosionDiagnostics) {
                 g_nodeExplosionStats.recordLMRReSearch(depth);
             }
-            score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+            score = -negamax(board, depth - 1 + extension, ply + 1,
                             -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr);  // Phase PV3: Still a scout search
+                            nullptr,  // Phase PV3: Still a scout search
+                            false);  // Still a scout search
         }
             
             // If scout search fails high, do full window re-search
@@ -1729,9 +1413,10 @@ eval::Score negamax(Board& board,
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
                 TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
-                score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+                score = -negamax(board, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                reSearchChildPV);  // B1 Fix: Re-search is NOT a PV node!
+                                reSearchChildPV,  // Phase PV3: Re-search needs PV for PV nodes
+                                false);  // B1 Fix: Re-search is NOT a PV node!
             } else if (reduction > 0 && score <= alpha) {
                 // Reduction was successful (move was bad as expected)
                 info.lmrStats.successfulReductions++;
@@ -2084,1041 +1769,3 @@ eval::Score negamax(Board& board,
 
     return bestScore;
 }
-
-// Stage 13: Test wrapper for iterative deepening (Deliverable 1.2a)
-// This function calls the existing search without modifications
-// Used to verify that IterativeSearchData doesn't break anything
-Move searchIterativeTest(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Stage 13, Deliverable 1.2c: Full iteration recording (all depths)
-    // Stage 13, Deliverable 2.2a: Time management integration prep
-    SearchInfo searchInfo;
-    searchInfo.clear();
-    searchInfo.setRootHistorySize(board.gameHistorySize());
-    
-    auto infoPtr = std::make_unique<IterativeSearchData>();
-    IterativeSearchData& info = *infoPtr;  // Stored on heap to keep thread stack lean
-
-    // Allocate move ordering helpers on the heap to avoid per-thread stack pressure
-    auto killerMoves = std::make_unique<KillerMoves>();
-    auto historyHeuristic = std::make_unique<HistoryHeuristic>();
-    auto counterMovesTable = std::make_unique<CounterMoves>();
-
-    // Phase 4.3.a: Allocate counter-move history on heap (32MB per thread)
-    std::unique_ptr<CounterMoveHistory> counterMoveHistoryPtr = std::make_unique<CounterMoveHistory>();
-
-    // Connect helper storage to search data object
-    info.killers = killerMoves.get();
-    info.history = historyHeuristic.get();
-    info.counterMoves = counterMovesTable.get();
-    info.counterMoveHistory = counterMoveHistoryPtr.get();
-
-    // Ensure scratch arenas and statistics start clean for this search
-    info.reset();
-    
-    // UCI Score Conversion FIX: Store root side-to-move for all UCI output
-    // This MUST be used for all UCI output, not the changing board.sideToMove() during search
-    info.rootSideToMove = board.sideToMove();
-    
-    // Stage 14, Deliverable 1.8: Pass quiescence option to search
-    info.useQuiescence = limits.useQuiescence;
-    
-    // Stage 14 Remediation: Parse SEE modes once at search start
-    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
-    info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
-    
-    // Stage 18: Initialize LMR parameters from limits
-    info.lmrParams.enabled = limits.lmrEnabled;
-    info.lmrParams.minDepth = limits.lmrMinDepth;
-    info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
-    info.lmrParams.baseReduction = limits.lmrBaseReduction;
-    info.lmrParams.depthFactor = limits.lmrDepthFactor;
-    info.lmrParams.historyThreshold = limits.lmrHistoryThreshold;
-    info.lmrParams.pvReduction = limits.lmrPvReduction;
-    info.lmrParams.nonImprovingBonus = limits.lmrNonImprovingBonus;
-    info.lmrStats.reset();
-    
-    // Stage 22 Phase P3.5: Reset PVS statistics at search start
-    info.pvsStats.reset();
-    
-    // Stage 23, Phase CM2: Reset countermove statistics at search start
-    info.counterMoveStats.reset();
-    
-    // Stage 23, Phase CM3.3: Initialize countermove bonus from limits
-    info.countermoveBonus = limits.countermoveBonus;
-    info.counterMoves->clear();  // Clear countermove table for fresh search
-    
-    // Stage 13 Remediation: Set configurable stability threshold
-    // Phase 4: Adjust for game phase if enabled
-    if (limits.usePhaseStability) {
-        GamePhase phase = detectGamePhase(board);
-        int adjustedThreshold = getPhaseStabilityThreshold(phase, 
-                                                          limits.stabilityThreshold,
-                                                          limits.openingStability,
-                                                          limits.middlegameStability,
-                                                          limits.endgameStability,
-                                                          true);  // Use specific values
-        info.setRequiredStability(adjustedThreshold);
-        
-        // Debug output for phase detection
-        #ifndef NDEBUG
-        const char* phaseName = (phase == GamePhase::OPENING) ? "Opening" :
-                               (phase == GamePhase::MIDDLEGAME) ? "Middlegame" : "Endgame";
-        std::cerr << "[Phase Stability] Game phase: " << phaseName 
-                  << ", stability threshold: " << adjustedThreshold << std::endl;
-        #endif
-    } else {
-        info.setRequiredStability(limits.stabilityThreshold);
-    }
-    
-    // Stage 13, Deliverable 2.2b: Switch to new time management
-    // Calculate initial time limits with neutral stability (1.0)
-    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
-    info.m_softLimit = timeLimits.soft.count();
-    info.m_hardLimit = timeLimits.hard.count();
-    info.m_optimumTime = timeLimits.optimum.count();
-    
-    
-    // Use NEW calculation for timeLimit (replacing old)
-    info.timeLimit = timeLimits.optimum;
-    // Detect depth-only (fixed-depth) searches: treat as infinite time
-    // More robust: infer from limits rather than computed optimum alone
-    const bool depthOnlySearch = (
-        limits.movetime == std::chrono::milliseconds(0) &&
-        limits.time[WHITE] == std::chrono::milliseconds(0) &&
-        limits.time[BLACK] == std::chrono::milliseconds(0)
-    );
-    
-    // Debug logging for time management (Deliverable 2.2b)
-    if (limits.movetime == std::chrono::milliseconds(0)) {  // Only log for non-fixed time
-        std::cerr << "[Time Management] Initial limits: ";
-        std::cerr << "soft=" << info.m_softLimit << "ms, ";
-        std::cerr << "hard=" << info.m_hardLimit << "ms, ";
-        std::cerr << "optimum=" << info.m_optimumTime << "ms\n";
-    }
-    
-    Move bestMove;
-    Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
-    eval::Score previousScore = eval::Score::zero();  // Track score for aspiration windows
-    
-    // Advance TT generation for new search to enable proper replacement strategy
-    if (tt) {
-        tt->newSearch();
-    }
-    
-    // Same iterative deepening loop as original search
-    for (int depth = 1; depth <= limits.maxDepth; depth++) {
-        // Check external stop flag before starting new iteration
-        if (limits.stopFlag && limits.stopFlag->load(std::memory_order_relaxed)) {
-            info.stopped = true;
-            break;
-        }
-        
-        info.depth = depth;
-        board.setSearchMode(true);
-        
-        // Track start time for this iteration
-        auto iterationStart = std::chrono::steady_clock::now();
-        uint64_t nodesBeforeIteration = info.nodes;  // Save node count before iteration
-        
-        // Stage 13, Deliverable 3.2b: Use aspiration window for depth >= 4
-        eval::Score alpha, beta;
-        AspirationWindow window;
-        
-        // Stage 13 Remediation: Use configurable aspiration windows
-        if (limits.useAspirationWindows && 
-            depth >= AspirationConstants::MIN_DEPTH && 
-            previousScore != eval::Score::zero()) {
-            // Calculate aspiration window based on previous score with configurable delta
-            window = calculateInitialWindow(previousScore, depth, limits.aspirationWindow);
-            alpha = window.alpha;
-            beta = window.beta;
-        } else {
-            // Use infinite window for shallow depths or when disabled
-            alpha = eval::Score::minus_infinity();
-            beta = eval::Score::infinity();
-        }
-        
-        // Phase PV2: Pass root PV arena to collect principal variation at root
-        eval::Score score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                                   &info.rootPV());  // Phase PV2: Collect PV at root
-        
-        // Stage 13, Deliverable 3.2d: Progressive widening re-search
-        if (depth >= AspirationConstants::MIN_DEPTH && (score <= alpha || score >= beta)) {
-            // Progressive widening instead of full window
-            bool failedHigh = (score >= beta);
-            window.failedLow = !failedHigh;
-            window.failedHigh = failedHigh;
-            
-            // Progressive widening loop
-            while (score <= alpha || score >= beta) {
-                // Widen the window progressively with configurable growth mode
-                WindowGrowthMode growthMode = parseWindowGrowthMode(limits.aspirationGrowth);
-                window = widenWindow(window, score, failedHigh, limits.aspirationMaxAttempts, growthMode);
-                alpha = window.alpha;
-                beta = window.beta;
-                
-                // Re-search with widened window
-                // Phase PV2: Pass root PV arena for re-search at root
-                score = negamax(board, depth, 0, alpha, beta, searchInfo, info, limits, tt,
-                              &info.rootPV());  // Phase PV2: Collect PV at root re-search
-                
-                // Check if we're now using an infinite window
-                if (window.isInfinite()) {
-                    break;  // No point in further widening
-                }
-                
-                // Update fail direction if needed
-                failedHigh = (score >= beta);
-            }
-            // B0: Aggregate aspiration telemetry after re-search loop
-            info.aspiration.attempts += static_cast<uint64_t>(window.attempts);
-            if (window.failedLow) info.aspiration.failLow++;
-            if (window.failedHigh) info.aspiration.failHigh++;
-        }
-        
-        board.setSearchMode(false);
-        
-        if (!info.stopped) {
-            bestMove = info.bestMove;
-            
-            // Stage 13, Deliverable 5.1a: Use enhanced UCI info output
-            // Phase 6: Always send info at iteration completion and record it
-            // Phase PV4: Pass root PV arena for full principal variation display
-            // UCI Score Conversion FIX: Use root side-to-move, not current position's side
-            sendIterationInfo(info, info.rootSideToMove, tt, &info.rootPV());
-            info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
-            
-            // Record iteration data for ALL depths (full recording)
-            auto iterationEnd = std::chrono::steady_clock::now();
-            auto iterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                iterationEnd - iterationStart).count();
-            
-            // Ensure minimum iteration time of 1ms for very fast searches
-            if (iterationTime == 0) {
-                iterationTime = 1;
-            }
-            
-            IterationInfo iter;
-            iter.depth = depth;
-            iter.score = score;
-            iter.bestMove = info.bestMove;
-            iter.nodes = info.nodes - nodesBeforeIteration;  // Nodes for this iteration only
-            iter.elapsed = iterationTime;
-            // Record actual window used
-            iter.alpha = alpha;
-            iter.beta = beta;
-            iter.windowAttempts = window.attempts;
-            iter.failedHigh = window.failedHigh;
-            iter.failedLow = window.failedLow;
-            
-            // Track move changes and stability
-            if (depth == 1) {
-                iter.moveChanged = false;  // No previous iteration
-                iter.moveStability = 1;    // First occurrence
-            } else {
-                iter.moveChanged = (info.bestMove != previousBestMove);
-                if (iter.moveChanged) {
-                    iter.moveStability = 1;  // Reset stability counter
-                } else {
-                    // Same move as previous iteration - increment stability
-                    const IterationInfo& prevIter = info.getLastIteration();
-                    iter.moveStability = prevIter.moveStability + 1;
-                }
-            }
-            
-            iter.firstMoveFailHigh = false;
-            iter.failHighMoveIndex = -1;
-            iter.secondBestScore = eval::Score::minus_infinity();
-            
-            // Calculate branching factor if not first iteration
-            if (depth > 1 && info.hasIterations()) {
-                const IterationInfo& prevIter = info.getLastIteration();
-                if (prevIter.nodes > 0) {
-                    iter.branchingFactor = static_cast<double>(iter.nodes) / prevIter.nodes;
-                } else {
-                    iter.branchingFactor = 0.0;
-                }
-            } else {
-                iter.branchingFactor = 0.0;
-            }
-            
-            info.recordIteration(iter);
-            info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
-            previousBestMove = info.bestMove;  // Update for next iteration
-            previousScore = score;  // Save score for next iteration's aspiration window
-            
-            // Stage 22 Phase P3.5: Output PVS statistics if requested
-            if (limits.showPVSStats && info.pvsStats.scoutSearches > 0) {
-                std::cout << "info string PVS scout searches: " << info.pvsStats.scoutSearches << std::endl;
-                std::cout << "info string PVS re-searches: " << info.pvsStats.reSearches << std::endl;
-                std::cout << "info string PVS re-search rate: " 
-                          << std::fixed << std::setprecision(1)
-                          << info.pvsStats.reSearchRate() << "%" << std::endl;
-            }
-            
-            // Stage 23, Phase CM4.1: Enhanced countermove statistics
-            if (info.counterMoveStats.updates > 0 || info.counterMoveStats.hits > 0) {
-                double hitRate = info.counterMoveStats.updates > 0 
-                    ? (100.0 * info.counterMoveStats.hits / info.counterMoveStats.updates) 
-                    : 0.0;
-                std::cout << "info string Countermoves: updates=" << info.counterMoveStats.updates 
-                          << " hits=" << info.counterMoveStats.hits
-                          << " hitRate=" << std::fixed << std::setprecision(1) << hitRate << "%"
-                          << " bonus=" << info.countermoveBonus << std::endl;
-            }
-            
-            // Output detailed move ordering statistics at depth 5 and 10
-            if ((depth == 5 || depth == 10) && info.nodes > 1000) {
-                auto& stats = info.moveOrderingStats;
-                uint64_t totalCutoffs = stats.ttMoveCutoffs + stats.firstCaptureCutoffs + 
-                                       stats.killerCutoffs + stats.counterMoveCutoffs +
-                                       stats.quietCutoffs + stats.badCaptureCutoffs;
-                
-                // Always output stats for debugging
-                std::cout << "info string MoveOrdering: totalCutoffs=" << totalCutoffs 
-                          << " TT=" << stats.ttMoveCutoffs 
-                          << " Cap=" << stats.firstCaptureCutoffs
-                          << " Kill=" << stats.killerCutoffs 
-                          << " nodes=" << info.nodes << std::endl;
-                
-                if (totalCutoffs > 0) {
-                    std::cout << "info string MoveOrdering cutoffs: "
-                              << std::fixed << std::setprecision(1)
-                              << "TT=" << (100.0 * stats.ttMoveCutoffs / totalCutoffs) << "% "
-                              << "1stCap=" << (100.0 * stats.firstCaptureCutoffs / totalCutoffs) << "% "
-                              << "Killer=" << (100.0 * stats.killerCutoffs / totalCutoffs) << "% "
-                              << "Counter=" << (100.0 * stats.counterMoveCutoffs / totalCutoffs) << "% "
-                              << "Quiet=" << (100.0 * stats.quietCutoffs / totalCutoffs) << "% "
-                              << "BadCap=" << (100.0 * stats.badCaptureCutoffs / totalCutoffs) << "%" << std::endl;
-                    
-                    // Output cutoff distribution by move index
-                    std::cout << "info string Cutoff by index: ";
-                    for (int i = 0; i < 5; i++) {
-                        std::cout << "[" << i << "]=" << stats.cutoffDistribution(i) << "% ";
-                    }
-                    std::cout << "[5+]=" << (stats.cutoffDistribution(5) + stats.cutoffDistribution(6) + 
-                                             stats.cutoffDistribution(7) + stats.cutoffDistribution(8) +
-                                             stats.cutoffDistribution(9)) << "% "
-                              << "[10+]=" << stats.cutoffDistribution(10) << "%" << std::endl;
-                    
-                    // Output QxP and RxP statistics
-                    if (stats.qxpAttempts > 0 || stats.rxpAttempts > 0) {
-                        std::cout << "info string Bad captures: "
-                                  << "QxP=" << stats.qxpAttempts << " attempts (" 
-                                  << (stats.qxpAttempts > 0 ? (100.0 * stats.qxpCutoffs / stats.qxpAttempts) : 0.0) << "% cutoff) "
-                                  << "RxP=" << stats.rxpAttempts << " attempts ("
-                                  << (stats.rxpAttempts > 0 ? (100.0 * stats.rxpCutoffs / stats.rxpAttempts) : 0.0) << "% cutoff)" << std::endl;
-                    }
-                    
-                    // Output game phase distribution
-                    uint64_t totalPhaseNodes = stats.openingNodes + stats.middlegameNodes + stats.endgameNodes;
-                    if (totalPhaseNodes > 0) {
-                        std::cout << "info string Phase distribution: "
-                                  << "Opening=" << (100.0 * stats.openingNodes / totalPhaseNodes) << "% "
-                                  << "Middle=" << (100.0 * stats.middlegameNodes / totalPhaseNodes) << "% "
-                                  << "Endgame=" << (100.0 * stats.endgameNodes / totalPhaseNodes) << "%" << std::endl;
-                    }
-                    
-                    // MO2a: Output killer validation statistics
-                    if (stats.killerValidationAttempts > 0) {
-                        std::cout << "info string Killer validation: "
-                                  << stats.killerValidationAttempts << " attempts, "
-                                  << stats.killerValidationFailures << " illegal ("
-                                  << (100.0 * stats.killerValidationFailures / stats.killerValidationAttempts) << "% pollution rate)" << std::endl;
-                    }
-                }
-            }
-            
-            // Stage 13, Deliverable 2.2b: Dynamic time management
-            // Recalculate time limits based on current stability
-            double stabilityFactor = info.getStabilityFactor();
-            if (depth > 2 && stabilityFactor != 1.0) {  // Only adjust after depth 2
-                TimeLimits adjustedLimits = calculateTimeLimits(limits, board, stabilityFactor);
-                info.m_softLimit = adjustedLimits.soft.count();
-                // Don't change hard limit - it's a safety bound
-                
-                // Log stability-based adjustments
-                if (depth == 3 || depth == 5) {  // Log at specific depths to avoid spam
-                    std::cerr << "[Time Management] Depth " << depth 
-                              << ": stability=" << std::fixed << std::setprecision(1) 
-                              << stabilityFactor << ", adjusted soft=" 
-                              << info.m_softLimit << "ms\n";
-                }
-            }
-            
-            if (score.is_mate_score()) {
-                break;
-            }
-            
-            // Stage 13, Deliverable 4.2b: Enhanced early termination logic
-            // Skip time management for infinite searches
-            if (!limits.infinite && info.m_hardLimit > 0) {
-                // Use actual elapsed time, not cached (for accurate time management)
-                auto now = std::chrono::steady_clock::now();
-                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    now - info.startTime);
-                bool stable = info.isPositionStable();
-                
-                // Check if we should stop based on new time management
-                // Guard against max value issues
-                TimeLimits checkLimits;
-                checkLimits.soft = std::chrono::milliseconds(info.m_softLimit);
-                checkLimits.optimum = std::chrono::milliseconds(info.m_optimumTime);
-                // Protect against overflow when hardLimit is near max
-                if (info.m_hardLimit >= std::chrono::milliseconds::max().count() - 1000) {
-                    checkLimits.hard = std::chrono::milliseconds::max();
-                } else {
-                    checkLimits.hard = std::chrono::milliseconds(info.m_hardLimit);
-                }
-                
-                if (shouldStopOnTime(checkLimits, elapsed, depth, stable)) {
-                    std::cerr << "[Time Management] Stopping at depth " << depth 
-                              << " (elapsed=" << elapsed.count() << "ms, "
-                              << (stable ? "stable" : "unstable") << ")\n";
-                    break;
-                }
-                
-                // For depth-only searches, skip all time-based early termination decisions
-                if (!depthOnlySearch) {
-                    // Enhanced time prediction using sophisticated EBF
-                    double sophisticatedEBF = info.getSophisticatedEBF();
-                    if (sophisticatedEBF <= 0) {
-                        // Fall back to simple EBF or default
-                        sophisticatedEBF = iter.branchingFactor > 0 ? iter.branchingFactor : 5.0;
-                    }
-                    
-                    // Predict time for next iteration
-                    auto predictedTime = predictNextIterationTime(
-                        std::chrono::milliseconds(iterationTime),
-                        sophisticatedEBF,
-                        depth + 1
-                    );
-                    
-                    // Early termination decision factors:
-                    // 1. Would we exceed soft limit?
-                    // 2. Is position stable (less need for deeper search)?
-                    // 3. Have we reached reasonable depth?
-                    // 4. Is predicted time reasonable?
-                    
-                    bool exceedsSoftLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_softLimit);
-                    bool exceedsHardLimit = (elapsed + predictedTime) > std::chrono::milliseconds(info.m_hardLimit);
-                    bool reasonableDepth = depth >= 6;  // Minimum reasonable depth
-                    bool veryStable = stable && info.m_stabilityCount >= 3;
-                    
-                    // Decision logic:
-                    if (exceedsHardLimit) {
-                        // Never exceed hard limit
-                        std::cerr << "[Time Management] No time for depth " << (depth + 1)
-                                  << " (would exceed hard limit)\n";
-                        break;
-                    } else if (exceedsSoftLimit) {
-                        // Decide whether to exceed soft limit based on position characteristics
-                        if (veryStable || (stable && reasonableDepth)) {
-                            // Stop if position is very stable or stable at reasonable depth
-                            std::cerr << "[Time Management] No time for depth " << (depth + 1)
-                                      << " (would exceed soft limit, position stable/deep)\n";
-                            break;
-                        } else if (!stable && depth < 6) {
-                            // Continue if unstable and not too deep
-                            // This allows searching deeper in tactical positions
-                            std::cerr << "[Time Management] Continuing despite soft limit "
-                                      << "(depth=" << depth << ", unstable)\n";
-                        } else {
-                            // Default: stop at soft limit
-                            std::cerr << "[Time Management] No time for depth " << (depth + 1)
-                                      << " (would exceed soft limit)\n";
-                            break;
-                        }
-                    }
-                    
-                    // Additional early termination for very stable positions
-                    if (veryStable && depth >= 8 && predictedTime > std::chrono::milliseconds(2000)) {
-                        std::cerr << "[Time Management] Early termination at depth " << depth
-                                  << " (very stable, deep enough, next iteration expensive)\n";
-                        break;
-                    }
-                }
-            }
-        } else {
-            break;
-        }
-    }
-    
-    // Stage 15: Report final SEE pruning statistics after search completes
-    // Only report once at the end, not per iteration
-    if (info.seeStats.totalCaptures > 0) {
-        std::cout << "info string SEE pruning final: "
-                  << info.seeStats.seePruned << "/" << info.seeStats.totalCaptures
-                  << " captures pruned (" << std::fixed << std::setprecision(1) 
-                  << info.seeStats.pruneRate() << "%)";
-        
-        // Determine mode from statistics patterns
-        if (info.seeStats.conservativePrunes > 0 && info.seeStats.aggressivePrunes == 0) {
-            std::cout << " [Conservative mode]";
-        } else if (info.seeStats.aggressivePrunes > 0) {
-            std::cout << " [Aggressive mode]";
-            if (info.seeStats.equalExchangePrunes > 0) {
-                std::cout << ", equal exchanges: " << info.seeStats.equalExchangePrunes;
-            }
-        }
-        std::cout << std::endl;
-    }
-    
-    // Phase 2a.6c: Output move picker statistics if requested
-#ifdef SEARCH_STATS
-    if (limits.showMovePickerStats && limits.useRankedMovePicker) {
-        std::cout << "info string MovePickerStats:";
-        std::cout << " bestMoveRank: [1]=" << info.movePickerStats.bestMoveRank[0];
-        std::cout << " [2-5]=" << info.movePickerStats.bestMoveRank[1];
-        std::cout << " [6-10]=" << info.movePickerStats.bestMoveRank[2];
-        std::cout << " [11+]=" << info.movePickerStats.bestMoveRank[3];
-        std::cout << " shortlistHits=" << info.movePickerStats.shortlistHits;
-        std::cout << " SEE(lazy): calls=" << info.movePickerStats.seeCallsLazy;
-        std::cout << " captures=" << info.movePickerStats.capturesTotal;
-        std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
-        std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
-        std::cout << std::endl;
-    }
-#endif
-    
-    // B0: One-shot search summary (low overhead)
-    if (limits.showSearchStats or limits.showPVSStats) {
-        double ttHitRate = info.ttProbes > 0 ? (100.0 * info.ttHits / (double)info.ttProbes) : 0.0;
-        double pvsReRate = info.pvsStats.scoutSearches > 0 ? (100.0 * info.pvsStats.reSearches / (double)info.pvsStats.scoutSearches) : 0.0;
-        double nullRate = info.nullMoveStats.attempts > 0 ? (100.0 * info.nullMoveStats.cutoffs / (double)info.nullMoveStats.attempts) : 0.0;
-        std::cout << "info string SearchStats: depth=" << info.depth
-                  << " seldepth=" << info.seldepth
-                  << " nodes=" << info.nodes
-                  << " nps=" << info.nps()
-                  << " tt: probes=" << info.ttProbes
-                  << " hits=" << info.ttHits
-                  << " hit%=" << std::fixed << std::setprecision(1) << ttHitRate
-                  << " cutoffs=" << info.ttCutoffs
-                  << " stores=" << info.ttStores
-                  << " coll=" << info.ttCollisions
-                  << " pvs: scout=" << info.pvsStats.scoutSearches
-                  << " re%=" << std::fixed << std::setprecision(1) << pvsReRate
-                  << " null: att=" << info.nullMoveStats.attempts
-                  << " cut=" << info.nullMoveStats.cutoffs
-                  << " cut%=" << std::fixed << std::setprecision(1) << nullRate
-                  << " extra(cand=" << info.nullMoveStats.aggressiveCandidates
-                  << ",app=" << info.nullMoveStats.aggressiveApplied
-                  << ",blk=" << info.nullMoveStats.aggressiveBlockedByTT
-                  << ",sup=" << info.nullMoveStats.aggressiveSuppressed
-                  << ",cut=" << info.nullMoveStats.aggressiveCutoffs
-                  << ",vpass=" << info.nullMoveStats.aggressiveVerifyPasses
-                  << ",vfail=" << info.nullMoveStats.aggressiveVerifyFails
-                  << ",cap=" << info.nullMoveStats.aggressiveCapHits << ")"
-                  << " no-store=" << info.nullMoveStats.nullMoveNoStore
-                  << " static-cut=" << info.nullMoveStats.staticCutoffs
-                  << " static-no-store=" << info.nullMoveStats.staticNullNoStore
-                  << " prune: fut=" << info.futilityPruned
-                  << " mcp=" << info.moveCountPruned
-                  << " razor: att=" << info.razoring.attempts
-                  << " cut=" << info.razoring.cutoffs
-                  << " cut%=" << std::fixed << std::setprecision(1) 
-                  << (info.razoring.attempts > 0 ? 100.0 * info.razoring.cutoffs / info.razoring.attempts : 0.0)
-                  << " skips(tact=" << info.razoring.tacticalSkips
-                  << ",tt=" << info.razoring.ttContextSkips
-                  << ",eg=" << info.razoring.endgameSkips << ")"
-                  << " razor_b=[" << info.razoring.depthBuckets[0] << "," << info.razoring.depthBuckets[1] << "]"
-                  << " asp: att=" << info.aspiration.attempts
-                  << " low=" << info.aspiration.failLow
-                  << " high=" << info.aspiration.failHigh
-                  << " fut_b=[" << info.pruneBreakdown.futility[0] << "," << info.pruneBreakdown.futility[1]
-                  << "," << info.pruneBreakdown.futility[2] << "," << info.pruneBreakdown.futility[3] << "]"
-                  << " fut_eff_b=[" << info.pruneBreakdown.futilityEff[0] << "," << info.pruneBreakdown.futilityEff[1]
-                  << "," << info.pruneBreakdown.futilityEff[2] << "," << info.pruneBreakdown.futilityEff[3] << "]"
-                  << " mcp_b=[" << info.pruneBreakdown.moveCount[0] << "," << info.pruneBreakdown.moveCount[1]
-                  << "," << info.pruneBreakdown.moveCount[2] << "," << info.pruneBreakdown.moveCount[3] << "]"
-                  << " illegal: first=" << info.illegalPseudoBeforeFirst
-                  << " total=" << info.illegalPseudoTotal
-                  << " hist(apps=" << info.historyStats.totalApplications()
-                  << ",basic=" << info.historyStats.basicApplications
-                  << ",cmh=" << info.historyStats.counterApplications
-                  << ",first=" << info.historyStats.basicFirstMoveHits << "+" << info.historyStats.counterFirstMoveHits
-                  << ",cuts=" << info.historyStats.basicCutoffs << "+" << info.historyStats.counterCutoffs
-                  << ",re=" << info.historyStats.totalReSearches() << ")"
-                  << std::endl;
-    }
-    
-    // Node explosion diagnostics: Display collected statistics
-    if (limits.nodeExplosionDiagnostics) {
-        g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
-        g_nodeExplosionStats.reset();  // Reset for next search
-    }
-    
-return bestMove;
-}
-
-// Iterative deepening search controller (original)
-Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
-    // Debug output (removed in release builds)
-    #ifndef NDEBUG
-    std::cerr << "Search: Starting with maxDepth=" << limits.maxDepth << std::endl;
-    std::cerr << "Search: movetime=" << limits.movetime.count() << "ms" << std::endl;
-    #endif
-    
-    // Initialize search tracking
-    SearchInfo searchInfo;  // For repetition detection
-    searchInfo.clear();
-    searchInfo.setRootHistorySize(board.gameHistorySize());  // Capture current game history size
-    
-    SearchData info;  // For search statistics
-    
-    // PERFORMANCE FIX: Allocate move ordering tables on stack
-    // Same fix as in searchIterativeTest()
-    KillerMoves killerMoves;
-    HistoryHeuristic historyHeuristic;
-    CounterMoves counterMovesTable;
-    
-    // Phase 4.3.a: Allocate counter-move history on heap
-    std::unique_ptr<CounterMoveHistory> counterMoveHistoryPtr = std::make_unique<CounterMoveHistory>();
-    
-    // Connect pointers to stack-allocated objects
-    info.killers = &killerMoves;
-    info.history = &historyHeuristic;
-    info.counterMoves = &counterMovesTable;
-    info.counterMoveHistory = counterMoveHistoryPtr.get();
-    
-    // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
-    info.rootSideToMove = board.sideToMove();
-    
-    // Stage 20, Phase B3 Fix: Clear history only at search start,
-    // not between iterative deepening iterations
-    // History accumulates across ID iterations for better move ordering
-    
-    // Stage 14, Deliverable 1.8: Pass quiescence option to search
-    info.useQuiescence = limits.useQuiescence;
-    
-    // Stage 14 Remediation: Parse SEE modes once at search start to avoid hot path parsing
-    info.seePruningModeEnum = parseSEEPruningMode(limits.seePruningMode);
-    info.seePruningModeEnumQ = parseSEEPruningMode(limits.seePruningModeQ);
-    
-    // Stage 18: Initialize LMR parameters from limits
-    info.lmrParams.enabled = limits.lmrEnabled;
-    info.lmrParams.minDepth = limits.lmrMinDepth;
-    info.lmrParams.minMoveNumber = limits.lmrMinMoveNumber;
-    info.lmrParams.baseReduction = limits.lmrBaseReduction;
-    info.lmrParams.depthFactor = limits.lmrDepthFactor;
-    info.lmrParams.historyThreshold = limits.lmrHistoryThreshold;
-    info.lmrParams.pvReduction = limits.lmrPvReduction;
-    info.lmrParams.nonImprovingBonus = limits.lmrNonImprovingBonus;
-    info.lmrStats.reset();
-    
-    // Stage 13, Deliverable 2.2b: Use new time management in regular search too
-    TimeLimits timeLimits = calculateTimeLimits(limits, board, 1.0);
-    info.timeLimit = timeLimits.optimum;
-    // Phase 1a: Store soft and hard limits for better time management
-    auto softLimit = timeLimits.soft;
-    auto hardLimit = timeLimits.hard;
-    std::cerr << "Search: using NEW time management - optimum=" << info.timeLimit.count() << "ms" 
-              << ", soft=" << softLimit.count() << "ms"
-              << ", hard=" << hardLimit.count() << "ms" << std::endl;
-    
-    Move bestMove;
-    // Detect depth-only (fixed-depth) searches where no time controls are provided
-    const bool depthOnlySearch = (
-        limits.movetime == std::chrono::milliseconds(0) &&
-        limits.time[WHITE] == std::chrono::milliseconds(0) &&
-        limits.time[BLACK] == std::chrono::milliseconds(0)
-    );
-    
-    // Debug: Show search parameters (removed in release)
-    #ifndef NDEBUG
-    std::cerr << "Search: maxDepth=" << limits.maxDepth 
-              << " movetime=" << limits.movetime.count() 
-              << "ms" << std::endl;
-    #endif
-    
-    // Phase 1c: Track iteration times for EBF prediction
-    std::chrono::milliseconds lastIterationTime(0);
-    double lastEBF = 3.0;  // Conservative default EBF
-    
-    // Iterative deepening loop
-    for (int depth = 1; depth <= limits.maxDepth; depth++) {
-        // Check external stop flag before starting new iteration
-        if (limits.stopFlag && limits.stopFlag->load(std::memory_order_relaxed)) {
-            info.stopped = true;
-            break;
-        }
-        
-        info.depth = depth;
-        
-        // Track iteration start time
-        auto iterationStart = std::chrono::steady_clock::now();
-        
-        // Set search mode at depth 1
-        board.setSearchMode(true);
-#ifdef DEBUG
-        if (depth == 1) {
-            Board::resetCounters();
-        }
-#endif
-        
-        // Search with infinite window initially
-        eval::Score score = negamax(board, depth, 0,
-                                   eval::Score::minus_infinity(),
-                                   eval::Score::infinity(),
-                                   searchInfo, info, limits, tt,
-                                   nullptr);  // Phase PV1: Pass nullptr for now
-        
-        // Clear search mode after search
-        board.setSearchMode(false);
-        
-        // Only update best move if search completed
-        if (!info.stopped) {
-            bestMove = info.bestMove;
-            
-            // Send UCI info about this iteration
-            sendSearchInfo(info);
-            
-            // Phase 1c: Update iteration time and EBF for next iteration prediction
-            auto iterationEnd = std::chrono::steady_clock::now();
-            lastIterationTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                iterationEnd - iterationStart);
-            
-            // Get EBF from this iteration (if available)
-            double currentEBF = info.effectiveBranchingFactor();
-            if (currentEBF > 0) {
-                lastEBF = currentEBF;
-            }
-            
-            // Stop early if we found a mate
-            if (score.is_mate_score()) {
-                // If we found a mate, no need to search deeper
-                break;
-            }
-            
-            // Phase 1c: Use EBF prediction for time management
-            // Replace Phase 1b's simple soft limit check with intelligent prediction
-            // Skip time-based early termination for depth-only searches
-            if (!depthOnlySearch && hardLimit.count() > 0 && info.timeLimit != std::chrono::milliseconds::max()) {
-                auto elapsed = info.elapsed();
-                
-                // Never exceed hard limit
-                if (elapsed >= hardLimit) {
-                    std::cerr << "[Time Management] Stopping at depth " << depth 
-                              << " - reached hard limit (" << elapsed.count() << "ms >= " 
-                              << hardLimit.count() << "ms)\n";
-                    break;
-                }
-                
-                // Use EBF prediction to decide if we have time for next iteration
-                if (depth >= 2 && lastIterationTime.count() > 0) {
-                    // Predict time for next iteration using our sophisticated prediction function
-                    auto predictedNext = search::predictNextIterationTime(
-                        lastIterationTime, lastEBF, depth);
-                    
-                    // Don't start an iteration we can't finish
-                    if (elapsed + predictedNext > hardLimit) {
-                        std::cerr << "[Time Management] Stopping at depth " << depth 
-                                  << " - predicted next iteration (" << predictedNext.count() 
-                                  << "ms) would exceed hard limit (elapsed: " << elapsed.count() 
-                                  << "ms, hard: " << hardLimit.count() << "ms)\n";
-                        break;
-                    }
-                    
-                    // Use optimum time as a guideline, not a hard stop
-                    // Allow going over optimum if we predict we can complete another iteration
-                    if (elapsed > timeLimits.optimum && depth >= 8) {
-                        // At reasonable depth and past optimum time
-                        // Check if next iteration would take us well past optimum
-                        if (elapsed + predictedNext > timeLimits.optimum * 2) {
-                            std::cerr << "[Time Management] Stopping at depth " << depth 
-                                      << " - sufficient depth reached and next iteration would exceed 2x optimum\n";
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            // Time ran out during this iteration
-            break;
-        }
-    }
-    
-#ifdef DEBUG
-    // Print instrumentation counters at end of search - only in debug builds
-    Board::printCounters();
-#endif
-    
-    // Node explosion diagnostics: Display collected statistics
-    if (limits.nodeExplosionDiagnostics) {
-        g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
-        g_nodeExplosionStats.reset();  // Reset for next search
-    }
-    
-    // Return the best move found
-    // If no iterations completed, bestMove will be invalid
-    return bestMove;
-}
-
-// Calculate time allocation for this move
-std::chrono::milliseconds calculateTimeLimit(const SearchLimits& limits, 
-                                            const Board& board) {
-    // Fixed move time takes priority
-    if (limits.movetime > std::chrono::milliseconds(0)) {
-        return limits.movetime;
-    }
-    
-    // Infinite analysis mode
-    if (limits.infinite) {
-        return std::chrono::milliseconds::max();
-    }
-    
-    // Game time management
-    Color stm = board.sideToMove();
-    auto remaining = limits.time[stm];
-    
-    // If no time specified, use a default
-    if (remaining == std::chrono::milliseconds(0)) {
-        return std::chrono::milliseconds(5000);  // 5 seconds default
-    }
-    
-    // Simple time allocation:
-    // Use 5% of remaining time + 75% of increment
-    auto base = remaining / 20;  // 5% of remaining
-    auto increment = limits.inc[stm] * 3 / 4;  // 75% of increment
-    auto allocated = base + increment;
-    
-    // Apply safety bounds
-    // Minimum 5ms to do something
-    allocated = std::max(allocated, std::chrono::milliseconds(5));
-    
-    // Never use more than 25% of remaining time in one move
-    auto maxTime = remaining / 4;
-    allocated = std::min(allocated, maxTime);
-    
-    // Keep at least 50ms buffer
-    if (remaining > std::chrono::milliseconds(100)) {
-        allocated = std::min(allocated, remaining - std::chrono::milliseconds(50));
-    }
-    
-    return allocated;
-}
-
-// Send UCI info output
-void sendSearchInfo(const SearchData& info) {
-    std::cout << "info"
-              << " depth " << info.depth
-              << " seldepth " << info.seldepth;
-    
-    // Output score
-    if (info.bestScore.is_mate_score()) {
-        // Mate score - calculate moves to mate
-        int mateIn = 0;
-        if (info.bestScore > eval::Score::zero()) {
-            // We have a mate
-            mateIn = (eval::Score::mate().value() - info.bestScore.value() + 1) / 2;
-        } else {
-            // We are being mated
-            mateIn = -(eval::Score::mate().value() + info.bestScore.value()) / 2;
-        }
-        std::cout << " score mate " << mateIn;
-    } else {
-        std::cout << " score cp " << info.bestScore.to_cp();
-    }
-    
-    std::cout << " nodes " << info.nodes
-              << " nps " << info.nps()
-              << " time " << info.elapsed().count();
-    
-    // Add search efficiency statistics (only if we have beta cutoffs)
-    if (info.betaCutoffs > 0) {
-        std::cout << " ebf " << std::fixed << std::setprecision(2) 
-                  << info.effectiveBranchingFactor()
-                  << " moveeff " << std::fixed << std::setprecision(1)
-                  << info.moveOrderingEfficiency() << "%";
-    }
-    
-    // Add TT statistics if we have probes
-    if (info.ttProbes > 0) {
-        double hitRate = (100.0 * info.ttHits) / info.ttProbes;
-        std::cout << " tthits " << std::fixed << std::setprecision(1) << hitRate << "%";
-        if (info.ttCutoffs > 0) {
-            std::cout << " ttcuts " << info.ttCutoffs;
-        }
-        if (info.ttStores > 0) {
-            std::cout << " ttstores " << info.ttStores;
-        }
-    }
-    
-    // Output principal variation (just the best move for now)
-    // Bug #013 fix: Validate move is legal before outputting to prevent illegal PV moves
-    if (info.bestMove != Move()) {
-        // Quick validation - check that from and to squares are valid
-        Square from = moveFrom(info.bestMove);
-        Square to = moveTo(info.bestMove);
-        if (from < 64 && to < 64 && from != to) {
-            std::cout << " pv " << SafeMoveExecutor::moveToString(info.bestMove);
-        } else {
-            // Log warning about corrupted move but don't output it
-            std::cerr << "WARNING: Corrupted bestMove detected in sendUCIInfo: " 
-                      << std::hex << info.bestMove << std::dec << std::endl;
-        }
-    }
-    
-    std::cout << std::endl;
-}
-
-// Phase 1: Send current search info during a search (periodic updates)
-// Phase 5: Refactored to use InfoBuilder for cleaner construction
-void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt) {
-    uci::InfoBuilder builder;
-    
-    // Basic depth info
-    builder.appendDepth(info.depth, info.seldepth);
-    
-    // Score - UCI-compliant side-to-move perspective
-    builder.appendScore(info.bestScore, sideToMove);
-    
-    // Node statistics
-    builder.appendNodes(info.nodes)
-           .appendNps(info.nps())
-           .appendTime(info.elapsed().count());
-    
-    // Phase 4: Hashfull
-    if (tt) {
-        builder.appendHashfull(tt->hashfull());
-    }
-    
-    // Phase 2: Currmove info for long searches
-    if (info.currentRootMove != NO_MOVE && info.currentRootMoveNumber > 0) {
-        // Force accurate time calculation for periodic updates
-        auto now = std::chrono::steady_clock::now();
-        auto actualElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - info.startTime);
-        
-        // Show currmove after 3 seconds
-        if (actualElapsed.count() > 3000) {
-            builder.appendCurrmove(info.currentRootMove, info.currentRootMoveNumber);
-        }
-    }
-    
-    // Principal variation
-    if (info.bestMove != NO_MOVE) {
-        builder.appendPv(info.bestMove);
-    }
-    
-    std::cout << builder.build();
-}
-
-// Stage 13, Deliverable 5.1a: Enhanced UCI info output with iteration details
-// Phase 5: Refactored to use InfoBuilder for cleaner construction
-void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, TranspositionTable* tt, const TriangularPV* pv) {
-    uci::InfoBuilder builder;
-    
-    // Basic depth info
-    builder.appendDepth(info.depth, info.seldepth);
-    
-    // Score - UCI-compliant side-to-move perspective
-    builder.appendScore(info.bestScore, sideToMove);
-    
-    // Iteration-specific information
-    if (info.hasIterations()) {
-        const auto& lastIter = info.getLastIteration();
-        
-        // Stage 13, Deliverable 5.1b: Aspiration window reporting
-        if (lastIter.depth >= AspirationConstants::MIN_DEPTH) {
-            // Report window information
-            if (lastIter.windowAttempts > 0) {
-                // Window was used and there were re-searches
-                if (lastIter.failedHigh) {
-                    builder.appendString("fail-high(" + std::to_string(lastIter.windowAttempts) + ")");
-                } else if (lastIter.failedLow) {
-                    builder.appendString("fail-low(" + std::to_string(lastIter.windowAttempts) + ")");
-                }
-            }
-            
-            // Show window bounds for debugging (optional)
-            if (lastIter.alpha != eval::Score::minus_infinity() || 
-                lastIter.beta != eval::Score::infinity()) {
-                std::string boundStr = "[";
-                boundStr += (lastIter.alpha == eval::Score::minus_infinity() ? "-inf" : 
-                            std::to_string(lastIter.alpha.to_cp()));
-                boundStr += ",";
-                boundStr += (lastIter.beta == eval::Score::infinity() ? "inf" : 
-                            std::to_string(lastIter.beta.to_cp()));
-                boundStr += "]";
-                builder.appendCustom("bound", boundStr);
-            }
-        }
-        
-        // Stability indicator
-        if (info.getIterationCount() >= 3) {
-            if (info.isPositionStable()) {
-                builder.appendString("stable");
-            } else if (info.shouldExtendDueToInstability()) {
-                builder.appendString("unstable");
-            }
-        }
-        
-        // Effective branching factor from sophisticated calculation
-        double ebf = info.getSophisticatedEBF();
-        if (ebf > 0) {
-            builder.appendCustom("ebf", ebf);
-        }
-    }
-    
-    // Standard statistics
-    builder.appendNodes(info.nodes)
-           .appendNps(info.nps())
-           .appendTime(info.elapsed().count());
-    
-    // Move ordering efficiency
-    if (info.betaCutoffs > 0) {
-        builder.appendCustom("moveeff", info.moveOrderingEfficiency());
-    }
-    
-    // TT statistics
-    if (info.ttProbes > 0) {
-        double hitRate = (100.0 * info.ttHits) / info.ttProbes;
-        builder.appendCustom("tthits", hitRate);
-    }
-    
-    // Phase 4: Hashfull
-    if (tt) {
-        builder.appendHashfull(tt->hashfull());
-    }
-    
-    // Phase PV4: Output full principal variation
-    if (pv != nullptr && !pv->isEmpty(0)) {
-        // Extract full PV from root
-        std::vector<Move> pvMoves = pv->extractPV(0);
-        if (!pvMoves.empty()) {
-            // Validate moves and build clean PV
-            std::vector<Move> validPvMoves;
-            for (Move move : pvMoves) {
-                // Validate each move before adding
-                Square from = moveFrom(move);
-                Square to = moveTo(move);
-                if (from < 64 && to < 64 && from != to) {
-                    validPvMoves.push_back(move);
-                } else {
-                    // Stop if we hit a corrupted move
-                    break;
-                }
-            }
-            // Pass entire PV vector to builder (it will add "pv" once)
-            if (!validPvMoves.empty()) {
-                builder.appendPv(validPvMoves);
-            }
-        }
-    } else if (info.bestMove != Move()) {
-        // Fallback: Output just the best move if no PV available
-        // Bug #013 fix: Validate move is legal before outputting
-        Square from = moveFrom(info.bestMove);
-        Square to = moveTo(info.bestMove);
-        if (from < 64 && to < 64 && from != to) {
-            builder.appendPv(info.bestMove);
-        } else {
-            // Log warning about corrupted move but don't output it
-            std::cerr << "WARNING: Corrupted bestMove detected in sendIterationInfo: " 
-                      << std::hex << info.bestMove << std::dec << std::endl;
-        }
-    }
-    
-    std::cout << builder.build();
-}
-
-} // namespace seajay::search

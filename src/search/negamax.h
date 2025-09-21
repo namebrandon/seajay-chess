@@ -16,10 +16,11 @@ namespace seajay::search {
 // Forward declaration for PV tracking
 class TriangularPV;
 
-// Core negamax search function
+// Core negamax search functions
 // Returns the best score for the current position
 // Parameters:
 //   board - The current board position
+//   context - Search node descriptor (PV/root/excluded state)
 //   depth - Remaining search depth (in plies)
 //   ply   - Current distance from root (for mate score adjustment)
 //   alpha - Lower bound of the search window
@@ -29,8 +30,8 @@ class TriangularPV;
 //   limits - Search limits for quiescence node control
 //   tt    - Transposition table (can be nullptr)
 //   pv    - Principal variation array for move collection (can be nullptr)
-//   isPvNode - Whether this is a principal variation node (Phase P2)
 eval::Score negamax(Board& board, 
+                   NodeContext context,
                    int depth, 
                    int ply,
                    eval::Score alpha,
@@ -39,8 +40,26 @@ eval::Score negamax(Board& board,
                    SearchData& info,
                    const SearchLimits& limits,
                    TranspositionTable* tt = nullptr,
-                   TriangularPV* pv = nullptr,
-                   bool isPvNode = true);
+                   TriangularPV* pv = nullptr);
+
+// Legacy wrapper retained for staging purposes (Phase 6a.x)
+ALWAYS_INLINE eval::Score negamax(Board& board, 
+                                  int depth, 
+                                  int ply,
+                                  eval::Score alpha,
+                                  eval::Score beta,
+                                  SearchInfo& searchInfo,
+                                  SearchData& info,
+                                  const SearchLimits& limits,
+                                  TranspositionTable* tt = nullptr,
+                                  TriangularPV* pv = nullptr,
+                                  bool isPvNode = true) {
+    NodeContext context;
+    context.setRoot(ply == 0);
+    context.setPv(isPvNode);
+    context.clearExcluded();
+    return negamax(board, context, depth, ply, alpha, beta, searchInfo, info, limits, tt, pv);
+}
 
 // Iterative deepening search controller
 // Returns the best move found within the given limits

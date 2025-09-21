@@ -271,6 +271,8 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
+    std::cout << "option name UseSearchNodeAPIRefactor type check default true" << std::endl; // Phase 6 (default ON after Stage 6g)
+    std::cout << "option name EnableExcludedMoveParam type check default false" << std::endl; // Phase 6c (default OFF)
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -661,6 +663,8 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Phase 2b: Pass rank-aware gates option
     limits.useRankAwareGates = m_useRankAwareGates;
+    limits.useSearchNodeAPIRefactor = m_useSearchNodeAPIRefactor;
+    limits.enableExcludedMoveParam = m_enableExcludedMoveParam;
     limits.debugTrackedMoves = m_debugTrackedMoves;
     
     // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
@@ -1096,6 +1100,24 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useRankAwareGates = false;
             std::cerr << "info string Rank-aware pruning gates disabled" << std::endl;
+        }
+    }
+    else if (optionName == "UseSearchNodeAPIRefactor") {
+        if (value == "true") {
+            m_useSearchNodeAPIRefactor = true;
+            std::cerr << "info string Search Node API refactor enabled" << std::endl;
+        } else if (value == "false") {
+            m_useSearchNodeAPIRefactor = false;
+            std::cerr << "info string Search Node API refactor disabled" << std::endl;
+        }
+    }
+    else if (optionName == "EnableExcludedMoveParam") {
+        if (value == "true") {
+            m_enableExcludedMoveParam = true;
+            std::cerr << "info string Excluded move parameter threading enabled" << std::endl;
+        } else if (value == "false") {
+            m_enableExcludedMoveParam = false;
+            std::cerr << "info string Excluded move parameter threading disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)
