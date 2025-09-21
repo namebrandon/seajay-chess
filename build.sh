@@ -1,10 +1,9 @@
 #!/bin/bash
-# Build script for SeaJay Chess Engine - LOCAL DEVELOPMENT
+# Build script for SeaJay Chess Engine - CROSS-PLATFORM LOCAL DEVELOPMENT
 # =============================================================================
 # This script is for LOCAL DEVELOPMENT ONLY!
-# It uses conservative compiler flags for maximum compatibility.
-# 
-# For OpenBench builds, use: make (which uses AVX2/BMI2 for Ryzen 9 5950X)
+# It supports Linux/macOS as well as Windows (MSYS2/MinGW) environments.
+# For OpenBench builds, continue using: make (which applies AVX2/BMI2 tuning).
 # =============================================================================
 #
 # Usage: ./build.sh [Debug|Release]
@@ -14,15 +13,66 @@
 #   ./build.sh Debug            # Debug build with sanitizers
 #   ./build.sh Release          # Explicit release build
 
+set -euo pipefail
+
 BUILD_TYPE=${1:-Release}
+
+# Detect execution environment so we can apply Windows specific settings
+# when running under MSYS/MinGW shells.
+detect_environment() {
+    if [[ "${OSTYPE}" == "msys" ]] || [[ "${OSTYPE}" == "cygwin" ]] || [[ -n "${MSYSTEM:-}" ]]; then
+        case "${MSYSTEM:-}" in
+            MINGW64|MINGW32|UCRT64)
+                echo "mingw"
+                ;;
+            *)
+                echo "msys"
+                ;;
+        esac
+    elif [[ "${OSTYPE}" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "${OSTYPE}" == "linux-gnu"* ]]; then
+        echo "linux"
+    else
+        echo "unknown"
+    fi
+}
+
+ENVIRONMENT=$(detect_environment)
 
 echo "=========================================="
 echo "Building SeaJay Chess Engine"
-echo "Build Type: $BUILD_TYPE"
+echo "Build Type: ${BUILD_TYPE}"
+echo "Environment: ${ENVIRONMENT}"
 echo "=========================================="
 echo ""
 
-if [ "$BUILD_TYPE" == "Debug" ]; then
+case "${ENVIRONMENT}" in
+    msys)
+        echo "WARNING: Detected MSYS shell (POSIX layer)."
+        echo "For GUI compatible Windows binaries use the \"MSYS2 MinGW 64-bit\" shell."
+        echo "Continuing with MSYS build — binary may depend on msys-2.0.dll."
+        echo ""
+        ;;
+    mingw)
+        echo "WINDOWS BUILD (MinGW):"
+        echo "  - Static linking enabled for standalone seajay.exe"
+        echo "  - Compatible with Windows chess GUIs"
+        echo ""
+        ;;
+    macos)
+        echo "macOS build detected."
+        echo ""
+        ;;
+    linux)
+        echo "Linux build detected."
+        echo ""
+        ;;
+    *)
+        ;;
+esac
+
+if [[ "${BUILD_TYPE}" == "Debug" ]]; then
     echo "DEBUG BUILD:"
     echo "  - Debug symbols enabled"
     echo "  - Optimizations disabled"
@@ -35,35 +85,44 @@ else
     echo "  - Maximum performance"
     echo "  - Suitable for play and testing"
 fi
+
 echo ""
 
 mkdir -p build
 cd build
 
 # Clean if switching build types
-if [ -f CMakeCache.txt ]; then
+if [[ -f CMakeCache.txt ]]; then
     CURRENT_TYPE=$(grep CMAKE_BUILD_TYPE CMakeCache.txt | cut -d= -f2)
-    if [ "$CURRENT_TYPE" != "$BUILD_TYPE" ]; then
+    if [[ "${CURRENT_TYPE}" != "${BUILD_TYPE}" ]]; then
         echo "Switching build types - cleaning build..."
         rm -rf CMakeCache.txt CMakeFiles/
     fi
 fi
 
-# CRITICAL: Always use Make for OpenBench compatibility
-# Never use ninja even if available
+# Always use Makefiles for compatibility with OpenBench and to keep the
+# sequential -flto workaround consistent across platforms.
 echo "Using Make build system (OpenBench compatible)..."
 
 # Clear potentially problematic environment variables that could cause
-# illegal instruction errors on some systems
+# illegal instruction errors or interfere with LTO jobserver behaviour.
 unset CXXFLAGS
 unset CFLAGS
-
-# Ensure GNU make owns the jobserver descriptors so GCC LTO can schedule
-# its worker threads correctly. A prior MAKEFLAGS export (e.g. -jN)
-# without jobserver auth fds will make lto-wrapper crash, so clear it.
 unset MAKEFLAGS
 
-MAKEFLAGS= cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+EXTRA_CMAKE_ARGS=()
+if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
+    EXTRA_CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-static -static-libgcc -static-libstdc++")
+    EXTRA_CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-static")
+    echo "Applying Windows static linking flags..."
+fi
+
+CMAKE_ARGS=("-DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
+CMAKE_ARGS+=("${EXTRA_CMAKE_ARGS[@]}")
+CMAKE_ARGS+=("..")
+
+MAKEFLAGS= cmake "${CMAKE_ARGS[@]}"
+
 # Parallel builds currently trip GCC's LTO jobserver hand-off on this
 # environment (and on MSYS/MinGW). Running sequentially keeps the link
 # step stable and still finishes within a minute.
@@ -72,7 +131,20 @@ MAKEFLAGS= make seajay
 echo ""
 echo "=========================================="
 echo "Build complete!"
-echo "Binary: /workspace/bin/seajay"
+
+if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
+    echo "Binary: /workspace/bin/seajay.exe"
+    echo ""
+    echo "Windows notes:"
+    echo "  ✓ Static linking enabled for standalone executable"
+    echo "  ✓ Compatible with UCI chess GUIs"
+    if [[ "${ENVIRONMENT}" == "msys" ]]; then
+        echo "  ⚠ May require msys-2.0.dll if run outside MSYS shell"
+    fi
+else
+    echo "Binary: /workspace/bin/seajay"
+fi
+
 echo ""
 echo "Quiescence search node limits are now controlled via UCI:"
 echo "  setoption name QSearchNodeLimit value 0       # Unlimited (default)"
@@ -80,5 +152,9 @@ echo "  setoption name QSearchNodeLimit value 10000   # Testing mode equivalent"
 echo "  setoption name QSearchNodeLimit value 100000  # Tuning mode equivalent"
 echo ""
 echo "To verify build, run:"
-echo "  echo 'uci' | /workspace/bin/seajay"
+if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
+    echo "  echo 'uci' | /workspace/bin/seajay.exe"
+else
+    echo "  echo 'uci' | /workspace/bin/seajay"
+fi
 echo "=========================================="
