@@ -271,7 +271,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
-    std::cout << "option name UseSearchNodeAPIRefactor type check default false" << std::endl; // Phase 6 (default OFF)
+    std::cout << "option name UseSearchNodeAPIRefactor type check default true" << std::endl; // Phase 6 (default ON after Stage 6g)
     std::cout << "option name EnableExcludedMoveParam type check default false" << std::endl; // Phase 6c (default OFF)
     
     // Multi-threading option (stub for OpenBench compatibility)
