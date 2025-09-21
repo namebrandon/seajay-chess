@@ -21,8 +21,8 @@
 | 6b.3 - Helper propagation | Completed | d8e7c58 | 2350511 | LMR helpers now use NodeContext-aware wrappers; toggle OFF/ON benches match at 2350511 nodes. |
 | 6c - Excluded-move plumbing | Completed | dac2c68 | 2350511 | NodeContext drives excluded move toggle; legacy stack mirrors via `EnableExcludedMoveParam` (default OFF). |
 | 6d - Verification helper | Completed | c048813 | 2350511 | Verification helper scaffold merged; returns neutral score until singular logic arrives. |
-| 6e - TT hygiene review | In Progress | WIP | 2350511 | Tightening TT replacement guards to avoid NO_MOVE pollution; documentation refresh. |
-| 6f - PV clarity/root safety | Pending | - | - | Assert PV/root propagation invariants. |
+| 6e - TT hygiene review | Completed | 3ed5786 | 2350511 | Tightened TT replacement guards to avoid NO_MOVE pollution; documentation refreshed. |
+| 6f - PV clarity/root safety | In Progress | WIP | 2350511 | DEBUG asserts enforcing root/PV invariants and excluded move hygiene ahead of future features. |
 | 6g - Integration cleanup | Pending | - | - | Final toggles + documentation sweep. |
 
 ## Testing Summary
@@ -36,13 +36,15 @@
 | 6c | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added `EnableExcludedMoveParam` toggle; bench parity confirmed with both toggles OFF and ON (2350511 nodes). |
 | 6d | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | New verification helper compiles cleanly (NoOp); bench unchanged. |
 | 6e | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | TT hygiene guard adjustments; validated with bench parity. |
+| 6f | `cmake --build build --target seajay_core -- -j1` + `cmake --build build --target seajay -- -j1` | 2350511 | Added root/PV/excluded context asserts; bench parity confirmed. |
 
 ## Key Learnings / Risks
 - Build script reported a `buffer overflow detected` during static library link, but rerunning the single-threaded LTO link succeeds; continue monitoring toolchain instability.
 - `EnableExcludedMoveParam` toggle now mirrors NodeContext state into legacy telemetry without behavioural impact (default OFF).
 - Verification helper scaffold returns neutral score while feature remains disabled; stats counters only active in DEBUG builds.
 - TT replacement policy now explicitly preserves fresh move-carrying entries when incoming data is a shallow NO_MOVE heuristic, reducing pollution risk.
+- DEBUG-only NodeContext asserts now guard root invariants and prevent pruning logic from running when an excluded move is active.
 
 ## Next Actions
-1. Prepare Stage 6e merge notes once TT hygiene review is approved.
-2. Map follow-up experiments for TTEntry excluded-move caching once singular extensions require it.
+1. Finalize Stage 6f documentation and prep merge notes after validation completes.
+2. Plan Stage 6g rollout steps once PV/root safety asserts soak without issues.

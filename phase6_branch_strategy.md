@@ -60,8 +60,8 @@ git push
 | 6b.3 | feature/phase6-stage-6b3 | Completed | Optional | 2350511 | Thread context - helpers (LMR wrappers parity). |
 | 6c | feature/phase6-stage-6c | Completed | Required | 2350511 | Replace stack-based excluded checks with NodeContext + `EnableExcludedMoveParam` toggle |
 | 6d | feature/phase6-stage-6d | Completed | Not Required | 2350511 | Verification helper scaffold (NoOp) |
-| 6e | feature/phase6-stage-6e | In Progress | Not Required | 2350511 | TT hygiene guard refinements |
-| 6f | feature/phase6-stage-6f | Pending | Not Required | - | PV clarity |
+| 6e | feature/phase6-stage-6e | Completed | Not Required | 2350511 | TT hygiene guard refinements |
+| 6f | feature/phase6-stage-6f | In Progress | Not Required | 2350511 | PV clarity/root safety asserts |
 | 6g | feature/phase6-stage-6g | Pending | Required | - | Integration |
 
 ## Key Principles

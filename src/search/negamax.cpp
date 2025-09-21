@@ -219,6 +219,21 @@ eval::Score negamax(Board& board,
 
     const bool isPvNode = context.isPv();
 
+#ifdef DEBUG
+    if (ply == 0) {
+        assert(context.isRoot() && "Root context flag lost at ply 0");
+        assert(isPvNode && "Root node must be treated as PV");
+    } else {
+        assert(!context.isRoot() && "Non-root ply flagged as root in context");
+    }
+#endif
+
+#ifdef DEBUG
+    if (!isPvNode) {
+        assert(!context.hasExcludedMove() && "Excluded move should only appear on PV-like nodes in future stages");
+    }
+#endif
+
     // Debug output at root for deeper searches
     if (ply == 0 && depth >= 4 && !limits.suppressDebugOutput) {
         std::cerr << "Negamax: Starting search at depth " << depth << std::endl;
@@ -1130,6 +1145,10 @@ eval::Score negamax(Board& board,
             
             // Phase 2b.3: LMP rank gating - adjust limit based on move rank
             if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4 && depth <= 8) {
+#ifdef DEBUG
+                assert(!context.hasExcludedMove() &&
+                       "Rank-aware LMP gating should not run when an excluded move is active");
+#endif
                 // Get rank from picker if available, otherwise use moveCount as fallback
                 // Note: Using moveCount before legality check is an approximation
                 const int rank = rankedPicker ? rankedPicker->currentYieldIndex() : (moveCount + 1);
@@ -1239,6 +1258,10 @@ eval::Score negamax(Board& board,
         // Phase 2b.5: Capture SEE gating by rank
         if (limits.useRankAwareGates && !isPvNode && ply > 0 && !weAreInCheck && depth >= 4
             && isCapture(move) && !isPromotion(move)) {
+#ifdef DEBUG
+            assert(!context.hasExcludedMove() &&
+                   "Rank-aware capture gating should not run when an excluded move is active");
+#endif
             
             // Check exemptions: TT move, killers, countermoves, recaptures
             bool isTTMove = (move == ttMove);
@@ -1293,6 +1316,10 @@ eval::Score negamax(Board& board,
         bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
 
         if (pendingMoveCountPrune && !givesCheckMove && !wasCaptureMove) {
+#ifdef DEBUG
+            assert(!context.hasExcludedMove() &&
+                   "Move count pruning should bypass nodes with excluded move context");
+#endif
             info.moveCountPruned++;
             info.pruneBreakdown.moveCount[pendingMoveCountDepthBucket]++;
 
@@ -1328,7 +1355,7 @@ eval::Score negamax(Board& board,
             info.rankGates.tried[bucket]++;
         }
 #endif
-        
+
         // Push position to search stack after we know move is legal
         searchInfo.pushSearchPosition(board.zobristKey(), move, ply);
 
@@ -1349,7 +1376,10 @@ eval::Score negamax(Board& board,
                               info.counterMoves->getCounterMove(prevMove) == move);
         // Determine whether the CHILD would be a PV node: at a PV parent, only the first legal move is PV
         bool childIsPV = (isPvNode && legalMoveCount == 1);
-        const NodeContext childContext = makeChildContext(context, childIsPV);
+        NodeContext childContext = makeChildContext(context, childIsPV);
+#ifdef DEBUG
+        childContext.clearExcluded();
+#endif
 #ifdef DEBUG
         assert(!childContext.isRoot() && "Child context should never retain root flag");
         assert(childContext.isPv() == childIsPV && "Child context PV flag mismatch");
@@ -1362,6 +1392,10 @@ eval::Score negamax(Board& board,
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
             && !isKillerMove && !isCounterMove) {
+#ifdef DEBUG
+            assert(!context.hasExcludedMove() &&
+                   "Futility pruning should bypass nodes with excluded move context");
+#endif
             
             // Calculate what reduction this move would get from LMR
             int reduction = 0;
