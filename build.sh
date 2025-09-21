@@ -113,12 +113,19 @@ unset CMAKE_GENERATOR
 unset CMAKE_GENERATOR_TOOLSET
 unset CMAKE_GENERATOR_INSTANCE
 
-MAKE_CMD="make"
+if command -v make >/dev/null 2>&1; then
+    MAKE_CMD="$(command -v make)"
+else
+    MAKE_CMD="make"
+fi
+
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
     if command -v mingw32-make >/dev/null 2>&1; then
-        MAKE_CMD="mingw32-make"
+        MAKE_CMD="$(command -v mingw32-make)"
     fi
 fi
+
+MAKE_CMD_NAME="$(basename "${MAKE_CMD}")"
 
 EXTRA_CMAKE_ARGS=()
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
@@ -145,7 +152,7 @@ MAKEFLAGS= cmake -G "${GENERATOR}" "${CMAKE_ARGS[@]}"
 # Parallel builds currently trip GCC's LTO jobserver hand-off on this
 # environment (and on MSYS/MinGW). Running sequentially keeps the link
 # step stable and still finishes within a minute.
-MAKEFLAGS= ${MAKE_CMD} seajay
+MAKEFLAGS= "${MAKE_CMD}" seajay
 
 echo ""
 echo "=========================================="
