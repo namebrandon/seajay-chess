@@ -20,7 +20,7 @@ struct SearchStack {
     int moveCount = 0;         // Number of moves searched at this node
     bool isPvNode = false;      // Track if this is a PV node (Phase P1)
     int searchedMoves = 0;      // Count of moves already searched (Phase P1)
-    Move excludedMove = NO_MOVE; // Move to exclude in singular search
+    Move excludedMove = NO_MOVE; // Move to exclude in singular search (legacy scaffolding - TODO(Phase6): remove after NodeContext rollout)
     bool gaveCheck = false;      // Whether the move leading to this node delivered check
 };
 
@@ -189,7 +189,7 @@ public:
         return 0;
     }
     
-    // Singular extension support: excluded move management
+    // Singular extension support: excluded move management (legacy - TODO(Phase6): remove after NodeContext rollout)
     void setExcludedMove(int ply, Move move) {
         if (ply >= 0 && ply < MAX_PLY) {
             m_searchStack[ply].excludedMove = move;

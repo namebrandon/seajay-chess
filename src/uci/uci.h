@@ -166,6 +166,7 @@ private:
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
     bool m_useSearchNodeAPIRefactor = false; // Phase 6: NodeContext plumbing (default OFF)
+    bool m_enableExcludedMoveParam = false;   // Phase 6c: Excluded move parameter plumbing (default OFF)
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
