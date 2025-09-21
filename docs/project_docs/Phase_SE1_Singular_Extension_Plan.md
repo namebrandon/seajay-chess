@@ -21,7 +21,7 @@
 - **Pre-flight TODO:**
   - Audit `SearchInfo` and `NodeContext` to ensure no lingering legacy `excludedMove` usage once SE1 begins.
   - Confirm quiescence path ignores singular logic (per guardrails).
-  - Establish NPS regression threshold: Maximum 2% loss acceptable per stage
+  - Establish NPS regression guidelines: aim to stay within a 2% loss per stage; deviations up to 5% are acceptable only with explicit justification, logging, and a documented rollback trigger
 
 ## 2.5 Thread Safety Requirements
 - **Thread-local data (no synchronization needed):**
@@ -29,27 +29,41 @@
   - Extension depth tracking per thread
   - Verification search scratch space (reuse existing thread-local infrastructure)
   - Move ordering scratch buffers
+  - **Stack overflow guard:** Thread-local `max_extension_depth` counter (hard limit 32)
+  - **Verification recursion budget:** Separate from main search to prevent interference
 - **Shared data (requires synchronization):**
   - TranspositionTable entries (existing atomic operations)
   - Global feature toggles (read-only after UCI initialization)
   - Global statistics aggregation (atomic counters for reporting)
+  - **Performance note:** Use `alignas(64)` for atomic counters to prevent false sharing
 - **Memory ordering guarantees:**
-  - TT reads use acquire semantics (existing implementation)
-  - TT writes use release semantics (existing implementation)
-  - Stats aggregation uses relaxed ordering (performance counters only)
+  - TT reads use `memory_order_acquire` (existing implementation)
+  - TT writes use `memory_order_release` (existing implementation)
+  - Stats aggregation uses `memory_order_relaxed` (performance counters only)
+  - **Critical:** Verification search must NOT use `memory_order_seq_cst` anywhere
 - **LazySMP compatibility:**
-  - All per-thread data must use thread_local storage
+  - All per-thread data must use thread_local storage with `alignas(64)` for cache alignment
   - No assumptions about thread count or search tree sharing
   - Extension budgets tracked per-thread to avoid cross-thread interference
+  - **TT contamination prevention:** Verification searches mark entries with `EXCLUSION_VERIFIED` flag
+  - **Helper thread coordination:** Main thread aggregates stats only at UCI info intervals (not per-node)
+- **C++20 Implementation Notes:**
+  - Use `std::atomic_ref` for stats aggregation to avoid atomic overhead in single-threaded mode
+  - Consider `std::latch` for synchronizing stats collection across threads
+  - Apply `[[likely]]`/`[[unlikely]]` attributes for extension decision branches
 
 ## 3. Risk Register & Mitigations
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| False positives trigger frequent singular re-search causing 3-5% NPS loss | High | Tune TT quality threshold, require multi-criteria gating (depth >= 4, TT exact hit, move ordering stability). |
-| Interactions with existing check extension cause double-extensions leading to search explosion | High | Add extension-budget tracking per node; temporarily disable check extension during SE1 testing if necessary. |
-| TT pollution from low-depth verification search | Medium | Store verification results in separate TT bucket or avoid storing altogether; mark entries with exclusion bit. |
-| Verification helper diverges from main search parameters | Medium | Share search limits/time budget struct; unit test verification vs baseline search for identical parameters except excluded move. |
-| Increased code complexity without sufficient observability | Medium | Add DEBUG counters (`singularAttempts`, `singularVerified`, `singularExtensionsApplied`), log under `SearchStats`. |
+| False positives trigger frequent singular re-search causing 3-5% NPS loss | High | Tune TT quality threshold, require multi-criteria gating (depth >= 4, TT exact hit, move ordering stability). **Performance:** Early-exit with `[[likely]]` branch hints when depth < threshold. |
+| Interactions with existing check extension cause double-extensions leading to search explosion | High | Add extension-budget tracking per node; temporarily disable check extension during SE1 testing if necessary. **Stack safety:** Hard limit total extensions to 32 ply with compile-time assert. |
+| TT pollution from low-depth verification search | Medium | Store verification results in separate TT bucket or avoid storing altogether; mark entries with exclusion bit. **Performance:** Use dedicated 16-bit exclusion hash to avoid full TT probe. |
+| Verification helper diverges from main search parameters | Medium | Share search limits/time budget struct; unit test verification vs baseline search for identical parameters except excluded move. **C++20:** Use concepts to enforce parameter compatibility. |
+| Increased code complexity without sufficient observability | Medium | Add DEBUG counters (`singularAttempts`, `singularVerified`, `singularExtensionsApplied`), log under `SearchStats`. **Performance:** Use conditional compilation to completely eliminate stats in Release builds. |
+| Integer overflow in score calculations with extreme margins | Medium | Add compile-time bounds checking with `std::numeric_limits`. Use saturating arithmetic for score operations. **C++23:** Consider `std::saturate_cast` when available. |
+| Cache line bouncing between threads accessing shared TT | High | Ensure TT entries are cache-aligned (64 bytes). Consider NUMA-aware allocation for large TT. **Performance:** Prefetch TT entries with `__builtin_prefetch` before verification. |
+| Compiler fails to inline critical path functions | High | Force inline with `__attribute__((always_inline))` for hot path. Profile-guided optimization (PGO) required for production builds. **C++20:** Use `[[gnu::always_inline]]` attribute. |
+| Memory allocation during search causing stalls | High | All verification structures must be pre-allocated in thread-local storage. Zero dynamic allocation permitted in search loop. **C++17:** Use `pmr::monotonic_buffer_resource` for scratch space. |
 
 ## 4. Staged Implementation Plan
 Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft spot-check, commit with `bench XXXXX`. SPRT bounds default to `[-3.00, 3.00]` unless noted. **NPS must be tracked and remain within 2% of baseline unless explicitly noted.**
@@ -69,11 +83,38 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 - **SE0.1a – Thread-local telemetry structure**
   - Add thread-local `SingularStats` struct to `SearchData`
   - Implement fields: `candidates_examined`, `verifications_started`, `extensions_applied`
+  - **C++20 Implementation:**
+    ```cpp
+    struct alignas(64) SingularStats {  // Cache line aligned
+        std::uint64_t candidates_examined{0};
+        std::uint64_t verifications_started{0};
+        std::uint64_t extensions_applied{0};
+        std::uint32_t max_extension_depth{0};
+        std::uint32_t verification_cache_hits{0};
+    };
+    ```
+  - Use `[[no_unique_address]]` for zero-overhead when disabled
   - Expected NPS impact: < 0.1% (struct allocation only)
   - SPRT: Bench parity verification
 - **SE0.1b – Global aggregation infrastructure**
   - Add atomic global counters for cross-thread statistics
   - Implement aggregation in UCI info output (thread 0 only)
+  - **Performance-critical implementation:**
+    ```cpp
+    struct alignas(64) GlobalSingularStats {
+        std::atomic<std::uint64_t> total_examined{0};
+        std::atomic<std::uint64_t> total_verified{0};
+        std::atomic<std::uint64_t> total_extended{0};
+
+        void aggregate(const SingularStats& local) noexcept {
+            total_examined.fetch_add(local.candidates_examined, std::memory_order_relaxed);
+            total_verified.fetch_add(local.verifications_started, std::memory_order_relaxed);
+            total_extended.fetch_add(local.extensions_applied, std::memory_order_relaxed);
+        }
+    };
+    ```
+  - Only aggregate at UCI info intervals (every 1000ms), not per-node
+  - Use `std::atomic_ref` in single-threaded mode to eliminate overhead
   - Expected NPS impact: < 0.2% (atomic reads on info output)
   - SPRT: Bench parity verification
 - **SE0.2a – UCI toggle exposure**
@@ -95,6 +136,22 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement `verify_exclusion` function skeleton that returns zero (no-op)
   - Add toggle guard: early return if `UseSingularExtensions == false`
   - Wire up stats tracking (increment `bypassed` counter)
+  - **C++20 Implementation with branch prediction:**
+    ```cpp
+    [[nodiscard]] inline Score verify_exclusion(
+        SearchData& data,
+        Board& board,
+        Move excluded_move,
+        Score beta,
+        Depth depth) noexcept {
+
+        if (!UseSingularExtensions) [[unlikely]] {
+            return SCORE_ZERO;
+        }
+        // Implementation continues...
+    }
+    ```
+  - Force inline with `__attribute__((always_inline))` in Release builds
   - Expected NPS impact: 0% (no-op function)
   - SPRT: Bench parity
 - **SE1.1b – Depth reduction calculation**
@@ -107,6 +164,16 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement null-window calculation: `[beta - 1, beta]`
   - Add fail-soft clamping to ensure valid window
   - Prepare childContext with excluded move flag set
+  - **Overflow-safe implementation:**
+    ```cpp
+    constexpr Score clamp_score(Score s) noexcept {
+        return std::clamp(s, -SCORE_MATE + MAX_PLY, SCORE_MATE - MAX_PLY);
+    }
+
+    const Score singular_alpha = clamp_score(beta - 1);
+    const Score singular_beta = beta;  // Already validated
+    ```
+  - Use `std::bit_cast` for type-safe score manipulation if needed
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE1.1d – Negamax recursion hookup**
@@ -118,6 +185,17 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 - **SE1.2a – TT store policy decision**
   - Implement `NO_STORE` flag for verification searches
   - Add dedicated TT flag bit for "verified under exclusion"
+  - **Memory-efficient TT marking:**
+    ```cpp
+    enum TTFlags : std::uint8_t {
+        TT_EXACT = 1 << 0,
+        TT_UPPER = 1 << 1,
+        TT_LOWER = 1 << 2,
+        TT_EXCLUSION = 1 << 3,  // Mark verification entries
+        TT_NO_STORE = 1 << 4    // Prevent storage
+    };
+    ```
+  - Consider using 16-bit partial hash for exclusion verification cache
   - Expected NPS impact: 0%
 - **SE1.2b – TT contamination guards**
   - Add instrumentation to verify main TT entry unchanged
@@ -129,12 +207,46 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement TT probe for current position
   - Check depth >= `singularDepthMin` (initially 8)
   - Verify TT entry has EXACT flag and valid best move
+  - **Optimized TT probe with prefetch:**
+    ```cpp
+    // Prefetch TT entry early in parent node
+    __builtin_prefetch(&tt[pos.hash() & tt_mask], 0, 1);
+
+    // Later, actual probe with branch prediction
+    if [[likely]](auto* entry = tt.probe(pos.hash())) {
+        if [[likely]](entry->depth() >= singular_depth_min &&
+                     entry->flags() & TT_EXACT &&
+                     entry->best_move() != MOVE_NONE) {
+            // Candidate found
+        }
+    }
+    ```
+  - Use compiler intrinsics for hash computation if available
   - Expected NPS impact: < 0.5% (TT probe overhead)
   - SPRT: Bench parity
 - **SE2.1b – Score margin calculation**
   - Implement `singularMargin(depth)` function
   - Initial table: `{depth>=8: 60cp, depth>=6: 80cp, else: 100cp}`
   - Calculate `singularBeta = ttScore - singularMargin(depth)`
+  - **Compile-time lookup table:**
+    ```cpp
+    template<std::size_t MaxDepth = 64>
+    struct SingularMargins {
+        static constexpr std::array<Score, MaxDepth> generate() noexcept {
+            std::array<Score, MaxDepth> margins{};
+            for (std::size_t d = 0; d < MaxDepth; ++d) {
+                margins[d] = d >= 8 ? 60 : (d >= 6 ? 80 : 100);
+            }
+            return margins;
+        }
+        static constexpr auto table = generate();
+    };
+
+    [[nodiscard]] constexpr Score singular_margin(Depth d) noexcept {
+        return SingularMargins<>::table[std::min(d, 63)];
+    }
+    ```
+  - Saturating subtraction to prevent underflow
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE2.1c – Move validation and qualification**
@@ -159,6 +271,27 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Add thread-local `extensionBudget` to SearchInfo (max 16 ply total)
   - Implement per-thread extension depth counter
   - Add overflow protection (stop extending at budget limit)
+  - **Stack-safe extension tracking:**
+    ```cpp
+    struct ExtensionTracker {
+        static constexpr Depth MAX_TOTAL_EXTENSIONS = 32;
+        static constexpr Depth MAX_SINGULAR_EXTENSIONS = 16;
+
+        std::uint32_t total_extensions{0};
+        std::uint32_t singular_extensions{0};
+
+        [[nodiscard]] bool can_extend() const noexcept {
+            return total_extensions < MAX_TOTAL_EXTENSIONS;
+        }
+
+        void apply_extension(Depth amount = 1) noexcept {
+            total_extensions = std::min(total_extensions + amount,
+                                       MAX_TOTAL_EXTENSIONS);
+        }
+    };
+    static_assert(ExtensionTracker::MAX_TOTAL_EXTENSIONS <= MAX_PLY / 2);
+    ```
+  - Use `std::hardware_destructive_interference_size` for padding
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE3.1b – Extension interaction rules**
@@ -188,6 +321,27 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Add `UseSingularExtensions` bool (default false)
   - Add `SingularDepthMin` int (default 8, range 4-20)
   - Add `SingularMarginBase` int (default 60, range 20-200)
+  - **C++20 Configuration with concepts:**
+    ```cpp
+    template<typename T>
+    concept TunableParameter = std::integral<T> && sizeof(T) <= 8;
+
+    template<TunableParameter T>
+    struct Parameter {
+        T value;
+        T min_value;
+        T max_value;
+        std::string_view name;
+
+        constexpr bool validate() const noexcept {
+            return value >= min_value && value <= max_value;
+        }
+    };
+
+    // Compile-time validation
+    constexpr Parameter<Depth> singular_depth_min{8, 4, 20, "SingularDepthMin"};
+    static_assert(singular_depth_min.validate());
+    ```
   - Expected NPS impact: 0% (configuration only)
 - **SE4.1b – Advanced tuning parameters**
   - Add `SingularVerificationReduction` int (default 3, range 2-5)
@@ -210,6 +364,11 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Run perft suite with `UseSingularExtensions=true`
   - Verify node counts match baseline (extensions don't affect perft)
   - Test positions from Section 8 at depth 6
+  - **Performance profiling requirements:**
+    - Profile with `perf record -g` on Linux
+    - Check CPU cache misses with `perf stat -e cache-misses`
+    - Verify no unexpected allocations with `heaptrack`
+    - Measure branch mispredictions: target < 1% on extension decisions
   - Expected NPS impact: -5% to -10% (extensions active)
 - **SE5.1b – Time-to-depth validation**
   - Run 100-position suite at 10s/move
@@ -244,9 +403,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 
 ## 5. Branching & Workflow
 - **Main feature branch:** `feature/20250921-singular-extension-plan`
-- **Sub-stage branches:** Create from main feature branch for each sub-stage
-  - Example: `feature/20250921-se0-1a-telemetry`
-  - Merge back to feature branch after SPRT pass
+- **Sub-stage branches:** Create dedicated branch per sub-stage (e.g., `feature/SE1-se0-1a-telemetry`)
+  - Each branch must carry an OpenBench SPRT (or bench parity) against `feature/20250921-singular-extension-plan`
+  - Merge back to the integration branch only after a PASS verdict (or documented neutral result for no-op stages)
+- **Integration workflow:** Treat `feature/20250921-singular-extension-plan` as the SE1 integration branch; do not rebase once sub-stage work lands to preserve SPRT history
 - **Commit message format:**
   ```
   feat(SE1): [Stage X.Ya] Description - bench NNNNNNN
@@ -281,9 +441,9 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 
 ## 7. Toggle Management Strategy
 After Phase 6 validation and SE1 completion, simplify toggle structure:
-- **Phase 6 toggles (to be removed after SE1 stability):**
-  - `UseSearchNodeAPIRefactor` - Set true permanently, remove toggle
-  - `EnableExcludedMoveParam` - Set true permanently, remove toggle
+- **Phase 6 toggles (retain through SE1 validation):**
+  - `UseSearchNodeAPIRefactor` - Keep exposed until Stage SE5 completes and SPRT/rollback criteria documented
+  - `EnableExcludedMoveParam` - Same retention policy as above
 - **Production toggles (remain for tuning):**
   - `UseSingularExtensions` - Main feature toggle
   - `SingularDepthMin` - Tunable parameter (default 8)
@@ -327,6 +487,21 @@ Create automated performance regression suite:
 - Depth parity: Must maintain same depth at fixed time (10s)
 - Node count: Bench must remain deterministic when feature disabled
 - Memory usage: Track peak memory, should not increase > 1%
+- **C++ Performance Checklist:**
+  ```cpp
+  // Compile-time performance assertions
+  static_assert(sizeof(SingularStats) <= 64);  // Single cache line
+  static_assert(std::is_trivially_copyable_v<NodeContext>);
+  static_assert(alignof(SearchData) >= 64);  // Cache aligned
+
+  // Runtime performance validation
+  assert(reinterpret_cast<uintptr_t>(&search_data) % 64 == 0);
+  ```
+- **Compiler optimization validation:**
+  - Verify `-march=native -mtune=native` for production builds
+  - Enable PGO (Profile-Guided Optimization) for final builds
+  - Check assembly for hot paths: no unnecessary memory barriers
+  - Validate vectorization of margin calculations
 
 ## 10. Follow-Up Work
 - Stage SE2 tuning sweeps (SingularMargin table) once initial enablement stable
@@ -334,6 +509,22 @@ Create automated performance regression suite:
 - Prepare Phase MC1 (multi-cut) leveraging same verification API
 - Consider double/triple extensions for extremely singular moves (depth > 20)
 
+## 11. C++20/23 Migration Opportunities
+Future enhancements when compiler support improves:
+- **C++20 Modules:** Isolate singular extension logic in module for better compilation times
+- **C++20 Coroutines:** Consider for verification search to reduce stack usage
+- **C++23 `std::mdspan`:** For efficient multi-dimensional parameter tables
+- **C++23 `std::expected`:** For error handling in verification searches
+- **C++23 `std::flat_map`:** For move-to-extension mapping if needed
+- **C++23 `[[assume]]`:** For optimizer hints on extension conditions
+
+## 12. SIMD Optimization Opportunities
+Potential vectorization targets:
+- Batch margin calculations for multiple depths
+- Parallel score adjustments in verification
+- SIMD-friendly move generation filtering
+- Consider AVX-512 VPOPCNT for bitboard operations if available
+
 ---
 
-**Next Action:** Kick off Stage SE-1.1 baseline performance capture on current branch, then proceed to SE0.1a telemetry scaffolding on dedicated feature sub-branch.
+**Next Action:** Kick off Stage SE0.1a telemetry scaffolding on dedicated sub-branch (baseline performance capture handled in Stage SE0.1).
