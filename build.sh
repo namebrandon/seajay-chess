@@ -113,10 +113,18 @@ unset CMAKE_GENERATOR
 unset CMAKE_GENERATOR_TOOLSET
 unset CMAKE_GENERATOR_INSTANCE
 
+MAKE_CMD="make"
+if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
+    if command -v mingw32-make >/dev/null 2>&1; then
+        MAKE_CMD="mingw32-make"
+    fi
+fi
+
 EXTRA_CMAKE_ARGS=()
 if [[ "${ENVIRONMENT}" == "mingw" ]] || [[ "${ENVIRONMENT}" == "msys" ]]; then
     EXTRA_CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-static -static-libgcc -static-libstdc++")
     EXTRA_CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-static")
+    EXTRA_CMAKE_ARGS+=("-DCMAKE_MAKE_PROGRAM=${MAKE_CMD}")
     echo "Applying Windows static linking flags..."
 fi
 
@@ -137,7 +145,7 @@ MAKEFLAGS= cmake -G "${GENERATOR}" "${CMAKE_ARGS[@]}"
 # Parallel builds currently trip GCC's LTO jobserver hand-off on this
 # environment (and on MSYS/MinGW). Running sequentially keeps the link
 # step stable and still finishes within a minute.
-MAKEFLAGS= make seajay
+MAKEFLAGS= ${MAKE_CMD} seajay
 
 echo ""
 echo "=========================================="
