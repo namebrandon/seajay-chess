@@ -1362,14 +1362,25 @@ eval::Score negamax(Board& board,
                 bool givesCheck = false;  // Actual check handling below via clamp
                 bool pvNode = isPvNode;
 
-                if (shouldReduceMove(move, depth, moveCount, captureMove,
-                                    weAreInCheck, givesCheck, pvNode,
-                                    *info.killers, *info.history,
-                                    *info.counterMoves, prevMove,
-                                    ply, board.sideToMove(),
-                                    info.lmrParams)) {
+                bool allowReduction = limits.useSearchNodeAPIRefactor
+                    ? shouldReduceMove(move, depth, moveCount, captureMove,
+                                       weAreInCheck, givesCheck, context,
+                                       *info.killers, *info.history,
+                                       *info.counterMoves, prevMove,
+                                       ply, board.sideToMove(),
+                                       info.lmrParams)
+                    : shouldReduceMove(move, depth, moveCount, captureMove,
+                                       weAreInCheck, givesCheck, pvNode,
+                                       *info.killers, *info.history,
+                                       *info.counterMoves, prevMove,
+                                       ply, board.sideToMove(),
+                                       info.lmrParams);
+
+                if (allowReduction) {
                     bool improving = false;
-                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+                    reduction = limits.useSearchNodeAPIRefactor
+                        ? getLMRReduction(depth, moveCount, info.lmrParams, context, improving)
+                        : getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
 
                     if (givesCheckMove && reduction > 0) {
                         const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
@@ -1527,18 +1538,29 @@ eval::Score negamax(Board& board,
                 bool pvNode = isPvNode;   // Phase P3: Use actual PV status
                 
                 // Check if we should reduce this move with improved conditions
-                if (shouldReduceMove(move, depth, moveCount, captureMove, 
-                                    weAreInCheck, givesCheck, pvNode, 
-                                    *info.killers, *info.history, 
-                                    *info.counterMoves, prevMove,
-                                    ply, board.sideToMove(),
-                                    info.lmrParams)) {
+                bool allowReduction = limits.useSearchNodeAPIRefactor
+                    ? shouldReduceMove(move, depth, moveCount, captureMove,
+                                       weAreInCheck, givesCheck, context,
+                                       *info.killers, *info.history,
+                                       *info.counterMoves, prevMove,
+                                       ply, board.sideToMove(),
+                                       info.lmrParams)
+                    : shouldReduceMove(move, depth, moveCount, captureMove,
+                                       weAreInCheck, givesCheck, pvNode,
+                                       *info.killers, *info.history,
+                                       *info.counterMoves, prevMove,
+                                       ply, board.sideToMove(),
+                                       info.lmrParams);
+
+                if (allowReduction) {
                     // Calculate reduction amount
                     // For now, assume not improving to be conservative
                     // (future enhancement: track eval history for proper improving detection)
                     bool improving = false; // Conservative: assume not improving
-                    
-                    reduction = getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
+
+                    reduction = limits.useSearchNodeAPIRefactor
+                        ? getLMRReduction(depth, moveCount, info.lmrParams, context, improving)
+                        : getLMRReduction(depth, moveCount, info.lmrParams, pvNode, improving);
 
                     if (givesCheckMove && reduction > 0) {
                         const int rankForClamp = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
@@ -1610,7 +1632,9 @@ eval::Score negamax(Board& board,
                     if (applySmoothing && reduction > 0) {
                         // Subtract 1 from any extra reduction added by rank bucket
                         // Do not go below baseline reduction (i.e., the non-rank-aware reduction)
-                        int baseReduction = getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
+                        int baseReduction = limits.useSearchNodeAPIRefactor
+                            ? getLMRReduction(depth, moveCount, info.lmrParams, context, false)
+                            : getLMRReduction(depth, moveCount, info.lmrParams, isPvNode, false);
                         reduction = std::max(baseReduction - 1, reduction - 1);
                         appliedReduction = reduction;
                         if (debugTrackedMove) {
