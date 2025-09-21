@@ -566,34 +566,54 @@ int UCIEngine::SearchParams::calculateSearchTime(Color sideToMove) const {
 }
 
 void UCIEngine::stopSearch() {
-    // Signal stop to any running search
-    m_stopRequested.store(true, std::memory_order_relaxed);
-    
-    // Wait for search thread to finish if it's running
-    if (m_searchThread.joinable()) {
-        m_searchThread.join();
+    std::unique_ptr<std::thread> threadToJoin;
+
+    {
+        std::lock_guard<std::mutex> lock(m_searchMutex);
+
+        m_stopRequested.store(true, std::memory_order_relaxed);
+
+        if (m_searchThread && m_searchThread->joinable()) {
+            threadToJoin = std::move(m_searchThread);
+        }
     }
-    
+
+    if (threadToJoin && threadToJoin->joinable()) {
+        threadToJoin->join();
+    }
+
+    m_stopRequested.store(false, std::memory_order_relaxed);
     m_searching.store(false, std::memory_order_relaxed);
 }
 
 void UCIEngine::search(const SearchParams& params) {
     // Stop any previous search
     stopSearch();
-    
+
     // Reset stop flag for new search
-    m_stopRequested.store(false, std::memory_order_relaxed);
-    
-    // Start search in separate thread for proper stop handling
-    m_searching.store(true, std::memory_order_relaxed);
-    m_searchThread = std::thread(&UCIEngine::searchThreadFunc, this, params);
-    
-    // For non-infinite searches, wait for completion
-    // Infinite searches will continue running until stop command
+    {
+        std::lock_guard<std::mutex> lock(m_searchMutex);
+        m_stopRequested.store(false, std::memory_order_relaxed);
+        m_searchThread = std::make_unique<std::thread>(&UCIEngine::searchThreadFunc, this, params);
+        m_searching.store(true, std::memory_order_relaxed);
+    }
+
+    // For non-infinite searches, wait for completion synchronously
     if (!params.infinite) {
-        if (m_searchThread.joinable()) {
-            m_searchThread.join();
+        std::unique_ptr<std::thread> threadToJoin;
+
+        {
+            std::lock_guard<std::mutex> lock(m_searchMutex);
+
+            if (m_searchThread && m_searchThread->joinable()) {
+                threadToJoin = std::move(m_searchThread);
+            }
         }
+
+        if (threadToJoin && threadToJoin->joinable()) {
+            threadToJoin->join();
+        }
+
         m_searching.store(false, std::memory_order_relaxed);
     }
 }

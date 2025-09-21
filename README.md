@@ -90,26 +90,56 @@ SeaJay is written in C++ and can be compiled on Windows, Linux, and macOS.
 ```
   The binary will be created at ./bin/seajay
 
-#### Windows
+#### Windows (MSYS2 MinGW/UCRT64)
 
-  Option 1: MinGW/MSYS2 with Make
-  ```bash
-  git clone https://github.com/nameBrandon/seajay-chess.git
-  cd seajay-chess
-  mingw32-make         # Or just 'make' if using MSYS2
-  ```
-  Option 2: Visual Studio with CMake
+SeaJay currently builds reliably on Windows through the MSYS2 UCRT64 environment. These steps assume a fresh MSYS2 install.
 
-  ```bash
-  git clone https://github.com/nameBrandon/seajay-chess.git
-  cd seajay-chess
-  mkdir build
-  cd build
-  cmake -G "Visual Studio 17 2022" ..
-  cmake --build . --config Release
-  ```
+1. Launch **MSYS2 UCRT64** (not MSYS or MINGW32).
+2. Install the required toolchain packages (safe to re-run to pick up updates):
+   ```bash
+   pacman -S --needed \
+       base base-devel git cmake python \
+       mingw-w64-ucrt-x86_64-{binutils,cmake,gcc,gcc-libgfortran,gdb,gdb-multiarch,make,ninja,pkgconf,tools-git,winpthreads,winstorecompat-git}
+   ```
+   The development machine that validated the Windows fix also had the following packages available:
+   ```
+   base 2022.06-1
+   base-devel 2024.11-1
+   cmake 4.1.1-1
+   filesystem 2025.05.08-2
+   gcc 15.2.0-1
+   git 2.51.0-1
+   mingw-w64-ucrt-x86_64-binutils 2.45-2
+   mingw-w64-ucrt-x86_64-crt-git 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-gcc 15.2.0-8
+   mingw-w64-ucrt-x86_64-gcc-libgfortran 15.2.0-8
+   mingw-w64-ucrt-x86_64-gdb 16.3-1
+   mingw-w64-ucrt-x86_64-gdb-multiarch 16.3-1
+   mingw-w64-ucrt-x86_64-headers-git 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-libmangle-git 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-libwinpthread 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-make 4.4.1-3
+   mingw-w64-ucrt-x86_64-ninja 1.13.1-1
+   mingw-w64-ucrt-x86_64-pkgconf 1~2.5.1-1
+   mingw-w64-ucrt-x86_64-tools-git 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-winpthreads 13.0.0.r167.g2e31630bc-1
+   mingw-w64-ucrt-x86_64-winstorecompat-git 13.0.0.r167.g2e31630bc-1
+   mingw-w64-x86_64-cmake 4.1.1-1
+   mingw-w64-x86_64-gcc 15.2.0-8
+   mingw-w64-x86_64-make 4.4.1-3
+   mingw-w64-x86_64-ninja 1.13.1-1
+   msys2-runtime 3.6.4-1
+   python 3.12.11-1
+   ```
+3. Build with the provided helper script (wraps CMake/Make for you):
+   ```bash
+   git clone https://github.com/nameBrandon/seajay-chess.git
+   cd seajay-chess
+   ./build.sh Release   # or ./build.sh Debug
+   ```
+   The script emits the final binary to `bin/seajay.exe` so the layout matches Linux/macOS installs.
 
-Or open the solution in Visual Studio and build.
+❗ At this time Visual Studio/MSVC builds are not supported. The project leans on GCC/MinGW behaviour and the MSVC toolchain currently fails on a number of headers (e.g. `__attribute__((always_inline))` usage in `magic_bitboards.h`). Use the MSYS2 MinGW route above instead of Visual Studio.
 
 #### OpenBench Specific
 
@@ -199,4 +229,3 @@ For questions, suggestions, or discussions about SeaJay and AI-assisted developm
 - Find me on Discord on the Engine Programming or OpenBench servers.
 
 ------
-
