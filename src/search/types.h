@@ -170,7 +170,7 @@ struct SearchLimits {
     bool useRankAwareGates = true;        // Enable rank-aware pruning/reduction gates (default ON for integration)
 
     // Phase 6: Search Node API refactor toggle (default OFF)
-    bool useSearchNodeAPIRefactor = false;
+    bool useSearchNodeAPIRefactor = true;
     bool enableExcludedMoveParam = false; // Phase 6c: Thread excluded move via NodeContext (default OFF)
 
     // Debug instrumentation: track specific moves through the search pipeline

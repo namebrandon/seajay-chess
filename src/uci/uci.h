@@ -165,7 +165,7 @@ private:
     bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
-    bool m_useSearchNodeAPIRefactor = false; // Phase 6: NodeContext plumbing (default OFF)
+    bool m_useSearchNodeAPIRefactor = true; // Phase 6: NodeContext plumbing (default ON after Stage 6g)
     bool m_enableExcludedMoveParam = false;   // Phase 6c: Excluded move parameter plumbing (default OFF)
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
