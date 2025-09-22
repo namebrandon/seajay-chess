@@ -54,6 +54,8 @@ Feature_Name_Phase_X.Y
 Example: PP1, PP2, PP3a, PP3b
 ```
 
+- When a feature plan specifies stage identifiers (e.g., `SE0.1a`), prepend the feature name so commit messages read `SingularExtension_Phase_SE0.1a` and documentation stays in sync across artifacts.
+
 ### 3. Development Workflow
 
 #### For Each Phase:
@@ -72,10 +74,14 @@ Example: PP1, PP2, PP3a, PP3b
    ```bash
    # Run benchmark
    echo "bench" | ./bin/seajay | grep "Benchmark complete"
-   
+
    # Test specific positions if applicable
    # Validate with Stockfish when needed
    echo -e "position fen [FEN]\neval\nquit" | ./external/engines/stockfish/stockfish
+
+   # Capture NPS / bench telemetry per machine
+   echo "bench" | ./bin/seajay | grep "Benchmark complete" | awk '{print $4}' > /tmp/bench_nodes.txt
+   # Record raw NPS for each relevant thread count and normalize by the bench node count for cross-hardware comparisons
    ```
 
 3. **Commit Protocol**

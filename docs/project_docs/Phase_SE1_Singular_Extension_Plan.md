@@ -8,6 +8,11 @@
   - Establish diagnostics and tuning hooks for future multi-cut / probcut work.
 - **Out of Scope:** LazySMP coordination changes, multi-cut/probcut enablement, or evaluation feature work.
 
+### 1.1 Phase Naming & Reporting Contract
+- All execution phases follow the feature-guideline naming `SingularExtension_Phase_SEX.Y` to keep commit messages, status updates, and `feature_status.md` entries consistent. Example: Stage `SE0.1a` in this plan maps to `SingularExtension_Phase_SE0.1a` in commits and documentation.
+- Every phase report includes `bench <nodes>` lines, per-machine telemetry (see §2 Baseline Metrics), and a reference to the corresponding section in this document.
+- When new sub-stages are added, update this plan and the feature tracking document in lockstep to avoid divergent terminology.
+
 ## 2. Dependencies & Baseline
 - **Required toggles before Phase SE1:**
   - `UseSearchNodeAPIRefactor = true`
@@ -16,12 +21,21 @@
 - **Baseline Metrics:**
   - Capture bench (Release, Linux) and depth parity traces with toggles ON but singular logic disabled.
   - Collect search telemetry on TT hit rates, singular candidate frequency, and existing extension counts.
-  - **NPS Baseline:** Document current NPS across thread counts (1, 2, 4, 8 threads)
-  - **Depth Baseline:** Record depth reached at fixed time (e.g., 10s) on standard test suite
+  - Record per-machine NPS alongside the matching `bench` node count so we can normalize (`NPS / bench_nodes`) when comparing hardware.
+  - **Depth Baseline:** Record depth reached at fixed time (e.g., 10s) on standard test suite.
+  - **Telemetry Template:**
+
+    | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
+    |---------|---------------|-------------|---------|---------|-------------------------------|------------|----------|-------|
+    | Desktop | `main@<sha>`  | 19191913    | 1/2/4/8 | 1.75M…  | 0.091…                        | 43         | 68%      | Idle workload |
+    | Laptop  | `main@<sha>`  | 14200000    | 1/2/4   | 1.10M…  | 0.078…                        | 38         | 64%      | On battery |
+
+    Capture one row per thread-count configuration; annotate anomalies (e.g., background load) so later phases can filter noisy data.
 - **Pre-flight TODO:**
   - Audit `SearchInfo` and `NodeContext` to ensure no lingering legacy `excludedMove` usage once SE1 begins.
   - Confirm quiescence path ignores singular logic (per guardrails).
-  - Establish NPS regression guidelines: aim to stay within a 2% loss per stage; deviations up to 5% are acceptable only with explicit justification, logging, and a documented rollback trigger
+  - Establish NPS regression guidelines: aim to stay within a 2% loss per stage; deviations up to 5% are acceptable only with explicit justification, logging, and a documented rollback trigger.
+  - Verify UCI toggles exist (`UseSearchNodeAPIRefactor`, `EnableExcludedMoveParam`, `UseSingularExtensions`) and document their defaults in release notes prior to SE0.1 kickoff.
 
 ## 2.5 Thread Safety Requirements
 - **Thread-local data (no synchronization needed):**
@@ -450,6 +464,10 @@ After Phase 6 validation and SE1 completion, simplify toggle structure:
   - `SingularMarginBase` - Tunable parameter (default 60)
   - `DisableCheckDuringSingular` - A/B testing toggle
   - `AllowStackedExtensions` - Future enhancement toggle
+- **UCI defaults checkpoint:** Confirmed in `src/uci/uci.cpp` as of 2025-09:
+  - `UseSearchNodeAPIRefactor` → `check` option, default `true`
+  - `EnableExcludedMoveParam` → `check` option, default `false`
+  - `UseSingularExtensions` → **to be added during SE1**; ensure default `false` and document once live
 
 ## 8. Test Positions for Validation
 Key positions for singular extension validation:

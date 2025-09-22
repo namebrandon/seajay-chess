@@ -339,6 +339,41 @@ struct SearchData {
         }
     } lmrStats;
     
+    // Stage SE0.1a: Singular extension telemetry (thread-local)
+    struct alignas(64) SingularStats {
+        uint64_t candidatesExamined = 0;      // Candidate moves evaluated for singularity
+        uint64_t verificationsStarted = 0;    // Verification searches launched
+        uint64_t extensionsApplied = 0;       // Singular extensions successfully applied
+        uint32_t maxExtensionDepth = 0;       // Maximum depth reached with stacked extensions
+        uint32_t verificationCacheHits = 0;   // Cache hits in verification helpers
+
+        void reset() noexcept {
+            candidatesExamined = 0;
+            verificationsStarted = 0;
+            extensionsApplied = 0;
+            maxExtensionDepth = 0;
+            verificationCacheHits = 0;
+        }
+    };
+
+    static_assert(alignof(SingularStats) == 64, "SingularStats must remain cache aligned");
+
+    // Prefer [[no_unique_address]] when available to eliminate padding in builds where
+    // telemetry is compiled out entirely.
+#if defined(__has_cpp_attribute)
+#  if __has_cpp_attribute(no_unique_address)
+#    define CJ_NO_UNIQUE_ADDR [[no_unique_address]]
+#  else
+#    define CJ_NO_UNIQUE_ADDR
+#  endif
+#else
+#  define CJ_NO_UNIQUE_ADDR
+#endif
+
+    CJ_NO_UNIQUE_ADDR SingularStats singularStats{}; // Thread-local stats (zero-overhead when unused)
+
+#undef CJ_NO_UNIQUE_ADDR
+
     // Stage 21: Null Move Pruning statistics
     struct NullMoveStats {
         uint64_t attempts = 0;            // Total null move attempts
@@ -820,6 +855,7 @@ struct SearchData {
         deltasPruned = 0;
         qsearchNodesLimited = 0;
         qsearchTTHits = 0;
+        singularStats.reset();
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
         nullMoveStats.reset();  // Stage 21: Reset null move statistics
