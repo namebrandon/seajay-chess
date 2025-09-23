@@ -38,21 +38,6 @@ namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
 constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
 
-struct ExcludedMoveGuard {
-    SearchInfo& info;
-    int ply;
-    Move previous;
-    bool shouldRestore;
-
-    ExcludedMoveGuard(SearchInfo& info, int ply, Move previous, bool shouldRestore)
-        : info(info), ply(ply), previous(previous), shouldRestore(shouldRestore) {}
-
-    ~ExcludedMoveGuard() {
-        if (shouldRestore) {
-            info.setExcludedMove(ply, previous);
-        }
-    }
-};
 }
 
 
@@ -314,18 +299,6 @@ eval::Score negamax(Board& board,
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
     // Stage 6c: Mirror NodeContext excluded value for legacy stack consumers (TODO: remove after Phase 6 rollout)
-    const Move legacyExcluded = limits.enableExcludedMoveParam ? context.excludedMove() : NO_MOVE;
-    Move previousExcluded = searchInfo.getExcludedMove(ply);
-#ifdef DEBUG
-    if (legacyExcluded != NO_MOVE) {
-        assert(limits.enableExcludedMoveParam && "Excluded move requires EnableExcludedMoveParam toggle");
-        assert(limits.useSingularExtensions && "Excluded move requires UseSingularExtensions toggle");
-    }
-    assert(previousExcluded == NO_MOVE && "Unexpected stale excluded move at this ply");
-#endif
-    searchInfo.setExcludedMove(ply, legacyExcluded);
-    const bool restoreExcluded = previousExcluded != legacyExcluded;
-    ExcludedMoveGuard excludedGuard(searchInfo, ply, previousExcluded, restoreExcluded);
 #ifdef DEBUG
     if (legacyExcluded != NO_MOVE) {
         assert(ply > 0 && "Root node should never mark an excluded move");
