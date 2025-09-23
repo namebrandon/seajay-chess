@@ -151,6 +151,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement `verify_exclusion` function skeleton that returns zero (no-op)
   - Add toggle guard: early return if `UseSingularExtensions == false`
   - Wire up stats tracking (increment `bypassed` counter)
+  - Status: Completed on 2025-09-23 (bench parity 2350511)
   - **C++20 Implementation with branch prediction:**
     ```cpp
     [[nodiscard]] inline Score verify_exclusion(

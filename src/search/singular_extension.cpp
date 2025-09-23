@@ -8,50 +8,6 @@
 
 namespace seajay::search {
 
-namespace {
-    template<bool EnableSingular>
-    ALWAYS_INLINE eval::Score verify_exclusion_impl(
-        Board& board,
-        NodeContext context,
-        int depth,
-        eval::Score alpha,
-        eval::Score beta,
-        SearchInfo& searchInfo,
-        SearchData& searchData,
-        const SearchLimits& limits,
-        TranspositionTable* tt,
-        TriangularPV* pv,
-        SingularVerifyStats* stats) {
-        (void)board;
-        (void)context;
-        (void)depth;
-        (void)alpha;
-        (void)beta;
-        (void)searchInfo;
-        (void)searchData;
-        (void)limits;
-        (void)tt;
-        (void)pv;
-        if constexpr (!EnableSingular) {
-#ifdef DEBUG
-            if (stats) {
-                stats->bypassed++;
-            }
-#endif
-            return eval::Score::zero();
-        } else {
-#ifdef DEBUG
-            if (stats) {
-                stats->invoked++;
-            }
-#endif
-            // Future implementation will reuse negamax with reduced depth and narrow window
-            // For now, return neutral score to preserve NoOp behaviour
-            return eval::Score::zero();
-        }
-    }
-} // namespace
-
 eval::Score verify_exclusion(
     Board& board,
     NodeContext context,
@@ -64,20 +20,35 @@ eval::Score verify_exclusion(
     TranspositionTable* tt,
     TriangularPV* pv,
     SingularVerifyStats* stats) {
-    constexpr bool kSingularEnabled = false;
-    return verify_exclusion_impl<kSingularEnabled>(
-        board,
-        context,
-        depth,
-        alpha,
-        beta,
-        searchInfo,
-        searchData,
-        limits,
-        tt,
-        pv,
-        stats);
+    (void)board;
+    (void)context;
+    (void)depth;
+    (void)alpha;
+    (void)beta;
+    (void)searchInfo;
+    (void)searchData;
+    (void)tt;
+    (void)pv;
+
+    const bool singularDisabled = !limits.useSingularExtensions;
+    const bool excludedParamDisabled = !limits.enableExcludedMoveParam;
+    if ((singularDisabled || excludedParamDisabled)) [[unlikely]] {
+#ifdef DEBUG
+        if (stats) {
+            stats->bypassed++;
+        }
+#endif
+        return eval::Score::zero();
+    }
+
+#ifdef DEBUG
+    if (stats) {
+        stats->invoked++;
+    }
+#endif
+
+    // Stage SE1.1a: Skeleton helper – full verification search will land in later stages.
+    return eval::Score::zero();
 }
 
 } // namespace seajay::search
-

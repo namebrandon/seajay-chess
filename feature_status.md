@@ -7,7 +7,7 @@
 
 ## Timeline
 - Start Date: 2025-09-21
-- Current Branch: `feature/20250921-se02a-toggle`
+- Current Branch: `feature/SE1-se1-1a-verify-skeleton`
 - Base Commit: `76c574d347452ed2069e08e9fac6afe063bc8d87`
 - Bench Baseline (Release, Desktop): TBC after Stage SE0.1 telemetry capture
 
@@ -19,6 +19,7 @@
 | SingularExtension_Phase_SE0.2a – UCI toggle exposure | Completed | HEAD | 2350511 | `UseSingularExtensions` wired through UCI → SearchLimits → SearchData with telemetry/reporting gated behind the toggle. |
 | SingularExtension_Phase_SE0.2b – Defensive assertions | Completed | 95229b3 | 2350511 | RAII guard + DEBUG asserts ensure excluded move lifecycle stays clean on all negamax exit paths. |
 | SingularExtension_Phase_SE0.3 – Legacy cleanup | Completed | 0fab434 | 2350511 | Removed SearchInfo excluded-move plumbing; NodeContext now exclusively manages lifecycle. |
+| SingularExtension_Phase_SE1.1a – Verification helper skeleton | Completed | HEAD | 2350511 | `verify_exclusion` now guards on `UseSingularExtensions`/`EnableExcludedMoveParam` and logs bypass/invoked counts in DEBUG. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -32,6 +33,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Capture quick bench with `UseSingularExtensions=true` to confirm parity before SE0.2b.
-2. Draft defensive assertion coverage plan for SE0.2b.
-3. Refresh public docs/release notes with new toggle description prior to enabling feature work.
+1. Design depth reduction clamp logic for SE1.1b prior to coding.
+2. Outline null-window setup requirements for SE1.1c in deferred tracker.
+3. Document TT store policy decisions ahead of SE1.2a implementation.
