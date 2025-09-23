@@ -30,6 +30,7 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <string>
 
 namespace seajay::search {
 
@@ -285,6 +286,7 @@ eval::Score negamax(Board& board,
             auto* iterativeInfo = static_cast<IterativeSearchData*>(&info);
             if (iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
                 // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
+                iterativeInfo->flushSingularTelemetry(false);
                 sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);
                 iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
             }
@@ -2285,6 +2287,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             // Phase 6: Always send info at iteration completion and record it
             // Phase PV4: Pass root PV arena for full principal variation display
             // UCI Score Conversion FIX: Use root side-to-move, not current position's side
+            info.flushSingularTelemetry(false);
             sendIterationInfo(info, info.rootSideToMove, tt, &info.rootPV());
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
@@ -2640,6 +2643,16 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << ",cuts=" << info.historyStats.basicCutoffs << "+" << info.historyStats.counterCutoffs
                   << ",re=" << info.historyStats.totalReSearches() << ")"
                   << std::endl;
+
+        const auto singularTotals = info.singularTotals().snapshot();
+        if (!singularTotals.empty()) {
+            std::cout << "info string SingularStats: examined=" << singularTotals.candidatesExamined
+                      << " verified=" << singularTotals.verificationsStarted
+                      << " extended=" << singularTotals.extensionsApplied
+                      << " cacheHits=" << singularTotals.verificationCacheHits
+                      << " maxDepth=" << singularTotals.maxExtensionDepth
+                      << std::endl;
+        }
     }
     
     // Node explosion diagnostics: Display collected statistics
@@ -2647,8 +2660,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
         g_nodeExplosionStats.reset();  // Reset for next search
     }
-    
-return bestMove;
+
+    info.flushSingularTelemetry(false);
+    return bestMove;
 }
 
 // Iterative deepening search controller (original)
@@ -2848,7 +2862,7 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
         g_nodeExplosionStats.displayStats(info.nodes, info.qsearchNodes);
         g_nodeExplosionStats.reset();  // Reset for next search
     }
-    
+
     // Return the best move found
     // If no iterations completed, bestMove will be invalid
     return bestMove;
@@ -2999,7 +3013,20 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
     if (info.bestMove != NO_MOVE) {
         builder.appendPv(info.bestMove);
     }
-    
+
+    const auto singularTotals = info.singularTotals().snapshot();
+    if (!singularTotals.empty()) {
+        builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+        builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
+        builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
+        if (singularTotals.verificationCacheHits > 0) {
+            builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
+        }
+        if (singularTotals.maxExtensionDepth > 0) {
+            builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+        }
+    }
+
     std::cout << builder.build();
 }
 
@@ -3064,7 +3091,20 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
     builder.appendNodes(info.nodes)
            .appendNps(info.nps())
            .appendTime(info.elapsed().count());
-    
+
+    const auto singularTotals = info.singularTotals().snapshot();
+    if (!singularTotals.empty()) {
+        builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+        builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
+        builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
+        if (singularTotals.verificationCacheHits > 0) {
+            builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
+        }
+        if (singularTotals.maxExtensionDepth > 0) {
+            builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+        }
+    }
+
     // Move ordering efficiency
     if (info.betaCutoffs > 0) {
         builder.appendCustom("moveeff", info.moveOrderingEfficiency());

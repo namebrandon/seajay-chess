@@ -37,7 +37,7 @@ public:
     // Public data members (skeleton only - no logic yet)
     std::array<IterationInfo, MAX_ITERATIONS> m_iterations{};  // Iteration history
     size_t m_iterationCount{0};                                // Number of completed iterations
-    
+
     // Time management fields (for Phase 2)
     TimeMs m_softLimit{0};      // Soft time limit (can be exceeded if unstable)
     TimeMs m_hardLimit{0};      // Hard time limit (never exceed)
@@ -58,7 +58,8 @@ public:
     std::chrono::steady_clock::time_point m_lastInfoTime;  // Last time info was sent
     uint64_t m_nodesAtLastInfo{0};  // Node count at last info update (Phase 6)
     eval::Score m_scoreAtLastInfo{eval::Score::zero()};  // Score at last info update (Phase 6)
-    
+    GlobalSingularStats m_singularTotals{};               // Aggregated singular telemetry
+
     // Phase 6: Adaptive update intervals based on search time
     static constexpr auto INFO_UPDATE_FAST = std::chrono::milliseconds(50);    // First 1 second
     static constexpr auto INFO_UPDATE_MEDIUM = std::chrono::milliseconds(200);  // 1-10 seconds
@@ -82,11 +83,25 @@ public:
         m_lastInfoTime = std::chrono::steady_clock::now();  // Phase 1: Reset info time
         m_nodesAtLastInfo = 0;  // Phase 6: Reset node counter
         m_scoreAtLastInfo = eval::Score::zero();  // Phase 6: Reset score
+        m_singularTotals.reset();
         
         // Clear iteration data
         for (auto& iter : m_iterations) {
             iter = IterationInfo{};
         }
+    }
+
+    void flushSingularTelemetry(bool threadSafe) {
+        auto local = singularStats;
+        if (local.empty()) {
+            return;
+        }
+        m_singularTotals.aggregate(local, threadSafe);
+        singularStats.reset();
+    }
+
+    const GlobalSingularStats& singularTotals() const {
+        return m_singularTotals;
     }
     
     // Phase 6: Enhanced check if we should send UCI info update with smart throttling

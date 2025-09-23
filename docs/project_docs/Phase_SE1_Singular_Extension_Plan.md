@@ -128,7 +128,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     };
     ```
   - Only aggregate at UCI info intervals (every 1000ms), not per-node
-  - Use `std::atomic_ref` in single-threaded mode to eliminate overhead
+  - Use `std::atomic_ref` in single-threaded mode to eliminate overhead; maintain max depth and cache hit tracking alongside counters
   - Expected NPS impact: < 0.2% (atomic reads on info output)
   - SPRT: Bench parity verification
 - **SE0.2a – UCI toggle exposure**

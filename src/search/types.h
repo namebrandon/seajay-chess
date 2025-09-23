@@ -14,6 +14,7 @@
 #include <array>
 #include <algorithm>
 #include <vector>
+#include <atomic>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -354,6 +355,12 @@ struct SearchData {
             maxExtensionDepth = 0;
             verificationCacheHits = 0;
         }
+
+        bool empty() const noexcept {
+            return candidatesExamined == 0 && verificationsStarted == 0 &&
+                   extensionsApplied == 0 && maxExtensionDepth == 0 &&
+                   verificationCacheHits == 0;
+        }
     };
 
     static_assert(alignof(SingularStats) == 64, "SingularStats must remain cache aligned");
@@ -373,6 +380,68 @@ struct SearchData {
     CJ_NO_UNIQUE_ADDR SingularStats singularStats{}; // Thread-local stats (zero-overhead when unused)
 
 #undef CJ_NO_UNIQUE_ADDR
+
+    struct alignas(64) GlobalSingularStats {
+        uint64_t totalExamined = 0;
+        uint64_t totalVerified = 0;
+        uint64_t totalExtended = 0;
+        uint32_t maxExtensionDepth = 0;
+        uint64_t totalCacheHits = 0;
+
+        void reset() noexcept {
+            totalExamined = 0;
+            totalVerified = 0;
+            totalExtended = 0;
+            maxExtensionDepth = 0;
+            totalCacheHits = 0;
+        }
+
+        void aggregate(const SingularStats& local, bool threadSafe) noexcept {
+            if (local.empty()) {
+                return;
+            }
+
+            if (threadSafe) {
+                std::atomic_ref<uint64_t> examined(totalExamined);
+                std::atomic_ref<uint64_t> verified(totalVerified);
+                std::atomic_ref<uint64_t> extended(totalExtended);
+                std::atomic_ref<uint64_t> cacheHits(totalCacheHits);
+                examined.fetch_add(local.candidatesExamined, std::memory_order_relaxed);
+                verified.fetch_add(local.verificationsStarted, std::memory_order_relaxed);
+                extended.fetch_add(local.extensionsApplied, std::memory_order_relaxed);
+                cacheHits.fetch_add(local.verificationCacheHits, std::memory_order_relaxed);
+
+                if (local.maxExtensionDepth > 0) {
+                    std::atomic_ref<uint32_t> maxDepth(maxExtensionDepth);
+                    uint32_t expected = maxDepth.load(std::memory_order_relaxed);
+                    while (expected < local.maxExtensionDepth &&
+                           !maxDepth.compare_exchange_weak(expected, local.maxExtensionDepth,
+                                                           std::memory_order_relaxed,
+                                                           std::memory_order_relaxed)) {
+                    }
+                }
+                return;
+            }
+
+            totalExamined += local.candidatesExamined;
+            totalVerified += local.verificationsStarted;
+            totalExtended += local.extensionsApplied;
+            totalCacheHits += local.verificationCacheHits;
+            if (local.maxExtensionDepth > maxExtensionDepth) {
+                maxExtensionDepth = local.maxExtensionDepth;
+            }
+        }
+
+        SingularStats snapshot() const noexcept {
+            SingularStats totals;
+            totals.candidatesExamined = totalExamined;
+            totals.verificationsStarted = totalVerified;
+            totals.extensionsApplied = totalExtended;
+            totals.maxExtensionDepth = maxExtensionDepth;
+            totals.verificationCacheHits = totalCacheHits;
+            return totals;
+        }
+    };
 
     // Stage 21: Null Move Pruning statistics
     struct NullMoveStats {
