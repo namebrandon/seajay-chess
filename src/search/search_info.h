@@ -20,6 +20,7 @@ struct SearchStack {
     int moveCount = 0;         // Number of moves searched at this node
     bool isPvNode = false;      // Track if this is a PV node (Phase P1)
     int searchedMoves = 0;      // Count of moves already searched (Phase P1)
+    Move excludedMove = NO_MOVE; // Transitional: legacy singular exclusion plumbing
     bool gaveCheck = false;      // Whether the move leading to this node delivered check
 };
 
@@ -72,10 +73,26 @@ public:
         return m_searchStack[ply];
     }
 
-    // Legacy compatibility stubs for pre-NodeContext singular extension code paths.
-    void setExcludedMove(int /*ply*/, Move /*move*/) {}
-    Move getExcludedMove(int /*ply*/) const { return NO_MOVE; }
-    bool isExcluded(int /*ply*/, Move /*move*/) const { return false; }
+    // Transitional helper: keep legacy singular exclusion alive until NodeContext replaces it everywhere.
+    void setExcludedMove(int ply, Move move) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].excludedMove = move;
+        }
+    }
+
+    Move getExcludedMove(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].excludedMove;
+        }
+        return NO_MOVE;
+    }
+
+    bool isExcluded(int ply, Move move) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].excludedMove == move;
+        }
+        return false;
+    }
 
     void setGaveCheck(int ply, bool gaveCheck) {
         if (ply >= 0 && ply < MAX_PLY) {
