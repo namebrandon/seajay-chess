@@ -27,9 +27,8 @@ struct SingularVerifyStats {
 #endif
 };
 
-// Stage 6d: Verification helper scaffold (disabled by default)
-// Returns zero score until singular extensions are implemented.
-eval::Score verify_exclusion(
+// Stage SE1.1a: Verification helper scaffold (no-op until SE2/SE3 hook it up).
+[[nodiscard]] ALWAYS_INLINE eval::Score verify_exclusion(
     Board& board,
     NodeContext context,
     int depth,
