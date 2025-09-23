@@ -39,6 +39,9 @@ public:
         }
         m_extensionApplied.fill(0);
         m_extensionTotal.fill(0);
+#ifdef DEBUG
+        m_excludedMoveSet.fill(false);
+#endif
     }
     
     // Set the game history size at root (where game ends, search begins)
@@ -195,7 +198,7 @@ public:
             m_searchStack[ply].excludedMove = move;
         }
     }
-    
+
     Move getExcludedMove(int ply) const {
         if (ply >= 0 && ply < MAX_PLY) {
             return m_searchStack[ply].excludedMove;

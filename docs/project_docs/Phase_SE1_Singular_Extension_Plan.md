@@ -139,7 +139,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: 0% (toggle check only)
 - **SE0.2b – Defensive assertions**
   - Add DEBUG-only asserts for `excluded` flag lifecycle
-  - Verify flag clears on all exit paths from negamax
+  - Verify flag clears on all exit paths from negamax (RAII guard + sanity asserts)
   - Expected NPS impact: 0% (DEBUG only)
 - **SE0.3 – Legacy cleanup**
   - Remove residual `SearchInfo::excludedMove` usage once NodeContext exclusive path confirmed
