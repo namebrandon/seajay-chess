@@ -92,6 +92,11 @@ public:
     }
 
     void flushSingularTelemetry(bool threadSafe) {
+        if (!isSingularTelemetryEnabled()) {
+            singularStats.reset();
+            return;
+        }
+
         auto local = singularStats;
         if (local.empty()) {
             return;

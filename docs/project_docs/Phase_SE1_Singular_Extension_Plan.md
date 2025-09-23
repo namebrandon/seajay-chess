@@ -133,8 +133,9 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - SPRT: Bench parity verification
 - **SE0.2a – UCI toggle exposure**
   - Add `UseSingularExtensions` bool toggle (default false)
-  - Ensure toggle is exposed via UCI setoption
-  - Update `feature_status.md` template
+  - Ensure toggle is exposed via UCI `setoption` and threaded through `SearchLimits`
+  - Gate telemetry aggregation/InfoBuilder reporting behind the toggle so instrumentation stays cold when disabled
+  - Update `feature_status.md` template and release notes with default values
   - Expected NPS impact: 0% (toggle check only)
 - **SE0.2b – Defensive assertions**
   - Add DEBUG-only asserts for `excluded` flag lifecycle

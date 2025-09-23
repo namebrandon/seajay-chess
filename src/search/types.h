@@ -174,12 +174,15 @@ struct SearchLimits {
     bool useSearchNodeAPIRefactor = true;
     bool enableExcludedMoveParam = false; // Phase 6c: Thread excluded move via NodeContext (default OFF)
 
+    // Stage SE0.2a: Singular extension master toggle (default OFF until feature ships)
+    bool useSingularExtensions = false;
+
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 
     // Benchmark/diagnostics
     bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench
-    
+
     // Default constructor
     SearchLimits() = default;
 };
@@ -273,7 +276,9 @@ struct SearchData {
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds timeLimit{0};
     bool stopped = false;          // Search has been stopped
-    
+
+    bool singularTelemetryEnabled = false; // Stage SE0 scaffolding: enable/disable singular telemetry aggregation
+
     // Stage 14, Deliverable 1.8: Runtime quiescence control
     bool useQuiescence = true;     // Enable/disable quiescence search
     
@@ -889,6 +894,17 @@ struct SearchData {
             return false;  // Infinite search
         }
         return elapsed() >= timeLimit;
+    }
+
+    ALWAYS_INLINE bool isSingularTelemetryEnabled() const noexcept {
+        return singularTelemetryEnabled;
+    }
+
+    ALWAYS_INLINE void setSingularTelemetryEnabled(bool enabled) noexcept {
+        singularTelemetryEnabled = enabled;
+        if (!enabled) {
+            singularStats.reset();
+        }
     }
     
     // Calculate effective branching factor

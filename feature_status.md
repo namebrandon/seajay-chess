@@ -7,7 +7,7 @@
 
 ## Timeline
 - Start Date: 2025-09-21
-- Current Branch: `feature/20250921-se01b-aggregation`
+- Current Branch: `feature/20250921-se02a-toggle`
 - Base Commit: `76c574d347452ed2069e08e9fac6afe063bc8d87`
 - Bench Baseline (Release, Desktop): TBC after Stage SE0.1 telemetry capture
 
@@ -15,8 +15,8 @@
 | Phase | Status | Commit | Bench | Notes |
 |-------|--------|--------|-------|-------|
 | SingularExtension_Phase_SE0.1a – Thread-local telemetry scaffold | Completed | 0e924ae | 2350511 | `SingularStats` embedded per thread with cache alignment and zero-cost reset semantics. |
-| SingularExtension_Phase_SE0.1b – Global aggregation | In Progress | (pending) | (pending) | Atomic roll-up of per-thread stats, UCI info reporting at 1s cadence. |
-| SingularExtension_Phase_SE0.2a – UCI toggle exposure | Planned | N/A | N/A | Publish `UseSingularExtensions` toggle; update docs and defaults. |
+| SingularExtension_Phase_SE0.1b – Global aggregation | Completed | 62f260f | 2350511 | Atomic roll-up of per-thread stats with InfoBuilder reporting gated by telemetry flush cadence. |
+| SingularExtension_Phase_SE0.2a – UCI toggle exposure | Completed | HEAD | 2350511 | `UseSingularExtensions` wired through UCI → SearchLimits → SearchData with telemetry/reporting gated behind the toggle. |
 | SingularExtension_Phase_SE0.2b – Defensive assertions | Planned | N/A | N/A | DEBUG-only guards for excluded move lifecycle. |
 | SingularExtension_Phase_SE0.3 – Legacy cleanup | Planned | N/A | N/A | Remove legacy `SearchInfo::excludedMove` plumbing. |
 
@@ -32,6 +32,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Bench parity + NPS spot-check with aggregation enabled.
-2. Capture baseline telemetry snapshot for desktop target.
-3. Draft UCI toggle wiring plan for SE0.2a.
+1. Capture quick bench with `UseSingularExtensions=true` to confirm parity before SE0.2b.
+2. Draft defensive assertion coverage plan for SE0.2b.
+3. Refresh public docs/release notes with new toggle description prior to enabling feature work.

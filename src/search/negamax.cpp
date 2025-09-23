@@ -286,7 +286,9 @@ eval::Score negamax(Board& board,
             auto* iterativeInfo = static_cast<IterativeSearchData*>(&info);
             if (iterativeInfo->shouldSendInfo(true)) {  // Phase 6: Check with score change flag
                 // UCI Score Conversion FIX: Use root side-to-move stored in SearchData
-                iterativeInfo->flushSingularTelemetry(false);
+                if (iterativeInfo->isSingularTelemetryEnabled()) {
+                    iterativeInfo->flushSingularTelemetry(false);
+                }
                 sendCurrentSearchInfo(*iterativeInfo, info.rootSideToMove, tt);
                 iterativeInfo->recordInfoSent(iterativeInfo->bestScore);  // Phase 6: Pass current score
             }
@@ -2116,7 +2118,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
 
     // Ensure scratch arenas and statistics start clean for this search
     info.reset();
-    
+    info.setSingularTelemetryEnabled(limits.useSingularExtensions);
+
     // UCI Score Conversion FIX: Store root side-to-move for all UCI output
     // This MUST be used for all UCI output, not the changing board.sideToMove() during search
     info.rootSideToMove = board.sideToMove();
@@ -2287,7 +2290,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             // Phase 6: Always send info at iteration completion and record it
             // Phase PV4: Pass root PV arena for full principal variation display
             // UCI Score Conversion FIX: Use root side-to-move, not current position's side
-            info.flushSingularTelemetry(false);
+            if (info.isSingularTelemetryEnabled()) {
+                info.flushSingularTelemetry(false);
+            }
             sendIterationInfo(info, info.rootSideToMove, tt, &info.rootPV());
             info.recordInfoSent(info.bestScore);  // Phase 6: Record to prevent immediate duplicate
             
@@ -2644,14 +2649,16 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << ",re=" << info.historyStats.totalReSearches() << ")"
                   << std::endl;
 
-        const auto singularTotals = info.singularTotals().snapshot();
-        if (!singularTotals.empty()) {
-            std::cout << "info string SingularStats: examined=" << singularTotals.candidatesExamined
-                      << " verified=" << singularTotals.verificationsStarted
-                      << " extended=" << singularTotals.extensionsApplied
-                      << " cacheHits=" << singularTotals.verificationCacheHits
-                      << " maxDepth=" << singularTotals.maxExtensionDepth
-                      << std::endl;
+        if (info.isSingularTelemetryEnabled()) {
+            const auto singularTotals = info.singularTotals().snapshot();
+            if (!singularTotals.empty()) {
+                std::cout << "info string SingularStats: examined=" << singularTotals.candidatesExamined
+                          << " verified=" << singularTotals.verificationsStarted
+                          << " extended=" << singularTotals.extensionsApplied
+                          << " cacheHits=" << singularTotals.verificationCacheHits
+                          << " maxDepth=" << singularTotals.maxExtensionDepth
+                          << std::endl;
+            }
         }
     }
     
@@ -2661,7 +2668,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         g_nodeExplosionStats.reset();  // Reset for next search
     }
 
-    info.flushSingularTelemetry(false);
+    if (info.isSingularTelemetryEnabled()) {
+        info.flushSingularTelemetry(false);
+    }
     return bestMove;
 }
 
@@ -2694,9 +2703,10 @@ Move search(Board& board, const SearchLimits& limits, TranspositionTable* tt) {
     info.history = &historyHeuristic;
     info.counterMoves = &counterMovesTable;
     info.counterMoveHistory = counterMoveHistoryPtr.get();
-    
+
     // UCI Score Conversion FIX: Store root side-to-move for correct UCI output
     info.rootSideToMove = board.sideToMove();
+    info.setSingularTelemetryEnabled(limits.useSingularExtensions);
     
     // Stage 20, Phase B3 Fix: Clear history only at search start,
     // not between iterative deepening iterations
@@ -3014,16 +3024,18 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
         builder.appendPv(info.bestMove);
     }
 
-    const auto singularTotals = info.singularTotals().snapshot();
-    if (!singularTotals.empty()) {
-        builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
-        builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
-        builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
-        if (singularTotals.verificationCacheHits > 0) {
-            builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
-        }
-        if (singularTotals.maxExtensionDepth > 0) {
-            builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+    if (info.isSingularTelemetryEnabled()) {
+        const auto singularTotals = info.singularTotals().snapshot();
+        if (!singularTotals.empty()) {
+            builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+            builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
+            builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
+            if (singularTotals.verificationCacheHits > 0) {
+                builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
+            }
+            if (singularTotals.maxExtensionDepth > 0) {
+                builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+            }
         }
     }
 
@@ -3092,16 +3104,18 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
            .appendNps(info.nps())
            .appendTime(info.elapsed().count());
 
-    const auto singularTotals = info.singularTotals().snapshot();
-    if (!singularTotals.empty()) {
-        builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
-        builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
-        builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
-        if (singularTotals.verificationCacheHits > 0) {
-            builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
-        }
-        if (singularTotals.maxExtensionDepth > 0) {
-            builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+    if (info.isSingularTelemetryEnabled()) {
+        const auto singularTotals = info.singularTotals().snapshot();
+        if (!singularTotals.empty()) {
+            builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+            builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
+            builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
+            if (singularTotals.verificationCacheHits > 0) {
+                builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
+            }
+            if (singularTotals.maxExtensionDepth > 0) {
+                builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+            }
         }
     }
 
