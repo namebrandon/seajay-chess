@@ -32,7 +32,7 @@ eval::Score verify_exclusion(
 
     const bool singularDisabled = !limits.useSingularExtensions;
     const bool excludedParamDisabled = !limits.enableExcludedMoveParam;
-    if ((singularDisabled || excludedParamDisabled) [[unlikely]]) {
+    if ((singularDisabled || excludedParamDisabled)) [[unlikely]] {
 #ifdef DEBUG
         if (stats) {
             stats->bypassed++;
