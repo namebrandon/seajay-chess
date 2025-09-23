@@ -20,7 +20,7 @@ struct SearchStack {
     int moveCount = 0;         // Number of moves searched at this node
     bool isPvNode = false;      // Track if this is a PV node (Phase P1)
     int searchedMoves = 0;      // Count of moves already searched (Phase P1)
-    Move excludedMove = NO_MOVE; // Move to exclude in singular search (legacy scaffolding - TODO(Phase6): remove after NodeContext rollout)
+    Move excludedMove = NO_MOVE; // Transitional: legacy singular exclusion plumbing
     bool gaveCheck = false;      // Whether the move leading to this node delivered check
 };
 
@@ -39,9 +39,6 @@ public:
         }
         m_extensionApplied.fill(0);
         m_extensionTotal.fill(0);
-#ifdef DEBUG
-        m_excludedMoveSet.fill(false);
-#endif
     }
     
     // Set the game history size at root (where game ends, search begins)
@@ -74,6 +71,27 @@ public:
     // Get search stack entry
     const SearchStack& getStackEntry(int ply) const {
         return m_searchStack[ply];
+    }
+
+    // Transitional helper: keep legacy singular exclusion alive until NodeContext replaces it everywhere.
+    void setExcludedMove(int ply, Move move) {
+        if (ply >= 0 && ply < MAX_PLY) {
+            m_searchStack[ply].excludedMove = move;
+        }
+    }
+
+    Move getExcludedMove(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].excludedMove;
+        }
+        return NO_MOVE;
+    }
+
+    bool isExcluded(int ply, Move move) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_searchStack[ply].excludedMove == move;
+        }
+        return false;
     }
 
     void setGaveCheck(int ply, bool gaveCheck) {
@@ -190,27 +208,6 @@ public:
             return m_searchStack[ply].searchedMoves;
         }
         return 0;
-    }
-    
-    // Singular extension support: excluded move management (legacy - TODO(Phase6): remove after NodeContext rollout)
-    void setExcludedMove(int ply, Move move) {
-        if (ply >= 0 && ply < MAX_PLY) {
-            m_searchStack[ply].excludedMove = move;
-        }
-    }
-
-    Move getExcludedMove(int ply) const {
-        if (ply >= 0 && ply < MAX_PLY) {
-            return m_searchStack[ply].excludedMove;
-        }
-        return NO_MOVE;
-    }
-    
-    bool isExcluded(int ply, Move move) const {
-        if (ply >= 0 && ply < MAX_PLY) {
-            return m_searchStack[ply].excludedMove == move;
-        }
-        return false;
     }
     
 private:

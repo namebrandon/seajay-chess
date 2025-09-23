@@ -38,6 +38,7 @@ namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
 constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
 
+// TODO(SE1): Delete once legacy negamax is removed and NodeContext handles singular exclusions end-to-end.
 struct ExcludedMoveGuard {
     SearchInfo& info;
     int ply;
@@ -313,7 +314,7 @@ eval::Score negamax(Board& board,
     
     // Phase P2: Store PV status in search stack
     searchInfo.setPvNode(ply, isPvNode);
-    // Stage 6c: Mirror NodeContext excluded value for legacy stack consumers (TODO: remove after Phase 6 rollout)
+    // Stage 6c bridge: keep legacy stack exclusion in sync until singular extensions migrate fully.
     const Move legacyExcluded = limits.enableExcludedMoveParam ? context.excludedMove() : NO_MOVE;
     Move previousExcluded = searchInfo.getExcludedMove(ply);
 #ifdef DEBUG
