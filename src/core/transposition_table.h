@@ -21,6 +21,15 @@ enum class Bound : uint8_t {
     UPPER = 3   // Beta bound (fail-low)
 };
 
+enum class TTEntryFlags : uint8_t {
+    None = 0,
+    Exclusion = 1 << 0,
+};
+
+constexpr inline uint8_t toMask(TTEntryFlags flag) {
+    return static_cast<uint8_t>(flag);
+}
+
 // Transposition table entry - exactly 16 bytes, carefully packed
 struct alignas(16) TTEntry {
     uint32_t key32;      // Upper 32 bits of zobrist key (4 bytes)
@@ -29,19 +38,22 @@ struct alignas(16) TTEntry {
     int16_t evalScore;   // Static evaluation (2 bytes)
     uint8_t depth;       // Search depth (1 byte)
     uint8_t genBound;    // Generation (6 bits) + bound type (2 bits) (1 byte)
-    uint8_t padding[4];  // Padding to reach 16 bytes alignment
+    uint8_t flags;       // Entry flags (verification, etc.)
+    uint8_t padding[3];  // Padding to reach 16 bytes alignment
     
     // Helper methods for genBound field
     uint8_t generation() const { return genBound >> 2; }
     Bound bound() const { return static_cast<Bound>(genBound & 0x03); }
     
-    void save(uint32_t k, Move m, int16_t s, int16_t e, uint8_t d, Bound b, uint8_t gen) {
+    void save(uint32_t k, Move m, int16_t s, int16_t e, uint8_t d, Bound b, uint8_t gen, uint8_t newFlags = 0) {
         key32 = k;
         move = m;
         score = s;
         evalScore = e;
         depth = d;
         genBound = (gen << 2) | static_cast<uint8_t>(b);
+        flags = newFlags;
+        padding[0] = padding[1] = padding[2] = 0;
     }
     
     bool isEmpty() const {
@@ -50,6 +62,12 @@ struct alignas(16) TTEntry {
         // since stored entries always have a non-zero bound
         return genBound == 0;
     }
+
+    bool hasFlag(TTEntryFlags flag) const {
+        return (flags & toMask(flag)) != 0;
+    }
+
+    void clearFlags() { flags = 0; }
 };
 
 static_assert(sizeof(TTEntry) == 16, "TTEntry must be exactly 16 bytes");
@@ -173,6 +191,23 @@ private:
 // Main transposition table class
 class TranspositionTable {
 public:
+    enum class StorePolicy : uint8_t {
+        Primary,
+        Verification,
+    };
+
+    class StorePolicyGuard {
+    public:
+        explicit StorePolicyGuard(StorePolicy policy);
+        ~StorePolicyGuard();
+
+        StorePolicyGuard(const StorePolicyGuard&) = delete;
+        StorePolicyGuard& operator=(const StorePolicyGuard&) = delete;
+
+    private:
+        StorePolicy m_previous;
+    };
+
     // Default sizes
     static constexpr size_t DEFAULT_SIZE_MB_DEBUG = 16;
     static constexpr size_t DEFAULT_SIZE_MB_RELEASE = 16;

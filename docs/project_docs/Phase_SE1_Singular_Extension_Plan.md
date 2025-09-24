@@ -201,23 +201,25 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: 0% (feature still disabled)
   - SPRT: Bench parity
 - **SE1.2a – TT store policy decision**
-  - Implement `NO_STORE` flag for verification searches
-  - Add dedicated TT flag bit for "verified under exclusion"
-  - **Memory-efficient TT marking:**
-    ```cpp
-    enum TTFlags : std::uint8_t {
-        TT_EXACT = 1 << 0,
-        TT_UPPER = 1 << 1,
-        TT_LOWER = 1 << 2,
-        TT_EXCLUSION = 1 << 3,  // Mark verification entries
-        TT_NO_STORE = 1 << 4    // Prevent storage
-    };
-    ```
-  - Consider using 16-bit partial hash for exclusion verification cache
+  - ✅ Define verification-specific TT semantics:
+    - `TranspositionTable::StorePolicyGuard` places verification searches in a dedicated store mode.
+    - Verification stores only touch empty slots or prior `TT_EXCLUSION` entries; primary searches clear the flag when overwriting.
+  - ✅ Draft replacement policy adjustments:
+    - Flagged `TT_EXCLUSION` entries are preferred victims when primary data arrives (scoring bias of -20k).
+    - Verification writes brand entries with `TT_EXCLUSION` while leaving primary heuristics untouched.
+  - ✅ Telemetry prep: Capture DEBUG `SingularStats` counters with verification enabled and record TT occupancy deltas vs. baseline (1/2/4 thread configs).
+    - 2025-09-23 capture (`depth 10`, startpos): singular telemetry remained zero (no candidates yet), TT stores held at ~9.6k with 0 collisions; raw logs in `telemetry_threads{1,2,4}.log`.
+  - ✅ Call out instrumentation requirements for DEBUG builds (verify verification-mode stores never evict primary entries).
+  - ✅ Implementation sketch:
+    - `TTEntry` grew a `flags` byte plus helpers (`hasFlag`, `save(flags)`).
+    - Cluster/linear store paths consult `StorePolicy` and gate writes accordingly.
+    - Primary stores zero the flag on overwrite so downstream logic sees clean entries.
+  - Status: In progress on `feature/20250923-singular-extension-se12a-docs` (doc-only groundwork; bench unaffected).
   - Expected NPS impact: 0%
 - **SE1.2b – TT contamination guards**
   - Add instrumentation to verify main TT entry unchanged
   - DEBUG-only validation of TT state pre/post verification
+  - Document debug guardrails: sentinel asserts fire if verification mode ever evicts a primary entry; telemetry counter increments for unexpected replacements.
   - Expected NPS impact: 0% (DEBUG only)
 
 ### Stage SE2 — Candidate Identification & Qualification
