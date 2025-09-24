@@ -34,6 +34,7 @@ struct SingularVerifyStats {
     Board& board,
     NodeContext context,
     int depth,
+    int ply,
     eval::Score alpha,
     eval::Score beta,
     SearchInfo& searchInfo,

@@ -194,9 +194,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE1.1d – Negamax recursion hookup**
-  - Call negamax with prepared parameters
-  - Propagate NodeContext correctly (maintain PV flag)
-  - Return verification score (initially unused)
+  - ✅ Call negamax with prepared parameters (`singularDepth`, `[beta-1, beta]`)
+  - ✅ Propagate NodeContext via `makeExcludedContext` while preserving PV/root flags
+  - ✅ Return verification score (still consumed by caller later stages)
+  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se11d` (bench 2350511, parity)
   - Expected NPS impact: 0% (feature still disabled)
   - SPRT: Bench parity
 - **SE1.2a – TT store policy decision**
