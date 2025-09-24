@@ -22,7 +22,8 @@
 | SingularExtension_Phase_SE1.1a – Verification helper skeleton | Completed | 4a62f46 | 2350511 | `verify_exclusion` now guards on `UseSingularExtensions`/`EnableExcludedMoveParam` and logs bypass/invoked counts in DEBUG. |
 | SingularExtension_Phase_SE1.1b – Depth reduction clamp | Completed | ec7f07c | 2350511 | Clamp verification depth to `depth - 1 - 3`; DEBUG `ineligible` counter tracks early exits. |
 | SingularExtension_Phase_SE1.1c – Window narrowing | Completed | 91ab2ce | 2350511 | Compute singular verification window `[beta-1, beta]` with clamping; child context wiring deferred to SE1.1d. |
-| SingularExtension_Phase_SE1.1d – Negamax recursion hookup | Completed | HEAD | 2350511 | Wire verification search into `negamax` using excluded child context and narrow window; still returns score to caller. |
+| SingularExtension_Phase_SE1.1d – Negamax recursion hookup | Completed | c912525 | 2350511 | Wire verification search into `negamax` using excluded child context and narrow window; still returns score to caller. |
+| SingularExtension_Phase_SE1.2a – TT store policy | Completed | HEAD | 2350511 | Verification mode uses `StorePolicyGuard`; TT entries marked `TT_EXCLUSION` reside only in empty/flagged slots and are first to be evicted by primary stores. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -36,5 +37,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Document TT store policy decisions ahead of SE1.2a implementation.
-2. Capture telemetry differentials once SE1.1d recursion wiring is ready for testing.
+1. Schedule follow-up telemetry once verification candidates exist (post SE2 enablement) to validate TT_EXCLUSION counters.
+2. Outline SE1.2b debug guard implementation (assert path, sentinel logging) prior to coding.

@@ -19,6 +19,19 @@
 
 namespace seajay {
 
+namespace {
+thread_local TranspositionTable::StorePolicy g_storePolicy = TranspositionTable::StorePolicy::Primary;
+}
+
+TranspositionTable::StorePolicyGuard::StorePolicyGuard(StorePolicy policy)
+    : m_previous(g_storePolicy) {
+    g_storePolicy = policy;
+}
+
+TranspositionTable::StorePolicyGuard::~StorePolicyGuard() {
+    g_storePolicy = m_previous;
+}
+
 // AlignedBuffer implementation
 AlignedBuffer::AlignedBuffer(size_t size) : m_size(size) {
     if (size > 0) {
@@ -134,23 +147,41 @@ void TranspositionTable::resize(size_t sizeInMB) {
 void TranspositionTable::store(Hash key, Move move, int16_t score, 
                                int16_t evalScore, uint8_t depth, Bound bound) {
     if (!m_enabled) return;
-    
+
+    const StorePolicy policy = g_storePolicy;
+
+    auto recordStore = [&]() {
 #ifdef TT_STATS_ENABLED
-    m_stats.stores++;
+        m_stats.stores++;
 #endif
+    };
+
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
     
     if (m_clustered) {
         // Clustered mode: single-pass victim selection
         const size_t clusterIdx = clusterStart(key);  // Compute once
         TTEntry* cluster = &m_entries[clusterIdx];
+
+        if (policy == StorePolicy::Verification) {
+            for (size_t i = 0; i < CLUSTER_SIZE; ++i) {
+                TTEntry& entry = cluster[i];
+                if (entry.isEmpty() || entry.hasFlag(TTEntryFlags::Exclusion)) {
+                    entry.save(key32, move, score, evalScore, depth, bound, m_generation,
+                               toMask(TTEntryFlags::Exclusion));
+                    recordStore();
+                    return;
+                }
+            }
+            return;  // No suitable slot; skip to avoid polluting primary entries
+        }
         
         // Single-pass victim selection with inline scoring
-        int bestVictim = 0;
+        size_t bestVictim = 0;
         int bestScore = INT32_MAX;
         
         // Unrolled evaluation of all 4 entries
-        for (int i = 0; i < CLUSTER_SIZE; ++i) {
+        for (size_t i = 0; i < CLUSTER_SIZE; ++i) {
             const TTEntry& entry = cluster[i];
             
             // Immediate return cases
@@ -159,16 +190,19 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
                 m_stats.replacedEmpty++;
 #endif
                 cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
+                recordStore();
                 return;
             }
             
             if (entry.key32 == key32) {
                 // Same position - update if appropriate
                 const bool entryIsFresh = entry.generation() == m_generation;
-                if (move == NO_MOVE && entry.move != NO_MOVE && entryIsFresh && depth <= entry.depth) {
+                if (move == NO_MOVE && entry.move != NO_MOVE && entryIsFresh && depth <= entry.depth &&
+                    !entry.hasFlag(TTEntryFlags::Exclusion)) {
                     return;  // Don't overwrite move with NO_MOVE
                 }
                 cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
+                recordStore();
                 return;
             }
             
@@ -178,6 +212,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             if (entry.generation() != m_generation) victimScore -= 10000;
             if (entry.bound() != Bound::EXACT) victimScore -= 50;
             if (entry.move == NO_MOVE) victimScore -= 25;
+            if (entry.hasFlag(TTEntryFlags::Exclusion)) victimScore -= 20000;
             
             // Penalty for evicting deep entries with moves for shallow NO_MOVE
             if (move == NO_MOVE && entry.move != NO_MOVE) {
@@ -218,10 +253,21 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         }
 #endif
         victim->save(key32, move, score, evalScore, depth, bound, m_generation);
+        recordStore();
+        return;
     } else {
         // Regular mode: single entry replacement
         size_t idx = index(key);
         TTEntry* entry = &m_entries[idx];
+
+        if (policy == StorePolicy::Verification) {
+            if (entry->isEmpty() || entry->hasFlag(TTEntryFlags::Exclusion)) {
+                entry->save(key32, move, score, evalScore, depth, bound, m_generation,
+                            toMask(TTEntryFlags::Exclusion));
+                recordStore();
+            }
+            return;
+        }
         
 #ifdef TT_STATS_ENABLED
         // Check for collision BEFORE checking isEmpty()
@@ -233,6 +279,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         
         // Track replacement decision for diagnostics
         bool canReplace = false;
+        const bool entryIsVerification = entry->hasFlag(TTEntryFlags::Exclusion);
         
         if (entry->isEmpty()) {
             // Case 1: Entry is empty - always replace
@@ -243,9 +290,11 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             
             // TT pollution fix: Protect entries with moves from shallow NO_MOVE overwrites
             const bool entryIsFresh = entry->generation() == m_generation;
-            if (move == NO_MOVE && entry->move != NO_MOVE && entryIsFresh && depth <= entry->depth) {
+            if (!entryIsVerification && move == NO_MOVE && entry->move != NO_MOVE && entryIsFresh && depth <= entry->depth) {
                 // Don't replace a valuable move-carrying entry with a NO_MOVE heuristic
                 canReplace = false;
+            } else if (entryIsVerification) {
+                canReplace = true;
             } else if (entry->generation() != m_generation) {
                 // Case 2: Old generation - consider depth before replacing
                 // IMPROVED: Only replace old gen if new search is at least as deep
@@ -262,7 +311,9 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             // Different position (collision) - use depth-preferred replacement
             
             // TT pollution fix: Be more conservative with NO_MOVE heuristic entries
-            if (move == NO_MOVE && depth <= entry->depth + 2) {
+            if (entryIsVerification) {
+                canReplace = true;
+            } else if (move == NO_MOVE && depth <= entry->depth + 2) {
                 // Don't displace entries for shallow heuristics
                 canReplace = false;
             } else if (depth > entry->depth + 2) {
@@ -281,6 +332,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         
         if (canReplace) {
             entry->save(key32, move, score, evalScore, depth, bound, m_generation);
+            recordStore();
         }
     }
 }

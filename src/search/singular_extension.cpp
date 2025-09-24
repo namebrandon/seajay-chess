@@ -90,6 +90,9 @@ eval::Score verify_exclusion(
     NodeContext verifyContext = makeExcludedContext(context, excludedMove);
 
     // Stage SE1.1d: Issue verification search via negamax (still a no-op null window result).
+    TranspositionTable::StorePolicyGuard storeGuard(
+        tt ? TranspositionTable::StorePolicy::Verification
+           : TranspositionTable::StorePolicy::Primary);
     const eval::Score verificationScore = negamax(
         board,
         verifyContext,
