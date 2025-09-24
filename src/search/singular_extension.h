@@ -20,6 +20,7 @@ struct SingularVerifyStats {
 #ifdef DEBUG
     uint64_t bypassed = 0;      // Helper exited early (feature disabled)
     uint64_t invoked = 0;       // Helper entered verification search
+    uint64_t ineligible = 0;    // Helper bailed due to insufficient depth
     uint64_t cutoffs = 0;       // Future use: verification yielded cutoff
 #else
     // Release builds keep structure trivially empty to avoid overhead

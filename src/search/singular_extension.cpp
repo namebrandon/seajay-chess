@@ -22,7 +22,7 @@ eval::Score verify_exclusion(
     SingularVerifyStats* stats) {
     (void)board;
     (void)context;
-    (void)depth;
+    constexpr int kVerificationReduction = 3;
     (void)alpha;
     (void)beta;
     (void)searchInfo;
@@ -46,6 +46,17 @@ eval::Score verify_exclusion(
         stats->invoked++;
     }
 #endif
+
+    // Stage SE1.1b: Clamp verification depth before issuing a reduced search.
+    const int singularDepth = depth - 1 - kVerificationReduction;
+    if (singularDepth <= 0) {
+#ifdef DEBUG
+        if (stats) {
+            stats->ineligible++;
+        }
+#endif
+        return eval::Score::zero();
+    }
 
     // Stage SE1.1a: Skeleton helper – full verification search will land in later stages.
     return eval::Score::zero();
