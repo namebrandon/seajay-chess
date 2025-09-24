@@ -25,7 +25,8 @@
 | SingularExtension_Phase_SE1.1d – Negamax recursion hookup | Completed | c912525 | 2350511 | Wire verification search into `negamax` using excluded child context and narrow window; still returns score to caller. |
 | SingularExtension_Phase_SE1.2a – TT store policy | Completed | 83e92c5 | 2350511 | Verification mode uses `StorePolicyGuard`; TT entries marked `TT_EXCLUSION` reside only in empty/flagged slots and are first to be evicted by primary stores. |
 | SingularExtension_Phase_SE1.2b – TT contamination guards | Completed | 1b185fa | 2350511 | DEBUG sentinel/asserts guard verification stores; TT stats track verification store/skip counters for telemetry. |
-| SingularExtension_Phase_SE2.1a – TT probe gate | Completed | HEAD | 2350511 | TT probe now validates depth/EXACT/move before counting singular candidates (telemetry via `singularStats`). |
+| SingularExtension_Phase_SE2.1a – TT probe gate | Completed | a586d04 | 2350511 | TT probe now validates depth/EXACT/move before counting singular candidates (telemetry via `singularStats`). |
+| SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | HEAD | 2350511 | Added constexpr `singular_margin` table and TT-driven windowing; `verify_exclusion` now clamps `singularBeta` via margin-based subtract. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -39,5 +40,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Implement SE2.1b singular margin calculation and candidate gating.
+1. Implement SE2.1c move validation and qualification.
 2. Schedule follow-up telemetry once verification candidates exist (post SE2 enablement) to validate TT_EXCLUSION counters.
