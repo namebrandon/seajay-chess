@@ -220,29 +220,14 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - ✅ Add debug-only sentinel that asserts if verification mode attempts to overwrite primary TT entries.
   - ✅ Track verification store/skip counters in TT stats for telemetry.
   - DEBUG-only validation of TT state pre/post verification
-  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se12b-guards` (bench 2350511, parity)
+  - Status: Completed 2025-09-24 on `feature/20250923-singular-extension-se12b-guards` (bench 2350511, parity)
   - Expected NPS impact: 0% (DEBUG only)
 
 ### Stage SE2 — Candidate Identification & Qualification
 - **SE2.1a – TT lookup and depth check**
-  - Implement TT probe for current position
-  - Check depth >= `singularDepthMin` (initially 8)
-  - Verify TT entry has EXACT flag and valid best move
-  - **Optimized TT probe with prefetch:**
-    ```cpp
-    // Prefetch TT entry early in parent node
-    __builtin_prefetch(&tt[pos.hash() & tt_mask], 0, 1);
-
-    // Later, actual probe with branch prediction
-    if [[likely]](auto* entry = tt.probe(pos.hash())) {
-        if [[likely]](entry->depth() >= singular_depth_min &&
-                     entry->flags() & TT_EXACT &&
-                     entry->best_move() != MOVE_NONE) {
-            // Candidate found
-        }
-    }
-    ```
-  - Use compiler intrinsics for hash computation if available
+  - ✅ Implement TT probe gate inside negamax to validate TT entries (prefetch, probe, depth/flag/move checks).
+  - ✅ Require EXACT flag and non-zero move from TT before treating as candidate (counters incremented via `singularStats`).
+  - Status: Completed 2025-09-24 on `feature/20250924-singular-extension-se21a` (bench 2350511, parity)
   - Expected NPS impact: < 0.5% (TT probe overhead)
   - SPRT: Bench parity
 - **SE2.1b – Score margin calculation**

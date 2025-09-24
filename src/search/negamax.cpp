@@ -216,6 +216,7 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
 // Mate score constants for TT integration
 constexpr int MATE_SCORE = 30000;
 constexpr int MATE_BOUND = 29000;
+constexpr int SINGULAR_DEPTH_MIN = 8;
 
 #include "negamax_legacy.inc"
 
@@ -528,6 +529,12 @@ eval::Score negamax(Board& board,
                 if (!staticEvalComputed && ttEntry->evalScore != TT_EVAL_NONE) {
                     staticEval = eval::Score(ttEntry->evalScore);
                     staticEvalComputed = true;
+                }
+
+                if (limits.useSingularExtensions && limits.enableExcludedMoveParam &&
+                    depth >= SINGULAR_DEPTH_MIN && ttMove != NO_MOVE &&
+                    ttBound == Bound::EXACT && ttDepth >= depth - 1) {
+                    info.singularStats.candidatesExamined++;
                 }
             }
         }
