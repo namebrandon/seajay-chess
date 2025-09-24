@@ -171,9 +171,9 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: 0% (no-op function)
   - SPRT: Bench parity
 - **SE1.1b – Depth reduction calculation**
-  - Add `verificationReduction` parameter (initially hardcoded to 3)
-  - Calculate `singularDepth = depth - 1 - verificationReduction`
-  - Add bounds checking (return if singularDepth <= 0)
+  - ✅ Hardcode `verificationReduction = 3` and derive `singularDepth = depth - 1 - verificationReduction`
+  - ✅ Early-out when `singularDepth <= 0` (DEBUG tallies `stats->ineligible`)
+  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se11b` (bench 2350511, parity)
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE1.1c – Window narrowing setup**

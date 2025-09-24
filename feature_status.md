@@ -19,7 +19,8 @@
 | SingularExtension_Phase_SE0.2a – UCI toggle exposure | Completed | HEAD | 2350511 | `UseSingularExtensions` wired through UCI → SearchLimits → SearchData with telemetry/reporting gated behind the toggle. |
 | SingularExtension_Phase_SE0.2b – Defensive assertions | Completed | 95229b3 | 2350511 | RAII guard + DEBUG asserts ensure excluded move lifecycle stays clean on all negamax exit paths. |
 | SingularExtension_Phase_SE0.3 – Legacy cleanup | Completed | 0fab434 | 2350511 | Removed SearchInfo excluded-move plumbing; NodeContext now exclusively manages lifecycle. |
-| SingularExtension_Phase_SE1.1a – Verification helper skeleton | Completed | HEAD | 2350511 | `verify_exclusion` now guards on `UseSingularExtensions`/`EnableExcludedMoveParam` and logs bypass/invoked counts in DEBUG. |
+| SingularExtension_Phase_SE1.1a – Verification helper skeleton | Completed | 4a62f46 | 2350511 | `verify_exclusion` now guards on `UseSingularExtensions`/`EnableExcludedMoveParam` and logs bypass/invoked counts in DEBUG. |
+| SingularExtension_Phase_SE1.1b – Depth reduction clamp | Completed | HEAD | 2350511 | Clamp verification depth to `depth - 1 - 3`; DEBUG `ineligible` counter tracks early exits. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -33,6 +34,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Design depth reduction clamp logic for SE1.1b prior to coding.
-2. Outline null-window setup requirements for SE1.1c in deferred tracker.
-3. Document TT store policy decisions ahead of SE1.2a implementation.
+1. Outline null-window setup requirements for SE1.1c in deferred tracker.
+2. Document TT store policy decisions ahead of SE1.2a implementation.
+3. Capture telemetry differentials once SE1.1c window narrowing is ready for testing.
