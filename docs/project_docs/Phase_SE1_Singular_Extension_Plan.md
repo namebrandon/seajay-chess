@@ -177,9 +177,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE1.1c – Window narrowing setup**
-  - Implement null-window calculation: `[beta - 1, beta]`
-  - Add fail-soft clamping to ensure valid window
-  - Prepare childContext with excluded move flag set
+  - ✅ Implement null-window calculation: `[beta - 1, beta]`
+  - ✅ Add fail-soft clamping to ensure valid window
+  - Prepare childContext with excluded move flag set (deferred to SE1.1d alongside recursion hookup)
+  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se11c` (bench 2350511, parity)
   - **Overflow-safe implementation:**
     ```cpp
     constexpr Score clamp_score(Score s) noexcept {
