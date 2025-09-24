@@ -24,6 +24,7 @@ eval::Score verify_exclusion(
     Board& board,
     NodeContext context,
     int depth,
+    int ply,
     eval::Score alpha,
     eval::Score beta,
     SearchInfo& searchInfo,
@@ -32,15 +33,8 @@ eval::Score verify_exclusion(
     TranspositionTable* tt,
     TriangularPV* pv,
     SingularVerifyStats* stats) {
-    (void)board;
-    (void)context;
     constexpr int kVerificationReduction = 3;
     (void)alpha;
-    (void)beta;
-    (void)searchInfo;
-    (void)searchData;
-    (void)tt;
-    (void)pv;
 
     const bool singularDisabled = !limits.useSingularExtensions;
     const bool excludedParamDisabled = !limits.enableExcludedMoveParam;
@@ -70,6 +64,16 @@ eval::Score verify_exclusion(
         return eval::Score::zero();
     }
 
+    const Move excludedMove = context.excludedMove();
+    if (excludedMove == NO_MOVE) {
+#ifdef DEBUG
+        if (stats) {
+            stats->ineligible++;
+        }
+#endif
+        return eval::Score::zero();
+    }
+
     // Stage SE1.1c: Build the verification window (null-window search).
     const eval::Score singularBeta = clamp_score(beta);
     const eval::Score probeAlphaCandidate = clamp_score(eval::Score(beta.value() - 1));
@@ -83,11 +87,23 @@ eval::Score verify_exclusion(
     }
 
     const eval::Score singularAlpha = probeAlphaCandidate;
-    (void)singularAlpha;
-    (void)singularBeta;
+    NodeContext verifyContext = makeExcludedContext(context, excludedMove);
 
-    // Stage SE1.1a: Skeleton helper – full verification search will land in later stages.
-    return eval::Score::zero();
+    // Stage SE1.1d: Issue verification search via negamax (still a no-op null window result).
+    const eval::Score verificationScore = negamax(
+        board,
+        verifyContext,
+        singularDepth,
+        ply,
+        singularAlpha,
+        singularBeta,
+        searchInfo,
+        searchData,
+        limits,
+        tt,
+        pv);
+
+    return verificationScore;
 }
 
 } // namespace seajay::search
