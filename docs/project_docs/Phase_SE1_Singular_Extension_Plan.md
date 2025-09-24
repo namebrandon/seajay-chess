@@ -231,28 +231,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: < 0.5% (TT probe overhead)
   - SPRT: Bench parity
 - **SE2.1b – Score margin calculation**
-  - Implement `singularMargin(depth)` function
-  - Initial table: `{depth>=8: 60cp, depth>=6: 80cp, else: 100cp}`
-  - Calculate `singularBeta = ttScore - singularMargin(depth)`
-  - **Compile-time lookup table:**
-    ```cpp
-    template<std::size_t MaxDepth = 64>
-    struct SingularMargins {
-        static constexpr std::array<Score, MaxDepth> generate() noexcept {
-            std::array<Score, MaxDepth> margins{};
-            for (std::size_t d = 0; d < MaxDepth; ++d) {
-                margins[d] = d >= 8 ? 60 : (d >= 6 ? 80 : 100);
-            }
-            return margins;
-        }
-        static constexpr auto table = generate();
-    };
-
-    [[nodiscard]] constexpr Score singular_margin(Depth d) noexcept {
-        return SingularMargins<>::table[std::min(d, 63)];
-    }
-    ```
-  - Saturating subtraction to prevent underflow
+  - ✅ Implement depth-indexed `singular_margin` lookup (≥8 → 60cp, ≥6 → 80cp, else 100cp) with constexpr table.
+  - ✅ Extend `verify_exclusion` to take TT score, derive `singularBeta = clamp(ttScore - singular_margin(depth))`, and narrow window via saturating subtract.
+  - ✅ Guard window construction with clamp helper so verification stays within mate bounds (no underflow).
+  - Status: Completed 2025-09-24 on `feature/20250924-singular-extension-se21b` (bench 2350511, parity)
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE2.1c – Move validation and qualification**

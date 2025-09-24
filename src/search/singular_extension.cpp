@@ -25,6 +25,7 @@ eval::Score verify_exclusion(
     NodeContext context,
     int depth,
     int ply,
+    eval::Score ttScore,
     eval::Score alpha,
     eval::Score beta,
     SearchInfo& searchInfo,
@@ -74,9 +75,11 @@ eval::Score verify_exclusion(
         return eval::Score::zero();
     }
 
-    // Stage SE1.1c: Build the verification window (null-window search).
-    const eval::Score singularBeta = clamp_score(beta);
-    const eval::Score probeAlphaCandidate = clamp_score(eval::Score(beta.value() - 1));
+    // Stage SE2.1b: Build verification window around TT score using margin table.
+    const eval::Score margin = singular_margin(depth);
+    const int singularBetaRaw = ttScore.value() - margin.value();
+    const eval::Score singularBeta = clamp_score(eval::Score(singularBetaRaw));
+    const eval::Score probeAlphaCandidate = clamp_score(eval::Score(singularBeta.value() - 1));
     if (!(probeAlphaCandidate < singularBeta)) {
 #ifdef DEBUG
         if (stats) {
