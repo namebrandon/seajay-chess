@@ -86,6 +86,8 @@ struct TTStats {
     std::atomic<uint64_t> hits{0};
     std::atomic<uint64_t> stores{0};
     std::atomic<uint64_t> collisions{0};
+    std::atomic<uint64_t> verificationStores{0};
+    std::atomic<uint64_t> verificationSkips{0};
     
     // Probe-side collision tracking for better diagnostics
     std::atomic<uint64_t> probeEmpties{0};      // Probed an empty slot
@@ -106,6 +108,8 @@ struct TTStats {
     uint64_t hits = 0;
     uint64_t stores = 0;
     uint64_t collisions = 0;
+    uint64_t verificationStores = 0;
+    uint64_t verificationSkips = 0;
     uint64_t probeEmpties = 0;
     uint64_t probeMismatches = 0;
     uint64_t clusterScans = 0;
@@ -123,6 +127,8 @@ struct TTStats {
         hits = 0;
         stores = 0;
         collisions = 0;
+        verificationStores = 0;
+        verificationSkips = 0;
         probeEmpties = 0;
         probeMismatches = 0;
         clusterScans = 0;

@@ -217,9 +217,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Status: In progress on `feature/20250923-singular-extension-se12a-docs` (doc-only groundwork; bench unaffected).
   - Expected NPS impact: 0%
 - **SE1.2b – TT contamination guards**
-  - Add instrumentation to verify main TT entry unchanged
+  - ✅ Add debug-only sentinel that asserts if verification mode attempts to overwrite primary TT entries.
+  - ✅ Track verification store/skip counters in TT stats for telemetry.
   - DEBUG-only validation of TT state pre/post verification
-  - Document debug guardrails: sentinel asserts fire if verification mode ever evicts a primary entry; telemetry counter increments for unexpected replacements.
+  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se12b-guards` (bench 2350511, parity)
   - Expected NPS impact: 0% (DEBUG only)
 
 ### Stage SE2 — Candidate Identification & Qualification

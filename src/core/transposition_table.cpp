@@ -153,8 +153,30 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
     auto recordStore = [&]() {
 #ifdef TT_STATS_ENABLED
         m_stats.stores++;
+        if (policy == StorePolicy::Verification) {
+            m_stats.verificationStores++;
+        }
 #endif
     };
+
+    auto recordVerificationSkip = [&]() {
+#ifdef TT_STATS_ENABLED
+        if (policy == StorePolicy::Verification) {
+            m_stats.verificationSkips++;
+        }
+#endif
+    };
+
+#ifdef DEBUG
+    auto ensureVerificationSlot = [&](const TTEntry& entry) {
+        if (policy == StorePolicy::Verification) {
+            assert((entry.isEmpty() || entry.hasFlag(TTEntryFlags::Exclusion)) &&
+                   "Verification store attempted to overwrite primary TT entry");
+        }
+    };
+#else
+    auto ensureVerificationSlot = [&](const TTEntry&) {};
+#endif
 
     uint32_t key32 = static_cast<uint32_t>(key >> 32);
     
@@ -167,12 +189,14 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             for (size_t i = 0; i < CLUSTER_SIZE; ++i) {
                 TTEntry& entry = cluster[i];
                 if (entry.isEmpty() || entry.hasFlag(TTEntryFlags::Exclusion)) {
+                    ensureVerificationSlot(entry);
                     entry.save(key32, move, score, evalScore, depth, bound, m_generation,
                                toMask(TTEntryFlags::Exclusion));
                     recordStore();
                     return;
                 }
             }
+            recordVerificationSkip();
             return;  // No suitable slot; skip to avoid polluting primary entries
         }
         
@@ -189,6 +213,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
 #ifdef TT_STATS_ENABLED
                 m_stats.replacedEmpty++;
 #endif
+                ensureVerificationSlot(cluster[i]);
                 cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
                 recordStore();
                 return;
@@ -201,6 +226,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
                     !entry.hasFlag(TTEntryFlags::Exclusion)) {
                     return;  // Don't overwrite move with NO_MOVE
                 }
+                ensureVerificationSlot(cluster[i]);
                 cluster[i].save(key32, move, score, evalScore, depth, bound, m_generation);
                 recordStore();
                 return;
@@ -252,6 +278,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             m_stats.replacedOldest++;
         }
 #endif
+        ensureVerificationSlot(*victim);
         victim->save(key32, move, score, evalScore, depth, bound, m_generation);
         recordStore();
         return;
@@ -262,9 +289,13 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
 
         if (policy == StorePolicy::Verification) {
             if (entry->isEmpty() || entry->hasFlag(TTEntryFlags::Exclusion)) {
+                ensureVerificationSlot(*entry);
                 entry->save(key32, move, score, evalScore, depth, bound, m_generation,
                             toMask(TTEntryFlags::Exclusion));
                 recordStore();
+            }
+            else {
+                recordVerificationSkip();
             }
             return;
         }
@@ -331,6 +362,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         }
         
         if (canReplace) {
+            ensureVerificationSlot(*entry);
             entry->save(key32, move, score, evalScore, depth, bound, m_generation);
             recordStore();
         }
