@@ -260,9 +260,10 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: < 0.3%
   - SPRT: Bench parity
 - **SE2.2a – Window clamping**
-  - Implement fail-soft window adjustment
-  - Ensure `singularBeta` stays within valid score range
-  - Add overflow protection for extreme scores
+  - ✅ Launch verification search immediately after TT candidate qualification
+  - ✅ Clamp verification window via `singular_margin` and `clamp_singular_score` prior to helper dispatch
+  - ✅ Increment `verificationsStarted` telemetry and stash `singularVerificationBeta` for SE2.2b comparison
+  - NodeContext primed/cleared around trigger so legacy excluded plumbing stays in sync
   - Expected NPS impact: 0%
 - **SE2.2b – Extension decision logic**
   - Compare verification score to `singularBeta`
@@ -535,4 +536,4 @@ Potential vectorization targets:
 
 ---
 
-**Next Action:** Implement SE2.2a window clamping + verification trigger and schedule post-qualification telemetry run to baseline TT_EXCLUSION counters.
+**Next Action:** Implement SE2.2b decision logic around verification score vs `singularBeta`, then capture telemetry to baseline new rejection metrics.

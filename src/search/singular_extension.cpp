@@ -6,18 +6,6 @@
 #include "../core/board.h"
 #include "../core/transposition_table.h"
 
-namespace {
-
-[[nodiscard]] constexpr seajay::eval::Score clamp_score(seajay::eval::Score score) noexcept {
-    constexpr int minBound = -seajay::eval::Score::mate().value() + seajay::MAX_PLY;
-    constexpr int maxBound = seajay::eval::Score::mate().value() - seajay::MAX_PLY;
-    const int raw = score.value();
-    const int clamped = raw < minBound ? minBound : (raw > maxBound ? maxBound : raw);
-    return seajay::eval::Score(clamped);
-}
-
-} // namespace
-
 namespace seajay::search {
 
 eval::Score verify_exclusion(
@@ -78,8 +66,8 @@ eval::Score verify_exclusion(
     // Stage SE2.1b: Build verification window around TT score using margin table.
     const eval::Score margin = singular_margin(depth);
     const int singularBetaRaw = ttScore.value() - margin.value();
-    const eval::Score singularBeta = clamp_score(eval::Score(singularBetaRaw));
-    const eval::Score probeAlphaCandidate = clamp_score(eval::Score(singularBeta.value() - 1));
+    const eval::Score singularBeta = clamp_singular_score(eval::Score(singularBetaRaw));
+    const eval::Score probeAlphaCandidate = clamp_singular_score(eval::Score(singularBeta.value() - 1));
     if (!(probeAlphaCandidate < singularBeta)) {
 #ifdef DEBUG
         if (stats) {

@@ -383,6 +383,9 @@ eval::Score negamax(Board& board,
     // Initialize TT move and info for singular extensions
     Move ttMove = NO_MOVE;
     Move singularCandidate = NO_MOVE;
+    [[maybe_unused]] bool singularVerificationRan = false;
+    [[maybe_unused]] eval::Score singularVerificationScore = eval::Score::zero();
+    [[maybe_unused]] eval::Score singularVerificationBeta = eval::Score::zero();
     eval::Score ttScore = eval::Score::zero();
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
@@ -551,7 +554,7 @@ eval::Score negamax(Board& board,
             }
         }
     }
-    
+
     const bool singularExclusionPrimed = singularCandidate != NO_MOVE;
     if (singularExclusionPrimed) {
 #ifdef DEBUG
@@ -561,6 +564,28 @@ eval::Score negamax(Board& board,
         if (limits.enableExcludedMoveParam) {
             searchInfo.setExcludedMove(ply, singularCandidate);
         }
+
+        // Stage SE2.2a: Launch verification search with reduced window.
+        info.singularStats.verificationsStarted++;
+        const eval::Score margin = singular_margin(depth);
+        const int singularBetaRaw = ttScore.value() - margin.value();
+        singularVerificationBeta = clamp_singular_score(eval::Score(singularBetaRaw));
+
+        singularVerificationScore = verify_exclusion(
+            board,
+            context,
+            depth,
+            ply,
+            ttScore,
+            alpha,
+            beta,
+            searchInfo,
+            info,
+            limits,
+            tt,
+            nullptr,
+            nullptr);
+        singularVerificationRan = true;
     }
 
     // Phase 4.2.c: Compute static eval if not in check and haven't gotten it from TT

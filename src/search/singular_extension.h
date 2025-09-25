@@ -48,6 +48,15 @@ constexpr std::array<int, 64> build_singular_margin_table() noexcept {
 constexpr auto kSingularMarginTable = build_singular_margin_table();
 } // namespace detail
 
+// Clamp score into valid mate bounds for singular verification windows.
+[[nodiscard]] constexpr eval::Score clamp_singular_score(eval::Score score) noexcept {
+    const int minBound = -eval::Score::mate().value() + MAX_PLY;
+    const int maxBound = eval::Score::mate().value() - MAX_PLY;
+    const int raw = score.value();
+    const int clamped = raw < minBound ? minBound : (raw > maxBound ? maxBound : raw);
+    return eval::Score(clamped);
+}
+
 // Compile-time margin lookup for singular verification searches.
 [[nodiscard]] constexpr eval::Score singular_margin(int depth) noexcept {
     if (depth < 0) {
@@ -61,7 +70,7 @@ constexpr auto kSingularMarginTable = build_singular_margin_table();
 }
 
 // Stage SE1.1a: Verification helper scaffold (no-op until SE2/SE3 hook it up).
-[[nodiscard]] ALWAYS_INLINE eval::Score verify_exclusion(
+[[nodiscard]] eval::Score verify_exclusion(
     Board& board,
     NodeContext context,
     int depth,

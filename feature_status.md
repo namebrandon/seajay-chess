@@ -27,7 +27,8 @@
 | SingularExtension_Phase_SE1.2b – TT contamination guards | Completed | 1b185fa | 2350511 | DEBUG sentinel/asserts guard verification stores; TT stats track verification store/skip counters for telemetry. |
 | SingularExtension_Phase_SE2.1a – TT probe gate | Completed | a586d04 | 2350511 | TT probe now validates depth/EXACT/move before counting singular candidates (telemetry via `singularStats`). |
 | SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Added constexpr `singular_margin` table and TT-driven windowing; `verify_exclusion` now clamps `singularBeta` via margin-based subtract. |
-| SingularExtension_Phase_SE2.1c – Move qualification | In progress | (pending) | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
+| SingularExtension_Phase_SE2.1c – Move qualification | Completed | 8cb8359 | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
+| SingularExtension_Phase_SE2.2a – Verification trigger | In progress | (pending) | 2350511 | Launch verification search with margin-clamped window; record `verificationsStarted` ahead of future extension decision logic. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -41,5 +42,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Implement SE2.2a verification trigger (window clamping + exclusion context handoff) and ensure excluded move cleared post-check.
+1. Complete SE2.2a by wiring verification score handling and prepare for SE2.2b decision checks.
 2. Schedule follow-up telemetry once verification candidates exist to baseline TT_EXCLUSION counters and new rejection metrics.
