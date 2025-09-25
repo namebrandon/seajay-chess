@@ -105,6 +105,8 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
         std::uint64_t candidates_rejected_illegal{0};
         std::uint64_t candidates_rejected_tactical{0};
         std::uint64_t verifications_started{0};
+        std::uint64_t verification_fail_low{0};
+        std::uint64_t verification_fail_high{0};
         std::uint64_t extensions_applied{0};
         std::uint32_t max_extension_depth{0};
         std::uint32_t verification_cache_hits{0};
@@ -124,6 +126,8 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
         std::atomic<std::uint64_t> total_rejected_illegal{0};
         std::atomic<std::uint64_t> total_rejected_tactical{0};
         std::atomic<std::uint64_t> total_verified{0};
+        std::atomic<std::uint64_t> total_fail_low{0};
+        std::atomic<std::uint64_t> total_fail_high{0};
         std::atomic<std::uint64_t> total_extended{0};
         std::atomic<std::uint32_t> max_extension_depth{0};
         std::atomic<std::uint64_t> total_cache_hits{0};
@@ -134,6 +138,8 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
             total_rejected_illegal.fetch_add(local.candidates_rejected_illegal, std::memory_order_relaxed);
             total_rejected_tactical.fetch_add(local.candidates_rejected_tactical, std::memory_order_relaxed);
             total_verified.fetch_add(local.verifications_started, std::memory_order_relaxed);
+            total_fail_low.fetch_add(local.verification_fail_low, std::memory_order_relaxed);
+            total_fail_high.fetch_add(local.verification_fail_high, std::memory_order_relaxed);
             total_extended.fetch_add(local.extensions_applied, std::memory_order_relaxed);
             max_extension_depth.store(std::max(max_extension_depth.load(std::memory_order_relaxed),
                                               local.max_extension_depth), std::memory_order_relaxed);
@@ -266,9 +272,9 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - NodeContext primed/cleared around trigger so legacy excluded plumbing stays in sync
   - Expected NPS impact: 0%
 - **SE2.2b – Extension decision logic**
-  - Compare verification score to `singularBeta`
-  - Return extension flag (initially no action taken)
-  - Track decision in thread-local stats
+  - ✅ Compare verification score to `singularBeta` on the next move loop entry
+  - ✅ Track decision outcome via `verification_fail_low` / `verification_fail_high`
+  - No extension yet (Stage SE3 handles application), but telemetry now differentiates verification outcomes
   - Expected NPS impact: < 0.2%
 
 ### Stage SE3 — Extension Application & Interaction Guards
@@ -536,4 +542,4 @@ Potential vectorization targets:
 
 ---
 
-**Next Action:** Implement SE2.2b decision logic around verification score vs `singularBeta`, then capture telemetry to baseline new rejection metrics.
+**Next Action:** Run telemetry pass with `UseSingularExtensions`/`EnableExcludedMoveParam` enabled to baseline fail-low/high rates, then begin SE3.1a extension infrastructure.

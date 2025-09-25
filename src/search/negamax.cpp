@@ -383,9 +383,9 @@ eval::Score negamax(Board& board,
     // Initialize TT move and info for singular extensions
     Move ttMove = NO_MOVE;
     Move singularCandidate = NO_MOVE;
-    [[maybe_unused]] bool singularVerificationRan = false;
-    [[maybe_unused]] eval::Score singularVerificationScore = eval::Score::zero();
-    [[maybe_unused]] eval::Score singularVerificationBeta = eval::Score::zero();
+    bool singularVerificationRan = false;
+    eval::Score singularVerificationScore = eval::Score::zero();
+    eval::Score singularVerificationBeta = eval::Score::zero();
     eval::Score ttScore = eval::Score::zero();
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
@@ -536,7 +536,7 @@ eval::Score negamax(Board& board,
                 }
 
                 if (limits.useSingularExtensions && limits.enableExcludedMoveParam &&
-                    depth >= SINGULAR_DEPTH_MIN && ttMove != NO_MOVE &&
+                    depth >= SINGULAR_DEPTH_MIN && ply > 0 && ttMove != NO_MOVE &&
                     ttBound == Bound::EXACT && ttDepth >= depth - 1) {
                     auto& singularStats = info.singularStats;
                     singularStats.candidatesExamined++;
@@ -1110,7 +1110,7 @@ eval::Score negamax(Board& board,
             searchInfo.setExcludedMove(ply, previousExcluded);
         }
     }
-    
+
     while (true) {
         bool pendingMoveCountPrune = false;
         int pendingMoveCountLimit = 0;
@@ -1169,7 +1169,16 @@ eval::Score negamax(Board& board,
                 continue;
             }
         }
-        
+
+        if (singularVerificationRan && limits.useSingularExtensions) {
+            if (singularVerificationScore < singularVerificationBeta) {
+                info.singularStats.verificationFailLow++;
+            } else {
+                info.singularStats.verificationFailHigh++;
+            }
+            singularVerificationRan = false;
+        }
+
         // Phase B1: Don't increment moveCount here - wait until we know move is legal
         info.totalMoves++;  // Track total moves examined
         
@@ -2750,6 +2759,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                       << " qualified=" << singularTotals.candidatesQualified
                       << " rej_illegal=" << singularTotals.candidatesRejectedIllegal
                       << " rej_tactical=" << singularTotals.candidatesRejectedTactical
+                      << " fail_low=" << singularTotals.verificationFailLow
+                      << " fail_high=" << singularTotals.verificationFailHigh
                       << " verified=" << singularTotals.verificationsStarted
                       << " extended=" << singularTotals.extensionsApplied
                       << " cacheHits=" << singularTotals.verificationCacheHits
@@ -3123,19 +3134,25 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
 
     if (info.isSingularTelemetryEnabled()) {
         const auto singularTotals = info.singularTotals().snapshot();
-        if (!singularTotals.empty()) {
-            builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
-            if (singularTotals.candidatesQualified > 0) {
-                builder.appendCustom("se_qual", std::to_string(singularTotals.candidatesQualified));
-            }
-            if (singularTotals.candidatesRejectedIllegal > 0) {
-                builder.appendCustom("se_illegal", std::to_string(singularTotals.candidatesRejectedIllegal));
-            }
-            if (singularTotals.candidatesRejectedTactical > 0) {
-                builder.appendCustom("se_tact", std::to_string(singularTotals.candidatesRejectedTactical));
-            }
-            builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
-            builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
+            if (!singularTotals.empty()) {
+                builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+                if (singularTotals.candidatesQualified > 0) {
+                    builder.appendCustom("se_qual", std::to_string(singularTotals.candidatesQualified));
+                }
+                if (singularTotals.candidatesRejectedIllegal > 0) {
+                    builder.appendCustom("se_illegal", std::to_string(singularTotals.candidatesRejectedIllegal));
+                }
+                if (singularTotals.candidatesRejectedTactical > 0) {
+                    builder.appendCustom("se_tact", std::to_string(singularTotals.candidatesRejectedTactical));
+                }
+                if (singularTotals.verificationFailLow > 0) {
+                    builder.appendCustom("se_low", std::to_string(singularTotals.verificationFailLow));
+                }
+                if (singularTotals.verificationFailHigh > 0) {
+                    builder.appendCustom("se_high", std::to_string(singularTotals.verificationFailHigh));
+                }
+                builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
+                builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
             if (singularTotals.verificationCacheHits > 0) {
                 builder.appendCustom("se_hits", std::to_string(singularTotals.verificationCacheHits));
             }
@@ -3222,6 +3239,12 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
             }
             if (singularTotals.candidatesRejectedTactical > 0) {
                 builder.appendCustom("se_tact", std::to_string(singularTotals.candidatesRejectedTactical));
+            }
+            if (singularTotals.verificationFailLow > 0) {
+                builder.appendCustom("se_low", std::to_string(singularTotals.verificationFailLow));
+            }
+            if (singularTotals.verificationFailHigh > 0) {
+                builder.appendCustom("se_high", std::to_string(singularTotals.verificationFailHigh));
             }
             builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
             builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
