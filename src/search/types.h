@@ -347,14 +347,20 @@ struct SearchData {
     
     // Stage SE0.1a: Singular extension telemetry (thread-local)
     struct alignas(64) SingularStats {
-        uint64_t candidatesExamined = 0;      // Candidate moves evaluated for singularity
-        uint64_t verificationsStarted = 0;    // Verification searches launched
-        uint64_t extensionsApplied = 0;       // Singular extensions successfully applied
-        uint32_t maxExtensionDepth = 0;       // Maximum depth reached with stacked extensions
-        uint32_t verificationCacheHits = 0;   // Cache hits in verification helpers
+        uint64_t candidatesExamined = 0;        // Candidate moves evaluated for singularity
+        uint64_t candidatesQualified = 0;       // Candidates that passed legality/quiet filters
+        uint64_t candidatesRejectedIllegal = 0; // TT moves rejected for illegality
+        uint64_t candidatesRejectedTactical = 0; // TT moves rejected for tactical properties
+        uint64_t verificationsStarted = 0;      // Verification searches launched
+        uint64_t extensionsApplied = 0;         // Singular extensions successfully applied
+        uint32_t maxExtensionDepth = 0;         // Maximum depth reached with stacked extensions
+        uint32_t verificationCacheHits = 0;     // Cache hits in verification helpers
 
         void reset() noexcept {
             candidatesExamined = 0;
+            candidatesQualified = 0;
+            candidatesRejectedIllegal = 0;
+            candidatesRejectedTactical = 0;
             verificationsStarted = 0;
             extensionsApplied = 0;
             maxExtensionDepth = 0;
@@ -362,9 +368,10 @@ struct SearchData {
         }
 
         bool empty() const noexcept {
-            return candidatesExamined == 0 && verificationsStarted == 0 &&
-                   extensionsApplied == 0 && maxExtensionDepth == 0 &&
-                   verificationCacheHits == 0;
+            return candidatesExamined == 0 && candidatesQualified == 0 &&
+                   candidatesRejectedIllegal == 0 && candidatesRejectedTactical == 0 &&
+                   verificationsStarted == 0 && extensionsApplied == 0 &&
+                   maxExtensionDepth == 0 && verificationCacheHits == 0;
         }
     };
 
@@ -388,6 +395,9 @@ struct SearchData {
 
     struct alignas(64) GlobalSingularStats {
         uint64_t totalExamined = 0;
+        uint64_t totalQualified = 0;
+        uint64_t totalIllegalRejects = 0;
+        uint64_t totalTacticalRejects = 0;
         uint64_t totalVerified = 0;
         uint64_t totalExtended = 0;
         uint32_t maxExtensionDepth = 0;
@@ -395,6 +405,9 @@ struct SearchData {
 
         void reset() noexcept {
             totalExamined = 0;
+            totalQualified = 0;
+            totalIllegalRejects = 0;
+            totalTacticalRejects = 0;
             totalVerified = 0;
             totalExtended = 0;
             maxExtensionDepth = 0;
@@ -408,10 +421,16 @@ struct SearchData {
 
             if (threadSafe) {
                 std::atomic_ref<uint64_t> examined(totalExamined);
+                std::atomic_ref<uint64_t> qualified(totalQualified);
+                std::atomic_ref<uint64_t> illegal(totalIllegalRejects);
+                std::atomic_ref<uint64_t> tactical(totalTacticalRejects);
                 std::atomic_ref<uint64_t> verified(totalVerified);
                 std::atomic_ref<uint64_t> extended(totalExtended);
                 std::atomic_ref<uint64_t> cacheHits(totalCacheHits);
                 examined.fetch_add(local.candidatesExamined, std::memory_order_relaxed);
+                qualified.fetch_add(local.candidatesQualified, std::memory_order_relaxed);
+                illegal.fetch_add(local.candidatesRejectedIllegal, std::memory_order_relaxed);
+                tactical.fetch_add(local.candidatesRejectedTactical, std::memory_order_relaxed);
                 verified.fetch_add(local.verificationsStarted, std::memory_order_relaxed);
                 extended.fetch_add(local.extensionsApplied, std::memory_order_relaxed);
                 cacheHits.fetch_add(local.verificationCacheHits, std::memory_order_relaxed);
@@ -429,6 +448,9 @@ struct SearchData {
             }
 
             totalExamined += local.candidatesExamined;
+            totalQualified += local.candidatesQualified;
+            totalIllegalRejects += local.candidatesRejectedIllegal;
+            totalTacticalRejects += local.candidatesRejectedTactical;
             totalVerified += local.verificationsStarted;
             totalExtended += local.extensionsApplied;
             totalCacheHits += local.verificationCacheHits;
@@ -440,6 +462,9 @@ struct SearchData {
         SingularStats snapshot() const noexcept {
             SingularStats totals;
             totals.candidatesExamined = totalExamined;
+            totals.candidatesQualified = totalQualified;
+            totals.candidatesRejectedIllegal = totalIllegalRejects;
+            totals.candidatesRejectedTactical = totalTacticalRejects;
             totals.verificationsStarted = totalVerified;
             totals.extensionsApplied = totalExtended;
             totals.maxExtensionDepth = maxExtensionDepth;

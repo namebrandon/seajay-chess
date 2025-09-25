@@ -382,6 +382,7 @@ eval::Score negamax(Board& board,
     
     // Initialize TT move and info for singular extensions
     Move ttMove = NO_MOVE;
+    Move singularCandidate = NO_MOVE;
     eval::Score ttScore = eval::Score::zero();
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
@@ -404,7 +405,7 @@ eval::Score negamax(Board& board,
     // Phase 3.2: We'll generate pseudo-legal moves later, after TT/null pruning
     // Obtain per-ply scratch MoveList to avoid deep recursion stack growth
     MoveList& moves = info.acquireMoveList(ply);
-    
+
     // Sub-phase 4B: Establish correct probe order
     // 1. Check repetition FIRST (fastest, most common draw in search)
     // 2. Check fifty-move rule SECOND (less common)
@@ -534,12 +535,34 @@ eval::Score negamax(Board& board,
                 if (limits.useSingularExtensions && limits.enableExcludedMoveParam &&
                     depth >= SINGULAR_DEPTH_MIN && ttMove != NO_MOVE &&
                     ttBound == Bound::EXACT && ttDepth >= depth - 1) {
-                    info.singularStats.candidatesExamined++;
+                    auto& singularStats = info.singularStats;
+                    singularStats.candidatesExamined++;
+
+                    const bool legalCandidate = MoveGenerator::isLegal(board, ttMove);
+                    if (!legalCandidate) {
+                        singularStats.candidatesRejectedIllegal++;
+                    } else if (isCapture(ttMove) || isPromotion(ttMove)) {
+                        singularStats.candidatesRejectedTactical++;
+                    } else {
+                        singularStats.candidatesQualified++;
+                        singularCandidate = ttMove;
+                    }
                 }
             }
         }
     }
     
+    const bool singularExclusionPrimed = singularCandidate != NO_MOVE;
+    if (singularExclusionPrimed) {
+#ifdef DEBUG
+        assert(isPvNode && "Singular exclusion candidate should only appear on PV nodes");
+#endif
+        context.setExcluded(singularCandidate);
+        if (limits.enableExcludedMoveParam) {
+            searchInfo.setExcludedMove(ply, singularCandidate);
+        }
+    }
+
     // Phase 4.2.c: Compute static eval if not in check and haven't gotten it from TT
     // We need this for pruning decisions and to store in TT later
     if (!staticEvalComputed && !weAreInCheck) {
@@ -1056,6 +1079,13 @@ eval::Score negamax(Board& board,
     // Phase 2a: Iterate using RankedMovePicker or traditional move list
     Move move;
     size_t moveIndex = 0;
+    if (singularExclusionPrimed) {
+        context.clearExcluded();
+        if (limits.enableExcludedMoveParam) {
+            searchInfo.setExcludedMove(ply, previousExcluded);
+        }
+    }
+    
     while (true) {
         bool pendingMoveCountPrune = false;
         int pendingMoveCountLimit = 0;
@@ -2691,10 +2721,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         if (info.isSingularTelemetryEnabled()) {
             const auto singularTotals = info.singularTotals().snapshot();
             if (!singularTotals.empty()) {
-                std::cout << "info string SingularStats: examined=" << singularTotals.candidatesExamined
-                          << " verified=" << singularTotals.verificationsStarted
-                          << " extended=" << singularTotals.extensionsApplied
-                          << " cacheHits=" << singularTotals.verificationCacheHits
+            std::cout << "info string SingularStats: examined=" << singularTotals.candidatesExamined
+                      << " qualified=" << singularTotals.candidatesQualified
+                      << " rej_illegal=" << singularTotals.candidatesRejectedIllegal
+                      << " rej_tactical=" << singularTotals.candidatesRejectedTactical
+                      << " verified=" << singularTotals.verificationsStarted
+                      << " extended=" << singularTotals.extensionsApplied
+                      << " cacheHits=" << singularTotals.verificationCacheHits
                           << " maxDepth=" << singularTotals.maxExtensionDepth
                           << std::endl;
             }
@@ -3067,6 +3100,15 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
         const auto singularTotals = info.singularTotals().snapshot();
         if (!singularTotals.empty()) {
             builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+            if (singularTotals.candidatesQualified > 0) {
+                builder.appendCustom("se_qual", std::to_string(singularTotals.candidatesQualified));
+            }
+            if (singularTotals.candidatesRejectedIllegal > 0) {
+                builder.appendCustom("se_illegal", std::to_string(singularTotals.candidatesRejectedIllegal));
+            }
+            if (singularTotals.candidatesRejectedTactical > 0) {
+                builder.appendCustom("se_tact", std::to_string(singularTotals.candidatesRejectedTactical));
+            }
             builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
             builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
             if (singularTotals.verificationCacheHits > 0) {
@@ -3147,6 +3189,15 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
         const auto singularTotals = info.singularTotals().snapshot();
         if (!singularTotals.empty()) {
             builder.appendCustom("se_exam", std::to_string(singularTotals.candidatesExamined));
+            if (singularTotals.candidatesQualified > 0) {
+                builder.appendCustom("se_qual", std::to_string(singularTotals.candidatesQualified));
+            }
+            if (singularTotals.candidatesRejectedIllegal > 0) {
+                builder.appendCustom("se_illegal", std::to_string(singularTotals.candidatesRejectedIllegal));
+            }
+            if (singularTotals.candidatesRejectedTactical > 0) {
+                builder.appendCustom("se_tact", std::to_string(singularTotals.candidatesRejectedTactical));
+            }
             builder.appendCustom("se_ver", std::to_string(singularTotals.verificationsStarted));
             builder.appendCustom("se_ext", std::to_string(singularTotals.extensionsApplied));
             if (singularTotals.verificationCacheHits > 0) {
