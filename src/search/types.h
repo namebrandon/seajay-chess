@@ -352,6 +352,8 @@ struct SearchData {
         uint64_t candidatesRejectedIllegal = 0; // TT moves rejected for illegality
         uint64_t candidatesRejectedTactical = 0; // TT moves rejected for tactical properties
         uint64_t verificationsStarted = 0;      // Verification searches launched
+        uint64_t verificationFailLow = 0;       // Verification result below singular beta
+        uint64_t verificationFailHigh = 0;      // Verification result met/exceeded singular beta
         uint64_t extensionsApplied = 0;         // Singular extensions successfully applied
         uint32_t maxExtensionDepth = 0;         // Maximum depth reached with stacked extensions
         uint32_t verificationCacheHits = 0;     // Cache hits in verification helpers
@@ -362,6 +364,8 @@ struct SearchData {
             candidatesRejectedIllegal = 0;
             candidatesRejectedTactical = 0;
             verificationsStarted = 0;
+            verificationFailLow = 0;
+            verificationFailHigh = 0;
             extensionsApplied = 0;
             maxExtensionDepth = 0;
             verificationCacheHits = 0;
@@ -370,7 +374,8 @@ struct SearchData {
         bool empty() const noexcept {
             return candidatesExamined == 0 && candidatesQualified == 0 &&
                    candidatesRejectedIllegal == 0 && candidatesRejectedTactical == 0 &&
-                   verificationsStarted == 0 && extensionsApplied == 0 &&
+                   verificationsStarted == 0 && verificationFailLow == 0 &&
+                   verificationFailHigh == 0 && extensionsApplied == 0 &&
                    maxExtensionDepth == 0 && verificationCacheHits == 0;
         }
     };
@@ -399,6 +404,8 @@ struct SearchData {
         uint64_t totalIllegalRejects = 0;
         uint64_t totalTacticalRejects = 0;
         uint64_t totalVerified = 0;
+        uint64_t totalFailLow = 0;
+        uint64_t totalFailHigh = 0;
         uint64_t totalExtended = 0;
         uint32_t maxExtensionDepth = 0;
         uint64_t totalCacheHits = 0;
@@ -409,6 +416,8 @@ struct SearchData {
             totalIllegalRejects = 0;
             totalTacticalRejects = 0;
             totalVerified = 0;
+            totalFailLow = 0;
+            totalFailHigh = 0;
             totalExtended = 0;
             maxExtensionDepth = 0;
             totalCacheHits = 0;
@@ -425,6 +434,8 @@ struct SearchData {
                 std::atomic_ref<uint64_t> illegal(totalIllegalRejects);
                 std::atomic_ref<uint64_t> tactical(totalTacticalRejects);
                 std::atomic_ref<uint64_t> verified(totalVerified);
+                std::atomic_ref<uint64_t> failLow(totalFailLow);
+                std::atomic_ref<uint64_t> failHigh(totalFailHigh);
                 std::atomic_ref<uint64_t> extended(totalExtended);
                 std::atomic_ref<uint64_t> cacheHits(totalCacheHits);
                 examined.fetch_add(local.candidatesExamined, std::memory_order_relaxed);
@@ -432,6 +443,8 @@ struct SearchData {
                 illegal.fetch_add(local.candidatesRejectedIllegal, std::memory_order_relaxed);
                 tactical.fetch_add(local.candidatesRejectedTactical, std::memory_order_relaxed);
                 verified.fetch_add(local.verificationsStarted, std::memory_order_relaxed);
+                failLow.fetch_add(local.verificationFailLow, std::memory_order_relaxed);
+                failHigh.fetch_add(local.verificationFailHigh, std::memory_order_relaxed);
                 extended.fetch_add(local.extensionsApplied, std::memory_order_relaxed);
                 cacheHits.fetch_add(local.verificationCacheHits, std::memory_order_relaxed);
 
@@ -452,6 +465,8 @@ struct SearchData {
             totalIllegalRejects += local.candidatesRejectedIllegal;
             totalTacticalRejects += local.candidatesRejectedTactical;
             totalVerified += local.verificationsStarted;
+            totalFailLow += local.verificationFailLow;
+            totalFailHigh += local.verificationFailHigh;
             totalExtended += local.extensionsApplied;
             totalCacheHits += local.verificationCacheHits;
             if (local.maxExtensionDepth > maxExtensionDepth) {
@@ -466,6 +481,8 @@ struct SearchData {
             totals.candidatesRejectedIllegal = totalIllegalRejects;
             totals.candidatesRejectedTactical = totalTacticalRejects;
             totals.verificationsStarted = totalVerified;
+            totals.verificationFailLow = totalFailLow;
+            totals.verificationFailHigh = totalFailHigh;
             totals.extensionsApplied = totalExtended;
             totals.maxExtensionDepth = maxExtensionDepth;
             totals.verificationCacheHits = totalCacheHits;
