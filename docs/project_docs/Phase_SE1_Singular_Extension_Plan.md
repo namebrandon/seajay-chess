@@ -101,6 +101,9 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     ```cpp
     struct alignas(64) SingularStats {  // Cache line aligned
         std::uint64_t candidates_examined{0};
+        std::uint64_t candidates_qualified{0};
+        std::uint64_t candidates_rejected_illegal{0};
+        std::uint64_t candidates_rejected_tactical{0};
         std::uint64_t verifications_started{0};
         std::uint64_t extensions_applied{0};
         std::uint32_t max_extension_depth{0};
@@ -117,13 +120,24 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     ```cpp
     struct alignas(64) GlobalSingularStats {
         std::atomic<std::uint64_t> total_examined{0};
+        std::atomic<std::uint64_t> total_qualified{0};
+        std::atomic<std::uint64_t> total_rejected_illegal{0};
+        std::atomic<std::uint64_t> total_rejected_tactical{0};
         std::atomic<std::uint64_t> total_verified{0};
         std::atomic<std::uint64_t> total_extended{0};
+        std::atomic<std::uint32_t> max_extension_depth{0};
+        std::atomic<std::uint64_t> total_cache_hits{0};
 
         void aggregate(const SingularStats& local) noexcept {
             total_examined.fetch_add(local.candidates_examined, std::memory_order_relaxed);
+            total_qualified.fetch_add(local.candidates_qualified, std::memory_order_relaxed);
+            total_rejected_illegal.fetch_add(local.candidates_rejected_illegal, std::memory_order_relaxed);
+            total_rejected_tactical.fetch_add(local.candidates_rejected_tactical, std::memory_order_relaxed);
             total_verified.fetch_add(local.verifications_started, std::memory_order_relaxed);
             total_extended.fetch_add(local.extensions_applied, std::memory_order_relaxed);
+            max_extension_depth.store(std::max(max_extension_depth.load(std::memory_order_relaxed),
+                                              local.max_extension_depth), std::memory_order_relaxed);
+            total_cache_hits.fetch_add(local.verification_cache_hits, std::memory_order_relaxed);
         }
     };
     ```
@@ -214,7 +228,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     - `TTEntry` grew a `flags` byte plus helpers (`hasFlag`, `save(flags)`).
     - Cluster/linear store paths consult `StorePolicy` and gate writes accordingly.
     - Primary stores zero the flag on overwrite so downstream logic sees clean entries.
-  - Status: In progress on `feature/20250923-singular-extension-se12a-docs` (doc-only groundwork; bench unaffected).
+  - Status: Completed 2025-09-23 on `feature/20250923-singular-extension-se12a-docs` (bench 2350511, parity).
   - Expected NPS impact: 0%
 - **SE1.2b – TT contamination guards**
   - ✅ Add debug-only sentinel that asserts if verification mode attempts to overwrite primary TT entries.
@@ -238,9 +252,11 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
 - **SE2.1c – Move validation and qualification**
-  - Verify TT move is legal in current position
-  - Check move is non-tactical (not capture/promotion)
-  - Set up excluded move in NodeContext
+  - ✅ Verify TT move legality via `MoveGenerator::isLegal`
+  - ✅ Reject tactical TT moves (captures/promotions) from singular pipeline
+  - ✅ Prime NodeContext with excluded move (cleared ahead of main move loop until SE2.2 verification wiring)
+  - ✅ Telemetry: added `candidatesQualified`, `candidatesRejectedIllegal`, `candidatesRejectedTactical`
+  - Status: Completed 2025-09-24 on `feature/20250924-singular-extension-se21c` (bench 2350511, parity)
   - Expected NPS impact: < 0.3%
   - SPRT: Bench parity
 - **SE2.2a – Window clamping**
@@ -519,4 +535,4 @@ Potential vectorization targets:
 
 ---
 
-**Next Action:** Kick off Stage SE0.1a telemetry scaffolding on dedicated sub-branch (baseline performance capture handled in Stage SE0.1).
+**Next Action:** Implement SE2.2a window clamping + verification trigger and schedule post-qualification telemetry run to baseline TT_EXCLUSION counters.
