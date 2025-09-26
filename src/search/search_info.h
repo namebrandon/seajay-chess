@@ -4,11 +4,43 @@
 #include "../evaluation/types.h"  // For eval::Score (Phase A3)
 #include <array>
 #include <cstdint>
+#include <new>
 
 namespace seajay {
 
 // Maximum search depth
 constexpr int MAX_PLY = 128;
+
+#if defined(__cpp_lib_hardware_interference_size)
+constexpr std::size_t kExtensionTrackerAlign = std::hardware_destructive_interference_size;
+#else
+constexpr std::size_t kExtensionTrackerAlign = 64;
+#endif
+
+struct alignas(kExtensionTrackerAlign) ExtensionTracker {
+    static constexpr int MAX_TOTAL_EXTENSIONS = 32;
+    static constexpr int MAX_SINGULAR_EXTENSIONS = 16;
+
+    std::uint32_t maxTotalObserved = 0;
+    std::uint32_t maxSingularObserved = 0;
+
+    void reset() noexcept {
+        maxTotalObserved = 0;
+        maxSingularObserved = 0;
+    }
+
+    void record(std::uint32_t totalExtensions, std::uint32_t singularExtensions) noexcept {
+        if (totalExtensions > maxTotalObserved) {
+            maxTotalObserved = totalExtensions;
+        }
+        if (singularExtensions > maxSingularObserved) {
+            maxSingularObserved = singularExtensions;
+        }
+    }
+};
+
+static_assert(ExtensionTracker::MAX_TOTAL_EXTENSIONS <= MAX_PLY / 2,
+              "Extension budget must not exceed half of MAX_PLY");
 
 // Stack entry for search history
 struct SearchStack {
@@ -39,6 +71,8 @@ public:
         }
         m_extensionApplied.fill(0);
         m_extensionTotal.fill(0);
+        m_singularExtensionTotal.fill(0);
+        m_extensionBudget.reset();
     }
     
     // Set the game history size at root (where game ends, search begins)
@@ -114,6 +148,8 @@ public:
         m_extensionApplied[ply] = extension;
         int parentTotal = (ply > 0) ? m_extensionTotal[ply - 1] : 0;
         m_extensionTotal[ply] = parentTotal + extension;
+        m_extensionBudget.record(static_cast<std::uint32_t>(m_extensionTotal[ply]),
+                                 static_cast<std::uint32_t>(singularExtensions(ply)));
     }
 
     int extensionApplied(int ply) const {
@@ -129,6 +165,55 @@ public:
         }
         return 0;
     }
+
+    int singularExtensions(int ply) const {
+        if (ply >= 0 && ply < MAX_PLY) {
+            return m_singularExtensionTotal[ply];
+        }
+        return 0;
+    }
+
+    void setSingularExtensionApplied(int ply, int singularExtension) {
+        if (ply < 0 || ply >= MAX_PLY) {
+            return;
+        }
+        int parentTotal = (ply > 0) ? m_singularExtensionTotal[ply - 1] : 0;
+        m_singularExtensionTotal[ply] = parentTotal + singularExtension;
+        m_extensionBudget.record(static_cast<std::uint32_t>(totalExtensions(ply)),
+                                 static_cast<std::uint32_t>(m_singularExtensionTotal[ply]));
+    }
+
+    int clampExtensionAmount(int ply, int requestedExtension, bool singular) const {
+        if (requestedExtension <= 0) {
+            return 0;
+        }
+        const int totalUsed = totalExtensions(ply);
+        const int totalBudget = ExtensionTracker::MAX_TOTAL_EXTENSIONS;
+        if (totalUsed >= totalBudget) {
+            return 0;
+        }
+        int allowed = requestedExtension;
+        const int totalRemaining = totalBudget - totalUsed;
+        if (allowed > totalRemaining) {
+            allowed = totalRemaining;
+        }
+
+        if (singular) {
+            const int singularUsed = singularExtensions(ply);
+            const int singularBudget = ExtensionTracker::MAX_SINGULAR_EXTENSIONS;
+            if (singularUsed >= singularBudget) {
+                return 0;
+            }
+            const int singularRemaining = singularBudget - singularUsed;
+            if (allowed > singularRemaining) {
+                allowed = singularRemaining;
+            }
+        }
+        return allowed;
+    }
+
+    ExtensionTracker& extensionBudget() noexcept { return m_extensionBudget; }
+    const ExtensionTracker& extensionBudget() const noexcept { return m_extensionBudget; }
     
     // Current search ply
     int searchPly() const { return m_searchPly; }
@@ -214,6 +299,8 @@ private:
     std::array<SearchStack, MAX_PLY> m_searchStack;
     std::array<int, MAX_PLY> m_extensionApplied{};
     std::array<int, MAX_PLY> m_extensionTotal{};
+    std::array<int, MAX_PLY> m_singularExtensionTotal{};
+    ExtensionTracker m_extensionBudget{};
     int m_searchPly;
     size_t m_rootGameHistorySize;  // Where game history ends
 };

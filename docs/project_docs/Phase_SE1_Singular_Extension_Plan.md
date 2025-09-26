@@ -305,6 +305,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Use `std::hardware_destructive_interference_size` for padding
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
+  - Status: In progress 2025-09-25 on `feature/20250925-singular-extension-se31a`
 - **SE3.1b – Extension interaction rules**
   - Define priority: check extension > singular > recapture
   - Implement mutual exclusion (max 1 extension type per node)

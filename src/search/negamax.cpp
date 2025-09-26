@@ -1470,6 +1470,7 @@ eval::Score negamax(Board& board,
 
         // Calculate extension for this move (currently just check extension)
         int extension = 0;
+        bool singularExtension = false;
         // Check extension could be added here if needed
         
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
@@ -1622,8 +1623,30 @@ eval::Score negamax(Board& board,
         // Track beta cutoff position for move ordering analysis
         bool isCutoffMove = false;
 
+        if (extension > 0) {
+            const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtension);
+            if (clamped != extension) {
+                extension = clamped;
+                if (extension == 0) {
+                    singularExtension = false;
+                }
+            }
+        }
+
         // Record extension metadata for the child node before searching it
         searchInfo.setExtensionApplied(ply + 1, extension);
+        const int singularExtensionAmount = singularExtension ? extension : 0;
+        searchInfo.setSingularExtensionApplied(ply + 1, singularExtensionAmount);
+        if (singularExtensionAmount > 0) {
+            info.singularStats.extensionsApplied += static_cast<uint64_t>(singularExtensionAmount);
+        }
+        const int extensionDepth = searchInfo.totalExtensions(ply + 1);
+        if (extensionDepth > 0) {
+            const uint32_t depthValue = static_cast<uint32_t>(extensionDepth);
+            if (depthValue > info.singularStats.maxExtensionDepth) {
+                info.singularStats.maxExtensionDepth = depthValue;
+            }
+        }
         if (debugTrackedMove && extension != 0) {
             std::ostringstream extra;
             extra << "value=" << extension

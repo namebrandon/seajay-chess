@@ -7,7 +7,7 @@
 
 ## Timeline
 - Start Date: 2025-09-21
-- Current Branch: `feature/SE1-se1-1a-verify-skeleton`
+- Current Branch: `feature/20250925-singular-extension-se31a`
 - Base Commit: `76c574d347452ed2069e08e9fac6afe063bc8d87`
 - Bench Baseline (Release, Desktop): TBC after Stage SE0.1 telemetry capture
 
@@ -29,7 +29,8 @@
 | SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Added constexpr `singular_margin` table and TT-driven windowing; `verify_exclusion` now clamps `singularBeta` via margin-based subtract. |
 | SingularExtension_Phase_SE2.1c – Move qualification | Completed | 8cb8359 | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
 | SingularExtension_Phase_SE2.2a – Verification trigger | Completed | e29f0d9 | 2350511 | Launch verification search with margin-clamped window; record `verificationsStarted` ahead of SE2.2b comparisons. |
-| SingularExtension_Phase_SE2.2b – Verification outcome tracking | In progress | (pending) | 2350511 | Classify verification score vs `singularBeta`, populate fail-low/fail-high telemetry, and keep extension flagging deferred to SE3. |
+| SingularExtension_Phase_SE2.2b – Verification outcome tracking | Completed | 742af1c | 2350511 | Telemetry differentiates fail-low/high outcomes; root guard added to prevent context misuse ahead of SE3. |
+| SingularExtension_Phase_SE3.1a – Extension tracking infrastructure | In progress | (pending) | (pending) | Implement per-thread extension budget tracking and clamp helpers before enabling singular depth extensions. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -43,5 +44,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Capture telemetry with singular toggles enabled to baseline qualified/rejection/fail-low/high counters.
-2. Begin SE3.1a extension infrastructure once telemetry confirms verification signal health.
+1. Finalize SE3.1a extension budget infrastructure, including budget clamp wiring in the search path.
+2. Capture follow-up telemetry with budgets enabled to ensure no unexpected overhead before moving to SE3.1b interaction rules.
