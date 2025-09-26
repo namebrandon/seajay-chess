@@ -169,6 +169,7 @@ private:
     bool m_useSearchNodeAPIRefactor = true; // Phase 6: NodeContext plumbing (default ON after Stage 6g)
     bool m_enableExcludedMoveParam = false;   // Phase 6c: Excluded move parameter plumbing (default OFF)
     bool m_useSingularExtensions = false;     // Stage SE0.2a: Singular extension toggle (default OFF)
+    bool m_allowStackedExtensions = false;    // Stage SE3.1b: Extension stacking toggle (default OFF)
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)

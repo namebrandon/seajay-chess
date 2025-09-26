@@ -177,6 +177,9 @@ struct SearchLimits {
     // Stage SE0.2a: Singular extension master toggle (default OFF until feature ships)
     bool useSingularExtensions = false;
 
+    // Stage SE3.1b: Optional stacking of multiple extension sources (default OFF)
+    bool allowStackedExtensions = false;
+
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 

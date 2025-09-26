@@ -30,7 +30,8 @@
 | SingularExtension_Phase_SE2.1c – Move qualification | Completed | 8cb8359 | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
 | SingularExtension_Phase_SE2.2a – Verification trigger | Completed | e29f0d9 | 2350511 | Launch verification search with margin-clamped window; record `verificationsStarted` ahead of SE2.2b comparisons. |
 | SingularExtension_Phase_SE2.2b – Verification outcome tracking | Completed | 742af1c | 2350511 | Telemetry differentiates fail-low/high outcomes; root guard added to prevent context misuse ahead of SE3. |
-| SingularExtension_Phase_SE3.1a – Extension tracking infrastructure | In progress | (pending) | (pending) | Implement per-thread extension budget tracking and clamp helpers before enabling singular depth extensions. |
+| SingularExtension_Phase_SE3.1a – Extension tracking infrastructure | Completed | 4ac6ee0 | 2350511 | Implemented extension budget clamp and telemetry; verified neutral bench with toggles enabled. |
+| SingularExtension_Phase_SE3.1b – Extension interaction rules | Completed | (pending) | 2350511 | Added per-node extension arbitration with singular verification hook, optional recapture stacking via UCI toggle, and maintained bench parity. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -44,5 +45,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Finalize SE3.1a extension budget infrastructure, including budget clamp wiring in the search path.
-2. Capture follow-up telemetry with budgets enabled to ensure no unexpected overhead before moving to SE3.1b interaction rules.
+1. Stage SE3.2a: wire singular verification results to actual depth increments and node-context propagation.
+2. Prepare telemetry slices (fail-low/high vs applied) for upcoming SPRT once SE3.2 lands.

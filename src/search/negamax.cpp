@@ -384,6 +384,8 @@ eval::Score negamax(Board& board,
     Move ttMove = NO_MOVE;
     Move singularCandidate = NO_MOVE;
     bool singularVerificationRan = false;
+    bool singularExtensionPending = false;
+    int singularExtensionAmountPending = 0;
     eval::Score singularVerificationScore = eval::Score::zero();
     eval::Score singularVerificationBeta = eval::Score::zero();
     eval::Score ttScore = eval::Score::zero();
@@ -1173,8 +1175,12 @@ eval::Score negamax(Board& board,
         if (singularVerificationRan && limits.useSingularExtensions) {
             if (singularVerificationScore < singularVerificationBeta) {
                 info.singularStats.verificationFailLow++;
+                singularExtensionPending = true;
+                singularExtensionAmountPending = 1;
             } else {
                 info.singularStats.verificationFailHigh++;
+                singularExtensionPending = false;
+                singularExtensionAmountPending = 0;
             }
             singularVerificationRan = false;
         }
@@ -1468,11 +1474,81 @@ eval::Score negamax(Board& board,
 
         searchInfo.setGaveCheck(ply, givesCheckMove);
 
-        // Calculate extension for this move (currently just check extension)
+        enum class ExtensionType : uint8_t {
+            None = 0,
+            Recapture = 1,
+            Singular = 2,
+            Check = 3,
+        };
+
+        auto extensionPriority = [](ExtensionType type) constexpr -> int {
+            switch (type) {
+                case ExtensionType::Check: return 3;
+                case ExtensionType::Singular: return 2;
+                case ExtensionType::Recapture: return 1;
+                default: return 0;
+            }
+        };
+
+        auto extensionTypeToString = [](ExtensionType type) constexpr -> const char* {
+            switch (type) {
+                case ExtensionType::Check: return "check";
+                case ExtensionType::Singular: return "singular";
+                case ExtensionType::Recapture: return "recapture";
+                default: return "none";
+            }
+        };
+
         int extension = 0;
-        bool singularExtension = false;
-        // Check extension could be added here if needed
-        
+        ExtensionType extensionType = ExtensionType::None;
+
+        auto requestExtension = [&](ExtensionType type, int amount) {
+            if (amount <= 0) {
+                return;
+            }
+
+            if (!limits.allowStackedExtensions) {
+                const int currentPriority = extensionPriority(extensionType);
+                const int requestedPriority = extensionPriority(type);
+
+                if (requestedPriority > currentPriority ||
+                    (requestedPriority == currentPriority && amount > extension)) {
+                    extension = amount;
+                    extensionType = type;
+                }
+                return;
+            }
+
+            // Stacking support (future optimization): prefer highest-priority amount
+            // For now, treat stacking identically to single-source selection to maintain
+            // predictable behaviour until Stage SE3.2 introduces combined extensions.
+            const int currentPriority = extensionPriority(extensionType);
+            const int requestedPriority = extensionPriority(type);
+            if (requestedPriority > currentPriority ||
+                (requestedPriority == currentPriority && amount > extension)) {
+                extension = amount;
+                extensionType = type;
+            }
+        };
+
+        // Recapture extension: extend when immediately recapturing on the same square.
+        if (limits.allowStackedExtensions) {
+            const bool isRecaptureMove = (prevMove != NO_MOVE && isCapture(prevMove) &&
+                                          isCapture(move) && moveTo(prevMove) == moveTo(move));
+            if (isRecaptureMove) {
+                requestExtension(ExtensionType::Recapture, 1);
+            }
+        }
+
+        // Singular extension: only for TT move confirmed singular by verification helper.
+        const bool isSingularMove = (limits.useSingularExtensions && singularExtensionPending &&
+                                     move == singularCandidate);
+        if (isSingularMove) {
+            requestExtension(ExtensionType::Singular, singularExtensionAmountPending);
+            singularExtensionPending = false;
+            singularExtensionAmountPending = 0;
+        }
+
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
         // Following notes: Apply after confirming legality but before recursion
         const auto& config = seajay::getConfig();
@@ -1624,18 +1700,19 @@ eval::Score negamax(Board& board,
         bool isCutoffMove = false;
 
         if (extension > 0) {
-            const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtension);
+            const bool singularExtensionActive = (extensionType == ExtensionType::Singular);
+            const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtensionActive);
             if (clamped != extension) {
                 extension = clamped;
                 if (extension == 0) {
-                    singularExtension = false;
+                    extensionType = ExtensionType::None;
                 }
             }
         }
 
         // Record extension metadata for the child node before searching it
         searchInfo.setExtensionApplied(ply + 1, extension);
-        const int singularExtensionAmount = singularExtension ? extension : 0;
+        const int singularExtensionAmount = (extensionType == ExtensionType::Singular) ? extension : 0;
         searchInfo.setSingularExtensionApplied(ply + 1, singularExtensionAmount);
         if (singularExtensionAmount > 0) {
             info.singularStats.extensionsApplied += static_cast<uint64_t>(singularExtensionAmount);
@@ -1650,7 +1727,8 @@ eval::Score negamax(Board& board,
         if (debugTrackedMove && extension != 0) {
             std::ostringstream extra;
             extra << "value=" << extension
-                  << " total=" << searchInfo.totalExtensions(ply + 1);
+                  << " total=" << searchInfo.totalExtensions(ply + 1)
+                  << " type=" << extensionTypeToString(extensionType);
             logTrackedEvent("extension_apply", extra.str());
         }
 

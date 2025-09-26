@@ -305,12 +305,13 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Use `std::hardware_destructive_interference_size` for padding
   - Expected NPS impact: < 0.1%
   - SPRT: Bench parity
-  - Status: In progress 2025-09-25 on `feature/20250925-singular-extension-se31a`
+  - Status: Completed 2025-09-25 on `feature/20250921-singular-extension-plan` (merge 4ac6ee0, bench 2350511)
 - **SE3.1b – Extension interaction rules**
   - Define priority: check extension > singular > recapture
   - Implement mutual exclusion (max 1 extension type per node)
   - Add UCI toggle `AllowStackedExtensions` (default false)
   - Expected NPS impact: 0%
+  - Status: Completed 2025-09-26 on `feature/20250926-singular-extension-se31b` (bench 2350511)
 - **SE3.1c – Check extension coordination**
   - Add toggle `DisableCheckDuringSingular` for A/B testing
   - Implement conditional check extension disable
