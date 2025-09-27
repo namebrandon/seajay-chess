@@ -217,6 +217,9 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
 constexpr int MATE_SCORE = 30000;
 constexpr int MATE_BOUND = 29000;
 constexpr int SINGULAR_DEPTH_MIN = 8;
+constexpr int STACKED_RECAPTURE_MIN_DEPTH = 10;      // Guard: only stack when search is sufficiently deep
+constexpr int STACKED_RECAPTURE_EVAL_MARGIN_CP = 96; // Require static eval within ~1 pawn of beta
+constexpr int STACKED_RECAPTURE_TT_MARGIN = 1;       // TT entry must exceed current depth by this margin
 
 #include "negamax_legacy.inc"
 
@@ -384,6 +387,8 @@ eval::Score negamax(Board& board,
     Move ttMove = NO_MOVE;
     Move singularCandidate = NO_MOVE;
     bool singularVerificationRan = false;
+    bool singularExtensionPending = false;
+    int singularExtensionAmountPending = 0;
     eval::Score singularVerificationScore = eval::Score::zero();
     eval::Score singularVerificationBeta = eval::Score::zero();
     eval::Score ttScore = eval::Score::zero();
@@ -1173,8 +1178,12 @@ eval::Score negamax(Board& board,
         if (singularVerificationRan && limits.useSingularExtensions) {
             if (singularVerificationScore < singularVerificationBeta) {
                 info.singularStats.verificationFailLow++;
+                singularExtensionPending = true;
+                singularExtensionAmountPending = 1;
             } else {
                 info.singularStats.verificationFailHigh++;
+                singularExtensionPending = false;
+                singularExtensionAmountPending = 0;
             }
             singularVerificationRan = false;
         }
@@ -1468,11 +1477,74 @@ eval::Score negamax(Board& board,
 
         searchInfo.setGaveCheck(ply, givesCheckMove);
 
-        // Calculate extension for this move (currently just check extension)
+        enum class ExtensionType : uint8_t {
+            None = 0,
+            Singular = 1,
+            SingularStack = 2,
+            Recapture = 3,
+            Check = 4,
+        };
+
+        auto extensionTypeToString = [](ExtensionType type) constexpr -> const char* {
+            switch (type) {
+                case ExtensionType::Singular: return "singular";
+                case ExtensionType::SingularStack: return "singular+recapture";
+                case ExtensionType::Recapture: return "recapture";
+                case ExtensionType::Check: return "check";
+                default: return "none";
+            }
+        };
+
         int extension = 0;
-        bool singularExtension = false;
-        // Check extension could be added here if needed
-        
+        ExtensionType extensionType = ExtensionType::None;
+        int singularExtensionAmount = 0;
+        int recaptureExtensionAmount = 0;
+        bool stackedSingularExtension = false;
+
+        // Singular extension: only for TT move confirmed singular by verification helper.
+        const bool isSingularMove = (limits.useSingularExtensions && singularExtensionPending &&
+                                     move == singularCandidate);
+        if (isSingularMove) {
+            singularExtensionAmount = singularExtensionAmountPending;
+            singularExtensionPending = false;
+            singularExtensionAmountPending = 0;
+            if (singularExtensionAmount > 0) {
+                extension = singularExtensionAmount;
+                extensionType = ExtensionType::Singular;
+            }
+        }
+
+        const bool isRecaptureMove = (prevMove != NO_MOVE && isCapture(prevMove) &&
+                                      isCapture(move) && moveTo(prevMove) == moveTo(move));
+
+        if (limits.allowStackedExtensions && singularExtensionAmount > 0 && isRecaptureMove) {
+            auto& singularStats = info.singularStats;
+            singularStats.stackingCandidates++;
+
+            const bool depthGuardPassed = depth >= STACKED_RECAPTURE_MIN_DEPTH;
+            const bool evalGuardPassed = staticEvalComputed &&
+                                         (staticEval.value() >= beta.value() - STACKED_RECAPTURE_EVAL_MARGIN_CP);
+            const bool ttGuardPassed = ttDepth >= depth + STACKED_RECAPTURE_TT_MARGIN;
+
+            if (!depthGuardPassed) {
+                singularStats.stackingRejectedDepth++;
+            }
+            if (!evalGuardPassed) {
+                singularStats.stackingRejectedEval++;
+            }
+            if (!ttGuardPassed) {
+                singularStats.stackingRejectedTT++;
+            }
+
+            if (depthGuardPassed && evalGuardPassed && ttGuardPassed) {
+                recaptureExtensionAmount = 1;
+                extension += recaptureExtensionAmount;
+                extensionType = ExtensionType::SingularStack;
+                stackedSingularExtension = true;
+                singularStats.stackingApplied++;
+            }
+        }
+
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
         // Following notes: Apply after confirming legality but before recursion
         const auto& config = seajay::getConfig();
@@ -1624,21 +1696,43 @@ eval::Score negamax(Board& board,
         bool isCutoffMove = false;
 
         if (extension > 0) {
-            const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtension);
+            const bool singularExtensionActive = (singularExtensionAmount > 0);
+            const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtensionActive);
             if (clamped != extension) {
+                if (stackedSingularExtension && clamped < extension) {
+                    info.singularStats.stackingBudgetClamped++;
+                }
                 extension = clamped;
                 if (extension == 0) {
-                    singularExtension = false;
+                    extensionType = ExtensionType::None;
+                    singularExtensionAmount = 0;
+                    recaptureExtensionAmount = 0;
+                    stackedSingularExtension = false;
+                } else {
+                    if (singularExtensionAmount > extension) {
+                        singularExtensionAmount = extension;
+                    }
+                    if (singularExtensionAmount < extension) {
+                        recaptureExtensionAmount = extension - singularExtensionAmount;
+                    } else {
+                        recaptureExtensionAmount = 0;
+                        if (extensionType == ExtensionType::SingularStack) {
+                            extensionType = ExtensionType::Singular;
+                        }
+                        stackedSingularExtension = false;
+                    }
                 }
             }
         }
 
         // Record extension metadata for the child node before searching it
         searchInfo.setExtensionApplied(ply + 1, extension);
-        const int singularExtensionAmount = singularExtension ? extension : 0;
         searchInfo.setSingularExtensionApplied(ply + 1, singularExtensionAmount);
         if (singularExtensionAmount > 0) {
             info.singularStats.extensionsApplied += static_cast<uint64_t>(singularExtensionAmount);
+        }
+        if (recaptureExtensionAmount > 0) {
+            info.singularStats.stackingExtraDepth += static_cast<uint64_t>(recaptureExtensionAmount);
         }
         const int extensionDepth = searchInfo.totalExtensions(ply + 1);
         if (extensionDepth > 0) {
@@ -1650,7 +1744,11 @@ eval::Score negamax(Board& board,
         if (debugTrackedMove && extension != 0) {
             std::ostringstream extra;
             extra << "value=" << extension
-                  << " total=" << searchInfo.totalExtensions(ply + 1);
+                  << " total=" << searchInfo.totalExtensions(ply + 1)
+                  << " type=" << extensionTypeToString(extensionType);
+            if (recaptureExtensionAmount > 0) {
+                extra << " recapture=" << recaptureExtensionAmount;
+            }
             logTrackedEvent("extension_apply", extra.str());
         }
 
@@ -2789,6 +2887,19 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                       << " cacheHits=" << singularTotals.verificationCacheHits
                           << " maxDepth=" << singularTotals.maxExtensionDepth
                           << std::endl;
+                if (singularTotals.stackingCandidates > 0 || singularTotals.stackingApplied > 0 ||
+                    singularTotals.stackingRejectedDepth > 0 || singularTotals.stackingRejectedEval > 0 ||
+                    singularTotals.stackingRejectedTT > 0 || singularTotals.stackingBudgetClamped > 0 ||
+                    singularTotals.stackingExtraDepth > 0) {
+                    std::cout << "info string SingularStack: cand=" << singularTotals.stackingCandidates
+                              << " app=" << singularTotals.stackingApplied
+                              << " rej_depth=" << singularTotals.stackingRejectedDepth
+                              << " rej_eval=" << singularTotals.stackingRejectedEval
+                              << " rej_tt=" << singularTotals.stackingRejectedTT
+                              << " clamp=" << singularTotals.stackingBudgetClamped
+                              << " extra=" << singularTotals.stackingExtraDepth
+                              << std::endl;
+                }
             }
         }
     }
@@ -3182,6 +3293,27 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
             if (singularTotals.maxExtensionDepth > 0) {
                 builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
             }
+            if (singularTotals.stackingCandidates > 0) {
+                builder.appendCustom("se_stack_c", std::to_string(singularTotals.stackingCandidates));
+            }
+            if (singularTotals.stackingApplied > 0) {
+                builder.appendCustom("se_stack_a", std::to_string(singularTotals.stackingApplied));
+            }
+            if (singularTotals.stackingRejectedDepth > 0) {
+                builder.appendCustom("se_stack_rd", std::to_string(singularTotals.stackingRejectedDepth));
+            }
+            if (singularTotals.stackingRejectedEval > 0) {
+                builder.appendCustom("se_stack_re", std::to_string(singularTotals.stackingRejectedEval));
+            }
+            if (singularTotals.stackingRejectedTT > 0) {
+                builder.appendCustom("se_stack_rt", std::to_string(singularTotals.stackingRejectedTT));
+            }
+            if (singularTotals.stackingBudgetClamped > 0) {
+                builder.appendCustom("se_stack_cl", std::to_string(singularTotals.stackingBudgetClamped));
+            }
+            if (singularTotals.stackingExtraDepth > 0) {
+                builder.appendCustom("se_stack_x", std::to_string(singularTotals.stackingExtraDepth));
+            }
         }
     }
 
@@ -3276,6 +3408,27 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
             }
             if (singularTotals.maxExtensionDepth > 0) {
                 builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+            }
+            if (singularTotals.stackingCandidates > 0) {
+                builder.appendCustom("se_stack_c", std::to_string(singularTotals.stackingCandidates));
+            }
+            if (singularTotals.stackingApplied > 0) {
+                builder.appendCustom("se_stack_a", std::to_string(singularTotals.stackingApplied));
+            }
+            if (singularTotals.stackingRejectedDepth > 0) {
+                builder.appendCustom("se_stack_rd", std::to_string(singularTotals.stackingRejectedDepth));
+            }
+            if (singularTotals.stackingRejectedEval > 0) {
+                builder.appendCustom("se_stack_re", std::to_string(singularTotals.stackingRejectedEval));
+            }
+            if (singularTotals.stackingRejectedTT > 0) {
+                builder.appendCustom("se_stack_rt", std::to_string(singularTotals.stackingRejectedTT));
+            }
+            if (singularTotals.stackingBudgetClamped > 0) {
+                builder.appendCustom("se_stack_cl", std::to_string(singularTotals.stackingBudgetClamped));
+            }
+            if (singularTotals.stackingExtraDepth > 0) {
+                builder.appendCustom("se_stack_x", std::to_string(singularTotals.stackingExtraDepth));
             }
         }
     }
