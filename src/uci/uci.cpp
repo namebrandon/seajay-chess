@@ -1194,7 +1194,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "SingularDepthMin") {
         try {
-            int v = std::stoi(value);
+            int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 4, 20);
             m_singularDepthMin = v;
             std::cerr << "info string SingularDepthMin set to " << v << std::endl;
@@ -1204,7 +1204,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "SingularMarginBase") {
         try {
-            int v = std::stoi(value);
+            int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 20, 200);
             m_singularMarginBase = v;
             std::cerr << "info string SingularMarginBase set to " << v << std::endl;
@@ -1214,7 +1214,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "SingularVerificationReduction") {
         try {
-            int v = std::stoi(value);
+            int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 2, 5);
             m_singularVerificationReduction = v;
             std::cerr << "info string SingularVerificationReduction set to " << v << std::endl;
@@ -1224,7 +1224,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "SingularExtensionDepth") {
         try {
-            int v = std::stoi(value);
+            int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 1, 2);
             m_singularExtensionDepth = v;
             std::cerr << "info string SingularExtensionDepth set to " << v << std::endl;
