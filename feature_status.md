@@ -45,5 +45,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Stage SE3.2a: wire singular verification results to actual depth increments and node-context propagation.
-2. Prepare telemetry slices (fail-low/high vs applied) for upcoming SPRT once SE3.2 lands.
+1. Implement SE3.1b guardrails: depth/eval/TT filters for stacked recapture extensions and gather telemetry with the toggle enabled.
+2. Stage SE3.2a: wire singular verification results to actual depth increments and node-context propagation once guardrails pass bench/SPRT.
+3. Prepare telemetry slices (fail-low/high vs applied) for upcoming SPRT once SE3.2 lands.
