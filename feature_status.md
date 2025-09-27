@@ -42,12 +42,18 @@
 | Desktop | (pending) | (pending) | 1 / 2 / 4 / 8 | (pending) | (pending) | (pending) | (pending) | Idle load assumption |
 | Laptop | (pending) | (pending) | 1 / 2 / 4 | (pending) | (pending) | (pending) | (pending) | Document battery/thermal state |
 
+### Recent Findings (2025-09-27)
+- `tools/stacked_telemetry.py --epd tests/positions/wacnew.epd --limit 200 --movetime 500` (stacked off/on) with margins ≥8→200/≥6→260 and verification reduction 4 produced `verified≈6.4k`, `fail_low≤3`, `extended≤3`, slack averages ~+30 cp. Extensions remain effectively inactive despite aggressive margins and shallower verification searches.
+- Switching to `tests/positions/bratko_kopec.epd` under the same configuration shows identical behaviour: `verified≈700`, `fail_low=0`, slack ~+31 cp. The issue is not specific to WAC positions; our verification window still very rarely fails low.
+- Stacked counters (candidates/applied/rejections) stay at zero because no singular verification produces a fail-low even when stacking is enabled. `info.singularExtensions` and `singularStats.extensionsApplied` remain 0 across all runs, explaining the -18 nELO OpenBench regression when the feature was enabled.
+- Current interpretation: the TT score gap between the singular candidate and the verification search remains too large (~30 cp on average). Additional gating or a different verification strategy will be required before proceeding to SPRT.
+
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
 - Ensure Release builds strip telemetry when toggle disabled to avoid exceeding ≤2% NPS budget for SE0 stages.
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Prepare telemetry slices (fail-low/high vs applied plus stacked metrics) for upcoming SPRT once SE3.2 lands.
-2. Implement SE3.1c check-extension coordination toggle and instrumentation.
-3. Stage SE4.1a: surface singular tuning parameters (`SingularDepthMin`, `SingularMarginBase`, etc.) via UCI.
+1. Revisit verification window strategy: experiment with even tighter margins, alternate reduction depth, or TT-bound adjustments so fail-low events occur with measurable frequency before scheduling SPRTs.
+2. Implement SE3.1c check-extension coordination toggle and instrumentation once singular extensions can trigger reliably.
+3. Stage SE4.1a: surface singular tuning parameters (`SingularDepthMin`, `SingularMarginBase`, etc.) via UCI to support future tuning and telemetry sweeps.
