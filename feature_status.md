@@ -46,6 +46,7 @@
 - `tools/stacked_telemetry.py --epd tests/positions/wacnew.epd --limit 200 --movetime 500` (stacked off/on) with margins ≥8→200/≥6→260 and verification reduction 4 produced `verified≈6.4k`, `fail_low≤3`, `extended≤3`, slack averages ~+30 cp. Extensions remain effectively inactive despite aggressive margins and shallower verification searches.
 - Switching to `tests/positions/bratko_kopec.epd` under the same configuration shows identical behaviour: `verified≈700`, `fail_low=0`, slack ~+31 cp. The issue is not specific to WAC positions; our verification window still very rarely fails low.
 - Stacked counters (candidates/applied/rejections) stay at zero because no singular verification produces a fail-low even when stacking is enabled. `info.singularExtensions` and `singularStats.extensionsApplied` remain 0 across all runs, explaining the -18 nELO OpenBench regression when the feature was enabled.
+- Further stress testing (verification reduction = 8, `SINGULAR_DEPTH_MIN=2`, margin table up to 840 cp for shallow depths) still yields `fail_low=0`, `extended=0` over 200-position sweeps (`wacnew.epd` and `bratko_kopec.epd`). Average slack balloons to ~35 cp, confirming the current verification strategy always returns above β even under extreme settings.
 - Current interpretation: the TT score gap between the singular candidate and the verification search remains too large (~30 cp on average). Additional gating or a different verification strategy will be required before proceeding to SPRT.
 
 ## Risk Notes
