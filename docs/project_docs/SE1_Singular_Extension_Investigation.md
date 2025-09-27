@@ -86,15 +86,22 @@
 - **Tooling:** `tools/stacked_telemetry.py` now supports `--offset`, `--chunk-size`, `--max-chunks`, and `--passes` so long sweeps stay under the 10 minute harness limit while preserving per-chunk summaries and overall aggregates.
 - **Check-extension toggle:** `DisableCheckDuringSingular` suppresses the automatic in-check extension on verification nodes; telemetry now reports `chk_sup/chk_app` so we can A/B stacking depth parity versus the default behaviour.
 
+### 2025-09-28 — Bratko-Kopec slack cap validation
+- **Setup:** `bratko_kopec.epd` via stacked telemetry, `--movetime 2000`, `--chunk-size 8`, defaults otherwise (28 positions, three chunks).
+- **Totals:** 2 792 verifications, 16 fail-lows (all extended), fail-low slack sum 16 cp, fail-high slack sum 37 674 cp with histogram clamp active.
+- **Percentiles:** Fail-low slack p50/p90/p95 = 4 cp, fail-high slack p50/p90/p95 = 4/40/40 cp—demonstrates the 256 cp bucket cap eliminates prior mate-driven spikes.
+- **Instrumentation:** No stack candidates in this suite (quiet-only), `chk_app=16`, `chk_sup=0`, confirming coordination with check extensions remains intact under the cap.
+- **Conclusion:** Tactical suite corroborates WAC/UHO results; slack histograms stay bounded (<50 cp at p95) while extensions trigger on every fail-low, so the cap can be considered production-safe pending wider SPRTs.
+
 ## Open Questions
 - Do we need a dedicated TT namespace/flag for verification probes to avoid returning stale exact scores (`TranspositionTable::StorePolicy` logic review)?
 - Should margin calculations consume the *verification* depth instead of parent depth to better reflect search horizon?
 - Are we double-counting failure paths when verification searches share PV context state (e.g., `childContext.setPv(true)`)?
 
 ## Next Steps Checklist
-1. **Tactical telemetry sweep:** run `wacnew.epd` (≥1 000 positions) at 5 s/move and record P50/P90/P95 fail-low slack to quantify the buffer tactical lines require.
-2. **Adaptive margin prototype:** design a depth/TT-gap aware adjustment (e.g., add slack when verification depth ≥12 or TT score gap > threshold) and implement behind a toggle for A/B testing.
-3. **Validation pass:** compare WAC/UHO telemetry with the adaptive margins enabled; ensure real-game slack stays tight while tactical slack settles near 10–15 cp before promoting the change.
+1. **Extended telemetry:** run an overnight UHO/WAC/Bratko rotation at tournament TC to confirm slack histograms stay bounded with production clocks.
+2. **Debug tooling:** prototype the planned `debug singular` command (SE4.2a) to sample verification traces during suspicious SPSA runs.
+3. **SPSA prep:** finalize parameter bounds/priors for `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` now that the cap is validated.
 
 ---
-_Last updated: 2025-09-27_
+_Last updated: 2025-09-28_

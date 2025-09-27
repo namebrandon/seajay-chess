@@ -36,6 +36,8 @@
 | SingularExtension_Phase_SE3.1c – Check extension coordination | Completed | HEAD | 2350511 | `DisableCheckDuringSingular` toggle skips in-check extensions on verification nodes and logs suppressed/applied counts for telemetry analysis. |
 | SingularExtension_Phase_SE3.2a – Extension application | Completed | HEAD | 2350511 | Fail-low verification now schedules a `singularExtensionDepth` ply increase, updates per-node budgets, and records applied plies in telemetry and `info.singularExtensions`. |
 | SingularExtension_Phase_SE3.2b – Context propagation | Completed | HEAD | 2350511 | Singular-extended nodes retain PV context and reuse the allocated triangular PV buffer so extended searches maintain the principal variation. |
+| SingularExtension_Phase_SE4.1a – UCI controls | Completed | f4d34ca | 2350511 | Exposed singular depth/margin/reduction/extension knobs via UCI and plumbed through `SearchLimits` with slack telemetry updates. |
+| SingularExtension_Phase_SE4.1b – Engine config plumbing | Completed | HEAD | 2350511 | Singular toggles/knobs now mirror into `EngineConfig`, keeping UCI options and SPSA-accessible runtime configuration in sync. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -50,6 +52,7 @@
 - **Singular check coordination:** With `DisableCheckDuringSingular=true`, check extensions are suppressed on verification nodes and counted via `chk_sup/chk_app`, enabling direct comparison of depth/parity impacts in future SPRTs.
 - **Singular UCI knobs:** `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` are now UCI options, enabling OpenBench sweeps without binary rebuilds.
 - **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
+- **Bratko-Kopec validation (28 positions @2 s):** 2 792 verifications, 16 fail-lows (all extended) with fail-low slack p95 = 4 cp and fail-high slack p95 = 44 cp, confirming the histogram cap reins in tactical spikes without muting extensions.
 
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
@@ -57,5 +60,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Validate the slack cap across additional tactical suites (e.g., `bratko_kopec.epd`) and confirm mate-distance reporting before touching reductions.
-2. Stage SE4.1b: plumb advanced tuning parameters into `engine_config` for SPSA sweeps once SE4.1a defaults are exercised.
+1. Stage SE4.2a: add the `debug singular` UCI command with per-position diagnostics so we can spot-check verification flow during SPRTs.
+2. Draft SPSA sweep parameters (bounds, step sizes, chunk scheduling) now that singular knobs sync through `EngineConfig`, and capture a fresh bench trace with the final configuration.

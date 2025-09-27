@@ -371,6 +371,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Add `SingularExtensionDepth` int (default 1, range 1-2)
   - Hook into `engine_config` for OpenBench parameter sweeps
   - Expected NPS impact: 0%
+  - Status: Completed 2025-09-28 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular toggles and knobs now mirror into `EngineConfig`, keeping UCI options and SPSA-accessible configuration in lockstep for future sweeps.
 - **SE4.2a – Debug diagnostics**
   - Implement `debug singular` UCI command
   - Output per-position singular decision log

@@ -693,14 +693,16 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.useRankAwareGates = m_useRankAwareGates;
     limits.useSearchNodeAPIRefactor = m_useSearchNodeAPIRefactor;
     limits.enableExcludedMoveParam = m_enableExcludedMoveParam;
-    limits.useSingularExtensions = m_useSingularExtensions;
-    limits.allowStackedExtensions = m_allowStackedExtensions;
-    limits.bypassSingularTTExact = m_bypassSingularTTExact;
-    limits.disableCheckDuringSingular = m_disableCheckDuringSingular;
-    limits.singularDepthMin = m_singularDepthMin;
-    limits.singularMarginBase = m_singularMarginBase;
-    limits.singularVerificationReduction = m_singularVerificationReduction;
-    limits.singularExtensionDepth = m_singularExtensionDepth;
+
+    const auto& engineConfig = seajay::getConfig();
+    limits.useSingularExtensions = engineConfig.useSingularExtensions;
+    limits.allowStackedExtensions = engineConfig.allowStackedExtensions;
+    limits.bypassSingularTTExact = engineConfig.bypassSingularTTExact;
+    limits.disableCheckDuringSingular = engineConfig.disableCheckDuringSingular;
+    limits.singularDepthMin = engineConfig.singularDepthMin;
+    limits.singularMarginBase = engineConfig.singularMarginBase;
+    limits.singularVerificationReduction = engineConfig.singularVerificationReduction;
+    limits.singularExtensionDepth = engineConfig.singularExtensionDepth;
     limits.debugTrackedMoves = m_debugTrackedMoves;
     
     // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
@@ -1159,36 +1161,44 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     else if (optionName == "UseSingularExtensions") {
         if (value == "true") {
             m_useSingularExtensions = true;
+            seajay::getConfig().useSingularExtensions = true;
             std::cerr << "info string Singular extensions toggle enabled" << std::endl;
         } else if (value == "false") {
             m_useSingularExtensions = false;
+            seajay::getConfig().useSingularExtensions = false;
             std::cerr << "info string Singular extensions toggle disabled" << std::endl;
         }
     }
     else if (optionName == "AllowStackedExtensions") {
         if (value == "true") {
             m_allowStackedExtensions = true;
+            seajay::getConfig().allowStackedExtensions = true;
             std::cerr << "info string Extension stacking enabled" << std::endl;
         } else if (value == "false") {
             m_allowStackedExtensions = false;
+            seajay::getConfig().allowStackedExtensions = false;
             std::cerr << "info string Extension stacking disabled" << std::endl;
         }
     }
     else if (optionName == "BypassSingularTTExact") {
         if (value == "true") {
             m_bypassSingularTTExact = true;
+            seajay::getConfig().bypassSingularTTExact = true;
             std::cerr << "info string Singular verification TT bypass enabled" << std::endl;
         } else if (value == "false") {
             m_bypassSingularTTExact = false;
+            seajay::getConfig().bypassSingularTTExact = false;
             std::cerr << "info string Singular verification TT bypass disabled" << std::endl;
         }
     }
     else if (optionName == "DisableCheckDuringSingular") {
         if (value == "true") {
             m_disableCheckDuringSingular = true;
+            seajay::getConfig().disableCheckDuringSingular = true;
             std::cerr << "info string Singular check extension suppression enabled" << std::endl;
         } else if (value == "false") {
             m_disableCheckDuringSingular = false;
+            seajay::getConfig().disableCheckDuringSingular = false;
             std::cerr << "info string Singular check extension suppression disabled" << std::endl;
         }
     }
@@ -1197,6 +1207,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 4, 20);
             m_singularDepthMin = v;
+            seajay::getConfig().singularDepthMin = v;
             std::cerr << "info string SingularDepthMin set to " << v << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid SingularDepthMin value: " << value << std::endl;
@@ -1207,6 +1218,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 20, 200);
             m_singularMarginBase = v;
+            seajay::getConfig().singularMarginBase = v;
             std::cerr << "info string SingularMarginBase set to " << v << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid SingularMarginBase value: " << value << std::endl;
@@ -1217,6 +1229,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 2, 5);
             m_singularVerificationReduction = v;
+            seajay::getConfig().singularVerificationReduction = v;
             std::cerr << "info string SingularVerificationReduction set to " << v << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid SingularVerificationReduction value: " << value << std::endl;
@@ -1227,6 +1240,7 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             int v = static_cast<int>(std::round(std::stod(value)));
             v = std::clamp(v, 1, 2);
             m_singularExtensionDepth = v;
+            seajay::getConfig().singularExtensionDepth = v;
             std::cerr << "info string SingularExtensionDepth set to " << v << std::endl;
         } catch (...) {
             std::cerr << "info string Invalid SingularExtensionDepth value: " << value << std::endl;
