@@ -253,6 +253,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 - **SE2.1b – Score margin calculation**
   - ✅ Implement depth-indexed `singular_margin` lookup (≥8 → 60cp, ≥6 → 80cp, else 100cp) with constexpr table.
   - ✅ Extend `verify_exclusion` to take TT score, derive `singularBeta = clamp(ttScore - singular_margin(depth))`, and narrow window via saturating subtract.
+  - ✅ Upgrade `singular_margin` to adapt using TT depth gap, β proximity, and verification horizon so critical nodes tighten automatically while soft bounds remain conservative for shallow probes.
   - ✅ Guard window construction with clamp helper so verification stays within mate bounds (no underflow).
   - Status: Completed 2025-09-24 on `feature/20250924-singular-extension-se21b` (bench 2350511, parity)
   - Expected NPS impact: < 0.1%

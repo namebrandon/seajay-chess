@@ -395,6 +395,14 @@ eval::Score negamax(Board& board,
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
     
+    // Track verification-node instrumentation before other pruning kicks in
+    const bool isSingularVerificationNode =
+        limits.useSingularExtensions && limits.enableExcludedMoveParam && context.hasExcludedMove();
+    if (isSingularVerificationNode) {
+        info.singularStats.verificationNodesEntered++;
+    }
+    bool verificationNodeReturnedViaTT = false;
+
     // Phase 4.2.c: Compute static eval early and preserve it for TT storage
     // This will be the true static evaluation, not the search score
     eval::Score staticEval = eval::Score::zero();
@@ -482,9 +490,20 @@ eval::Score negamax(Board& board,
                     if (tts.value() >= MATE_BOUND)      tts = eval::Score(tts.value() - ply);
                     else if (tts.value() <= -MATE_BOUND) tts = eval::Score(tts.value() + ply);
 
+                    if (isSingularVerificationNode && ttBound == Bound::EXACT) {
+                        const bool entryIsVerification = ttEntry->hasFlag(TTEntryFlags::Exclusion);
+                        if (limits.bypassSingularTTExact || !entryIsVerification) {
+                            ttBound = Bound::NONE;
+                        }
+                    }
+
                     if (ttBound == Bound::EXACT) {
                         if (ply > 0) {
                             info.ttCutoffs++;
+                            if (isSingularVerificationNode) {
+                                info.singularStats.verificationNodesTTExact++;
+                                verificationNodeReturnedViaTT = true;
+                            }
                             return tts;  // non-root: safe to cutoff
                         } else {
                             // root: tighten alpha around exact score but do not return
@@ -560,6 +579,10 @@ eval::Score negamax(Board& board,
         }
     }
 
+    if (isSingularVerificationNode && !verificationNodeReturnedViaTT) {
+        info.singularStats.verificationNodesExpanded++;
+    }
+
     const bool singularExclusionPrimed = singularCandidate != NO_MOVE;
     if (singularExclusionPrimed) {
 #ifdef DEBUG
@@ -572,7 +595,7 @@ eval::Score negamax(Board& board,
 
         // Stage SE2.2a: Launch verification search with reduced window.
         info.singularStats.verificationsStarted++;
-        const eval::Score margin = singular_margin(depth);
+        const eval::Score margin = singular_margin(depth, ttDepth, ttScore, beta);
         const int singularBetaRaw = ttScore.value() - margin.value();
         singularVerificationBeta = clamp_singular_score(eval::Score(singularBetaRaw));
 
@@ -581,6 +604,7 @@ eval::Score negamax(Board& board,
             context,
             depth,
             ply,
+            ttDepth,
             ttScore,
             alpha,
             beta,
@@ -1178,11 +1202,27 @@ eval::Score negamax(Board& board,
         if (singularVerificationRan && limits.useSingularExtensions) {
             if (singularVerificationScore < singularVerificationBeta) {
                 info.singularStats.verificationFailLow++;
+                const int slack = singularVerificationBeta.value() - singularVerificationScore.value();
+                info.singularStats.verificationFailLowSlackSum += static_cast<int64_t>(slack);
+                const int bucketWidth = SearchData::SingularStats::kSlackBucketWidth;
+                const int bucketIndex = std::clamp(
+                    slack / bucketWidth,
+                    0,
+                    SearchData::SingularStats::kSlackBucketCount - 1);
+                info.singularStats.failLowSlackBuckets[static_cast<std::size_t>(bucketIndex)]++;
                 const int extensionDepthConfig = std::max(limits.singularExtensionDepth, 0);
                 singularExtensionPending = extensionDepthConfig > 0;
                 singularExtensionAmountPending = extensionDepthConfig;
             } else {
                 info.singularStats.verificationFailHigh++;
+                const int slack = singularVerificationScore.value() - singularVerificationBeta.value();
+                info.singularStats.verificationFailHighSlackSum += static_cast<int64_t>(slack);
+                const int bucketWidth = SearchData::SingularStats::kSlackBucketWidth;
+                const int bucketIndex = std::clamp(
+                    slack / bucketWidth,
+                    0,
+                    SearchData::SingularStats::kSlackBucketCount - 1);
+                info.singularStats.failHighSlackBuckets[static_cast<std::size_t>(bucketIndex)]++;
                 singularExtensionPending = false;
                 singularExtensionAmountPending = 0;
             }
@@ -2889,10 +2929,40 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                       << " fail_low=" << singularTotals.verificationFailLow
                       << " fail_high=" << singularTotals.verificationFailHigh
                       << " verified=" << singularTotals.verificationsStarted
+                      << " nodes=" << singularTotals.verificationNodesEntered
+                      << " tt_exact=" << singularTotals.verificationNodesTTExact
+                      << " expanded=" << singularTotals.verificationNodesExpanded
                       << " extended=" << singularTotals.extensionsApplied
                       << " cacheHits=" << singularTotals.verificationCacheHits
+                      << " slack_low=" << singularTotals.verificationFailLowSlackSum
+                      << " slack_high=" << singularTotals.verificationFailHighSlackSum
                           << " maxDepth=" << singularTotals.maxExtensionDepth
                           << std::endl;
+                const auto hasSlackBuckets = std::any_of(
+                    singularTotals.failLowSlackBuckets.begin(),
+                    singularTotals.failLowSlackBuckets.end(),
+                    [](uint64_t value) { return value != 0; }) ||
+                    std::any_of(
+                        singularTotals.failHighSlackBuckets.begin(),
+                        singularTotals.failHighSlackBuckets.end(),
+                        [](uint64_t value) { return value != 0; });
+                if (hasSlackBuckets) {
+                    auto formatBuckets = [](const auto& buckets) {
+                        std::ostringstream oss;
+                        for (std::size_t i = 0; i < buckets.size(); ++i) {
+                            if (i > 0) {
+                                oss << ',';
+                            }
+                            oss << buckets[i];
+                        }
+                        return oss.str();
+                    };
+                    std::cout << "info string SingularSlack: bucket="
+                              << SearchData::SingularStats::kSlackBucketWidth
+                              << " low=" << formatBuckets(singularTotals.failLowSlackBuckets)
+                              << " high=" << formatBuckets(singularTotals.failHighSlackBuckets)
+                              << std::endl;
+                }
                 if (singularTotals.stackingCandidates > 0 || singularTotals.stackingApplied > 0 ||
                     singularTotals.stackingRejectedDepth > 0 || singularTotals.stackingRejectedEval > 0 ||
                     singularTotals.stackingRejectedTT > 0 || singularTotals.stackingBudgetClamped > 0 ||

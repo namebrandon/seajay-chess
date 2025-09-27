@@ -275,6 +275,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EnableExcludedMoveParam type check default false" << std::endl; // Phase 6c (default OFF)
     std::cout << "option name UseSingularExtensions type check default false" << std::endl; // Stage SE0.2a (default OFF)
     std::cout << "option name AllowStackedExtensions type check default false" << std::endl; // Stage SE3.1b (default OFF)
+    std::cout << "option name BypassSingularTTExact type check default false" << std::endl; // SE1 investigation toggle
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -689,6 +690,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.enableExcludedMoveParam = m_enableExcludedMoveParam;
     limits.useSingularExtensions = m_useSingularExtensions;
     limits.allowStackedExtensions = m_allowStackedExtensions;
+    limits.bypassSingularTTExact = m_bypassSingularTTExact;
     limits.debugTrackedMoves = m_debugTrackedMoves;
     
     // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
@@ -1160,6 +1162,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_allowStackedExtensions = false;
             std::cerr << "info string Extension stacking disabled" << std::endl;
+        }
+    }
+    else if (optionName == "BypassSingularTTExact") {
+        if (value == "true") {
+            m_bypassSingularTTExact = true;
+            std::cerr << "info string Singular verification TT bypass enabled" << std::endl;
+        } else if (value == "false") {
+            m_bypassSingularTTExact = false;
+            std::cerr << "info string Singular verification TT bypass disabled" << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)

@@ -26,7 +26,7 @@
 | SingularExtension_Phase_SE1.2a – TT store policy | Completed | 83e92c5 | 2350511 | Verification mode uses `StorePolicyGuard`; TT entries marked `TT_EXCLUSION` reside only in empty/flagged slots and are first to be evicted by primary stores. |
 | SingularExtension_Phase_SE1.2b – TT contamination guards | Completed | 1b185fa | 2350511 | DEBUG sentinel/asserts guard verification stores; TT stats track verification store/skip counters for telemetry. |
 | SingularExtension_Phase_SE2.1a – TT probe gate | Completed | a586d04 | 2350511 | TT probe now validates depth/EXACT/move before counting singular candidates (telemetry via `singularStats`). |
-| SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Added constexpr `singular_margin` table and TT-driven windowing; `verify_exclusion` now clamps `singularBeta` via margin-based subtract. |
+| SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Adaptive `singular_margin` now tightens based on TT depth gap and beta proximity; verification windows shrink automatically when parent search already overshoots beta. |
 | SingularExtension_Phase_SE2.1c – Move qualification | Completed | 8cb8359 | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
 | SingularExtension_Phase_SE2.2a – Verification trigger | Completed | e29f0d9 | 2350511 | Launch verification search with margin-clamped window; record `verificationsStarted` ahead of SE2.2b comparisons. |
 | SingularExtension_Phase_SE2.2b – Verification outcome tracking | Completed | 742af1c | 2350511 | Telemetry differentiates fail-low/high outcomes; root guard added to prevent context misuse ahead of SE3. |
@@ -43,11 +43,10 @@
 | Laptop | (pending) | (pending) | 1 / 2 / 4 | (pending) | (pending) | (pending) | (pending) | Document battery/thermal state |
 
 ### Recent Findings (2025-09-27)
-- `tools/stacked_telemetry.py --epd tests/positions/wacnew.epd --limit 200 --movetime 500` (stacked off/on) with margins ≥8→200/≥6→260 and verification reduction 4 produced `verified≈6.4k`, `fail_low≤3`, `extended≤3`, slack averages ~+30 cp. Extensions remain effectively inactive despite aggressive margins and shallower verification searches.
-- Switching to `tests/positions/bratko_kopec.epd` under the same configuration shows identical behaviour: `verified≈700`, `fail_low=0`, slack ~+31 cp. The issue is not specific to WAC positions; our verification window still very rarely fails low.
-- Stacked counters (candidates/applied/rejections) stay at zero because no singular verification produces a fail-low even when stacking is enabled. `info.singularExtensions` and `singularStats.extensionsApplied` remain 0 across all runs, explaining the -18 nELO OpenBench regression when the feature was enabled.
-- Further stress testing (verification reduction = 8, `SINGULAR_DEPTH_MIN=2`, margin table up to 840 cp for shallow depths) still yields `fail_low=0`, `extended=0` over 200-position sweeps (`wacnew.epd` and `bratko_kopec.epd`). Average slack balloons to ~35 cp, confirming the current verification strategy always returns above β even under extreme settings.
-- Current interpretation: the TT score gap between the singular candidate and the verification search remains too large (~30 cp on average). Additional gating or a different verification strategy will be required before proceeding to SPRT.
+- **Margin adaptation:** the new TT-depth/β-gap-aware margin logic keeps verification windows tight for near-cutoff nodes while backing off when TT evidence is weak; Release bench remains neutral (`bench 2350511`, `1776697 nps`).
+- **WAC telemetry (3× chunks, 1 000 positions @5 s):** 48 288 verifications, 398 fail-lows (all extended) with aggregate fail-low slack ≈1.0 cp and fail-high slack ≈16.2 cp; zero TT cache hits.
+- **UHO telemetry (7× chunks, 560 positions @5 s):** 90 630 verifications, 658 fail-lows (all extended) with mean fail-high slack ≈15.9 cp. Fail-low slack shows a heavy-tailed distribution (one chunk captured tactical mates with β−score ≈67 pc apiece), signalling the need for mate-aware clamping before moving on to reduction tuning.
+- **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
 
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
@@ -55,6 +54,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Revisit verification window strategy: experiment with even tighter margins, alternate reduction depth, or TT-bound adjustments so fail-low events occur with measurable frequency before scheduling SPRTs.
-2. Implement SE3.1c check-extension coordination toggle and instrumentation once singular extensions can trigger reliably.
-3. Stage SE4.1a: surface singular tuning parameters (`SingularDepthMin`, `SingularMarginBase`, etc.) via UCI to support future tuning and telemetry sweeps.
+1. Profile the heavy-tailed fail-low cases (UHO chunk 2) to decide whether mate-distance normalization or min-margin caps are needed before enabling reduction tweaks.
+2. Implement SE3.1c check-extension coordination instrumentation, respecting the new margin logic, then expose SE4.1a tuning parameters for OpenBench toggles.
