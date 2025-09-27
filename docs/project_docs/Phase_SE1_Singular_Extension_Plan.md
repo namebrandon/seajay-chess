@@ -328,11 +328,13 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Update thread-local extension budget
   - Expected NPS impact: -2-5% when enabled (deeper searches)
   - SPRT: [0.00, 5.00] bounds
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). `SearchLimits::singularExtensionDepth` now feeds the pending extension amount, `info.singularExtensions` tallies applied plies, and singular fail-low events schedule the depth increase while respecting budget clamps.
 - **SE3.2b – Context propagation**
   - Ensure child nodes receive updated NodeContext
   - Maintain PV flag through extended search
   - Update triangular PV correctly
   - Expected NPS impact: < 0.1%
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular extensions force the child `NodeContext` to stay on the PV path when applied and reuse the allocated triangular PV buffer so extended searches preserve the principal variation ordering.
 
 ### Stage SE4 — Diagnostics, UCI toggles, and Tuning Hooks
 - **SE4.1a – Core UCI controls**

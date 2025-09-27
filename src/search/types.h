@@ -180,6 +180,9 @@ struct SearchLimits {
     // Stage SE3.1b: Optional stacking of multiple extension sources (default OFF)
     bool allowStackedExtensions = false;
 
+    // Stage SE3.2a: Singular extension depth increment (default 1 ply)
+    int singularExtensionDepth = 1;
+
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 

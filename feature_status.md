@@ -32,7 +32,9 @@
 | SingularExtension_Phase_SE2.2b – Verification outcome tracking | Completed | 742af1c | 2350511 | Telemetry differentiates fail-low/high outcomes; root guard added to prevent context misuse ahead of SE3. |
 | SingularExtension_Phase_SE3.1a – Extension tracking infrastructure | Completed | 4ac6ee0 | 2350511 | Implemented extension budget clamp and telemetry; verified neutral bench with toggles enabled. |
 | SingularExtension_Phase_SE3.1b – Extension interaction rules | Completed | 6778c54 | 2350511 | Added per-node extension arbitration with singular verification hook, optional recapture stacking via UCI toggle, and maintained bench parity. |
-| SingularExtension_Phase_SE3.1b_Guardrails – Recapture stacking stabilization | Completed | HEAD | 2350511 | Depth ≥10, eval margin 96cp, and TT depth ≥ current depth +1 required before stacking recapture with singular; new telemetry captures candidate/accept/reject/clamp/extra depth counters. |
+| SingularExtension_Phase_SE3.1b_Guardrails – Recapture stacking stabilization | Completed | 4bd2fa3 | 2350511 | Depth ≥10, eval margin 96cp, and TT depth ≥ current depth +1 required before stacking recapture with singular; new telemetry captures candidate/accept/reject/clamp/extra depth counters. |
+| SingularExtension_Phase_SE3.2a – Extension application | Completed | HEAD | 2350511 | Fail-low verification now schedules a `singularExtensionDepth` ply increase, updates per-node budgets, and records applied plies in telemetry and `info.singularExtensions`. |
+| SingularExtension_Phase_SE3.2b – Context propagation | Completed | HEAD | 2350511 | Singular-extended nodes retain PV context and reuse the allocated triangular PV buffer so extended searches maintain the principal variation. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -46,6 +48,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Stage SE3.2a: wire singular verification results to actual depth increments and node-context propagation once guardrails pass bench/SPRT.
-2. Stage SE3.2b: propagate updated contexts and PV handling for extended nodes, validate extension budgets.
-3. Prepare telemetry slices (fail-low/high vs applied plus stacked metrics) for upcoming SPRT once SE3.2 lands.
+1. Prepare telemetry slices (fail-low/high vs applied plus stacked metrics) for upcoming SPRT once SE3.2 lands.
+2. Implement SE3.1c check-extension coordination toggle and instrumentation.
+3. Stage SE4.1a: surface singular tuning parameters (`SingularDepthMin`, `SingularMarginBase`, etc.) via UCI.

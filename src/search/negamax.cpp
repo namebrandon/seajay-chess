@@ -1178,8 +1178,9 @@ eval::Score negamax(Board& board,
         if (singularVerificationRan && limits.useSingularExtensions) {
             if (singularVerificationScore < singularVerificationBeta) {
                 info.singularStats.verificationFailLow++;
-                singularExtensionPending = true;
-                singularExtensionAmountPending = 1;
+                const int extensionDepthConfig = std::max(limits.singularExtensionDepth, 0);
+                singularExtensionPending = extensionDepthConfig > 0;
+                singularExtensionAmountPending = extensionDepthConfig;
             } else {
                 info.singularStats.verificationFailHigh++;
                 singularExtensionPending = false;
@@ -1730,6 +1731,7 @@ eval::Score negamax(Board& board,
         searchInfo.setSingularExtensionApplied(ply + 1, singularExtensionAmount);
         if (singularExtensionAmount > 0) {
             info.singularStats.extensionsApplied += static_cast<uint64_t>(singularExtensionAmount);
+            info.singularExtensions += static_cast<uint64_t>(singularExtensionAmount);
         }
         if (recaptureExtensionAmount > 0) {
             info.singularStats.stackingExtraDepth += static_cast<uint64_t>(recaptureExtensionAmount);
@@ -1741,6 +1743,10 @@ eval::Score negamax(Board& board,
                 info.singularStats.maxExtensionDepth = depthValue;
             }
         }
+        if (isPvNode && move == singularCandidate && singularExtensionAmount > 0 && !childContext.isPv()) {
+            childContext.setPv(true);
+        }
+
         if (debugTrackedMove && extension != 0) {
             std::ostringstream extra;
             extra << "value=" << extension
