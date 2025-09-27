@@ -323,6 +323,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement conditional check extension disable
   - Track interaction statistics
   - Expected NPS impact: Potentially +1-2% (fewer extensions)
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular verification nodes now honor the `DisableCheckDuringSingular` toggle, skipping the automatic in-check extension when enabled and recording applied vs suppressed counts in singular telemetry.
 - **SE3.2a – Extension application**
   - When verification confirms singularity, set extension flag
   - Increment depth by `singularExtensionDepth` (initially 1)

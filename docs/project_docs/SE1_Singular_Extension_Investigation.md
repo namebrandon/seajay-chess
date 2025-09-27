@@ -84,6 +84,7 @@
 - **UHO summary:** 90 630 verifications, 658 fail-lows (all extended), 88 166 fail-highs. Average fail-high slack sits at ~15.9 cp, but one chunk contains massively negative verification scores (implying β−score ≈67 pc) when tactical mate lines trigger—highlighting the need for mate-distance normalization or capped margins on fail-lows.
 - **WAC summary:** 48 288 verifications, 398 fail-lows (all extended) with aggregate fail-low slack ≈1.0 cp and fail-high slack ≈16.2 cp, confirming the adaptive margins preserve the tight tactical coverage we had before while still reducing verification workloads.
 - **Tooling:** `tools/stacked_telemetry.py` now supports `--offset`, `--chunk-size`, `--max-chunks`, and `--passes` so long sweeps stay under the 10 minute harness limit while preserving per-chunk summaries and overall aggregates.
+- **Check-extension toggle:** `DisableCheckDuringSingular` suppresses the automatic in-check extension on verification nodes; telemetry now reports `chk_sup/chk_app` so we can A/B stacking depth parity versus the default behaviour.
 
 ## Open Questions
 - Do we need a dedicated TT namespace/flag for verification probes to avoid returning stale exact scores (`TranspositionTable::StorePolicy` logic review)?

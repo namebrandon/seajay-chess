@@ -183,6 +183,9 @@ struct SearchLimits {
     // Investigation: allow bypassing TT exact cutoffs during singular verification probes
     bool bypassSingularTTExact = false;
 
+    // Stage SE3.1c: Optionally suppress check extensions during singular verification nodes
+    bool disableCheckDuringSingular = false;
+
     // Stage SE3.2a: Singular extension depth increment (default 1 ply)
     int singularExtensionDepth = 1;
 
@@ -382,6 +385,8 @@ struct SearchData {
         uint64_t stackingExtraDepth = 0;        // Additional depth contributed by stacking
         std::array<uint64_t, kSlackBucketCount> failLowSlackBuckets{};  // Histogram of fail-low slack values
         std::array<uint64_t, kSlackBucketCount> failHighSlackBuckets{}; // Histogram of fail-high slack values
+        uint64_t checkExtensionsSuppressed = 0;  // Check extensions skipped on singular verification nodes
+        uint64_t checkExtensionsApplied = 0;     // Check extensions applied on singular verification nodes
 
         void reset() noexcept {
             candidatesExamined = 0;
@@ -408,6 +413,8 @@ struct SearchData {
             stackingExtraDepth = 0;
             failLowSlackBuckets.fill(0);
             failHighSlackBuckets.fill(0);
+            checkExtensionsSuppressed = 0;
+            checkExtensionsApplied = 0;
         }
 
         bool empty() const noexcept {
@@ -425,7 +432,8 @@ struct SearchData {
                    stackingRejectedTT == 0 && stackingBudgetClamped == 0 &&
                    stackingExtraDepth == 0 &&
                    std::all_of(failLowSlackBuckets.begin(), failLowSlackBuckets.end(), [](uint64_t v) { return v == 0; }) &&
-                   std::all_of(failHighSlackBuckets.begin(), failHighSlackBuckets.end(), [](uint64_t v) { return v == 0; });
+                   std::all_of(failHighSlackBuckets.begin(), failHighSlackBuckets.end(), [](uint64_t v) { return v == 0; }) &&
+                   checkExtensionsSuppressed == 0 && checkExtensionsApplied == 0;
         }
     };
 
@@ -472,6 +480,8 @@ struct SearchData {
         uint64_t totalStackingExtraDepth = 0;
         std::array<uint64_t, SingularStats::kSlackBucketCount> totalFailLowSlackBuckets{};
         std::array<uint64_t, SingularStats::kSlackBucketCount> totalFailHighSlackBuckets{};
+        uint64_t totalCheckExtensionsSuppressed = 0;
+        uint64_t totalCheckExtensionsApplied = 0;
 
         void reset() noexcept {
             totalExamined = 0;
@@ -498,6 +508,8 @@ struct SearchData {
             totalStackingExtraDepth = 0;
             totalFailLowSlackBuckets.fill(0);
             totalFailHighSlackBuckets.fill(0);
+            totalCheckExtensionsSuppressed = 0;
+            totalCheckExtensionsApplied = 0;
         }
 
         void aggregate(const SingularStats& local, bool threadSafe) noexcept {
@@ -527,6 +539,8 @@ struct SearchData {
                 std::atomic_ref<uint64_t> stackRejectTT(totalStackingRejectedTT);
                 std::atomic_ref<uint64_t> stackClamp(totalStackingBudgetClamped);
                 std::atomic_ref<uint64_t> stackExtra(totalStackingExtraDepth);
+                std::atomic_ref<uint64_t> checkSupp(totalCheckExtensionsSuppressed);
+                std::atomic_ref<uint64_t> checkApplied(totalCheckExtensionsApplied);
                 examined.fetch_add(local.candidatesExamined, std::memory_order_relaxed);
                 qualified.fetch_add(local.candidatesQualified, std::memory_order_relaxed);
                 illegal.fetch_add(local.candidatesRejectedIllegal, std::memory_order_relaxed);
@@ -548,6 +562,8 @@ struct SearchData {
                 stackRejectTT.fetch_add(local.stackingRejectedTT, std::memory_order_relaxed);
                 stackClamp.fetch_add(local.stackingBudgetClamped, std::memory_order_relaxed);
                 stackExtra.fetch_add(local.stackingExtraDepth, std::memory_order_relaxed);
+                checkSupp.fetch_add(local.checkExtensionsSuppressed, std::memory_order_relaxed);
+                checkApplied.fetch_add(local.checkExtensionsApplied, std::memory_order_relaxed);
                 for (std::size_t i = 0; i < local.failLowSlackBuckets.size(); ++i) {
                     const uint64_t lowCount = local.failLowSlackBuckets[i];
                     const uint64_t highCount = local.failHighSlackBuckets[i];
@@ -598,6 +614,8 @@ struct SearchData {
                 totalFailLowSlackBuckets[i] += local.failLowSlackBuckets[i];
                 totalFailHighSlackBuckets[i] += local.failHighSlackBuckets[i];
             }
+            totalCheckExtensionsSuppressed += local.checkExtensionsSuppressed;
+            totalCheckExtensionsApplied += local.checkExtensionsApplied;
             if (local.maxExtensionDepth > maxExtensionDepth) {
                 maxExtensionDepth = local.maxExtensionDepth;
             }
@@ -629,6 +647,8 @@ struct SearchData {
             totals.stackingExtraDepth = totalStackingExtraDepth;
             totals.failLowSlackBuckets = totalFailLowSlackBuckets;
             totals.failHighSlackBuckets = totalFailHighSlackBuckets;
+            totals.checkExtensionsSuppressed = totalCheckExtensionsSuppressed;
+            totals.checkExtensionsApplied = totalCheckExtensionsApplied;
             return totals;
         }
     };

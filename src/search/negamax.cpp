@@ -412,10 +412,17 @@ eval::Score negamax(Board& board,
     bool weAreInCheck = inCheck(board);
     
     // Check extension: Extend search by 1 ply when in check
-    // This is a fundamental search extension present in all competitive engines
-    // It helps the engine see through forcing sequences and avoid horizon effects
+    // Optionally disable during singular verification nodes for experimentation
     if (weAreInCheck) {
-        depth++;
+        const bool skipCheckExtension = limits.disableCheckDuringSingular && isSingularVerificationNode;
+        if (skipCheckExtension) {
+            info.singularStats.checkExtensionsSuppressed++;
+        } else {
+            depth++;
+            if (isSingularVerificationNode) {
+                info.singularStats.checkExtensionsApplied++;
+            }
+        }
     }
     
     // Phase 3.2: We'll generate pseudo-legal moves later, after TT/null pruning
@@ -2936,8 +2943,10 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                       << " cacheHits=" << singularTotals.verificationCacheHits
                       << " slack_low=" << singularTotals.verificationFailLowSlackSum
                       << " slack_high=" << singularTotals.verificationFailHighSlackSum
-                          << " maxDepth=" << singularTotals.maxExtensionDepth
-                          << std::endl;
+                      << " maxDepth=" << singularTotals.maxExtensionDepth
+                      << " chk_sup=" << singularTotals.checkExtensionsSuppressed
+                      << " chk_app=" << singularTotals.checkExtensionsApplied
+                      << std::endl;
                 const auto hasSlackBuckets = std::any_of(
                     singularTotals.failLowSlackBuckets.begin(),
                     singularTotals.failLowSlackBuckets.end(),
@@ -3389,6 +3398,12 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
             }
             if (singularTotals.stackingExtraDepth > 0) {
                 builder.appendCustom("se_stack_x", std::to_string(singularTotals.stackingExtraDepth));
+            }
+            if (singularTotals.checkExtensionsSuppressed > 0) {
+                builder.appendCustom("se_chk_sup", std::to_string(singularTotals.checkExtensionsSuppressed));
+            }
+            if (singularTotals.checkExtensionsApplied > 0) {
+                builder.appendCustom("se_chk_app", std::to_string(singularTotals.checkExtensionsApplied));
             }
         }
     }

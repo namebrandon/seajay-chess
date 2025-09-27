@@ -61,6 +61,8 @@ SINGULAR_KEYS = {
     "extended": "extended",
     "slack_low": "slack_low",
     "slack_high": "slack_high",
+    "chk_sup": "check_suppressed",
+    "chk_app": "check_applied",
     "cacheHits": "cache_hits",
     "maxDepth": "max_depth",
 }
@@ -243,6 +245,8 @@ def _run_position(
                 key, value = part.split("=", 1)
                 label = STACK_KEYS.get(key)
                 if label is None:
+                    label = SINGULAR_KEYS.get(key)
+                if label is None:
                     continue
                 try:
                     aggregate[label] = aggregate.get(label, 0) + int(value)
@@ -292,6 +296,8 @@ _SINGULAR_SUMMARY_KEYS: Tuple[Tuple[str, str], ...] = (
     ("extended", "extended"),
     ("slack_low", "slack_low"),
     ("slack_high", "slack_high"),
+    ("check_suppressed", "check_supp"),
+    ("check_applied", "check_app"),
 )
 
 
