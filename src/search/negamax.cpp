@@ -216,7 +216,7 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
 // Mate score constants for TT integration
 constexpr int MATE_SCORE = 30000;
 constexpr int MATE_BOUND = 29000;
-constexpr int SINGULAR_DEPTH_MIN = 8;
+constexpr int SINGULAR_DEPTH_MIN_DEFAULT = 8;
 constexpr int STACKED_RECAPTURE_MIN_DEPTH = 10;      // Guard: only stack when search is sufficiently deep
 constexpr int STACKED_RECAPTURE_EVAL_MARGIN_CP = 96; // Require static eval within ~1 pawn of beta
 constexpr int STACKED_RECAPTURE_TT_MARGIN = 1;       // TT entry must exceed current depth by this margin
@@ -402,6 +402,8 @@ eval::Score negamax(Board& board,
         info.singularStats.verificationNodesEntered++;
     }
     bool verificationNodeReturnedViaTT = false;
+    const int singularDepthThreshold = std::max(limits.singularDepthMin, SINGULAR_DEPTH_MIN_DEFAULT);
+    const int verificationReduction = std::clamp(limits.singularVerificationReduction, 1, 10);
 
     // Phase 4.2.c: Compute static eval early and preserve it for TT storage
     // This will be the true static evaluation, not the search score
@@ -566,8 +568,8 @@ eval::Score negamax(Board& board,
                     staticEvalComputed = true;
                 }
 
-                if (limits.useSingularExtensions && limits.enableExcludedMoveParam &&
-                    depth >= SINGULAR_DEPTH_MIN && ply > 0 && ttMove != NO_MOVE &&
+    if (limits.useSingularExtensions && limits.enableExcludedMoveParam &&
+                    depth >= singularDepthThreshold && ply > 0 && ttMove != NO_MOVE &&
                     ttBound == Bound::EXACT && ttDepth >= depth - 1) {
                     auto& singularStats = info.singularStats;
                     singularStats.candidatesExamined++;
@@ -602,7 +604,13 @@ eval::Score negamax(Board& board,
 
         // Stage SE2.2a: Launch verification search with reduced window.
         info.singularStats.verificationsStarted++;
-        const eval::Score margin = singular_margin(depth, ttDepth, ttScore, beta);
+        const eval::Score margin = singular_margin(
+            depth,
+            limits.singularMarginBase,
+            verificationReduction,
+            ttDepth,
+            ttScore,
+            beta);
         const int singularBetaRaw = ttScore.value() - margin.value();
         singularVerificationBeta = clamp_singular_score(eval::Score(singularBetaRaw));
 
@@ -612,6 +620,7 @@ eval::Score negamax(Board& board,
             depth,
             ply,
             ttDepth,
+            verificationReduction,
             ttScore,
             alpha,
             beta,

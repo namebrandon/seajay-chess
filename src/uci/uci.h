@@ -172,6 +172,10 @@ private:
     bool m_allowStackedExtensions = false;    // Stage SE3.1b: Extension stacking toggle (default OFF)
     bool m_bypassSingularTTExact = false;     // SE1 investigation: bypass TT exact in verification (default OFF)
     bool m_disableCheckDuringSingular = false; // Stage SE3.1c: suppress check extension during singular verification
+    int m_singularDepthMin = 8;               // Stage SE4.1a: Minimum depth to consider singular verification
+    int m_singularMarginBase = 64;            // Stage SE4.1a: Base margin (cp) for singular verification window
+    int m_singularVerificationReduction = 3;  // Stage SE4.1a: Depth reduction during verification search
+    int m_singularExtensionDepth = 1;         // Stage SE4.1a: Extension amount (plies) when verification fails low
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)

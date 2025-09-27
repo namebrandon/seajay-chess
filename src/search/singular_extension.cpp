@@ -14,6 +14,7 @@ eval::Score verify_exclusion(
     int depth,
     int ply,
     int ttDepth,
+    int verificationReduction,
     eval::Score ttScore,
     eval::Score alpha,
     eval::Score beta,
@@ -42,8 +43,9 @@ eval::Score verify_exclusion(
     }
 #endif
 
+    const int reduction = std::clamp(verificationReduction, 1, 10);
     // Stage SE1.1b: Clamp verification depth before issuing a reduced search.
-    const int singularDepth = depth - 1 - kSingularVerificationReduction;
+    const int singularDepth = depth - 1 - reduction;
     if (singularDepth <= 0) {
 #ifdef DEBUG
         if (stats) {
@@ -64,7 +66,13 @@ eval::Score verify_exclusion(
     }
 
     // Stage SE2.1b: Build verification window around TT score using margin table.
-    const eval::Score margin = singular_margin(depth, ttDepth, ttScore, beta);
+    const eval::Score margin = singular_margin(
+        depth,
+        limits.singularMarginBase,
+        reduction,
+        ttDepth,
+        ttScore,
+        beta);
     const int singularBetaRaw = ttScore.value() - margin.value();
     const eval::Score singularBeta = clamp_singular_score(eval::Score(singularBetaRaw));
     const eval::Score probeAlphaCandidate = clamp_singular_score(eval::Score(singularBeta.value() - 1));

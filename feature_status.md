@@ -48,6 +48,7 @@
 - **WAC telemetry (3× chunks, 1 000 positions @5 s):** 48 288 verifications, 398 fail-lows (all extended) with aggregate fail-low slack ≈1.0 cp and fail-high slack ≈16.2 cp; zero TT cache hits.
 - **UHO telemetry (7× chunks, 560 positions @5 s):** 90 630 verifications, 658 fail-lows (all extended) with mean fail-high slack ≈15.9 cp. Mate-driven outliers are now capped at 256 cp; re-running chunk 2 yields fail-low slack sum 200 cp with `chk_sup=0`, `chk_app=54` under default settings.
 - **Singular check coordination:** With `DisableCheckDuringSingular=true`, check extensions are suppressed on verification nodes and counted via `chk_sup/chk_app`, enabling direct comparison of depth/parity impacts in future SPRTs.
+- **Singular UCI knobs:** `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` are now UCI options, enabling OpenBench sweeps without binary rebuilds.
 - **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
 
 ## Risk Notes
@@ -57,4 +58,4 @@
 
 ## Next Actions
 1. Validate the slack cap across additional tactical suites (e.g., `bratko_kopec.epd`) and confirm mate-distance reporting before touching reductions.
-2. Stage SE4.1a: expose singular tuning parameters (depth min, margin base, verification reduction, extension depth) via UCI for upcoming SPRTs.
+2. Stage SE4.1b: plumb advanced tuning parameters into `engine_config` for SPSA sweeps once SE4.1a defaults are exercised.

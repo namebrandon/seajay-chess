@@ -277,6 +277,10 @@ void UCIEngine::handleUCI() {
     std::cout << "option name AllowStackedExtensions type check default false" << std::endl; // Stage SE3.1b (default OFF)
     std::cout << "option name BypassSingularTTExact type check default false" << std::endl; // SE1 investigation toggle
     std::cout << "option name DisableCheckDuringSingular type check default false" << std::endl; // Stage SE3.1c toggle
+    std::cout << "option name SingularDepthMin type spin default 8 min 4 max 20" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularMarginBase type spin default 64 min 20 max 200" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularVerificationReduction type spin default 3 min 2 max 5" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularExtensionDepth type spin default 1 min 1 max 2" << std::endl; // Stage SE4.1a
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
@@ -693,6 +697,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     limits.allowStackedExtensions = m_allowStackedExtensions;
     limits.bypassSingularTTExact = m_bypassSingularTTExact;
     limits.disableCheckDuringSingular = m_disableCheckDuringSingular;
+    limits.singularDepthMin = m_singularDepthMin;
+    limits.singularMarginBase = m_singularMarginBase;
+    limits.singularVerificationReduction = m_singularVerificationReduction;
+    limits.singularExtensionDepth = m_singularExtensionDepth;
     limits.debugTrackedMoves = m_debugTrackedMoves;
     
     // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
@@ -1182,6 +1190,46 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_disableCheckDuringSingular = false;
             std::cerr << "info string Singular check extension suppression disabled" << std::endl;
+        }
+    }
+    else if (optionName == "SingularDepthMin") {
+        try {
+            int v = std::stoi(value);
+            v = std::clamp(v, 4, 20);
+            m_singularDepthMin = v;
+            std::cerr << "info string SingularDepthMin set to " << v << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid SingularDepthMin value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "SingularMarginBase") {
+        try {
+            int v = std::stoi(value);
+            v = std::clamp(v, 20, 200);
+            m_singularMarginBase = v;
+            std::cerr << "info string SingularMarginBase set to " << v << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid SingularMarginBase value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "SingularVerificationReduction") {
+        try {
+            int v = std::stoi(value);
+            v = std::clamp(v, 2, 5);
+            m_singularVerificationReduction = v;
+            std::cerr << "info string SingularVerificationReduction set to " << v << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid SingularVerificationReduction value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "SingularExtensionDepth") {
+        try {
+            int v = std::stoi(value);
+            v = std::clamp(v, 1, 2);
+            m_singularExtensionDepth = v;
+            std::cerr << "info string SingularExtensionDepth set to " << v << std::endl;
+        } catch (...) {
+            std::cerr << "info string Invalid SingularExtensionDepth value: " << value << std::endl;
         }
     }
     // Handle Threads option (multi-threading stub for OpenBench compatibility)

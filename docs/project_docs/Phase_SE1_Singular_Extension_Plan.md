@@ -342,7 +342,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 - **SE4.1a – Core UCI controls**
   - Add `UseSingularExtensions` bool (default false)
   - Add `SingularDepthMin` int (default 8, range 4-20)
-  - Add `SingularMarginBase` int (default 60, range 20-200)
+  - Add `SingularMarginBase` int (default 64, range 20-200)
   - **C++20 Configuration with concepts:**
     ```cpp
     template<typename T>
@@ -365,6 +365,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     static_assert(singular_depth_min.validate());
     ```
   - Expected NPS impact: 0% (configuration only)
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). UCI now exposes `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth`, wiring through `SearchLimits` so telemetry and SPRTs can sweep singular heuristics without rebuilding.
 - **SE4.1b – Advanced tuning parameters**
   - Add `SingularVerificationReduction` int (default 3, range 2-5)
   - Add `SingularExtensionDepth` int (default 1, range 1-2)
@@ -469,7 +470,7 @@ After Phase 6 validation and SE1 completion, simplify toggle structure:
 - **Production toggles (remain for tuning):**
   - `UseSingularExtensions` - Main feature toggle
   - `SingularDepthMin` - Tunable parameter (default 8)
-  - `SingularMarginBase` - Tunable parameter (default 60)
+  - `SingularMarginBase` - Tunable parameter (default 64)
   - `DisableCheckDuringSingular` - A/B testing toggle
   - `AllowStackedExtensions` - Future enhancement toggle
 - **UCI defaults checkpoint:** Confirmed in `src/uci/uci.cpp` as of 2025-09:

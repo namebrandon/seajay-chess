@@ -54,8 +54,6 @@ constexpr std::array<int, 64> build_singular_margin_table() noexcept {
 constexpr auto kSingularMarginTable = build_singular_margin_table();
 } // namespace detail
 
-constexpr int kSingularVerificationReduction = 3; // Depth reduction applied during verification probes
-
 // Clamp score into valid mate bounds for singular verification windows.
 [[nodiscard]] constexpr eval::Score clamp_singular_score(eval::Score score) noexcept {
     const int minBound = -eval::Score::mate().value() + MAX_PLY;
@@ -68,6 +66,8 @@ constexpr int kSingularVerificationReduction = 3; // Depth reduction applied dur
 // Compile-time margin lookup for singular verification searches with adaptive adjustments.
 [[nodiscard]] constexpr eval::Score singular_margin(
     int depth,
+    int marginBase,
+    int verificationReduction,
     int ttDepth,
     eval::Score ttScore,
     eval::Score beta) noexcept {
@@ -78,7 +78,11 @@ constexpr int kSingularVerificationReduction = 3; // Depth reduction applied dur
     if (depth > maxIndex) {
         depth = maxIndex;
     }
+    const int clampedBase = std::clamp(marginBase, 20, 200);
     int margin = detail::kSingularMarginTable[static_cast<std::size_t>(depth)];
+    margin = std::max(
+        4,
+        (margin * clampedBase) / detail::kSingularMarginTable[0]);
 
     // Use TT depth gap to tighten margin when the stored node searched deeper.
     const int ttDepthGap = ttDepth - depth;
@@ -101,7 +105,8 @@ constexpr int kSingularVerificationReduction = 3; // Depth reduction applied dur
     }
 
     // Deeper parent depth and verification horizon justify tighter margins.
-    const int singularDepth = depth - 1 - kSingularVerificationReduction;
+    const int reduction = std::clamp(verificationReduction, 1, 10);
+    const int singularDepth = depth - 1 - reduction;
     if (singularDepth >= 12) {
         margin -= 4;
     }
@@ -124,6 +129,7 @@ constexpr int kSingularVerificationReduction = 3; // Depth reduction applied dur
     int depth,
     int ply,
     int ttDepth,
+    int verificationReduction,
     eval::Score ttScore,
     eval::Score alpha,
     eval::Score beta,

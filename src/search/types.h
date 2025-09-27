@@ -186,6 +186,10 @@ struct SearchLimits {
     // Stage SE3.1c: Optionally suppress check extensions during singular verification nodes
     bool disableCheckDuringSingular = false;
 
+    // Stage SE4.1a: Tunable singular extension parameters (UCI exposed)
+    int singularDepthMin = 8;
+    int singularMarginBase = 64;
+    int singularVerificationReduction = 3;
     // Stage SE3.2a: Singular extension depth increment (default 1 ply)
     int singularExtensionDepth = 1;
 
