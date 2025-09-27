@@ -53,6 +53,7 @@
 - **Singular UCI knobs:** `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` are now UCI options, enabling OpenBench sweeps without binary rebuilds.
 - **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
 - **Bratko-Kopec validation (28 positions @2 s):** 2 792 verifications, 16 fail-lows (all extended) with fail-low slack p95 = 4 cp and fail-high slack p95 = 44 cp, confirming the histogram cap reins in tactical spikes without muting extensions.
+- **SPSA (130k games @10+0.1):** converged to `SingularDepthMin=7`, `SingularMarginBase=51`, `SingularVerificationReduction=4`, `SingularExtensionDepth=2`; branch defaults updated with `UseSingularExtensions`/`EnableExcludedMoveParam`/`AllowStackedExtensions` enabled for continued validation.
 
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.

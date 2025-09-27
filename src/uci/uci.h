@@ -167,15 +167,15 @@ private:
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
     bool m_useSearchNodeAPIRefactor = true; // Phase 6: NodeContext plumbing (default ON after Stage 6g)
-    bool m_enableExcludedMoveParam = false;   // Phase 6c: Excluded move parameter plumbing (default OFF)
-    bool m_useSingularExtensions = false;     // Stage SE0.2a: Singular extension toggle (default OFF)
-    bool m_allowStackedExtensions = false;    // Stage SE3.1b: Extension stacking toggle (default OFF)
+    bool m_enableExcludedMoveParam = true;    // Phase 6c: Excluded move parameter plumbing (default ON after SPSA)
+    bool m_useSingularExtensions = true;      // Stage SE0.2a: Singular extension toggle (enabled for tuning)
+    bool m_allowStackedExtensions = true;     // Stage SE3.1b: Extension stacking toggle (enabled for tuning)
     bool m_bypassSingularTTExact = false;     // SE1 investigation: bypass TT exact in verification (default OFF)
     bool m_disableCheckDuringSingular = false; // Stage SE3.1c: suppress check extension during singular verification
-    int m_singularDepthMin = 8;               // Stage SE4.1a: Minimum depth to consider singular verification
-    int m_singularMarginBase = 64;            // Stage SE4.1a: Base margin (cp) for singular verification window
-    int m_singularVerificationReduction = 3;  // Stage SE4.1a: Depth reduction during verification search
-    int m_singularExtensionDepth = 1;         // Stage SE4.1a: Extension amount (plies) when verification fails low
+    int m_singularDepthMin = 7;               // Stage SE4.1a: Minimum depth to consider singular verification
+    int m_singularMarginBase = 51;            // Stage SE4.1a: Base margin (cp) for singular verification window
+    int m_singularVerificationReduction = 4;  // Stage SE4.1a: Depth reduction during verification search
+    int m_singularExtensionDepth = 2;         // Stage SE4.1a: Extension amount (plies) when verification fails low
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)

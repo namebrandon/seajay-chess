@@ -469,15 +469,15 @@ After Phase 6 validation and SE1 completion, simplify toggle structure:
   - `UseSearchNodeAPIRefactor` - Keep exposed until Stage SE5 completes and SPRT/rollback criteria documented
   - `EnableExcludedMoveParam` - Same retention policy as above
 - **Production toggles (remain for tuning):**
-  - `UseSingularExtensions` - Main feature toggle
-  - `SingularDepthMin` - Tunable parameter (default 8)
-  - `SingularMarginBase` - Tunable parameter (default 64)
-  - `DisableCheckDuringSingular` - A/B testing toggle
-  - `AllowStackedExtensions` - Future enhancement toggle
+  - `UseSingularExtensions` - Main feature toggle (default `true` on SE4.1b tuning branch; revisit before mainline merge)
+  - `SingularDepthMin` - Tunable parameter (default 7 after SPSA stage)
+  - `SingularMarginBase` - Tunable parameter (default 51 after SPSA stage)
+  - `DisableCheckDuringSingular` - A/B testing toggle (default `false`)
+  - `AllowStackedExtensions` - Recapture stacking toggle (default `true` post-SPSA)
 - **UCI defaults checkpoint:** Confirmed in `src/uci/uci.cpp` as of 2025-09:
   - `UseSearchNodeAPIRefactor` → `check` option, default `true`
-  - `EnableExcludedMoveParam` → `check` option, default `false`
-  - `UseSingularExtensions` → **to be added during SE1**; ensure default `false` and document once live
+  - `EnableExcludedMoveParam` → `check` option, default `true`
+  - `UseSingularExtensions` → `check` option, default `true` (tuning branch); document final release default at SE5
 
 ## 8. Test Positions for Validation
 Key positions for singular extension validation:

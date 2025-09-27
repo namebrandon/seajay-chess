@@ -93,15 +93,21 @@
 - **Instrumentation:** No stack candidates in this suite (quiet-only), `chk_app=16`, `chk_sup=0`, confirming coordination with check extensions remains intact under the cap.
 - **Conclusion:** Tactical suite corroborates WAC/UHO results; slack histograms stay bounded (<50 cp at p95) while extensions trigger on every fail-low, so the cap can be considered production-safe pending wider SPRTs.
 
+### 2025-09-29 — SPSA tuning summary
+- **Run:** 130 k games, 10 + 0.1 TC, SPSA (pairs-per-point 8, single distribution) on `feature/20250927-singular-extension-se32a@83245c5`.
+- **Outcome:** Converged parameters `DepthMin=7`, `MarginBase=51`, `VerificationReduction=4`, `ExtensionDepth=2`; signaled with low-variance gradients after 110 k games.
+- **Action:** Updated branch defaults (UCI + `EngineConfig`) to the tuned values with `UseSingularExtensions`/`EnableExcludedMoveParam`/`AllowStackedExtensions` enabled for subsequent validation.
+- **Follow-up:** Re-run WAC/UHO/Bratko telemetry with tuned defaults and stage SE4.2a debug tooling prior to merge.
+
 ## Open Questions
 - Do we need a dedicated TT namespace/flag for verification probes to avoid returning stale exact scores (`TranspositionTable::StorePolicy` logic review)?
 - Should margin calculations consume the *verification* depth instead of parent depth to better reflect search horizon?
 - Are we double-counting failure paths when verification searches share PV context state (e.g., `childContext.setPv(true)`)?
 
 ## Next Steps Checklist
-1. **Extended telemetry:** run an overnight UHO/WAC/Bratko rotation at tournament TC to confirm slack histograms stay bounded with production clocks.
+1. **Extended telemetry:** run an overnight UHO/WAC/Bratko rotation at tournament TC to confirm slack histograms stay bounded with tuned defaults.
 2. **Debug tooling:** prototype the planned `debug singular` command (SE4.2a) to sample verification traces during suspicious SPSA runs.
-3. **SPSA prep:** finalize parameter bounds/priors for `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` now that the cap is validated.
+3. **Post-SPSA validation:** document bench/NPS deltas and monitor extension rates with `DepthMin=7`, `MarginBase=51`, `VerificationReduction=4`, `ExtensionDepth=2` before proposing merge.
 
 ---
-_Last updated: 2025-09-28_
+_Last updated: 2025-09-29_

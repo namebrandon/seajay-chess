@@ -272,15 +272,15 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
     std::cout << "option name UseSearchNodeAPIRefactor type check default true" << std::endl; // Phase 6 (default ON after Stage 6g)
-    std::cout << "option name EnableExcludedMoveParam type check default false" << std::endl; // Phase 6c (default OFF)
-    std::cout << "option name UseSingularExtensions type check default false" << std::endl; // Stage SE0.2a (default OFF)
-    std::cout << "option name AllowStackedExtensions type check default false" << std::endl; // Stage SE3.1b (default OFF)
+    std::cout << "option name EnableExcludedMoveParam type check default true" << std::endl; // Phase 6c
+    std::cout << "option name UseSingularExtensions type check default true" << std::endl; // Stage SE0.2a
+    std::cout << "option name AllowStackedExtensions type check default true" << std::endl; // Stage SE3.1b
     std::cout << "option name BypassSingularTTExact type check default false" << std::endl; // SE1 investigation toggle
     std::cout << "option name DisableCheckDuringSingular type check default false" << std::endl; // Stage SE3.1c toggle
-    std::cout << "option name SingularDepthMin type spin default 8 min 4 max 20" << std::endl; // Stage SE4.1a
-    std::cout << "option name SingularMarginBase type spin default 64 min 20 max 200" << std::endl; // Stage SE4.1a
-    std::cout << "option name SingularVerificationReduction type spin default 3 min 2 max 5" << std::endl; // Stage SE4.1a
-    std::cout << "option name SingularExtensionDepth type spin default 1 min 1 max 2" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularDepthMin type spin default 7 min 4 max 20" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularMarginBase type spin default 51 min 20 max 200" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularVerificationReduction type spin default 4 min 2 max 5" << std::endl; // Stage SE4.1a
+    std::cout << "option name SingularExtensionDepth type spin default 2 min 1 max 2" << std::endl; // Stage SE4.1a
     
     // Multi-threading option (stub for OpenBench compatibility)
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;

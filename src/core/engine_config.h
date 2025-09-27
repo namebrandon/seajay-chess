@@ -35,14 +35,14 @@ public:
     int kingAttackScale = 2;            // Percentage boost (2 = default boost for king attack scoring)
 
     // Phase SE1: Singular extension runtime controls (mirrored from UCI for SPSA sweeps)
-    bool useSingularExtensions = false;          // Master singular toggle (default OFF until SE1 ships)
-    bool allowStackedExtensions = false;         // Permit recapture stacking alongside singular
+    bool useSingularExtensions = true;           // Master singular toggle (enabled post-SE4 tuning)
+    bool allowStackedExtensions = true;          // Permit recapture stacking alongside singular
     bool bypassSingularTTExact = false;          // Debug hook to bypass TT exact cutoffs in verification
     bool disableCheckDuringSingular = false;     // Suppress check extensions during verification nodes
-    int singularDepthMin = 8;                    // Minimum depth threshold for singular verification
-    int singularMarginBase = 64;                 // Margin scaling factor (cp)
-    int singularVerificationReduction = 3;       // Depth reduction when launching verification search
-    int singularExtensionDepth = 1;              // Extension plies applied on singular fail-low
+    int singularDepthMin = 7;                    // Minimum depth threshold for singular verification
+    int singularMarginBase = 51;                 // Margin scaling factor (cp)
+    int singularVerificationReduction = 4;       // Depth reduction when launching verification search
+    int singularExtensionDepth = 2;              // Extension plies applied on singular fail-low
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
