@@ -46,7 +46,7 @@
 ### Recent Findings (2025-09-27)
 - **Margin adaptation:** the new TT-depth/β-gap-aware margin logic keeps verification windows tight for near-cutoff nodes while backing off when TT evidence is weak; Release bench remains neutral (`bench 2350511`, `1776697 nps`).
 - **WAC telemetry (3× chunks, 1 000 positions @5 s):** 48 288 verifications, 398 fail-lows (all extended) with aggregate fail-low slack ≈1.0 cp and fail-high slack ≈16.2 cp; zero TT cache hits.
-- **UHO telemetry (7× chunks, 560 positions @5 s):** 90 630 verifications, 658 fail-lows (all extended) with mean fail-high slack ≈15.9 cp. One heavy-tailed chunk (mate sequences) shows β−score gaps ≈67 pc, highlighting the need for mate-aware clamping before touching reductions.
+- **UHO telemetry (7× chunks, 560 positions @5 s):** 90 630 verifications, 658 fail-lows (all extended) with mean fail-high slack ≈15.9 cp. Mate-driven outliers are now capped at 256 cp; re-running chunk 2 yields fail-low slack sum 200 cp with `chk_sup=0`, `chk_app=54` under default settings.
 - **Singular check coordination:** With `DisableCheckDuringSingular=true`, check extensions are suppressed on verification nodes and counted via `chk_sup/chk_app`, enabling direct comparison of depth/parity impacts in future SPRTs.
 - **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
 
@@ -56,5 +56,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Profile the heavy-tailed fail-low cases (UHO chunk 2) to decide whether mate-distance normalization or min-margin caps are needed before enabling reduction tweaks.
+1. Validate the slack cap across additional tactical suites (e.g., `bratko_kopec.epd`) and confirm mate-distance reporting before touching reductions.
 2. Stage SE4.1a: expose singular tuning parameters (depth min, margin base, verification reduction, extension depth) via UCI for upcoming SPRTs.

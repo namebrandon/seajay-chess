@@ -1209,11 +1209,16 @@ eval::Score negamax(Board& board,
         if (singularVerificationRan && limits.useSingularExtensions) {
             if (singularVerificationScore < singularVerificationBeta) {
                 info.singularStats.verificationFailLow++;
-                const int slack = singularVerificationBeta.value() - singularVerificationScore.value();
-                info.singularStats.verificationFailLowSlackSum += static_cast<int64_t>(slack);
+                const int rawSlack = std::max(
+                    singularVerificationBeta.value() - singularVerificationScore.value(),
+                    0);
+                const int cappedSlack = std::min(
+                    rawSlack,
+                    SearchData::SingularStats::kSlackBucketCap);
+                info.singularStats.verificationFailLowSlackSum += static_cast<int64_t>(cappedSlack);
                 const int bucketWidth = SearchData::SingularStats::kSlackBucketWidth;
                 const int bucketIndex = std::clamp(
-                    slack / bucketWidth,
+                    cappedSlack / bucketWidth,
                     0,
                     SearchData::SingularStats::kSlackBucketCount - 1);
                 info.singularStats.failLowSlackBuckets[static_cast<std::size_t>(bucketIndex)]++;
@@ -1222,11 +1227,16 @@ eval::Score negamax(Board& board,
                 singularExtensionAmountPending = extensionDepthConfig;
             } else {
                 info.singularStats.verificationFailHigh++;
-                const int slack = singularVerificationScore.value() - singularVerificationBeta.value();
-                info.singularStats.verificationFailHighSlackSum += static_cast<int64_t>(slack);
+                const int rawSlack = std::max(
+                    singularVerificationScore.value() - singularVerificationBeta.value(),
+                    0);
+                const int cappedSlack = std::min(
+                    rawSlack,
+                    SearchData::SingularStats::kSlackBucketCap);
+                info.singularStats.verificationFailHighSlackSum += static_cast<int64_t>(cappedSlack);
                 const int bucketWidth = SearchData::SingularStats::kSlackBucketWidth;
                 const int bucketIndex = std::clamp(
-                    slack / bucketWidth,
+                    cappedSlack / bucketWidth,
                     0,
                     SearchData::SingularStats::kSlackBucketCount - 1);
                 info.singularStats.failHighSlackBuckets[static_cast<std::size_t>(bucketIndex)]++;

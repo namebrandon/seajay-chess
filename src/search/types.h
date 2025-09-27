@@ -361,6 +361,7 @@ struct SearchData {
     struct alignas(64) SingularStats {
         static constexpr int kSlackBucketWidth = 4;   // Bucket granularity in centipawns
         static constexpr int kSlackBucketCount = 64;  // Buckets cover 0..255cp with overflow bucket
+        static constexpr int kSlackBucketCap = kSlackBucketWidth * kSlackBucketCount; // Saturation cap for telemetry sums
         uint64_t candidatesExamined = 0;        // Candidate moves evaluated for singularity
         uint64_t candidatesQualified = 0;       // Candidates that passed legality/quiet filters
         uint64_t candidatesRejectedIllegal = 0; // TT moves rejected for illegality
