@@ -253,6 +253,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
 - **SE2.1b – Score margin calculation**
   - ✅ Implement depth-indexed `singular_margin` lookup (≥8 → 60cp, ≥6 → 80cp, else 100cp) with constexpr table.
   - ✅ Extend `verify_exclusion` to take TT score, derive `singularBeta = clamp(ttScore - singular_margin(depth))`, and narrow window via saturating subtract.
+  - ✅ Upgrade `singular_margin` to adapt using TT depth gap, β proximity, and verification horizon so critical nodes tighten automatically while soft bounds remain conservative for shallow probes.
   - ✅ Guard window construction with clamp helper so verification stays within mate bounds (no underflow).
   - Status: Completed 2025-09-24 on `feature/20250924-singular-extension-se21b` (bench 2350511, parity)
   - Expected NPS impact: < 0.1%
@@ -322,23 +323,26 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Implement conditional check extension disable
   - Track interaction statistics
   - Expected NPS impact: Potentially +1-2% (fewer extensions)
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular verification nodes now honor the `DisableCheckDuringSingular` toggle, skipping the automatic in-check extension when enabled and recording applied vs suppressed counts in singular telemetry.
 - **SE3.2a – Extension application**
   - When verification confirms singularity, set extension flag
   - Increment depth by `singularExtensionDepth` (initially 1)
   - Update thread-local extension budget
   - Expected NPS impact: -2-5% when enabled (deeper searches)
   - SPRT: [0.00, 5.00] bounds
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). `SearchLimits::singularExtensionDepth` now feeds the pending extension amount, `info.singularExtensions` tallies applied plies, and singular fail-low events schedule the depth increase while respecting budget clamps.
 - **SE3.2b – Context propagation**
   - Ensure child nodes receive updated NodeContext
   - Maintain PV flag through extended search
   - Update triangular PV correctly
   - Expected NPS impact: < 0.1%
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular extensions force the child `NodeContext` to stay on the PV path when applied and reuse the allocated triangular PV buffer so extended searches preserve the principal variation ordering.
 
 ### Stage SE4 — Diagnostics, UCI toggles, and Tuning Hooks
 - **SE4.1a – Core UCI controls**
   - Add `UseSingularExtensions` bool (default false)
   - Add `SingularDepthMin` int (default 8, range 4-20)
-  - Add `SingularMarginBase` int (default 60, range 20-200)
+  - Add `SingularMarginBase` int (default 64, range 20-200)
   - **C++20 Configuration with concepts:**
     ```cpp
     template<typename T>
@@ -361,11 +365,13 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
     static_assert(singular_depth_min.validate());
     ```
   - Expected NPS impact: 0% (configuration only)
+  - Status: Completed 2025-09-27 on `feature/20250927-singular-extension-se32a` (bench 2350511). UCI now exposes `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth`, wiring through `SearchLimits` so telemetry and SPRTs can sweep singular heuristics without rebuilding.
 - **SE4.1b – Advanced tuning parameters**
   - Add `SingularVerificationReduction` int (default 3, range 2-5)
   - Add `SingularExtensionDepth` int (default 1, range 1-2)
   - Hook into `engine_config` for OpenBench parameter sweeps
   - Expected NPS impact: 0%
+  - Status: Completed 2025-09-28 on `feature/20250927-singular-extension-se32a` (bench 2350511). Singular toggles and knobs now mirror into `EngineConfig`, keeping UCI options and SPSA-accessible configuration in lockstep for future sweeps.
 - **SE4.2a – Debug diagnostics**
   - Implement `debug singular` UCI command
   - Output per-position singular decision log
@@ -463,15 +469,15 @@ After Phase 6 validation and SE1 completion, simplify toggle structure:
   - `UseSearchNodeAPIRefactor` - Keep exposed until Stage SE5 completes and SPRT/rollback criteria documented
   - `EnableExcludedMoveParam` - Same retention policy as above
 - **Production toggles (remain for tuning):**
-  - `UseSingularExtensions` - Main feature toggle
-  - `SingularDepthMin` - Tunable parameter (default 8)
-  - `SingularMarginBase` - Tunable parameter (default 60)
-  - `DisableCheckDuringSingular` - A/B testing toggle
-  - `AllowStackedExtensions` - Future enhancement toggle
+  - `UseSingularExtensions` - Main feature toggle (default `true` on SE4.1b tuning branch; revisit before mainline merge)
+  - `SingularDepthMin` - Tunable parameter (default 7 after SPSA stage)
+  - `SingularMarginBase` - Tunable parameter (default 51 after SPSA stage)
+  - `DisableCheckDuringSingular` - A/B testing toggle (default `false`)
+  - `AllowStackedExtensions` - Recapture stacking toggle (default `true` post-SPSA)
 - **UCI defaults checkpoint:** Confirmed in `src/uci/uci.cpp` as of 2025-09:
   - `UseSearchNodeAPIRefactor` → `check` option, default `true`
-  - `EnableExcludedMoveParam` → `check` option, default `false`
-  - `UseSingularExtensions` → **to be added during SE1**; ensure default `false` and document once live
+  - `EnableExcludedMoveParam` → `check` option, default `true`
+  - `UseSingularExtensions` → `check` option, default `true` (tuning branch); document final release default at SE5
 
 ## 8. Test Positions for Validation
 Key positions for singular extension validation:

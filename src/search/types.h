@@ -180,6 +180,19 @@ struct SearchLimits {
     // Stage SE3.1b: Optional stacking of multiple extension sources (default OFF)
     bool allowStackedExtensions = false;
 
+    // Investigation: allow bypassing TT exact cutoffs during singular verification probes
+    bool bypassSingularTTExact = false;
+
+    // Stage SE3.1c: Optionally suppress check extensions during singular verification nodes
+    bool disableCheckDuringSingular = false;
+
+    // Stage SE4.1a: Tunable singular extension parameters (UCI exposed)
+    int singularDepthMin = 8;
+    int singularMarginBase = 64;
+    int singularVerificationReduction = 3;
+    // Stage SE3.2a: Singular extension depth increment (default 1 ply)
+    int singularExtensionDepth = 1;
+
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
 
@@ -350,6 +363,9 @@ struct SearchData {
     
     // Stage SE0.1a: Singular extension telemetry (thread-local)
     struct alignas(64) SingularStats {
+        static constexpr int kSlackBucketWidth = 4;   // Bucket granularity in centipawns
+        static constexpr int kSlackBucketCount = 64;  // Buckets cover 0..255cp with overflow bucket
+        static constexpr int kSlackBucketCap = kSlackBucketWidth * kSlackBucketCount; // Saturation cap for telemetry sums
         uint64_t candidatesExamined = 0;        // Candidate moves evaluated for singularity
         uint64_t candidatesQualified = 0;       // Candidates that passed legality/quiet filters
         uint64_t candidatesRejectedIllegal = 0; // TT moves rejected for illegality
@@ -357,9 +373,14 @@ struct SearchData {
         uint64_t verificationsStarted = 0;      // Verification searches launched
         uint64_t verificationFailLow = 0;       // Verification result below singular beta
         uint64_t verificationFailHigh = 0;      // Verification result met/exceeded singular beta
+        uint64_t verificationNodesEntered = 0;  // Verification nodes entered (context carries excluded move)
+        uint64_t verificationNodesTTExact = 0;  // Verification nodes that returned via TT exact hit
+        uint64_t verificationNodesExpanded = 0; // Verification nodes that reached move expansion
         uint64_t extensionsApplied = 0;         // Singular extensions successfully applied
         uint32_t maxExtensionDepth = 0;         // Maximum depth reached with stacked extensions
         uint32_t verificationCacheHits = 0;     // Cache hits in verification helpers
+        int64_t verificationFailLowSlackSum = 0;  // Sum(beta - score) for fail-low cases
+        int64_t verificationFailHighSlackSum = 0; // Sum(score - beta) for fail-high cases
         uint64_t stackingCandidates = 0;        // Times recapture stacking was considered
         uint64_t stackingApplied = 0;           // Times recapture stacking passed all guardrails
         uint64_t stackingRejectedDepth = 0;     // Rejections due to depth guard
@@ -367,6 +388,10 @@ struct SearchData {
         uint64_t stackingRejectedTT = 0;        // Rejections due to TT-depth guard
         uint64_t stackingBudgetClamped = 0;     // Times stacking failed due to budget clamp
         uint64_t stackingExtraDepth = 0;        // Additional depth contributed by stacking
+        std::array<uint64_t, kSlackBucketCount> failLowSlackBuckets{};  // Histogram of fail-low slack values
+        std::array<uint64_t, kSlackBucketCount> failHighSlackBuckets{}; // Histogram of fail-high slack values
+        uint64_t checkExtensionsSuppressed = 0;  // Check extensions skipped on singular verification nodes
+        uint64_t checkExtensionsApplied = 0;     // Check extensions applied on singular verification nodes
 
         void reset() noexcept {
             candidatesExamined = 0;
@@ -376,9 +401,14 @@ struct SearchData {
             verificationsStarted = 0;
             verificationFailLow = 0;
             verificationFailHigh = 0;
+            verificationNodesEntered = 0;
+            verificationNodesTTExact = 0;
+            verificationNodesExpanded = 0;
             extensionsApplied = 0;
             maxExtensionDepth = 0;
             verificationCacheHits = 0;
+            verificationFailLowSlackSum = 0;
+            verificationFailHighSlackSum = 0;
             stackingCandidates = 0;
             stackingApplied = 0;
             stackingRejectedDepth = 0;
@@ -386,18 +416,29 @@ struct SearchData {
             stackingRejectedTT = 0;
             stackingBudgetClamped = 0;
             stackingExtraDepth = 0;
+            failLowSlackBuckets.fill(0);
+            failHighSlackBuckets.fill(0);
+            checkExtensionsSuppressed = 0;
+            checkExtensionsApplied = 0;
         }
 
         bool empty() const noexcept {
             return candidatesExamined == 0 && candidatesQualified == 0 &&
                    candidatesRejectedIllegal == 0 && candidatesRejectedTactical == 0 &&
                    verificationsStarted == 0 && verificationFailLow == 0 &&
-                   verificationFailHigh == 0 && extensionsApplied == 0 &&
+                   verificationFailHigh == 0 && verificationNodesEntered == 0 &&
+                   verificationNodesTTExact == 0 && verificationNodesExpanded == 0 &&
+                   extensionsApplied == 0 &&
                    maxExtensionDepth == 0 && verificationCacheHits == 0 &&
+                   verificationFailLowSlackSum == 0 &&
+                   verificationFailHighSlackSum == 0 &&
                    stackingCandidates == 0 && stackingApplied == 0 &&
                    stackingRejectedDepth == 0 && stackingRejectedEval == 0 &&
                    stackingRejectedTT == 0 && stackingBudgetClamped == 0 &&
-                   stackingExtraDepth == 0;
+                   stackingExtraDepth == 0 &&
+                   std::all_of(failLowSlackBuckets.begin(), failLowSlackBuckets.end(), [](uint64_t v) { return v == 0; }) &&
+                   std::all_of(failHighSlackBuckets.begin(), failHighSlackBuckets.end(), [](uint64_t v) { return v == 0; }) &&
+                   checkExtensionsSuppressed == 0 && checkExtensionsApplied == 0;
         }
     };
 
@@ -427,9 +468,14 @@ struct SearchData {
         uint64_t totalVerified = 0;
         uint64_t totalFailLow = 0;
         uint64_t totalFailHigh = 0;
+        uint64_t totalVerificationNodesEntered = 0;
+        uint64_t totalVerificationNodesTTExact = 0;
+        uint64_t totalVerificationNodesExpanded = 0;
         uint64_t totalExtended = 0;
         uint32_t maxExtensionDepth = 0;
         uint64_t totalCacheHits = 0;
+        int64_t totalFailLowSlackSum = 0;
+        int64_t totalFailHighSlackSum = 0;
         uint64_t totalStackingCandidates = 0;
         uint64_t totalStackingApplied = 0;
         uint64_t totalStackingRejectedDepth = 0;
@@ -437,6 +483,10 @@ struct SearchData {
         uint64_t totalStackingRejectedTT = 0;
         uint64_t totalStackingBudgetClamped = 0;
         uint64_t totalStackingExtraDepth = 0;
+        std::array<uint64_t, SingularStats::kSlackBucketCount> totalFailLowSlackBuckets{};
+        std::array<uint64_t, SingularStats::kSlackBucketCount> totalFailHighSlackBuckets{};
+        uint64_t totalCheckExtensionsSuppressed = 0;
+        uint64_t totalCheckExtensionsApplied = 0;
 
         void reset() noexcept {
             totalExamined = 0;
@@ -446,9 +496,14 @@ struct SearchData {
             totalVerified = 0;
             totalFailLow = 0;
             totalFailHigh = 0;
+            totalVerificationNodesEntered = 0;
+            totalVerificationNodesTTExact = 0;
+            totalVerificationNodesExpanded = 0;
             totalExtended = 0;
             maxExtensionDepth = 0;
             totalCacheHits = 0;
+            totalFailLowSlackSum = 0;
+            totalFailHighSlackSum = 0;
             totalStackingCandidates = 0;
             totalStackingApplied = 0;
             totalStackingRejectedDepth = 0;
@@ -456,6 +511,10 @@ struct SearchData {
             totalStackingRejectedTT = 0;
             totalStackingBudgetClamped = 0;
             totalStackingExtraDepth = 0;
+            totalFailLowSlackBuckets.fill(0);
+            totalFailHighSlackBuckets.fill(0);
+            totalCheckExtensionsSuppressed = 0;
+            totalCheckExtensionsApplied = 0;
         }
 
         void aggregate(const SingularStats& local, bool threadSafe) noexcept {
@@ -471,8 +530,13 @@ struct SearchData {
                 std::atomic_ref<uint64_t> verified(totalVerified);
                 std::atomic_ref<uint64_t> failLow(totalFailLow);
                 std::atomic_ref<uint64_t> failHigh(totalFailHigh);
+                std::atomic_ref<uint64_t> nodesEntered(totalVerificationNodesEntered);
+                std::atomic_ref<uint64_t> nodesTTExact(totalVerificationNodesTTExact);
+                std::atomic_ref<uint64_t> nodesExpanded(totalVerificationNodesExpanded);
                 std::atomic_ref<uint64_t> extended(totalExtended);
                 std::atomic_ref<uint64_t> cacheHits(totalCacheHits);
+                std::atomic_ref<int64_t> failLowSlack(totalFailLowSlackSum);
+                std::atomic_ref<int64_t> failHighSlack(totalFailHighSlackSum);
                 std::atomic_ref<uint64_t> stackCand(totalStackingCandidates);
                 std::atomic_ref<uint64_t> stackApplied(totalStackingApplied);
                 std::atomic_ref<uint64_t> stackRejectDepth(totalStackingRejectedDepth);
@@ -480,6 +544,8 @@ struct SearchData {
                 std::atomic_ref<uint64_t> stackRejectTT(totalStackingRejectedTT);
                 std::atomic_ref<uint64_t> stackClamp(totalStackingBudgetClamped);
                 std::atomic_ref<uint64_t> stackExtra(totalStackingExtraDepth);
+                std::atomic_ref<uint64_t> checkSupp(totalCheckExtensionsSuppressed);
+                std::atomic_ref<uint64_t> checkApplied(totalCheckExtensionsApplied);
                 examined.fetch_add(local.candidatesExamined, std::memory_order_relaxed);
                 qualified.fetch_add(local.candidatesQualified, std::memory_order_relaxed);
                 illegal.fetch_add(local.candidatesRejectedIllegal, std::memory_order_relaxed);
@@ -487,8 +553,13 @@ struct SearchData {
                 verified.fetch_add(local.verificationsStarted, std::memory_order_relaxed);
                 failLow.fetch_add(local.verificationFailLow, std::memory_order_relaxed);
                 failHigh.fetch_add(local.verificationFailHigh, std::memory_order_relaxed);
+                nodesEntered.fetch_add(local.verificationNodesEntered, std::memory_order_relaxed);
+                nodesTTExact.fetch_add(local.verificationNodesTTExact, std::memory_order_relaxed);
+                nodesExpanded.fetch_add(local.verificationNodesExpanded, std::memory_order_relaxed);
                 extended.fetch_add(local.extensionsApplied, std::memory_order_relaxed);
                 cacheHits.fetch_add(local.verificationCacheHits, std::memory_order_relaxed);
+                failLowSlack.fetch_add(local.verificationFailLowSlackSum, std::memory_order_relaxed);
+                failHighSlack.fetch_add(local.verificationFailHighSlackSum, std::memory_order_relaxed);
                 stackCand.fetch_add(local.stackingCandidates, std::memory_order_relaxed);
                 stackApplied.fetch_add(local.stackingApplied, std::memory_order_relaxed);
                 stackRejectDepth.fetch_add(local.stackingRejectedDepth, std::memory_order_relaxed);
@@ -496,6 +567,20 @@ struct SearchData {
                 stackRejectTT.fetch_add(local.stackingRejectedTT, std::memory_order_relaxed);
                 stackClamp.fetch_add(local.stackingBudgetClamped, std::memory_order_relaxed);
                 stackExtra.fetch_add(local.stackingExtraDepth, std::memory_order_relaxed);
+                checkSupp.fetch_add(local.checkExtensionsSuppressed, std::memory_order_relaxed);
+                checkApplied.fetch_add(local.checkExtensionsApplied, std::memory_order_relaxed);
+                for (std::size_t i = 0; i < local.failLowSlackBuckets.size(); ++i) {
+                    const uint64_t lowCount = local.failLowSlackBuckets[i];
+                    const uint64_t highCount = local.failHighSlackBuckets[i];
+                    if (lowCount != 0) {
+                        std::atomic_ref<uint64_t> bucket(totalFailLowSlackBuckets[i]);
+                        bucket.fetch_add(lowCount, std::memory_order_relaxed);
+                    }
+                    if (highCount != 0) {
+                        std::atomic_ref<uint64_t> bucket(totalFailHighSlackBuckets[i]);
+                        bucket.fetch_add(highCount, std::memory_order_relaxed);
+                    }
+                }
 
                 if (local.maxExtensionDepth > 0) {
                     std::atomic_ref<uint32_t> maxDepth(maxExtensionDepth);
@@ -516,8 +601,13 @@ struct SearchData {
             totalVerified += local.verificationsStarted;
             totalFailLow += local.verificationFailLow;
             totalFailHigh += local.verificationFailHigh;
+            totalVerificationNodesEntered += local.verificationNodesEntered;
+            totalVerificationNodesTTExact += local.verificationNodesTTExact;
+            totalVerificationNodesExpanded += local.verificationNodesExpanded;
             totalExtended += local.extensionsApplied;
             totalCacheHits += local.verificationCacheHits;
+            totalFailLowSlackSum += local.verificationFailLowSlackSum;
+            totalFailHighSlackSum += local.verificationFailHighSlackSum;
             totalStackingCandidates += local.stackingCandidates;
             totalStackingApplied += local.stackingApplied;
             totalStackingRejectedDepth += local.stackingRejectedDepth;
@@ -525,6 +615,12 @@ struct SearchData {
             totalStackingRejectedTT += local.stackingRejectedTT;
             totalStackingBudgetClamped += local.stackingBudgetClamped;
             totalStackingExtraDepth += local.stackingExtraDepth;
+            for (std::size_t i = 0; i < local.failLowSlackBuckets.size(); ++i) {
+                totalFailLowSlackBuckets[i] += local.failLowSlackBuckets[i];
+                totalFailHighSlackBuckets[i] += local.failHighSlackBuckets[i];
+            }
+            totalCheckExtensionsSuppressed += local.checkExtensionsSuppressed;
+            totalCheckExtensionsApplied += local.checkExtensionsApplied;
             if (local.maxExtensionDepth > maxExtensionDepth) {
                 maxExtensionDepth = local.maxExtensionDepth;
             }
@@ -539,9 +635,14 @@ struct SearchData {
             totals.verificationsStarted = totalVerified;
             totals.verificationFailLow = totalFailLow;
             totals.verificationFailHigh = totalFailHigh;
+            totals.verificationNodesEntered = totalVerificationNodesEntered;
+            totals.verificationNodesTTExact = totalVerificationNodesTTExact;
+            totals.verificationNodesExpanded = totalVerificationNodesExpanded;
             totals.extensionsApplied = totalExtended;
             totals.maxExtensionDepth = maxExtensionDepth;
             totals.verificationCacheHits = totalCacheHits;
+            totals.verificationFailLowSlackSum = totalFailLowSlackSum;
+            totals.verificationFailHighSlackSum = totalFailHighSlackSum;
             totals.stackingCandidates = totalStackingCandidates;
             totals.stackingApplied = totalStackingApplied;
             totals.stackingRejectedDepth = totalStackingRejectedDepth;
@@ -549,6 +650,10 @@ struct SearchData {
             totals.stackingRejectedTT = totalStackingRejectedTT;
             totals.stackingBudgetClamped = totalStackingBudgetClamped;
             totals.stackingExtraDepth = totalStackingExtraDepth;
+            totals.failLowSlackBuckets = totalFailLowSlackBuckets;
+            totals.failHighSlackBuckets = totalFailHighSlackBuckets;
+            totals.checkExtensionsSuppressed = totalCheckExtensionsSuppressed;
+            totals.checkExtensionsApplied = totalCheckExtensionsApplied;
             return totals;
         }
     };

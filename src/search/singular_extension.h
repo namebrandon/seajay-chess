@@ -34,12 +34,18 @@ namespace detail {
 constexpr std::array<int, 64> build_singular_margin_table() noexcept {
     std::array<int, 64> margins{};
     for (std::size_t depth = 0; depth < margins.size(); ++depth) {
-        if (depth >= 8) {
-            margins[depth] = 60;
+        if (depth >= 12) {
+            margins[depth] = 32;
+        } else if (depth >= 10) {
+            margins[depth] = 36;
+        } else if (depth >= 8) {
+            margins[depth] = 40;
         } else if (depth >= 6) {
-            margins[depth] = 80;
+            margins[depth] = 48;
+        } else if (depth >= 4) {
+            margins[depth] = 56;
         } else {
-            margins[depth] = 100;
+            margins[depth] = 64;
         }
     }
     return margins;
@@ -57,8 +63,14 @@ constexpr auto kSingularMarginTable = build_singular_margin_table();
     return eval::Score(clamped);
 }
 
-// Compile-time margin lookup for singular verification searches.
-[[nodiscard]] constexpr eval::Score singular_margin(int depth) noexcept {
+// Compile-time margin lookup for singular verification searches with adaptive adjustments.
+[[nodiscard]] constexpr eval::Score singular_margin(
+    int depth,
+    int marginBase,
+    int verificationReduction,
+    int ttDepth,
+    eval::Score ttScore,
+    eval::Score beta) noexcept {
     if (depth < 0) {
         depth = 0;
     }
@@ -66,7 +78,48 @@ constexpr auto kSingularMarginTable = build_singular_margin_table();
     if (depth > maxIndex) {
         depth = maxIndex;
     }
-    return eval::Score(detail::kSingularMarginTable[static_cast<std::size_t>(depth)]);
+    const int clampedBase = std::clamp(marginBase, 20, 200);
+    int margin = detail::kSingularMarginTable[static_cast<std::size_t>(depth)];
+    margin = std::max(
+        4,
+        (margin * clampedBase) / detail::kSingularMarginTable[0]);
+
+    // Use TT depth gap to tighten margin when the stored node searched deeper.
+    const int ttDepthGap = ttDepth - depth;
+    if (ttDepthGap >= 2) {
+        margin -= 8;
+    } else if (ttDepthGap == 1) {
+        margin -= 4;
+    } else if (ttDepthGap <= -1) {
+        margin += 4;
+    }
+
+    // Shrink margin when the TT score is close to beta; expand if it significantly undershoots.
+    const int betaGap = beta.value() - ttScore.value();
+    if (betaGap <= 0) {
+        margin += 8;  // TT score already exceeds beta; keep verification conservative.
+    } else if (betaGap <= 8) {
+        margin -= 4;
+    } else if (betaGap >= 48) {
+        margin += 4;
+    }
+
+    // Deeper parent depth and verification horizon justify tighter margins.
+    const int reduction = std::clamp(verificationReduction, 1, 10);
+    const int singularDepth = depth - 1 - reduction;
+    if (singularDepth >= 12) {
+        margin -= 4;
+    }
+
+    constexpr int kMinMargin = 4;
+    constexpr int kMaxMargin = 96;
+    if (margin < kMinMargin) {
+        margin = kMinMargin;
+    } else if (margin > kMaxMargin) {
+        margin = kMaxMargin;
+    }
+
+    return eval::Score(margin);
 }
 
 // Stage SE1.1a: Verification helper scaffold (no-op until SE2/SE3 hook it up).
@@ -75,6 +128,8 @@ constexpr auto kSingularMarginTable = build_singular_margin_table();
     NodeContext context,
     int depth,
     int ply,
+    int ttDepth,
+    int verificationReduction,
     eval::Score ttScore,
     eval::Score alpha,
     eval::Score beta,

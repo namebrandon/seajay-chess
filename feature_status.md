@@ -26,13 +26,18 @@
 | SingularExtension_Phase_SE1.2a – TT store policy | Completed | 83e92c5 | 2350511 | Verification mode uses `StorePolicyGuard`; TT entries marked `TT_EXCLUSION` reside only in empty/flagged slots and are first to be evicted by primary stores. |
 | SingularExtension_Phase_SE1.2b – TT contamination guards | Completed | 1b185fa | 2350511 | DEBUG sentinel/asserts guard verification stores; TT stats track verification store/skip counters for telemetry. |
 | SingularExtension_Phase_SE2.1a – TT probe gate | Completed | a586d04 | 2350511 | TT probe now validates depth/EXACT/move before counting singular candidates (telemetry via `singularStats`). |
-| SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Added constexpr `singular_margin` table and TT-driven windowing; `verify_exclusion` now clamps `singularBeta` via margin-based subtract. |
+| SingularExtension_Phase_SE2.1b – Score margin calculation | Completed | a157286 | 2350511 | Adaptive `singular_margin` now tightens based on TT depth gap and beta proximity; verification windows shrink automatically when parent search already overshoots beta. |
 | SingularExtension_Phase_SE2.1c – Move qualification | Completed | 8cb8359 | 2350511 | TT move legality/quiet filters populate `singularStats` qualified/reject counters; NodeContext primed for exclusion until verification wiring lands. |
 | SingularExtension_Phase_SE2.2a – Verification trigger | Completed | e29f0d9 | 2350511 | Launch verification search with margin-clamped window; record `verificationsStarted` ahead of SE2.2b comparisons. |
 | SingularExtension_Phase_SE2.2b – Verification outcome tracking | Completed | 742af1c | 2350511 | Telemetry differentiates fail-low/high outcomes; root guard added to prevent context misuse ahead of SE3. |
 | SingularExtension_Phase_SE3.1a – Extension tracking infrastructure | Completed | 4ac6ee0 | 2350511 | Implemented extension budget clamp and telemetry; verified neutral bench with toggles enabled. |
 | SingularExtension_Phase_SE3.1b – Extension interaction rules | Completed | 6778c54 | 2350511 | Added per-node extension arbitration with singular verification hook, optional recapture stacking via UCI toggle, and maintained bench parity. |
-| SingularExtension_Phase_SE3.1b_Guardrails – Recapture stacking stabilization | Completed | HEAD | 2350511 | Depth ≥10, eval margin 96cp, and TT depth ≥ current depth +1 required before stacking recapture with singular; new telemetry captures candidate/accept/reject/clamp/extra depth counters. |
+| SingularExtension_Phase_SE3.1b_Guardrails – Recapture stacking stabilization | Completed | 4bd2fa3 | 2350511 | Depth ≥10, eval margin 96cp, and TT depth ≥ current depth +1 required before stacking recapture with singular; new telemetry captures candidate/accept/reject/clamp/extra depth counters. |
+| SingularExtension_Phase_SE3.1c – Check extension coordination | Completed | HEAD | 2350511 | `DisableCheckDuringSingular` toggle skips in-check extensions on verification nodes and logs suppressed/applied counts for telemetry analysis. |
+| SingularExtension_Phase_SE3.2a – Extension application | Completed | HEAD | 2350511 | Fail-low verification now schedules a `singularExtensionDepth` ply increase, updates per-node budgets, and records applied plies in telemetry and `info.singularExtensions`. |
+| SingularExtension_Phase_SE3.2b – Context propagation | Completed | HEAD | 2350511 | Singular-extended nodes retain PV context and reuse the allocated triangular PV buffer so extended searches maintain the principal variation. |
+| SingularExtension_Phase_SE4.1a – UCI controls | Completed | f4d34ca | 2350511 | Exposed singular depth/margin/reduction/extension knobs via UCI and plumbed through `SearchLimits` with slack telemetry updates. |
+| SingularExtension_Phase_SE4.1b – Engine config plumbing | Completed | HEAD | 2350511 | Singular toggles/knobs now mirror into `EngineConfig`, keeping UCI options and SPSA-accessible runtime configuration in sync. |
 
 ## Telemetry Checklist
 | Machine | Branch/Commit | Bench Nodes | Threads | Raw NPS | Normalized NPS (`NPS / bench`) | Depth @10s | TT Hit % | Notes |
@@ -40,12 +45,21 @@
 | Desktop | (pending) | (pending) | 1 / 2 / 4 / 8 | (pending) | (pending) | (pending) | (pending) | Idle load assumption |
 | Laptop | (pending) | (pending) | 1 / 2 / 4 | (pending) | (pending) | (pending) | (pending) | Document battery/thermal state |
 
+### Recent Findings (2025-09-27)
+- **Margin adaptation:** the new TT-depth/β-gap-aware margin logic keeps verification windows tight for near-cutoff nodes while backing off when TT evidence is weak; Release bench remains neutral (`bench 2350511`, `1776697 nps`).
+- **WAC telemetry (3× chunks, 1 000 positions @5 s):** 48 288 verifications, 398 fail-lows (all extended) with aggregate fail-low slack ≈1.0 cp and fail-high slack ≈16.2 cp; zero TT cache hits.
+- **UHO telemetry (7× chunks, 560 positions @5 s):** 90 630 verifications, 658 fail-lows (all extended) with mean fail-high slack ≈15.9 cp. Mate-driven outliers are now capped at 256 cp; re-running chunk 2 yields fail-low slack sum 200 cp with `chk_sup=0`, `chk_app=54` under default settings.
+- **Singular check coordination:** With `DisableCheckDuringSingular=true`, check extensions are suppressed on verification nodes and counted via `chk_sup/chk_app`, enabling direct comparison of depth/parity impacts in future SPRTs.
+- **Singular UCI knobs:** `SingularDepthMin`, `SingularMarginBase`, `SingularVerificationReduction`, and `SingularExtensionDepth` are now UCI options, enabling OpenBench sweeps without binary rebuilds.
+- **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
+- **Bratko-Kopec validation (28 positions @2 s):** 2 792 verifications, 16 fail-lows (all extended) with fail-low slack p95 = 4 cp and fail-high slack p95 = 44 cp, confirming the histogram cap reins in tactical spikes without muting extensions.
+- **SPSA (130k games @10+0.1):** converged to `SingularDepthMin=7`, `SingularMarginBase=51`, `SingularVerificationReduction=4`, `SingularExtensionDepth=2`; branch defaults updated with `UseSingularExtensions`/`EnableExcludedMoveParam`/`AllowStackedExtensions` enabled for continued validation.
+
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
 - Ensure Release builds strip telemetry when toggle disabled to avoid exceeding ≤2% NPS budget for SE0 stages.
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Stage SE3.2a: wire singular verification results to actual depth increments and node-context propagation once guardrails pass bench/SPRT.
-2. Stage SE3.2b: propagate updated contexts and PV handling for extended nodes, validate extension budgets.
-3. Prepare telemetry slices (fail-low/high vs applied plus stacked metrics) for upcoming SPRT once SE3.2 lands.
+1. Stage SE4.2a: add the `debug singular` UCI command with per-position diagnostics so we can spot-check verification flow during SPRTs.
+2. Draft SPSA sweep parameters (bounds, step sizes, chunk scheduling) now that singular knobs sync through `EngineConfig`, and capture a fresh bench trace with the final configuration.
