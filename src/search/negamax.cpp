@@ -217,6 +217,9 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
 constexpr int MATE_SCORE = 30000;
 constexpr int MATE_BOUND = 29000;
 constexpr int SINGULAR_DEPTH_MIN = 8;
+constexpr int STACKED_RECAPTURE_MIN_DEPTH = 10;      // Guard: only stack when search is sufficiently deep
+constexpr int STACKED_RECAPTURE_EVAL_MARGIN_CP = 96; // Require static eval within ~1 pawn of beta
+constexpr int STACKED_RECAPTURE_TT_MARGIN = 1;       // TT entry must exceed current depth by this margin
 
 #include "negamax_legacy.inc"
 
@@ -1476,77 +1479,70 @@ eval::Score negamax(Board& board,
 
         enum class ExtensionType : uint8_t {
             None = 0,
-            Recapture = 1,
-            Singular = 2,
-            Check = 3,
-        };
-
-        auto extensionPriority = [](ExtensionType type) constexpr -> int {
-            switch (type) {
-                case ExtensionType::Check: return 3;
-                case ExtensionType::Singular: return 2;
-                case ExtensionType::Recapture: return 1;
-                default: return 0;
-            }
+            Singular = 1,
+            SingularStack = 2,
+            Recapture = 3,
+            Check = 4,
         };
 
         auto extensionTypeToString = [](ExtensionType type) constexpr -> const char* {
             switch (type) {
-                case ExtensionType::Check: return "check";
                 case ExtensionType::Singular: return "singular";
+                case ExtensionType::SingularStack: return "singular+recapture";
                 case ExtensionType::Recapture: return "recapture";
+                case ExtensionType::Check: return "check";
                 default: return "none";
             }
         };
 
         int extension = 0;
         ExtensionType extensionType = ExtensionType::None;
-
-        auto requestExtension = [&](ExtensionType type, int amount) {
-            if (amount <= 0) {
-                return;
-            }
-
-            if (!limits.allowStackedExtensions) {
-                const int currentPriority = extensionPriority(extensionType);
-                const int requestedPriority = extensionPriority(type);
-
-                if (requestedPriority > currentPriority ||
-                    (requestedPriority == currentPriority && amount > extension)) {
-                    extension = amount;
-                    extensionType = type;
-                }
-                return;
-            }
-
-            // Stacking support (future optimization): prefer highest-priority amount
-            // For now, treat stacking identically to single-source selection to maintain
-            // predictable behaviour until Stage SE3.2 introduces combined extensions.
-            const int currentPriority = extensionPriority(extensionType);
-            const int requestedPriority = extensionPriority(type);
-            if (requestedPriority > currentPriority ||
-                (requestedPriority == currentPriority && amount > extension)) {
-                extension = amount;
-                extensionType = type;
-            }
-        };
-
-        // Recapture extension: extend when immediately recapturing on the same square.
-        if (limits.allowStackedExtensions) {
-            const bool isRecaptureMove = (prevMove != NO_MOVE && isCapture(prevMove) &&
-                                          isCapture(move) && moveTo(prevMove) == moveTo(move));
-            if (isRecaptureMove) {
-                requestExtension(ExtensionType::Recapture, 1);
-            }
-        }
+        int singularExtensionAmount = 0;
+        int recaptureExtensionAmount = 0;
+        bool stackedSingularExtension = false;
 
         // Singular extension: only for TT move confirmed singular by verification helper.
         const bool isSingularMove = (limits.useSingularExtensions && singularExtensionPending &&
                                      move == singularCandidate);
         if (isSingularMove) {
-            requestExtension(ExtensionType::Singular, singularExtensionAmountPending);
+            singularExtensionAmount = singularExtensionAmountPending;
             singularExtensionPending = false;
             singularExtensionAmountPending = 0;
+            if (singularExtensionAmount > 0) {
+                extension = singularExtensionAmount;
+                extensionType = ExtensionType::Singular;
+            }
+        }
+
+        const bool isRecaptureMove = (prevMove != NO_MOVE && isCapture(prevMove) &&
+                                      isCapture(move) && moveTo(prevMove) == moveTo(move));
+
+        if (limits.allowStackedExtensions && singularExtensionAmount > 0 && isRecaptureMove) {
+            auto& singularStats = info.singularStats;
+            singularStats.stackingCandidates++;
+
+            const bool depthGuardPassed = depth >= STACKED_RECAPTURE_MIN_DEPTH;
+            const bool evalGuardPassed = staticEvalComputed &&
+                                         (staticEval.value() >= beta.value() - STACKED_RECAPTURE_EVAL_MARGIN_CP);
+            const bool ttGuardPassed = ttDepth >= depth + STACKED_RECAPTURE_TT_MARGIN;
+
+            if (!depthGuardPassed) {
+                singularStats.stackingRejectedDepth++;
+            }
+            if (!evalGuardPassed) {
+                singularStats.stackingRejectedEval++;
+            }
+            if (!ttGuardPassed) {
+                singularStats.stackingRejectedTT++;
+            }
+
+            if (depthGuardPassed && evalGuardPassed && ttGuardPassed) {
+                recaptureExtensionAmount = 1;
+                extension += recaptureExtensionAmount;
+                extensionType = ExtensionType::SingularStack;
+                stackedSingularExtension = true;
+                singularStats.stackingApplied++;
+            }
         }
 
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
@@ -1700,22 +1696,43 @@ eval::Score negamax(Board& board,
         bool isCutoffMove = false;
 
         if (extension > 0) {
-            const bool singularExtensionActive = (extensionType == ExtensionType::Singular);
+            const bool singularExtensionActive = (singularExtensionAmount > 0);
             const int clamped = searchInfo.clampExtensionAmount(ply, extension, singularExtensionActive);
             if (clamped != extension) {
+                if (stackedSingularExtension && clamped < extension) {
+                    info.singularStats.stackingBudgetClamped++;
+                }
                 extension = clamped;
                 if (extension == 0) {
                     extensionType = ExtensionType::None;
+                    singularExtensionAmount = 0;
+                    recaptureExtensionAmount = 0;
+                    stackedSingularExtension = false;
+                } else {
+                    if (singularExtensionAmount > extension) {
+                        singularExtensionAmount = extension;
+                    }
+                    if (singularExtensionAmount < extension) {
+                        recaptureExtensionAmount = extension - singularExtensionAmount;
+                    } else {
+                        recaptureExtensionAmount = 0;
+                        if (extensionType == ExtensionType::SingularStack) {
+                            extensionType = ExtensionType::Singular;
+                        }
+                        stackedSingularExtension = false;
+                    }
                 }
             }
         }
 
         // Record extension metadata for the child node before searching it
         searchInfo.setExtensionApplied(ply + 1, extension);
-        const int singularExtensionAmount = (extensionType == ExtensionType::Singular) ? extension : 0;
         searchInfo.setSingularExtensionApplied(ply + 1, singularExtensionAmount);
         if (singularExtensionAmount > 0) {
             info.singularStats.extensionsApplied += static_cast<uint64_t>(singularExtensionAmount);
+        }
+        if (recaptureExtensionAmount > 0) {
+            info.singularStats.stackingExtraDepth += static_cast<uint64_t>(recaptureExtensionAmount);
         }
         const int extensionDepth = searchInfo.totalExtensions(ply + 1);
         if (extensionDepth > 0) {
@@ -1729,6 +1746,9 @@ eval::Score negamax(Board& board,
             extra << "value=" << extension
                   << " total=" << searchInfo.totalExtensions(ply + 1)
                   << " type=" << extensionTypeToString(extensionType);
+            if (recaptureExtensionAmount > 0) {
+                extra << " recapture=" << recaptureExtensionAmount;
+            }
             logTrackedEvent("extension_apply", extra.str());
         }
 
@@ -2867,6 +2887,19 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                       << " cacheHits=" << singularTotals.verificationCacheHits
                           << " maxDepth=" << singularTotals.maxExtensionDepth
                           << std::endl;
+                if (singularTotals.stackingCandidates > 0 || singularTotals.stackingApplied > 0 ||
+                    singularTotals.stackingRejectedDepth > 0 || singularTotals.stackingRejectedEval > 0 ||
+                    singularTotals.stackingRejectedTT > 0 || singularTotals.stackingBudgetClamped > 0 ||
+                    singularTotals.stackingExtraDepth > 0) {
+                    std::cout << "info string SingularStack: cand=" << singularTotals.stackingCandidates
+                              << " app=" << singularTotals.stackingApplied
+                              << " rej_depth=" << singularTotals.stackingRejectedDepth
+                              << " rej_eval=" << singularTotals.stackingRejectedEval
+                              << " rej_tt=" << singularTotals.stackingRejectedTT
+                              << " clamp=" << singularTotals.stackingBudgetClamped
+                              << " extra=" << singularTotals.stackingExtraDepth
+                              << std::endl;
+                }
             }
         }
     }
@@ -3260,6 +3293,27 @@ void sendCurrentSearchInfo(const IterativeSearchData& info, Color sideToMove, Tr
             if (singularTotals.maxExtensionDepth > 0) {
                 builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
             }
+            if (singularTotals.stackingCandidates > 0) {
+                builder.appendCustom("se_stack_c", std::to_string(singularTotals.stackingCandidates));
+            }
+            if (singularTotals.stackingApplied > 0) {
+                builder.appendCustom("se_stack_a", std::to_string(singularTotals.stackingApplied));
+            }
+            if (singularTotals.stackingRejectedDepth > 0) {
+                builder.appendCustom("se_stack_rd", std::to_string(singularTotals.stackingRejectedDepth));
+            }
+            if (singularTotals.stackingRejectedEval > 0) {
+                builder.appendCustom("se_stack_re", std::to_string(singularTotals.stackingRejectedEval));
+            }
+            if (singularTotals.stackingRejectedTT > 0) {
+                builder.appendCustom("se_stack_rt", std::to_string(singularTotals.stackingRejectedTT));
+            }
+            if (singularTotals.stackingBudgetClamped > 0) {
+                builder.appendCustom("se_stack_cl", std::to_string(singularTotals.stackingBudgetClamped));
+            }
+            if (singularTotals.stackingExtraDepth > 0) {
+                builder.appendCustom("se_stack_x", std::to_string(singularTotals.stackingExtraDepth));
+            }
         }
     }
 
@@ -3354,6 +3408,27 @@ void sendIterationInfo(const IterativeSearchData& info, Color sideToMove, Transp
             }
             if (singularTotals.maxExtensionDepth > 0) {
                 builder.appendCustom("se_max", static_cast<int>(singularTotals.maxExtensionDepth));
+            }
+            if (singularTotals.stackingCandidates > 0) {
+                builder.appendCustom("se_stack_c", std::to_string(singularTotals.stackingCandidates));
+            }
+            if (singularTotals.stackingApplied > 0) {
+                builder.appendCustom("se_stack_a", std::to_string(singularTotals.stackingApplied));
+            }
+            if (singularTotals.stackingRejectedDepth > 0) {
+                builder.appendCustom("se_stack_rd", std::to_string(singularTotals.stackingRejectedDepth));
+            }
+            if (singularTotals.stackingRejectedEval > 0) {
+                builder.appendCustom("se_stack_re", std::to_string(singularTotals.stackingRejectedEval));
+            }
+            if (singularTotals.stackingRejectedTT > 0) {
+                builder.appendCustom("se_stack_rt", std::to_string(singularTotals.stackingRejectedTT));
+            }
+            if (singularTotals.stackingBudgetClamped > 0) {
+                builder.appendCustom("se_stack_cl", std::to_string(singularTotals.stackingBudgetClamped));
+            }
+            if (singularTotals.stackingExtraDepth > 0) {
+                builder.appendCustom("se_stack_x", std::to_string(singularTotals.stackingExtraDepth));
             }
         }
     }

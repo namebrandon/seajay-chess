@@ -316,7 +316,7 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Introduce depth/eval/TT guardrails before enabling stacked recapture extensions in production.
   - Collect telemetry (extension counts, seledepth deltas, NPS impact) with `AllowStackedExtensions=true`.
   - Expected NPS impact: ≤ 2% regression target after guardrails.
-  - Status: Pending (must complete before SE3.2 work proceeds).
+  - Status: Completed 2025-09-26 on `feature/20250925-singular-extension-se31a` (bench parity 2350511). Guardrails require depth ≥10, static eval within 96cp of beta, and TT depth ≥ current depth +1 before stacking recapture on top of singular. Telemetry now records candidate/accept/reject counts, clamp events, and extra depth contributed under `AllowStackedExtensions=true`.
 - **SE3.1c – Check extension coordination**
   - Add toggle `DisableCheckDuringSingular` for A/B testing
   - Implement conditional check extension disable
