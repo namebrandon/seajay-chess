@@ -69,13 +69,13 @@
      - [2025-09-29] Added `--compare <baseline.csv>` to the harness so we can diff new builds against the historical baseline and print per-FEN deltas before scheduling SPRTs.
    - Capture current `debug eval` outputs for each problem FEN (store in `external/eval_baselines/` for diffing).
 
-3. **Phase 1 — King Safety & Pawns**
+3. **Phase 1 — King Safety**
    - Land king-safety overhaul; validate on problem FENs and a small tactics/endgame suite.
      - [2025-09-29] Applied shield deficiency penalties, semi/open-file pressure, enemy attack counting, and proximity heuristics (`src/evaluation/king_safety.cpp`). Harness now shows enforced cases stable, watch-list positions flagged as `[OBS]` pending further tuning.
      - [2025-09-29] **Experiment – fortress gating only** (`test/20250929-king-safety-watchlist@gating`): disabled penalties for non-castled kings. Watch-list deltas remained small; SPRT vs `main`: **‑84.6 ± 20.2 Elo**, indicating the gating by itself did not recover strength.
      - [2025-09-29] **Experiment – fortress pressure penalty** (`test/20250929-king-safety-watchlist@pressure`): added heavy ring-pressure scaling. Canary FENs improved but SPRT vs `main`: **‑111.4 ± 25.1 Elo**; change abandoned and reverted.
      - Lessons: watch-list harness is effective for canary checks, but we must pair each local success with a quick SPRT. Overly aggressive king-safety penalties dramatically hurt global play even when static evals look “correct”.
-   - Fix passed-pawn bonuses and add blockade detection.
+   - Detailed roadmap: `docs/project_docs/eval_overhaul/Stage1_King_Safety.md`.
    - Update harness expectations where improvements materialise.
 
 4. **Phase 2 — PST & Compensation**
