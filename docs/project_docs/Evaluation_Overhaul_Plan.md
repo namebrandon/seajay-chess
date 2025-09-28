@@ -66,11 +66,15 @@
      - [2025-09-29] Added `tests/eval/problem_positions_test.cpp` + `ctest -R eval` hook to dump SeaJay eval deltas (log-only for now, tolerance ±50 cp).
      - [2025-09-29] Expectations now live in `tests/eval/problem_position_expectations.json`; harness accepts `--expectations` to swap datasets and records per-position enforcement state.
      - [2025-09-29] Captured baseline CSVs at `external/eval_baselines/problem_positions_baseline_2025-09-29.csv` (pre-Phase 1) and `external/eval_baselines/problem_positions_baseline_2025-09-29_ks.csv` (post king-safety revamp) for future diffing.
+     - [2025-09-29] Added `--compare <baseline.csv>` to the harness so we can diff new builds against the historical baseline and print per-FEN deltas before scheduling SPRTs.
    - Capture current `debug eval` outputs for each problem FEN (store in `external/eval_baselines/` for diffing).
 
 3. **Phase 1 — King Safety & Pawns**
    - Land king-safety overhaul; validate on problem FENs and a small tactics/endgame suite.
      - [2025-09-29] Applied shield deficiency penalties, semi/open-file pressure, enemy attack counting, and proximity heuristics (`src/evaluation/king_safety.cpp`). Harness now shows enforced cases stable, watch-list positions flagged as `[OBS]` pending further tuning.
+     - [2025-09-29] **Experiment – fortress gating only** (`test/20250929-king-safety-watchlist@gating`): disabled penalties for non-castled kings. Watch-list deltas remained small; SPRT vs `main`: **‑84.6 ± 20.2 Elo**, indicating the gating by itself did not recover strength.
+     - [2025-09-29] **Experiment – fortress pressure penalty** (`test/20250929-king-safety-watchlist@pressure`): added heavy ring-pressure scaling. Canary FENs improved but SPRT vs `main`: **‑111.4 ± 25.1 Elo**; change abandoned and reverted.
+     - Lessons: watch-list harness is effective for canary checks, but we must pair each local success with a quick SPRT. Overly aggressive king-safety penalties dramatically hurt global play even when static evals look “correct”.
    - Fix passed-pawn bonuses and add blockade detection.
    - Update harness expectations where improvements materialise.
 
