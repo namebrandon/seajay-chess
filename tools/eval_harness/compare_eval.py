@@ -134,7 +134,7 @@ class UCIEngineProcess:
         self._proc.stdin.flush()
 
     # -------------------
-    def _wait_ready(self, timeout: float = 10.0) -> List[str]:
+    def _wait_ready(self, timeout: float = 120.0) -> List[str]:
         deadline = time.time() + timeout
         lines: List[str] = []
         while True:
@@ -152,7 +152,7 @@ class UCIEngineProcess:
             lines.append(line)
 
     # -------------------
-    def _wait_for_token(self, token: str, timeout: float = 10.0) -> List[str]:
+    def _wait_for_token(self, token: str, timeout: float = 120.0) -> List[str]:
         deadline = time.time() + timeout
         lines: List[str] = []
         while True:
@@ -167,6 +167,24 @@ class UCIEngineProcess:
                 continue
             lines.append(line)
             if line == token:
+                return lines
+
+    # -------------------
+    def _wait_for_bestmove(self, timeout: float = 120.0) -> List[str]:
+        deadline = time.time() + timeout
+        lines: List[str] = []
+        while True:
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                raise TimeoutError("timeout waiting for bestmove")
+            try:
+                stream, line = self._queue.get(timeout=remaining)
+            except queue.Empty:
+                continue
+            if line is None:
+                continue
+            lines.append(line)
+            if line.startswith("bestmove"):
                 return lines
 
     # -------------------
@@ -204,8 +222,10 @@ class UCIEngineProcess:
         if movetime is not None:
             cmd += ["movetime", str(movetime)]
         self._write(" ".join(cmd))
+        lines = self._wait_for_bestmove()
         self._write("isready")
-        return self._wait_ready()
+        lines += self._wait_ready()
+        return lines
 
     # -------------------
     def debug_eval(self) -> List[str]:
@@ -385,6 +405,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval-log", type=Path, help="Optional EvalLogFile path for SeaJay")
     parser.add_argument("--ref-engine", type=Path, help="Optional reference engine binary (defaults to Komodo if available)")
     parser.add_argument("--ref-name", type=str, help="Override display name for reference engine")
+    parser.add_argument("--summary-top", type=int, default=5, help="Show top-N score deltas in stdout summary (0 disables)")
+    parser.add_argument("--summary-json", type=Path, help="Optional path to dump summary JSON")
     return parser
 
 
@@ -487,17 +509,62 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 comparison["reference_score_mate"] = ref_mate
             se_move = sea_search.get("bestmove")
             ref_move = ref_search.get("bestmove")
+            if se_move:
+                comparison["seajay_bestmove"] = se_move
+            if ref_move:
+                comparison["reference_bestmove"] = ref_move
             if se_move and ref_move:
                 comparison["bestmove_match"] = (se_move == ref_move)
-                comparison["reference_bestmove"] = ref_move
             if comparison:
                 entry["comparison"] = comparison
 
+    report = {"metadata": metadata, "positions": report_positions}
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8") as handle:
-        json.dump({"metadata": metadata, "positions": report_positions}, handle, indent=2)
+        json.dump(report, handle, indent=2)
 
     print(f"Report written to {args.out}")
+
+    summary_rows: List[Dict[str, object]] = []
+    for entry in report_positions:
+        comp = entry.get("comparison")
+        if not comp:
+            continue
+        row: Dict[str, object] = {
+            "index": entry.get("index"),
+            "label": entry.get("label"),
+        }
+        row.update(comp)
+        summary_rows.append(row)
+
+    if args.summary_json and summary_rows:
+        args.summary_json.parent.mkdir(parents=True, exist_ok=True)
+        with args.summary_json.open("w", encoding="utf-8") as handle:
+            json.dump(summary_rows, handle, indent=2)
+        print(f"Summary written to {args.summary_json}")
+
+    if args.summary_top and summary_rows:
+        numeric_rows = [row for row in summary_rows if isinstance(row.get("score_delta_cp"), int)]
+        if numeric_rows:
+            sorted_rows = sorted(numeric_rows, key=lambda item: abs(item["score_delta_cp"]), reverse=True)
+            limit = max(0, args.summary_top)
+            if limit:
+                print("\nTop evaluation deltas:")
+                for row in sorted_rows[:limit]:
+                    delta = row.get("score_delta_cp")
+                    bestmatch = row.get("bestmove_match")
+                    se_score = row.get("seajay_score_cp")
+                    ref_score = row.get("reference_score_cp")
+                    idx = row.get("index")
+                    label = row.get("label") or ""
+                    ref_move = row.get("reference_bestmove")
+                    se_move = row.get("seajay_bestmove")
+                    print(
+                        f"#{idx}: Δ={delta} cp | SeaJay={se_score} cp ({se_move}) | "
+                        f"Ref={ref_score} cp ({ref_move}) | bestmove match={bestmatch} | {label}"
+                    )
+
     return 0
 
 

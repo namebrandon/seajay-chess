@@ -51,6 +51,7 @@ Alt Bench / Test Suites
 - Baseline expected results from Komodo/Fritz to compare.
 - Include both Release (timing) and Debug (verbose logs) runs in workflow.
   - ✅ 2025-09-19: Initial pawn/king-danger pack landed at `tests/packs/eval_pawn_focus.epd`.
+  - ✅ 2025-09-28: Wrapper script `tools/eval_harness/run_eval_pack.sh` automates pack execution and summary export.
 
 External Harness
 - Python driver to: run multiple engines over pack, capture stdout/JSON, produce diff tables (score delta, best move agreement, term deltas).

@@ -11,7 +11,9 @@ python3 tools/eval_harness/compare_eval.py \
   --pack tests/packs/eval_pawn_focus.epd \
   --movetime 100 \
   --threads 1 \
-  --out logs/eval_pawn_focus.json
+  --out logs/eval_pawn_focus.json \
+  --summary-top 10 \
+  --summary-json logs/eval_pawn_focus_summary.json
 ```
 
 Optional reference comparison (Komodo auto-detected when present):
@@ -25,6 +27,22 @@ python3 tools/eval_harness/compare_eval.py \
 If `external/engines/komodo/komodo-14.1-linux` exists and is executable, the
 harness selects it automatically as the reference engine. Provide
 `--ref-engine` to override or disable.
+
+### Convenience wrapper
+
+`tools/eval_harness/run_eval_pack.sh` runs the default pack with sensible
+defaults and writes both the full report and summary into `tmp/eval_reports/`.
+Environment overrides:
+
+- `ENGINE`, `PACK`, `REF_ENGINE`, `MOVETIME`, `DEPTH`, `THREADS`
+- `OUTDIR`, `REPORT`, `SUMMARY`
+
+Example:
+```
+./tools/eval_harness/run_eval_pack.sh
+```
+
+### Summary output
 
 ### Key Behaviors
 - Enables `EvalExtended` automatically and captures structured `info eval` lines
