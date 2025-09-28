@@ -609,13 +609,10 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         g_attackCalls[colorIdx].fetch_add(1, std::memory_order_relaxed);
     }
     // Phase 2.1.b: Try cache first with lightweight per-square caching
-    // TESTING: Disabled caching for comparison
-    #if 0
     auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor);
     if (hit) {
         return isAttacked;
     }
-    #endif
     
     // Cache miss - compute using Phase 2.1.a optimized algorithm
     
@@ -625,7 +622,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         if (profile) {
             g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
         }
-        // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
     
@@ -637,7 +634,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
             if (profile) {
                 g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
             }
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -656,7 +653,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
             if (profile) {
                 g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
             }
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -670,7 +667,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
             if (profile) {
                 g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
             }
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -684,7 +681,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
             if (profile) {
                 g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
             }
-            // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
     }
@@ -695,12 +692,12 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         if (profile) {
             g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
         }
-        // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
-    
+
     // Not attacked - cache the negative result
-    // t_attackCache.store(board.zobristKey(), square, attackingColor, false);
+    t_attackCache.store(board.zobristKey(), square, attackingColor, false);
     if (profile) {
         g_attackFalse[colorIdx].fetch_add(1, std::memory_order_relaxed);
     }

@@ -12,8 +12,103 @@
 #include "../search/game_phase.h"  // Phase PP2: For phase scaling
 #include <cstdlib>  // PP3b: For std::abs
 #include <algorithm>  // For std::clamp
+#include <array>
 
 namespace seajay::eval {
+
+namespace {
+
+// Lightweight cache for promotion-path attack lookups. We amortize the cost of
+// computing attackers to a given square by storing both colors' results on the
+// first query. Passed-pawn evaluation may touch the same squares multiple
+// times (stop square, promotion path, telemetry hooks), so this keeps the
+// walker from hammering MoveGenerator::isSquareAttacked repeatedly.
+class PromotionPathAttackCache {
+public:
+    explicit PromotionPathAttackCache(const Board& board) noexcept
+        : m_occupied(board.occupied()) {
+        m_colorBitboards[WHITE] = board.pieces(WHITE);
+        m_colorBitboards[BLACK] = board.pieces(BLACK);
+        m_pawns[WHITE] = board.pieces(WHITE, PAWN);
+        m_pawns[BLACK] = board.pieces(BLACK, PAWN);
+        m_knights = board.pieces(WHITE, KNIGHT) | board.pieces(BLACK, KNIGHT);
+        m_bishops = board.pieces(WHITE, BISHOP) | board.pieces(BLACK, BISHOP);
+        m_rooks = board.pieces(WHITE, ROOK) | board.pieces(BLACK, ROOK);
+        m_queens = board.pieces(WHITE, QUEEN) | board.pieces(BLACK, QUEEN);
+        m_kings = board.pieces(WHITE, KING) | board.pieces(BLACK, KING);
+
+        for (auto& perColor : m_cache) {
+            perColor.fill(kUnknown);
+        }
+    }
+
+    bool isAttacked(Color color, Square square) {
+        const int colorIndex = static_cast<int>(color);
+        const size_t sqIndex = static_cast<size_t>(square);
+        int8_t state = m_cache[colorIndex][sqIndex];
+        if (state == kUnknown) {
+            populateCache(square);
+            state = m_cache[colorIndex][sqIndex];
+        }
+        return state == kTrue;
+    }
+
+private:
+    static constexpr int8_t kUnknown = -1;
+    static constexpr int8_t kFalse = 0;
+    static constexpr int8_t kTrue = 1;
+
+    void populateCache(Square square) {
+        const size_t sqIndex = static_cast<size_t>(square);
+        const Bitboard attackers = attackersTo(square);
+        m_cache[WHITE][sqIndex] = (attackers & m_colorBitboards[WHITE]) ? kTrue : kFalse;
+        m_cache[BLACK][sqIndex] = (attackers & m_colorBitboards[BLACK]) ? kTrue : kFalse;
+    }
+
+    Bitboard attackersTo(Square square) const {
+        Bitboard attackers = 0ULL;
+        const int file = fileOf(square);
+        const int rank = rankOf(square);
+        const int sqIdx = static_cast<int>(square);
+
+        if (rank > 0) {
+            if (file > 0) {
+                attackers |= squareBB(static_cast<Square>(sqIdx - 9)) & m_pawns[WHITE];
+            }
+            if (file < 7) {
+                attackers |= squareBB(static_cast<Square>(sqIdx - 7)) & m_pawns[WHITE];
+            }
+        }
+
+        if (rank < 7) {
+            if (file > 0) {
+                attackers |= squareBB(static_cast<Square>(sqIdx + 7)) & m_pawns[BLACK];
+            }
+            if (file < 7) {
+                attackers |= squareBB(static_cast<Square>(sqIdx + 9)) & m_pawns[BLACK];
+            }
+        }
+
+        attackers |= MoveGenerator::getKnightAttacks(square) & m_knights;
+        attackers |= MoveGenerator::getKingAttacks(square) & m_kings;
+        attackers |= MoveGenerator::getBishopAttacks(square, m_occupied) & (m_bishops | m_queens);
+        attackers |= MoveGenerator::getRookAttacks(square, m_occupied) & (m_rooks | m_queens);
+
+        return attackers;
+    }
+
+    const Bitboard m_occupied;
+    std::array<Bitboard, NUM_COLORS> m_colorBitboards{};
+    std::array<Bitboard, NUM_COLORS> m_pawns{};
+    Bitboard m_knights{};
+    Bitboard m_bishops{};
+    Bitboard m_rooks{};
+    Bitboard m_queens{};
+    Bitboard m_kings{};
+    std::array<std::array<int8_t, 64>, NUM_COLORS> m_cache{};
+};
+
+}  // namespace
 
 // PST Phase Interpolation - Phase calculation (continuous, fast)
 // Returns phase value from 0 (pure endgame) to 256 (pure middlegame)
@@ -266,6 +361,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     constexpr int PASSER_KING_DISTANCE_SCALE = 1;
 
     const bool usePasserPhaseP4 = seajay::getConfig().usePasserPhaseP4;
+    PromotionPathAttackCache pathAttackCache(board);
 
     auto processPassers = [&](Color color, Bitboard passersBase, PasserTelemetry& telemetry) {
         Bitboard passers = passersBase;
@@ -366,10 +462,10 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 Bitboard temp = pathSquares;
                 while (temp && (!pathEnemyControl || pathOwnControl)) {
                     Square pathSq = popLsb(temp);
-                    if (!pathEnemyControl && MoveGenerator::isSquareAttacked(board, pathSq, enemy)) {
+                    if (!pathEnemyControl && pathAttackCache.isAttacked(enemy, pathSq)) {
                         pathEnemyControl = true;
                     }
-                    if (pathOwnControl && !MoveGenerator::isSquareAttacked(board, pathSq, color)) {
+                    if (pathOwnControl && !pathAttackCache.isAttacked(color, pathSq)) {
                         pathOwnControl = false;
                     }
                 }
@@ -388,11 +484,11 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 }
 
                 if (validStop) {
-                    stopDefended = MoveGenerator::isSquareAttacked(board, stopSquare, color);
+                    stopDefended = pathAttackCache.isAttacked(color, stopSquare);
                     if (stopDefended) {
                         bonus += PASSER_STOP_DEFENDED_BONUS;
                     }
-                    if (MoveGenerator::isSquareAttacked(board, stopSquare, enemy)) {
+                    if (pathAttackCache.isAttacked(enemy, stopSquare)) {
                         bonus -= PASSER_STOP_ATTACKED_PENALTY;
                     }
                 }
