@@ -94,7 +94,8 @@ Risks & Mitigations
 - Subjective hypothesis chase -> require telemetry evidence before code changes.
 - Data overload -> external harness automates comparison, keep pack size manageable (≤40 FENs initially).
 
-Next Actions (P1)
-- Wire structured EvalExtended output and logging toggle (no behaviour change).
-- Assemble initial pawn/king-danger FEN pack and baseline against reference engines.
-- Draft harness requirements document before coding.
+Upcoming Focus (P4 – Passed Pawn Scaling)
+- Use harness summary (`tools/eval_harness/run_eval_pack.sh`) to monitor top score deltas; positions 2, 3, 7, 8, 10, 13 currently lead the gap charts.
+- Reference Laser's passer heuristics (`laser-chess-engine/src/eval.cpp` ~L680) for inspiration: non-linear rank scaling, path-to-queen freedom/defence tests, rook-behind support, king-distance adjustments, and file-based bonuses.
+- Draft SeaJay-specific design doc outlining which of these concepts map cleanly onto our existing pawn hash data (`passedDetail`, pawn cache) and what new telemetry may be required (e.g., king-distance logging).
+- Implement changes behind a branch toggle (`EvalPasserPhaseP4`) and validate via harness + standard bench before enabling by default.
