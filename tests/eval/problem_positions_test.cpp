@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iomanip>
 #include <iterator>
 #include <optional>
 #include <regex>
@@ -43,8 +42,6 @@ struct PositionSample {
     int appliedToleranceCp{0};
     bool enforce{false};
     bool countsTowardFailure{false};
-    std::optional<int> baselineCp;
-    std::optional<int> deltaCp;
 };
 
 std::string trim(std::string_view input) {
@@ -163,71 +160,12 @@ std::unordered_map<std::string, EvalExpectation> loadExpectations(const std::str
     return expectations;
 }
 
-std::unordered_map<std::string, int> loadBaselineCsv(const std::string& relativePath) {
-    namespace fs = std::filesystem;
-
-    std::unordered_map<std::string, int> baseline;
-    if (relativePath.empty()) {
-        return baseline;
-    }
-
-    const fs::path path = resolveFromSourceRoot(relativePath);
-    std::ifstream input(path);
-    if (!input) {
-        throw std::runtime_error("Failed to open baseline CSV: " + path.string());
-    }
-
-    std::string line;
-    // Skip header if present
-    if (std::getline(input, line)) {
-        if (line.find("eval_cp") == std::string::npos) {
-            // First row already data; process it below
-            input.seekg(0);
-        }
-    }
-
-    while (std::getline(input, line)) {
-        if (line.empty()) {
-            continue;
-        }
-        const auto startQuote = line.find('"');
-        if (startQuote == std::string::npos) {
-            continue;
-        }
-        const auto endQuote = line.find('"', startQuote + 1);
-        if (endQuote == std::string::npos) {
-            continue;
-        }
-        std::string fen = line.substr(startQuote + 1, endQuote - startQuote - 1);
-        size_t pos = endQuote + 1;
-        if (pos < line.size() && line[pos] == ',') {
-            ++pos;
-        }
-        while (pos < line.size() && std::isspace(static_cast<unsigned char>(line[pos]))) {
-            ++pos;
-        }
-        const auto nextComma = line.find(',', pos);
-        if (nextComma == std::string::npos) {
-            continue;
-        }
-        const std::string evalStr = line.substr(pos, nextComma - pos);
-        try {
-            baseline.emplace(std::move(fen), std::stoi(evalStr));
-        } catch (...) {
-            // Ignore malformed rows
-        }
-    }
-
-    return baseline;
-}
-
 struct HarnessOptions {
     int toleranceCp = 50;
     bool failOnOutOfRange = false;
     bool verbose = false;
     std::string outputPath;
     std::string expectationsPath = "tests/eval/problem_position_expectations.json";
-    std::string compareBaselinePath;
 };
 
 HarnessOptions parseOptions(int argc, char** argv) {
@@ -244,14 +182,11 @@ HarnessOptions parseOptions(int argc, char** argv) {
             opts.verbose = true;
         } else if (arg == "--expectations" && i + 1 < argc) {
             opts.expectationsPath = argv[++i];
-        } else if (arg == "--compare" && i + 1 < argc) {
-            opts.compareBaselinePath = argv[++i];
         } else if (arg == "--help" || arg == "-h") {
             std::cout << "Usage: test_eval_problem_positions [options]\n"
                       << "  --tolerance <cp>          Additional slack applied to reference ranges (default 50).\n"
                       << "  --output <path>           Write CSV baseline to path.\n"
                       << "  --expectations <path>     Override expectations JSON (default: tests/eval/problem_position_expectations.json).\n"
-                      << "  --compare <baseline.csv>  Compare against historic CSV and report eval deltas.\n"
                       << "  --fail-on-out-of-range    Exit non-zero when SeaJay score exceeds reference range.\n"
                       << "  --verbose                 Print per-position evaluation details.\n";
             std::exit(0);
@@ -287,7 +222,6 @@ int main(int argc, char** argv) {
         const HarnessOptions options = parseOptions(argc, argv);
 
         const auto expectations = loadExpectations(options.expectationsPath);
-        const auto baselineMap = loadBaselineCsv(options.compareBaselinePath);
         const auto fens = loadFENs("external/problem_positions.txt");
 
         seajay::magic_v2::initMagics();
@@ -339,11 +273,6 @@ int main(int argc, char** argv) {
                 sample.countsTowardFailure = false;
             }
 
-            if (auto b = baselineMap.find(fen); b != baselineMap.end()) {
-                sample.baselineCp = b->second;
-                sample.deltaCp = sample.evalCp - b->second;
-            }
-
             samples.emplace_back(sample);
             if (csv.is_open()) {
                 writeCsvRow(csv, sample, sample.appliedToleranceCp);
@@ -351,17 +280,9 @@ int main(int argc, char** argv) {
         }
 
         size_t outOfRangeCount = 0;
-        int64_t deltaSum = 0;
-        size_t deltaCount = 0;
-
         for (const auto& sample : samples) {
             if (sample.countsTowardFailure) {
                 ++outOfRangeCount;
-            }
-
-            if (sample.deltaCp) {
-                deltaSum += *sample.deltaCp;
-                ++deltaCount;
             }
 
             const bool shouldReport = options.verbose || sample.countsTowardFailure || (!sample.withinRange && !sample.expectation);
@@ -382,21 +303,12 @@ int main(int argc, char** argv) {
                               << ", tolerance ±" << sample.appliedToleranceCp
                               << ", enforce=" << (sample.enforce ? "true" : "false") << ')';
                 }
-                if (sample.baselineCp) {
-                    std::cout << " | baseline " << *sample.baselineCp << " cp"
-                              << ", delta " << *sample.deltaCp << " cp";
-                }
                 std::cout << std::endl;
             }
         }
 
         std::cout << "\nAnalyzed " << samples.size() << " positions" << std::endl;
         std::cout << "Out-of-range evaluations (enforced): " << outOfRangeCount << std::endl;
-        if (!baselineMap.empty()) {
-            const double averageDelta = deltaCount ? static_cast<double>(deltaSum) / static_cast<double>(deltaCount) : 0.0;
-            std::cout << "Compared against baseline for " << deltaCount << " positions" << std::endl;
-            std::cout << "Average delta: " << std::fixed << std::setprecision(2) << averageDelta << " cp" << std::endl;
-        }
 
         if (outOfRangeCount > 0 && options.failOnOutOfRange) {
             return 1;
