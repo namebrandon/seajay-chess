@@ -57,6 +57,7 @@ External Harness
 - Integrate with telemetry logs (parse `EvalExtended` tags) to graph term contribution differences.
 - Provide overhead report: time per position, NPS delta vs standard bench.
   - ✅ 2025-09-28: Harness CLI implemented with SeaJay telemetry capture (`tools/eval_harness/compare_eval.py`).
+  - ✅ 2025-09-28: Komodo (non-NNUE) auto-integrated as reference engine for baseline comparisons.
 
 Milestones & Deliverables
 1. Tooling Foundation (Phase P1)

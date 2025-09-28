@@ -18,6 +18,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+
+DEFAULT_KOMODO_PATH = Path("external/engines/komodo/komodo-14.1-linux")
+
 LINE_PREFIX_EVAL = "info eval "
 
 
@@ -380,7 +383,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--depth", type=int, help="Fixed search depth")
     parser.add_argument("--threads", type=int, default=1, help="Threads to request via UCI")
     parser.add_argument("--eval-log", type=Path, help="Optional EvalLogFile path for SeaJay")
-    parser.add_argument("--ref-engine", type=Path, help="Optional reference engine binary")
+    parser.add_argument("--ref-engine", type=Path, help="Optional reference engine binary (defaults to Komodo if available)")
     parser.add_argument("--ref-name", type=str, help="Override display name for reference engine")
     return parser
 
@@ -435,17 +438,26 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         }
         report_positions.append(entry)
 
+    ref_path: Optional[Path] = None
     if args.ref_engine:
+        ref_path = args.ref_engine
+    elif DEFAULT_KOMODO_PATH.exists() and DEFAULT_KOMODO_PATH.is_file():
+        if DEFAULT_KOMODO_PATH.stat().st_mode & 0o111:
+            ref_path = DEFAULT_KOMODO_PATH
+
+    if ref_path:
         ref_engine = UCIEngineProcess(
-            binary=args.ref_engine,
+            binary=ref_path,
             threads=args.threads,
             enable_eval_extended=False,
         )
         metadata["reference_engine"] = {
-            "path": str(args.ref_engine),
+            "path": str(ref_path),
             "id": args.ref_name or ref_engine.id_name,
             "author": ref_engine.id_author,
         }
+        if not args.ref_engine and ref_path == DEFAULT_KOMODO_PATH:
+            metadata["reference_engine"]["auto_selected"] = "komodo"
         try:
             ref_results = run_engine_on_positions(
                 engine=ref_engine,
@@ -459,6 +471,27 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
         for entry, ref in zip(report_positions, ref_results):
             entry["reference"] = ref
+            comparison: Dict[str, object] = {}
+            sea_search = entry["seajay"]["search"]
+            ref_search = ref["search"]
+            se_score = sea_search.get("score_cp")
+            ref_score = ref_search.get("score_cp")
+            if se_score is not None and ref_score is not None:
+                comparison["score_delta_cp"] = se_score - ref_score
+                comparison["seajay_score_cp"] = se_score
+                comparison["reference_score_cp"] = ref_score
+            se_mate = sea_search.get("score_mate")
+            ref_mate = ref_search.get("score_mate")
+            if se_mate is not None or ref_mate is not None:
+                comparison["seajay_score_mate"] = se_mate
+                comparison["reference_score_mate"] = ref_mate
+            se_move = sea_search.get("bestmove")
+            ref_move = ref_search.get("bestmove")
+            if se_move and ref_move:
+                comparison["bestmove_match"] = (se_move == ref_move)
+                comparison["reference_bestmove"] = ref_move
+            if comparison:
+                entry["comparison"] = comparison
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8") as handle:

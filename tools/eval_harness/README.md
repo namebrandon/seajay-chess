@@ -14,16 +14,17 @@ python3 tools/eval_harness/compare_eval.py \
   --out logs/eval_pawn_focus.json
 ```
 
-Optional reference comparison:
+Optional reference comparison (Komodo auto-detected when present):
 ```
 python3 tools/eval_harness/compare_eval.py \
   --engine ./bin/seajay \
   --pack tests/packs/eval_pawn_focus.epd \
   --movetime 100 \
-  --out logs/eval_vs_komodo.json \
-  --ref-engine /path/to/komodo \
-  --ref-name Komodo
+  --out logs/eval_vs_komodo.json
 ```
+If `external/engines/komodo/komodo-14.1-linux` exists and is executable, the
+harness selects it automatically as the reference engine. Provide
+`--ref-engine` to override or disable.
 
 ### Key Behaviors
 - Enables `EvalExtended` automatically and captures structured `info eval` lines
@@ -66,6 +67,11 @@ python3 tools/eval_harness/compare_eval.py \
       },
       "reference": {
         "search": {"bestmove": "bd4", "depth": 30, "score_cp": -373}
+      },
+      "comparison": {
+        "score_delta_cp": 267,
+        "bestmove_match": false,
+        "reference_bestmove": "bd4"
       }
     }
   ]
