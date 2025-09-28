@@ -53,9 +53,9 @@ public:
 
         // Fortress scaling (percentages where 100 = full weight)
         int fortressBonusScale = 100;
-        int looseBonusScale = 30;
+        int looseBonusScale = 20;
         int fortressPenaltyScale = 100;
-        int loosePenaltyScale = 40;
+        int loosePenaltyScale = 25;
 
         // Enable scoring toggle (kept for UCI compatibility)
         int enableScoring = 1;

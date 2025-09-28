@@ -75,3 +75,5 @@
 - [2025-10-01] Milestone M1 complete: fortress scaling applied, shield bonuses gated for loose kings, harness regression run clean.
 - [2025-10-01] Milestone M2 in progress: attack-unit weighting implemented, ring threats aggregated with multi-attack amplification, guard FENs flipped to enforcement.
 - [2025-10-01] Captured `king_safety_stage1_baseline_2025-10-01.csv` + debug evals; average shift −45 cp vs. 2025-09-29 baseline driven by enforced king-attack FEN (−310 cp correction).
+- [2025-10-02] SPRT #686 (10+0.1, 1 thread) failed at −37.4 ± 14.1 Elo; adjusted loose-king scaling (20/25) and switched ring pressure to quadratic attack-unit growth.
+- [2025-10-02] Generated updated baseline `king_safety_stage1_baseline_2025-10-02.csv` (deltas vs. 2025-10-01 recorded) ahead of next tuning pass.

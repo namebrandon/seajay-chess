@@ -91,9 +91,9 @@ KingSafety::KingSafetyParams KingSafety::s_params = {
     .queenContactPenaltyMg = 20,
     .queenContactPenaltyEg = 8,
     .fortressBonusScale = 100,
-    .looseBonusScale = 30,
+    .looseBonusScale = 20,
     .fortressPenaltyScale = 100,
-    .loosePenaltyScale = 40,
+    .loosePenaltyScale = 25,
     .enableScoring = 1
 };
 
@@ -264,7 +264,8 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     }
 
     const int multiAttackSquares = popCount(multiAttackedMask);
-    const int effectiveRingHits = ringAttackSquares + attackUnits + multiAttackSquares;
+    const int quadraticContribution = (attackUnits * attackUnits + 3) / 4;
+    const int effectiveRingHits = ringAttackSquares + quadraticContribution + multiAttackSquares;
     applyPenalty(effectiveRingHits * s_params.attackedRingPenaltyMg,
                  effectiveRingHits * s_params.attackedRingPenaltyEg);
 
