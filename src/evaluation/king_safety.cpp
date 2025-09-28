@@ -56,6 +56,57 @@ bool isLineClear(Square from, Square to, Bitboard occupied) {
     return (between(from, to) & occupied) == 0;
 }
 
+int countRingAttacks(const Board& board,
+                     Color enemy,
+                     Square kingSquare,
+                     Bitboard kingRing,
+                     Bitboard occupancy) {
+    Bitboard attacked = 0;
+
+    // Pawns
+    Bitboard pawns = board.pieces(enemy, PAWN);
+    while (pawns) {
+        const Square sq = popLsb(pawns);
+        attacked |= MoveGenerator::getPawnAttacks(sq, enemy);
+    }
+
+    // Knights
+    Bitboard knights = board.pieces(enemy, KNIGHT);
+    while (knights) {
+        const Square sq = popLsb(knights);
+        attacked |= MoveGenerator::getKnightAttacks(sq);
+    }
+
+    // Bishops
+    Bitboard bishops = board.pieces(enemy, BISHOP);
+    while (bishops) {
+        const Square sq = popLsb(bishops);
+        attacked |= MoveGenerator::getBishopAttacks(sq, occupancy);
+    }
+
+    // Rooks
+    Bitboard rooks = board.pieces(enemy, ROOK);
+    while (rooks) {
+        const Square sq = popLsb(rooks);
+        attacked |= MoveGenerator::getRookAttacks(sq, occupancy);
+    }
+
+    // Queens (combine rook + bishop vectors)
+    Bitboard queens = board.pieces(enemy, QUEEN);
+    while (queens) {
+        const Square sq = popLsb(queens);
+        attacked |= MoveGenerator::getQueenAttacks(sq, occupancy);
+    }
+
+    // King
+    const Square enemyKing = board.kingSquare(enemy);
+    if (isValidSquare(enemyKing)) {
+        attacked |= MoveGenerator::getKingAttacks(enemyKing);
+    }
+
+    return popCount(attacked & kingRing);
+}
+
 }  // namespace
 
 KingSafety::KingSafetyParams KingSafety::s_params = {
@@ -154,8 +205,7 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     }
 
     const Bitboard kingRing = kingRingMask(kingSquare);
-    const Bitboard enemyAttacks = MoveGenerator::getAttackedSquares(board, enemy);
-    const int attackedRingSquares = popCount(enemyAttacks & kingRing);
+    const int attackedRingSquares = countRingAttacks(board, enemy, kingSquare, kingRing, occupancy);
     mgScore -= attackedRingSquares * s_params.attackedRingPenaltyMg;
     egScore -= attackedRingSquares * s_params.attackedRingPenaltyEg;
 
