@@ -47,10 +47,26 @@ struct EvalTrace {
         int blackCount = 0;
         Score whiteBonus;
         Score blackBonus;
-        bool hasProtected = false;
-        bool hasConnected = false;
-        bool hasBlockaded = false;
-        bool hasUnstoppable = false;
+        bool whiteHasProtected = false;
+        bool blackHasProtected = false;
+        bool whiteHasConnected = false;
+        bool blackHasConnected = false;
+        bool whiteHasBlockaded = false;
+        bool blackHasBlockaded = false;
+        bool whiteHasUnstoppable = false;
+        bool blackHasUnstoppable = false;
+        bool whitePathFree = false;
+        bool blackPathFree = false;
+        bool whiteStopDefended = false;
+        bool blackStopDefended = false;
+        bool whiteRookSupport = false;
+        bool blackRookSupport = false;
+        int whiteMaxRank = 0;
+        int blackMaxRank = 0;
+        int whiteFriendlyKingDist = 0;
+        int whiteEnemyKingDist = 0;
+        int blackFriendlyKingDist = 0;
+        int blackEnemyKingDist = 0;
     } passedDetail;
     
     // Individual component tracking for mobility
@@ -175,6 +191,32 @@ struct EvalTrace {
             oss << "term name=passed_pawns cp=" << passedPawns.value()
                 << " white=" << passedDetail.whiteCount
                 << " black=" << passedDetail.blackCount;
+            if (passedDetail.whiteBonus.value() != 0) {
+                oss << " white_cp=" << passedDetail.whiteBonus.value();
+            }
+            if (passedDetail.blackBonus.value() != 0) {
+                oss << " black_cp=" << passedDetail.blackBonus.value();
+            }
+            if (passedDetail.whiteHasProtected) oss << " white_protected=1";
+            if (passedDetail.blackHasProtected) oss << " black_protected=1";
+            if (passedDetail.whiteHasConnected) oss << " white_connected=1";
+            if (passedDetail.blackHasConnected) oss << " black_connected=1";
+            if (passedDetail.whiteHasBlockaded) oss << " white_blockaded=1";
+            if (passedDetail.blackHasBlockaded) oss << " black_blockaded=1";
+            if (passedDetail.whiteHasUnstoppable) oss << " white_unstoppable=1";
+            if (passedDetail.blackHasUnstoppable) oss << " black_unstoppable=1";
+            if (passedDetail.whitePathFree) oss << " white_path_free=1";
+            if (passedDetail.blackPathFree) oss << " black_path_free=1";
+            if (passedDetail.whiteStopDefended) oss << " white_stop_defended=1";
+            if (passedDetail.blackStopDefended) oss << " black_stop_defended=1";
+            if (passedDetail.whiteRookSupport) oss << " white_rook_support=1";
+            if (passedDetail.blackRookSupport) oss << " black_rook_support=1";
+            if (passedDetail.whiteMaxRank) oss << " white_max_rank=" << passedDetail.whiteMaxRank;
+            if (passedDetail.blackMaxRank) oss << " black_max_rank=" << passedDetail.blackMaxRank;
+            if (passedDetail.whiteFriendlyKingDist) oss << " white_king_dist=" << passedDetail.whiteFriendlyKingDist;
+            if (passedDetail.whiteEnemyKingDist) oss << " white_enemy_king_dist=" << passedDetail.whiteEnemyKingDist;
+            if (passedDetail.blackFriendlyKingDist) oss << " black_king_dist=" << passedDetail.blackFriendlyKingDist;
+            if (passedDetail.blackEnemyKingDist) oss << " black_enemy_king_dist=" << passedDetail.blackEnemyKingDist;
             pushLine(oss.str());
         }
 

@@ -16,7 +16,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 
 DEFAULT_KOMODO_PATH = Path("external/engines/komodo/komodo-14.1-linux")
@@ -85,11 +85,13 @@ class UCIEngineProcess:
         threads: int = 1,
         enable_eval_extended: bool = False,
         eval_log_file: Optional[Path] = None,
+        extra_options: Optional[List[Tuple[str, str]]] = None,
     ) -> None:
         self.binary = binary
         self.threads = threads
         self.enable_eval_extended = enable_eval_extended
         self.eval_log_file = eval_log_file
+        self._extra_options = extra_options or []
         self._queue: "queue.Queue[tuple[str, str | None]]" = queue.Queue()
         self._proc = subprocess.Popen(
             [str(self.binary)],
@@ -205,6 +207,9 @@ class UCIEngineProcess:
             self._write("setoption name EvalExtended value true")
             if self.eval_log_file:
                 self._write(f"setoption name EvalLogFile value {self.eval_log_file}")
+
+        for name, value in self._extra_options:
+            self._write(f"setoption name {name} value {value}")
 
         # Flush any info strings emitted while setting options
         self._write("isready")
@@ -407,6 +412,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ref-name", type=str, help="Override display name for reference engine")
     parser.add_argument("--summary-top", type=int, default=5, help="Show top-N score deltas in stdout summary (0 disables)")
     parser.add_argument("--summary-json", type=Path, help="Optional path to dump summary JSON")
+    parser.add_argument("--engine-option", action="append", default=[], help="Additional SeaJay UCI option (name=value)")
     return parser
 
 
@@ -427,11 +433,19 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
+    engine_options: List[Tuple[str, str]] = []
+    for opt in args.engine_option:
+        if "=" not in opt:
+            parser.error(f"Invalid --engine-option value: {opt!r} (expected name=value)")
+        name, value = opt.split("=", 1)
+        engine_options.append((name.strip(), value.strip()))
+
     seajay_engine = UCIEngineProcess(
         binary=args.engine,
         threads=args.threads,
         enable_eval_extended=True,
         eval_log_file=args.eval_log,
+        extra_options=engine_options,
     )
     metadata["engine"] = {
         "path": str(args.engine),

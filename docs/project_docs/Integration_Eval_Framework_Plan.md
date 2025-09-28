@@ -99,3 +99,4 @@ Upcoming Focus (P4 – Passed Pawn Scaling)
 - Reference Laser's passer heuristics (`laser-chess-engine/src/eval.cpp` ~L680) for inspiration: non-linear rank scaling, path-to-queen freedom/defence tests, rook-behind support, king-distance adjustments, and file-based bonuses.
 - Draft SeaJay-specific design doc outlining which of these concepts map cleanly onto our existing pawn hash data (`passedDetail`, pawn cache) and what new telemetry may be required (e.g., king-distance logging).
 - Implement changes behind a branch toggle (`EvalPasserPhaseP4`) and validate via harness + standard bench before enabling by default.
+- Reference design: `docs/project_docs/Passed_Pawn_Phase_P4.md`.

@@ -31,4 +31,10 @@ if [[ -n "$REF_ENGINE" ]]; then
     CMD+=(--ref-engine "$REF_ENGINE")
 fi
 
+if [[ -n "${ENGINE_OPTIONS:-}" ]]; then
+    for opt in $ENGINE_OPTIONS; do
+        CMD+=(--engine-option "$opt")
+    done
+fi
+
 exec "${CMD[@]}"

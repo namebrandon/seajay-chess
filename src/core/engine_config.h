@@ -44,6 +44,9 @@ public:
     int singularVerificationReduction = 4;       // Depth reduction when launching verification search
     int singularExtensionDepth = 2;              // Extension plies applied on singular fail-low
 
+    // Evaluation experimentation toggles
+    bool usePasserPhaseP4 = false;               // Advanced passed-pawn scaling (Phase P4)
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.

@@ -13,7 +13,8 @@ python3 tools/eval_harness/compare_eval.py \
   --threads 1 \
   --out logs/eval_pawn_focus.json \
   --summary-top 10 \
-  --summary-json logs/eval_pawn_focus_summary.json
+  --summary-json logs/eval_pawn_focus_summary.json \
+  --engine-option EvalPasserPhaseP4=true
 ```
 
 Optional reference comparison (Komodo auto-detected when present):
@@ -36,6 +37,8 @@ Environment overrides:
 
 - `ENGINE`, `PACK`, `REF_ENGINE`, `MOVETIME`, `DEPTH`, `THREADS`
 - `OUTDIR`, `REPORT`, `SUMMARY`
+- `ENGINE_OPTIONS` (space-separated `name=value` pairs forwarded as
+  `--engine-option`)
 
 Example:
 ```
