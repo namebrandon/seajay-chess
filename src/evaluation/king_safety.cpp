@@ -8,6 +8,7 @@
 #include "../core/bitboard.h"
 #include "../core/move_generation.h"
 #include "../search/game_phase.h"
+#include "eval_trace.h"
 
 namespace seajay::eval {
 
@@ -97,6 +98,8 @@ KingSafety::KingSafetyParams KingSafety::s_params = {
     .enableScoring = 1
 };
 
+thread_local EvalTrace* KingSafety::s_trace = nullptr;
+
 Score KingSafety::evaluate(const Board& board, Color side) {
     if (s_params.enableScoring == 0) {
         return Score(0);
@@ -184,16 +187,22 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     int ringAttackSquares = 0;
     int attackUnits = 0;
 
+    const Bitboard friendlyPieces = board.pieces(side);
+    const Bitboard safeRing = kingRing & ~friendlyPieces;
+
     auto registerAttacks = [&](Bitboard attacks, int unitWeight) {
         const Bitboard hits = attacks & kingRing;
-        if (!hits) {
+        const Bitboard safeHits = hits & safeRing;
+        if (!safeHits) {
             return;
         }
-        ringAttackSquares += popCount(hits);
-        attackUnits += unitWeight;
-        multiAttackedMask |= attackedMask & hits;
-        attackedMask |= hits;
+        const int hitCount = popCount(safeHits);
+        ringAttackSquares += hitCount;
+        attackUnits += unitWeight * hitCount;
+        multiAttackedMask |= attackedMask & safeHits;
+        attackedMask |= safeHits;
     };
+
 
     Bitboard enemyPawnAttacks = enemyPawns;
     while (enemyPawnAttacks) {
@@ -264,10 +273,25 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     }
 
     const int multiAttackSquares = popCount(multiAttackedMask);
-    const int quadraticContribution = (attackUnits * attackUnits + 3) / 4;
-    const int effectiveRingHits = ringAttackSquares + quadraticContribution + multiAttackSquares;
+    const int weightedUnits = (attackUnits + 1) / 2;
+    const int effectiveRingHits = ringAttackSquares + weightedUnits + multiAttackSquares;
     applyPenalty(effectiveRingHits * s_params.attackedRingPenaltyMg,
                  effectiveRingHits * s_params.attackedRingPenaltyEg);
+
+    if (s_trace) {
+        auto& detail = (side == WHITE) ? s_trace->kingSafetyDetail.white
+                                       : s_trace->kingSafetyDetail.black;
+        detail.directShield = directCount;
+        detail.advancedShield = advancedCount;
+        detail.missingDirect = missingDirect;
+        detail.missingAdvanced = missingAdvanced;
+        detail.kingRingSquares = popCount(kingRing);
+        detail.safeRingSquares = popCount(safeRing);
+        detail.attackedRingSquares = ringAttackSquares;
+        detail.attackUnits = attackUnits;
+        detail.multiAttackedSquares = multiAttackSquares;
+        detail.effectiveRingHits = effectiveRingHits;
+    }
 
     int rawScore = 0;
     switch (phase) {

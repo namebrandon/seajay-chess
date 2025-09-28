@@ -33,6 +33,23 @@ struct EvalTrace {
     
     // King safety
     Score kingSafety;
+    struct KingSafetySideDetail {
+        int directShield = 0;
+        int advancedShield = 0;
+        int missingDirect = 0;
+        int missingAdvanced = 0;
+        int kingRingSquares = 0;
+        int safeRingSquares = 0;
+        int attackedRingSquares = 0;
+        int attackUnits = 0;
+        int multiAttackedSquares = 0;
+        int effectiveRingHits = 0;
+    };
+
+    struct KingSafetyTrace {
+        KingSafetySideDetail white;
+        KingSafetySideDetail black;
+    } kingSafetyDetail;
     
     // Individual component tracking for passed pawns
     struct PassedPawnDetail {
@@ -77,8 +94,9 @@ struct EvalTrace {
         knightOutposts = Score(0);
         rookFiles = Score(0);
         rookKingProximity = Score(0);
-        
+
         kingSafety = Score(0);
+        kingSafetyDetail = KingSafetyTrace{};
         
         passedDetail = PassedPawnDetail();
         mobilityDetail = MobilityDetail();
@@ -180,10 +198,22 @@ struct EvalTrace {
         }
         
         // King safety
-        if (kingSafety != Score(0)) {
-            std::cout << "\n-- King Safety --" << std::endl;
-            std::cout << "  King safety:       " << std::setw(8) << formatScore(kingSafety) << " cp" << std::endl;
-        }
+        std::cout << "\n-- King Safety --" << std::endl;
+        std::cout << "  King safety:       " << std::setw(8) << formatScore(kingSafety) << " cp" << std::endl;
+        auto dumpSide = [&](const char* label, const KingSafetySideDetail& side) {
+            std::cout << "    " << label
+                      << " shield(d/a miss=" << side.directShield << "/" << side.advancedShield
+                      << " miss=" << side.missingDirect << "/" << side.missingAdvanced
+                      << ") ring=" << side.kingRingSquares
+                      << " safe=" << side.safeRingSquares
+                      << " atkSquares=" << side.attackedRingSquares
+                      << " units=" << side.attackUnits
+                      << " multi=" << side.multiAttackedSquares
+                      << " effective=" << side.effectiveRingHits
+                      << std::endl;
+        };
+        dumpSide("White", kingSafetyDetail.white);
+        dumpSide("Black", kingSafetyDetail.black);
         
         // Total calculation
         std::cout << "\n-- Total (White perspective) --" << std::endl;

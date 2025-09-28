@@ -1015,8 +1015,14 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     
     // Phase KS2: King safety evaluation (integrated but returns 0 score)
     // Evaluate for both sides and combine
+    if constexpr (Traced) {
+        KingSafety::setTrace(trace);
+    }
     Score whiteKingSafety = KingSafety::evaluate(board, WHITE);
     Score blackKingSafety = KingSafety::evaluate(board, BLACK);
+    if constexpr (Traced) {
+        KingSafety::setTrace(nullptr);
+    }
     
     // King safety is from each side's perspective, so we subtract black's from white's
     // Note: In Phase KS2, both will return 0 since enableScoring = 0

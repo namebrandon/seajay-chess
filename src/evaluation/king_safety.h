@@ -8,6 +8,8 @@ namespace seajay::eval {
 
 // King safety evaluation class
 // Phase KS1: Infrastructure only - provides structure but no scoring yet
+struct EvalTrace;
+
 class KingSafety {
 public:
     // Phase-dependent scoring values (using 4ku reference)
@@ -68,17 +70,20 @@ public:
     // Helper functions for shield detection
     static Bitboard getShieldPawns(const Board& board, Color side, Square kingSquare);
     static Bitboard getAdvancedShieldPawns(const Board& board, Color side, Square kingSquare);
-    
+
     // Phase A4: Check for air squares (luft) created by pawn moves
     static bool hasAirSquares(const Board& board, Color side, Square kingSquare);
-    
+
     // Check if king is in a reasonable position (castled or near-castled)
     static bool isReasonableKingPosition(Square kingSquare, Color side);
-    
+
     // Get the current parameters (for UCI tuning later)
     static const KingSafetyParams& getParams() { return s_params; }
     static void setParams(const KingSafetyParams& params) { s_params = params; }
-    
+
+    // Attach/detach evaluation trace for instrumentation
+    static void setTrace(EvalTrace* trace) { s_trace = trace; }
+
 private:
     // Reasonable king squares mask (from 4ku: 0xC3D7)
     // These are typical castled positions
@@ -89,9 +94,10 @@ private:
     
     // Shield zones for different king positions
     static Bitboard getShieldZone(Square kingSquare, Color side);
-    
+
     // Parameters (will be tunable via UCI in later phases)
     static KingSafetyParams s_params;
+    static thread_local EvalTrace* s_trace;
 };
 
 } // namespace seajay::eval
