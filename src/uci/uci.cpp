@@ -187,6 +187,15 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalExtended type check default false" << std::endl;
     std::cout << "option name EvalLogFile type string default" << std::endl;
     std::cout << "option name EvalPasserPhaseP4 type check default false" << std::endl;
+    std::cout << "option name EvalPasserPathFreeBonus type spin default 2 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathSafeBonus type spin default 1 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathDefendedBonus type spin default 1 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathAttackedPenalty type spin default 4 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserStopDefendedBonus type spin default 5 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserStopAttackedPenalty type spin default 8 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserRookSupportBonus type spin default 6 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserEnemyRookBehindPenalty type spin default 6 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserKingDistanceScale type spin default 1 min -32 max 32" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2322,6 +2331,123 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         bool enable = (value == "true");
         seajay::getConfig().usePasserPhaseP4 = enable;
         std::cerr << "info string EvalPasserPhaseP4 " << (enable ? "enabled" : "disabled") << std::endl;
+    }
+    else if (optionName == "EvalPasserPathFreeBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalPasserPathFreeBonus out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPathFreeBonus = bonus;
+                std::cerr << "info string EvalPasserPathFreeBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPathFreeBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPathSafeBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalPasserPathSafeBonus out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPathSafeBonus = bonus;
+                std::cerr << "info string EvalPasserPathSafeBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPathSafeBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPathDefendedBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalPasserPathDefendedBonus out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPathDefendedBonus = bonus;
+                std::cerr << "info string EvalPasserPathDefendedBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPathDefendedBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPathAttackedPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < -64 || penalty > 64) {
+                std::cerr << "info string EvalPasserPathAttackedPenalty out of range [-64,64]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().passerPathAttackedPenalty = penalty;
+                std::cerr << "info string EvalPasserPathAttackedPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPathAttackedPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserStopDefendedBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalPasserStopDefendedBonus out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerStopDefendedBonus = bonus;
+                std::cerr << "info string EvalPasserStopDefendedBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserStopDefendedBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserStopAttackedPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < -64 || penalty > 64) {
+                std::cerr << "info string EvalPasserStopAttackedPenalty out of range [-64,64]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().passerStopAttackedPenalty = penalty;
+                std::cerr << "info string EvalPasserStopAttackedPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserStopAttackedPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserRookSupportBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalPasserRookSupportBonus out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerRookSupportBonus = bonus;
+                std::cerr << "info string EvalPasserRookSupportBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserRookSupportBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserEnemyRookBehindPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < -64 || penalty > 64) {
+                std::cerr << "info string EvalPasserEnemyRookBehindPenalty out of range [-64,64]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().passerEnemyRookBehindPenalty = penalty;
+                std::cerr << "info string EvalPasserEnemyRookBehindPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserEnemyRookBehindPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserKingDistanceScale") {
+        try {
+            int scale = static_cast<int>(std::llround(std::stod(value)));
+            if (scale < -32 || scale > 32) {
+                std::cerr << "info string EvalPasserKingDistanceScale out of range [-32,32]: " << scale << std::endl;
+            } else {
+                seajay::getConfig().passerKingDistanceScale = scale;
+                std::cerr << "info string EvalPasserKingDistanceScale set to " << scale << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserKingDistanceScale value: " << value << std::endl;
+        }
     }
     else if (optionName == "ProfileSquareAttacks") {
         bool enable = (value == "true");

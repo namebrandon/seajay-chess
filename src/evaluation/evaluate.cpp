@@ -350,17 +350,18 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         0   // Rank 8
     };
 
-    constexpr int PASSER_PATH_FREE_BONUS = 2;
-    constexpr int PASSER_PATH_SAFE_BONUS = 1;
-    constexpr int PASSER_PATH_DEFENDED_BONUS = 1;
-    constexpr int PASSER_PATH_ATTACKED_PENALTY = 4;
-    constexpr int PASSER_STOP_DEFENDED_BONUS = 5;
-    constexpr int PASSER_STOP_ATTACKED_PENALTY = 8;
-    constexpr int PASSER_ROOK_SUPPORT_BONUS = 6;
-    constexpr int PASSER_ENEMY_ROOK_BEHIND_PENALTY = 6;
-    constexpr int PASSER_KING_DISTANCE_SCALE = 1;
+    const auto& config = seajay::getConfig();
+    const int PASSER_PATH_FREE_BONUS = config.passerPathFreeBonus;
+    const int PASSER_PATH_SAFE_BONUS = config.passerPathSafeBonus;
+    const int PASSER_PATH_DEFENDED_BONUS = config.passerPathDefendedBonus;
+    const int PASSER_PATH_ATTACKED_PENALTY = config.passerPathAttackedPenalty;
+    const int PASSER_STOP_DEFENDED_BONUS = config.passerStopDefendedBonus;
+    const int PASSER_STOP_ATTACKED_PENALTY = config.passerStopAttackedPenalty;
+    const int PASSER_ROOK_SUPPORT_BONUS = config.passerRookSupportBonus;
+    const int PASSER_ENEMY_ROOK_BEHIND_PENALTY = config.passerEnemyRookBehindPenalty;
+    const int PASSER_KING_DISTANCE_SCALE = config.passerKingDistanceScale;
 
-    const bool usePasserPhaseP4 = seajay::getConfig().usePasserPhaseP4;
+    const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
 
     auto processPassers = [&](Color color, Bitboard passersBase, PasserTelemetry& telemetry) {
