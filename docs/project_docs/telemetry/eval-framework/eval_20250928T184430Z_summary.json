@@ -1,0 +1,132 @@
+[
+  {
+    "index": 1,
+    "label": "Theme: advanced a-pawn and dark-square weaknesses - reference engines prefer Bd4 (large eval gap).",
+    "score_delta_cp": -110,
+    "seajay_score_cp": 51,
+    "reference_score_cp": 161,
+    "seajay_bestmove": "b6d4",
+    "reference_bestmove": "b6d4",
+    "bestmove_match": true
+  },
+  {
+    "index": 2,
+    "label": "Theme: opposite-wing kings with connected passers - SeaJay overestimates white; track black attack weight.",
+    "score_delta_cp": -218,
+    "seajay_score_cp": -138,
+    "reference_score_cp": 80,
+    "seajay_bestmove": "h6d6",
+    "reference_bestmove": "h4e7",
+    "bestmove_match": false
+  },
+  {
+    "index": 3,
+    "label": "Theme: outside passed a-pawn vs weak king shelter - evaluate passer bonuses vs king pressure.",
+    "score_delta_cp": -253,
+    "seajay_score_cp": -23,
+    "reference_score_cp": 230,
+    "seajay_bestmove": "e6d7",
+    "reference_bestmove": "e6d7",
+    "bestmove_match": true
+  },
+  {
+    "index": 4,
+    "label": "Theme: crashed g-pawn shield and entrenched bishop on b7; SeaJay underweights attack from f3 queen.",
+    "score_delta_cp": -185,
+    "seajay_score_cp": -8,
+    "reference_score_cp": 177,
+    "seajay_bestmove": "f3e4",
+    "reference_bestmove": "a7e3",
+    "bestmove_match": false
+  },
+  {
+    "index": 5,
+    "label": "Theme: same setup one ply later - track king danger scaling vs passed pawn race.",
+    "score_delta_cp": -336,
+    "seajay_score_cp": -33,
+    "reference_score_cp": 303,
+    "seajay_bestmove": "d6f5",
+    "reference_bestmove": "d6e4",
+    "bestmove_match": false
+  },
+  {
+    "index": 6,
+    "label": "Theme: connected black passers on c/d-files with rook support; SeaJay undervalues conversion.",
+    "score_delta_cp": -163,
+    "seajay_score_cp": 48,
+    "reference_score_cp": 211,
+    "seajay_bestmove": "e5g5",
+    "reference_bestmove": "e5g5",
+    "bestmove_match": true
+  },
+  {
+    "index": 7,
+    "label": "Theme: fixed white pawn chain vs rolling c/d passers - compare blocker penalties and rook activity.",
+    "score_delta_cp": -214,
+    "seajay_score_cp": 118,
+    "reference_score_cp": 332,
+    "seajay_bestmove": "b7b6",
+    "reference_bestmove": "e6f6",
+    "bestmove_match": false
+  },
+  {
+    "index": 8,
+    "label": "Theme: white king safety vs far-advanced e-pawn majority; reference Qf6 hits weak king.",
+    "score_delta_cp": -303,
+    "seajay_score_cp": 5,
+    "reference_score_cp": 308,
+    "seajay_bestmove": "f4c1",
+    "reference_bestmove": "f4f6",
+    "bestmove_match": false
+  },
+  {
+    "index": 9,
+    "label": "Theme: trapped black king and rook on e8; evaluate initiative vs material - consensus favors Re7/Qe7.",
+    "score_delta_cp": 270,
+    "seajay_score_cp": 17,
+    "reference_score_cp": -253,
+    "seajay_bestmove": "d8e7",
+    "reference_bestmove": "d8e7",
+    "bestmove_match": true
+  },
+  {
+    "index": 10,
+    "label": "Theme: advanced connected passers c/p for black vs white bishop activity - SeaJay downplays c-pawn runner.",
+    "score_delta_cp": 430,
+    "seajay_score_cp": 180,
+    "reference_score_cp": -250,
+    "seajay_bestmove": "c4c3",
+    "reference_bestmove": "c4c3",
+    "bestmove_match": true
+  },
+  {
+    "index": 11,
+    "label": "Theme: passed a-pawn and bishop on b2 vs black pressure; SeaJay optimistic - monitor passer scaling and king safety.",
+    "score_delta_cp": 141,
+    "seajay_score_cp": -148,
+    "reference_score_cp": -289,
+    "seajay_bestmove": "a1a4",
+    "reference_bestmove": "a1a2",
+    "bestmove_match": false
+  },
+  {
+    "index": 12,
+    "label": "Theme: black outside passer with bishop support; SeaJay evaluates white ahead despite looming promotion.",
+    "score_delta_cp": 198,
+    "seajay_score_cp": 35,
+    "reference_score_cp": -163,
+    "seajay_bestmove": "c1e3",
+    "reference_bestmove": "c1e3",
+    "bestmove_match": true
+  },
+  {
+    "index": 13,
+    "label": "Theme: same endgame from white side - test symmetry and passer recognition.",
+    "score_delta_cp": -447,
+    "seajay_score_cp": -187,
+    "reference_score_cp": 260,
+    "seajay_bestmove": "g2f3",
+    "reference_bestmove": "f2e2",
+    "bestmove_match": false
+  }
+]

@@ -1,0 +1,18 @@
+Attack profile measurements on eval_pawn_focus (13 FENs @ 100ms)
+
+Release build with profiling instrumentation enabled.
+
+EvalPasserPhaseP4=false, ProfileSquareAttacks=true:
+  calls_white=2,813,243 hits_white=141,608 misses_white=2,671,635
+  calls_black=2,883,670 hits_black=218,028 misses_black=2,665,642
+
+EvalPasserPhaseP4=true, ProfileSquareAttacks=true:
+  calls_white=3,548,034 hits_white=608,578 misses_white=2,939,456
+  calls_black=3,610,963 hits_black=567,824 misses_black=3,043,139
+
+Delta (toggle on vs off):
+  +734,791 (+26.1%) white attack queries, +466,970 hits, +267,821 misses.
+  +727,293 (+25.2%) black attack queries, +349,796 hits, +377,497 misses.
+  Misses grew significantly, indicating more promotion-path squares now being probed.
+
+Notes: counts reflect total invocations of MoveGenerator::isSquareAttacked during harness run.

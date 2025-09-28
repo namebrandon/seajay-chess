@@ -244,17 +244,26 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     };
 
     static constexpr int PASSED_FILE_BONUS[8] = { 0, 4, 6, 8, 8, 6, 4, 0 };
-    constexpr int PASSER_ADVANCEMENT_SCALE = 12;
-    constexpr int PASSER_PATH_FREE_BONUS = 10;
-    constexpr int PASSER_PATH_SAFE_BONUS = 8;
-    constexpr int PASSER_PATH_DEFENDED_BONUS = 6;
-    constexpr int PASSER_PATH_ATTACKED_PENALTY = 10;
-    constexpr int PASSER_STOP_DEFENDED_BONUS = 12;
-    constexpr int PASSER_STOP_ATTACKED_PENALTY = 14;
-    constexpr int PASSER_ROOK_SUPPORT_BONUS = 20;
-    constexpr int PASSER_ENEMY_ROOK_BEHIND_PENALTY = 16;
-    constexpr int PASSER_KING_DISTANCE_SCALE = 4;
-    constexpr int PASSER_UNSTOPPABLE_BONUS = 300;
+    static constexpr int PASSER_NONLINEAR_BONUS[8] = {
+        0,  // Rank 1
+        0,  // Rank 2 (no additional bonus beyond base table)
+        1,  // Rank 3
+        4,  // Rank 4
+        8,  // Rank 5
+        14, // Rank 6
+        24, // Rank 7
+        0   // Rank 8
+    };
+
+    constexpr int PASSER_PATH_FREE_BONUS = 2;
+    constexpr int PASSER_PATH_SAFE_BONUS = 1;
+    constexpr int PASSER_PATH_DEFENDED_BONUS = 1;
+    constexpr int PASSER_PATH_ATTACKED_PENALTY = 4;
+    constexpr int PASSER_STOP_DEFENDED_BONUS = 5;
+    constexpr int PASSER_STOP_ATTACKED_PENALTY = 8;
+    constexpr int PASSER_ROOK_SUPPORT_BONUS = 6;
+    constexpr int PASSER_ENEMY_ROOK_BEHIND_PENALTY = 6;
+    constexpr int PASSER_KING_DISTANCE_SCALE = 1;
 
     const bool usePasserPhaseP4 = seajay::getConfig().usePasserPhaseP4;
 
@@ -335,10 +344,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
 
             if (usePasserPhaseP4) {
                 bonus += PASSED_FILE_BONUS[file];
-                int rFactor = std::max(0, (relRank - 1) * (relRank - 2) / 2);
-                if (rFactor) {
-                    bonus += rFactor * PASSER_ADVANCEMENT_SCALE;
-                }
+                int p4Adjust = PASSER_NONLINEAR_BONUS[relRank];
+
+                const int rankWeight = std::max(0, relRank - 2);
 
                 int idx = static_cast<int>(sq) + forward;
                 if (idx >= 0 && idx < 64) {
@@ -356,27 +364,27 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 bool pathEnemyControl = false;
                 bool pathOwnControl = true;
                 Bitboard temp = pathSquares;
-                while (temp) {
+                while (temp && (!pathEnemyControl || pathOwnControl)) {
                     Square pathSq = popLsb(temp);
-                    if (MoveGenerator::isSquareAttacked(board, pathSq, enemy)) {
+                    if (!pathEnemyControl && MoveGenerator::isSquareAttacked(board, pathSq, enemy)) {
                         pathEnemyControl = true;
                     }
-                    if (!MoveGenerator::isSquareAttacked(board, pathSq, color)) {
+                    if (pathOwnControl && !MoveGenerator::isSquareAttacked(board, pathSq, color)) {
                         pathOwnControl = false;
                     }
                 }
 
-                if (pathFree && rFactor) {
-                    bonus += rFactor * PASSER_PATH_FREE_BONUS;
+                if (pathFree && rankWeight) {
+                    p4Adjust += rankWeight * PASSER_PATH_FREE_BONUS;
                 }
-                if (!pathEnemyControl && rFactor) {
-                    bonus += rFactor * PASSER_PATH_SAFE_BONUS;
+                if (!pathEnemyControl && rankWeight) {
+                    p4Adjust += rankWeight * PASSER_PATH_SAFE_BONUS;
                 }
-                if (pathEnemyControl && rFactor) {
-                    bonus -= rFactor * PASSER_PATH_ATTACKED_PENALTY;
+                if (pathEnemyControl && rankWeight) {
+                    p4Adjust -= rankWeight * PASSER_PATH_ATTACKED_PENALTY;
                 }
-                if (pathOwnControl && rFactor) {
-                    bonus += rFactor * PASSER_PATH_DEFENDED_BONUS;
+                if (pathOwnControl && rankWeight) {
+                    p4Adjust += rankWeight * PASSER_PATH_DEFENDED_BONUS;
                 }
 
                 if (validStop) {
@@ -397,20 +405,26 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                         if (colorOf(piece) == color && (typeOf(piece) == ROOK || typeOf(piece) == QUEEN)) {
                             friendlyRookBehind = true;
                         } else if (colorOf(piece) == enemy && (typeOf(piece) == ROOK || typeOf(piece) == QUEEN)) {
-                            bonus -= PASSER_ENEMY_ROOK_BEHIND_PENALTY;
+                            p4Adjust -= PASSER_ENEMY_ROOK_BEHIND_PENALTY;
                         }
                         break;
                     }
                     behindIdx -= forward;
                 }
                 if (friendlyRookBehind) {
-                    bonus += PASSER_ROOK_SUPPORT_BONUS;
+                    p4Adjust += PASSER_ROOK_SUPPORT_BONUS;
                 }
 
                 Square promotionSquare = (color == WHITE) ? static_cast<Square>(file + 56) : static_cast<Square>(file);
                 friendlyKingDist = chebyshevDistance(friendlyKing, promotionSquare);
                 enemyKingDist = chebyshevDistance(enemyKing, promotionSquare);
-                bonus += (enemyKingDist - friendlyKingDist) * PASSER_KING_DISTANCE_SCALE;
+                p4Adjust += (enemyKingDist - friendlyKingDist) * PASSER_KING_DISTANCE_SCALE;
+
+                // Damp Phase P4 adjustment to avoid overshooting while coefficients are tuned
+                p4Adjust = (p4Adjust * 3) / 8;
+                p4Adjust = std::clamp(p4Adjust, -80, 80);
+
+                bonus += p4Adjust;
             }
 
             Bitboard adjacentFiles = 0ULL;
@@ -434,8 +448,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 Square promotionSquare = (color == WHITE) ? static_cast<Square>(file + 56) : static_cast<Square>(file);
                 int kingDistToPromotion = chebyshevDistance(enemyKing, promotionSquare);
                 int moveAdvantage = (sideToMove == color) ? 1 : 0;
-                if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage) {
-                    bonus += PASSER_UNSTOPPABLE_BONUS;
+                if (kingDistToPromotion > pawnDistToPromotion + moveAdvantage + 1) {
                     unstoppable = true;
                 }
             }

@@ -13,6 +13,7 @@
 #include "../core/engine_config.h"    // Stage 10 Remediation: Runtime configuration
 #include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
+#include "../core/move_generation.h"  // For attack profiling snapshots
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // For evaluation functions
 #include "../evaluation/eval_trace.h"  // For evaluation tracing
@@ -186,6 +187,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalExtended type check default false" << std::endl;
     std::cout << "option name EvalLogFile type string default" << std::endl;
     std::cout << "option name EvalPasserPhaseP4 type check default false" << std::endl;
+    std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
     std::cout << "option name PawnValueMg type spin default 71 min 50 max 130" << std::endl;
@@ -834,6 +836,17 @@ void UCIEngine::handleStop() {
 }
 
 void UCIEngine::handleQuit() {
+    if (seajay::getConfig().profileSquareAttacks) {
+        auto profile = MoveGenerator::snapshotAttackProfile();
+        std::ostringstream oss;
+        oss << "AttackProfile calls_white=" << profile.calls[WHITE]
+            << " hits_white=" << profile.hits[WHITE]
+            << " misses_white=" << profile.earlyExit[WHITE]
+            << " calls_black=" << profile.calls[BLACK]
+            << " hits_black=" << profile.hits[BLACK]
+            << " misses_black=" << profile.earlyExit[BLACK];
+        sendInfo(oss.str());
+    }
     m_quit = true;
 }
 
@@ -2309,6 +2322,11 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         bool enable = (value == "true");
         seajay::getConfig().usePasserPhaseP4 = enable;
         std::cerr << "info string EvalPasserPhaseP4 " << (enable ? "enabled" : "disabled") << std::endl;
+    }
+    else if (optionName == "ProfileSquareAttacks") {
+        bool enable = (value == "true");
+        seajay::getConfig().profileSquareAttacks = enable;
+        std::cerr << "info string ProfileSquareAttacks " << (enable ? "enabled" : "disabled") << std::endl;
     }
     else if (optionName == "EvalLogFile") {
         std::string trimmed = value;

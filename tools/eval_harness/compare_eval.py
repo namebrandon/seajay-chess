@@ -245,6 +245,15 @@ class UCIEngineProcess:
         except BrokenPipeError:
             pass
         self._proc.wait(timeout=5)
+        # Drain any remaining output so diagnostics (info strings) surface
+        try:
+            while True:
+                stream, line = self._queue.get_nowait()
+                if line is None:
+                    continue
+                print(line)
+        except queue.Empty:
+            pass
 
     # -------------------
     def __del__(self) -> None:

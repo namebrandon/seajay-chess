@@ -16,6 +16,12 @@ namespace seajay {
  */
 class MoveGenerator {
 public:
+    struct AttackProfile {
+        uint64_t calls[2] = {0, 0};
+        uint64_t hits[2] = {0, 0};
+        uint64_t earlyExit[2] = {0, 0};
+    };
+
     // Static interface - no instance needed
     MoveGenerator() = delete;
     
@@ -106,6 +112,8 @@ public:
      * @return Bitboard of all attacked squares
      */
     static Bitboard getAttackedSquares(const Board& board, Color color);
+
+    static AttackProfile snapshotAttackProfile(bool resetCounts = true);
     
     // Move validation
     

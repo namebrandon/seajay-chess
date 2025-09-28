@@ -46,6 +46,7 @@ public:
 
     // Evaluation experimentation toggles
     bool usePasserPhaseP4 = false;               // Advanced passed-pawn scaling (Phase P4)
+    bool profileSquareAttacks = false;           // Instrument MoveGenerator::isSquareAttacked usage
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11

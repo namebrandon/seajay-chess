@@ -2,7 +2,9 @@
 #include "bitboard.h"
 #include "attack_wrapper.h"  // Use runtime-switchable attacks
 #include "attack_cache.h"    // Phase 2.1.b: Attack caching
+#include "engine_config.h"
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 
 namespace seajay {
@@ -22,6 +24,10 @@ namespace {
         }
     };
     static AttackTableInitializer s_attackTableInit;
+
+    std::atomic<uint64_t> g_attackCalls[2] = {0, 0};
+    std::atomic<uint64_t> g_attackHits[2] = {0, 0};
+    std::atomic<uint64_t> g_attackFalse[2] = {0, 0};
 }
 
 void MoveGenerator::initializeAttackTables() {
@@ -597,6 +603,11 @@ Bitboard MoveGenerator::getQueenAttacks(Square square, Bitboard occupied) {
 
 // Check detection - Phase 2.1.b with refined caching + Phase 2.1.a optimizations
 bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color attackingColor) {
+    const bool profile = seajay::getConfig().profileSquareAttacks;
+    const int colorIdx = static_cast<int>(attackingColor);
+    if (profile) {
+        g_attackCalls[colorIdx].fetch_add(1, std::memory_order_relaxed);
+    }
     // Phase 2.1.b: Try cache first with lightweight per-square caching
     // TESTING: Disabled caching for comparison
     #if 0
@@ -611,6 +622,9 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
     if (knights & getKnightAttacks(square)) {
+        if (profile) {
+            g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+        }
         // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
@@ -620,6 +634,9 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (pawns) {
         Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
         if (pawns & pawnAttacks) {
+            if (profile) {
+                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+            }
             // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
@@ -636,6 +653,9 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
                                seajay::magicRookAttacks(square, occupied);
         if (queens & queenAttacks) {
+            if (profile) {
+                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+            }
             // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
@@ -647,6 +667,9 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
         if (bishops & bishopAttacks) {
+            if (profile) {
+                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+            }
             // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
@@ -658,6 +681,9 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         // Direct magic bitboard call for hot path optimization
         Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
         if (rooks & rookAttacks) {
+            if (profile) {
+                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+            }
             // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
             return true;
         }
@@ -666,12 +692,18 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
     if (king & getKingAttacks(square)) {
+        if (profile) {
+            g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+        }
         // t_attackCache.store(board.zobristKey(), square, attackingColor, true);
         return true;
     }
     
     // Not attacked - cache the negative result
     // t_attackCache.store(board.zobristKey(), square, attackingColor, false);
+    if (profile) {
+        g_attackFalse[colorIdx].fetch_add(1, std::memory_order_relaxed);
+    }
     return false;
 }
 
@@ -735,6 +767,21 @@ Bitboard MoveGenerator::getAttackedSquares(const Board& board, Color color) {
     }
     
     return attacked;
+}
+
+MoveGenerator::AttackProfile MoveGenerator::snapshotAttackProfile(bool resetCounts) {
+    AttackProfile profile;
+    for (int i = 0; i < 2; ++i) {
+        profile.calls[i] = g_attackCalls[i].load(std::memory_order_relaxed);
+        profile.hits[i] = g_attackHits[i].load(std::memory_order_relaxed);
+        profile.earlyExit[i] = g_attackFalse[i].load(std::memory_order_relaxed);
+        if (resetCounts) {
+            g_attackCalls[i].store(0, std::memory_order_relaxed);
+            g_attackHits[i].store(0, std::memory_order_relaxed);
+            g_attackFalse[i].store(0, std::memory_order_relaxed);
+        }
+    }
+    return profile;
 }
 
 // Move validation
