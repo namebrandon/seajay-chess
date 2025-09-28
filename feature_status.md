@@ -57,6 +57,8 @@
 - **10+0.1 telemetry (sampled chunks):** `UHO_4060_v2` (40 positions), `wacnew` (80), `bratko_kopec` (28) all report fail-low slack p95 = 4 cp and fail-high slack p95 = 32 cp with 160/468/144 extensions respectively—no TT cache hits detected and Release bench remains `2350511 nodes / 1.75M nps`.
 - **`debug singular` command:** emits per-candidate logs (FEN, TT depth/bound, margin, verification score, extension outcome) to accelerate post-SPRT diagnostics without rebuilding.
 - **Regression harness:** `test_singular_regression` exercises Section 8 FENs with singular ON/OFF assertions using the debug sink (`tests/regression/singular_tests.cpp`).
+- **Perft validation (SE5.1a dry-run):** `./bin/perft_tool --suite --max-depth 6` (plain + `--tt`) passes with singular extensions enabled; wrapping the tool with `timeout` guards against future infinite-loop regressions and confirmed identical node counts to baseline.
+- **Time-to-depth probe (SE5.1b preview):** startpos `go depth 20` reaches the target depth in ~14.4 s (singular OFF, 13.1 M nodes) versus ~12.2 s (singular ON, 11.3 M nodes). `go movetime 10000` stops early at depth 18 in both modes because the time manager’s “stable enough” heuristic fires, so future runs need that guard disabled or relaxed to measure full 10 s behavior.
 
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
@@ -64,5 +66,6 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Stage SE4.2b: stand up the regression harness covering Section 8 positions with assertions for singular-on/off behavior.
-2. Document 10+0.1 telemetry + bench 1.754M nps for SE5 gating and monitor longer overnight sweeps if time permits.
+1. Finalize SE5.1b by disabling or relaxing the time-manager “stable enough” guard during measurement runs so the full 10 s budget is consumed.
+2. Re-run the 10 s telemetry suite with that guard adjusted, capturing depth/NPS deltas for singular ON vs OFF.
+3. Promote the SE5.1a/SE5.1b findings into the plan doc and tee up the SE5.2 SPRT configuration once telemetry is locked.
