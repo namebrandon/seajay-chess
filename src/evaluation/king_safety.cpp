@@ -1,185 +1,297 @@
 #include "king_safety.h"
+
+#include <algorithm>
+#include <cmath>
+
 #include "../core/board.h"
 #include "../core/bitboard.h"
-#include "../search/game_phase.h"  // Phase KS3: For phase tapering
+#include "../core/move_generation.h"
+#include "../search/game_phase.h"
 
 namespace seajay::eval {
 
-// Initialize static parameters - ALL VALUES CONTROLLED VIA UCI
-// Use setoption to modify these values:
-// - KingSafetyDirectShieldMg (default 19) - SPSA tuned with 135k games
-// - KingSafetyAdvancedShieldMg (default 6) - SPSA tuned with 135k games
-// - KingSafetyEnableScoring (default 1)
+namespace {
+
+Bitboard computeShieldZone(Square kingSquare, Color side, int forwardSteps) {
+    if (!isValidSquare(kingSquare) || forwardSteps <= 0) {
+        return 0;
+    }
+
+    const int direction = (side == WHITE) ? 1 : -1;
+    const int kingFile = static_cast<int>(fileOf(kingSquare));
+    const int kingRank = static_cast<int>(rankOf(kingSquare));
+    const int targetRank = kingRank + direction * forwardSteps;
+
+    if (targetRank < 0 || targetRank >= NUM_RANKS) {
+        return 0;
+    }
+
+    Bitboard zone = 0;
+    for (int df = -1; df <= 1; ++df) {
+        const int file = kingFile + df;
+        if (file < 0 || file >= NUM_FILES) {
+            continue;
+        }
+        const Square square = makeSquare(static_cast<File>(file), static_cast<Rank>(targetRank));
+        zone |= squareBB(square);
+    }
+    return zone;
+}
+
+Bitboard kingRingMask(Square kingSquare) {
+    const Bitboard king = squareBB(kingSquare);
+    Bitboard ring = 0;
+    ring |= shift<NORTH>(king);
+    ring |= shift<SOUTH>(king);
+    ring |= shift<EAST>(king);
+    ring |= shift<WEST>(king);
+    ring |= shift<NORTH_EAST>(king);
+    ring |= shift<NORTH_WEST>(king);
+    ring |= shift<SOUTH_EAST>(king);
+    ring |= shift<SOUTH_WEST>(king);
+    return ring;
+}
+
+bool isLineClear(Square from, Square to, Bitboard occupied) {
+    return (between(from, to) & occupied) == 0;
+}
+
+}  // namespace
+
 KingSafety::KingSafetyParams KingSafety::s_params = {
-    .directShieldMg = 19,     // UCI controlled - SPSA tuned
-    .directShieldEg = -3,     // Endgame values less important
-    .advancedShieldMg = 6,    // UCI controlled - SPSA tuned
-    .advancedShieldEg = -2,   // Endgame values less important
-    .airSquareBonusMg = 2,    // Air square bonus
-    .airSquareBonusEg = 0,    // Not relevant in endgame
-    .enableScoring = 1        // UCI controlled (0=disabled, 1=enabled)
+    .directShieldMg = 28,
+    .directShieldEg = -8,
+    .advancedShieldMg = 12,
+    .advancedShieldEg = -3,
+    .missingDirectPenaltyMg = 26,
+    .missingDirectPenaltyEg = 6,
+    .missingAdvancedPenaltyMg = 10,
+    .missingAdvancedPenaltyEg = 3,
+    .airSquareBonusMg = 4,
+    .airSquareBonusEg = 1,
+    .semiOpenFilePenaltyMg = 18,
+    .semiOpenFilePenaltyEg = 4,
+    .openFilePenaltyMg = 28,
+    .openFilePenaltyEg = 6,
+    .rookOnOpenFilePenaltyMg = 38,
+    .rookOnOpenFilePenaltyEg = 10,
+    .attackedRingPenaltyMg = 8,
+    .attackedRingPenaltyEg = 3,
+    .minorProximityPenaltyMg = 11,
+    .minorProximityPenaltyEg = 4,
+    .majorProximityPenaltyMg = 16,
+    .majorProximityPenaltyEg = 7,
+    .queenContactPenaltyMg = 20,
+    .queenContactPenaltyEg = 8,
+    .enableScoring = 1
 };
 
 Score KingSafety::evaluate(const Board& board, Color side) {
-    // Phase KS1: Infrastructure phase - compute but don't score
-    // This validates the detection logic without affecting evaluation
-    
-    Square kingSquare = board.kingSquare(side);
-    
-    // Check if king is in a reasonable position
-    if (!isReasonableKingPosition(kingSquare, side)) {
-        return Score(0);  // No safety bonus for exposed kings
+    if (s_params.enableScoring == 0) {
+        return Score(0);
     }
-    
-    // Get shield pawns
-    Bitboard directShield = getShieldPawns(board, side, kingSquare);
-    Bitboard advancedShield = getAdvancedShieldPawns(board, side, kingSquare);
-    
-    // Count shield pawns
-    int directCount = popCount(directShield);
-    int advancedCount = popCount(advancedShield);
-    
-    // Phase KS3: Implement phase-based scoring
-    // Detect game phase for proper tapering
-    search::GamePhase phase = search::detectGamePhase(board);
-    
+
+    const Square kingSquare = board.kingSquare(side);
+    if (!isValidSquare(kingSquare)) {
+        return Score(0);
+    }
+
+    const Color enemy = static_cast<Color>(side ^ 1);
+    const auto phase = search::detectGamePhase(board);
+
+    const Bitboard friendlyPawns = board.pieces(side, PAWN);
+    const Bitboard enemyPawns = board.pieces(enemy, PAWN);
+    const Bitboard occupancy = board.occupied();
+
+    const Bitboard directZone = computeShieldZone(kingSquare, side, 1);
+    const Bitboard advancedZone = computeShieldZone(kingSquare, side, 2);
+
+    const int directCount = popCount(friendlyPawns & directZone);
+    const int advancedCount = popCount(friendlyPawns & advancedZone);
+    const int expectedDirect = popCount(directZone);
+    const int expectedAdvanced = popCount(advancedZone);
+    const int missingDirect = std::max(0, expectedDirect - directCount);
+    const int missingAdvanced = std::max(0, expectedAdvanced - advancedCount);
+
+    int mgScore = 0;
+    int egScore = 0;
+
+    mgScore += directCount * s_params.directShieldMg;
+    egScore += directCount * s_params.directShieldEg;
+    mgScore += advancedCount * s_params.advancedShieldMg;
+    egScore += advancedCount * s_params.advancedShieldEg;
+
+    mgScore -= missingDirect * s_params.missingDirectPenaltyMg;
+    egScore -= missingDirect * s_params.missingDirectPenaltyEg;
+    mgScore -= missingAdvanced * s_params.missingAdvancedPenaltyMg;
+    egScore -= missingAdvanced * s_params.missingAdvancedPenaltyEg;
+
+    if (hasAirSquares(board, side, kingSquare)) {
+        mgScore += s_params.airSquareBonusMg;
+        egScore += s_params.airSquareBonusEg;
+    }
+
+    const int kingFileIndex = static_cast<int>(fileOf(kingSquare));
+    for (int df = -1; df <= 1; ++df) {
+        const int file = kingFileIndex + df;
+        if (file < 0 || file >= NUM_FILES) {
+            continue;
+        }
+
+        const Bitboard fileMask = fileBB(file);
+        const bool friendlyOnFile = (friendlyPawns & fileMask) != 0;
+        const bool enemyOnFile = (enemyPawns & fileMask) != 0;
+
+        if (!friendlyOnFile) {
+            if (enemyOnFile) {
+                mgScore -= s_params.semiOpenFilePenaltyMg;
+                egScore -= s_params.semiOpenFilePenaltyEg;
+            } else {
+                mgScore -= s_params.openFilePenaltyMg;
+                egScore -= s_params.openFilePenaltyEg;
+            }
+        }
+    }
+
+    const Bitboard kingRing = kingRingMask(kingSquare);
+    const Bitboard enemyAttacks = MoveGenerator::getAttackedSquares(board, enemy);
+    const int attackedRingSquares = popCount(enemyAttacks & kingRing);
+    mgScore -= attackedRingSquares * s_params.attackedRingPenaltyMg;
+    egScore -= attackedRingSquares * s_params.attackedRingPenaltyEg;
+
+    Bitboard enemyKnights = board.pieces(enemy, KNIGHT);
+    while (enemyKnights) {
+        const Square sq = popLsb(enemyKnights);
+        if (seajay::distance(sq, kingSquare) <= 2) {
+            mgScore -= s_params.minorProximityPenaltyMg;
+            egScore -= s_params.minorProximityPenaltyEg;
+        }
+    }
+
+    Bitboard enemyBishops = board.pieces(enemy, BISHOP);
+    while (enemyBishops) {
+        const Square sq = popLsb(enemyBishops);
+        if (seajay::distance(sq, kingSquare) <= 2) {
+            mgScore -= s_params.minorProximityPenaltyMg;
+            egScore -= s_params.minorProximityPenaltyEg;
+        }
+
+        const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
+        const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
+        if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
+            mgScore -= s_params.majorProximityPenaltyMg;
+            egScore -= s_params.majorProximityPenaltyEg;
+        }
+    }
+
+    Bitboard enemyRooks = board.pieces(enemy, ROOK);
+    while (enemyRooks) {
+        const Square sq = popLsb(enemyRooks);
+        if (seajay::distance(sq, kingSquare) <= 3) {
+            mgScore -= s_params.majorProximityPenaltyMg;
+            egScore -= s_params.majorProximityPenaltyEg;
+        }
+        if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
+            mgScore -= s_params.rookOnOpenFilePenaltyMg;
+            egScore -= s_params.rookOnOpenFilePenaltyEg;
+        }
+    }
+
+    Bitboard enemyQueens = board.pieces(enemy, QUEEN);
+    while (enemyQueens) {
+        const Square sq = popLsb(enemyQueens);
+        const int dist = seajay::distance(sq, kingSquare);
+        if (dist <= 3) {
+            mgScore -= s_params.majorProximityPenaltyMg;
+            egScore -= s_params.majorProximityPenaltyEg;
+        }
+        if (dist <= 2) {
+            mgScore -= s_params.queenContactPenaltyMg;
+            egScore -= s_params.queenContactPenaltyEg;
+        }
+        if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
+            mgScore -= s_params.rookOnOpenFilePenaltyMg;
+            egScore -= s_params.rookOnOpenFilePenaltyEg;
+        }
+        const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
+        const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
+        if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
+            mgScore -= s_params.majorProximityPenaltyMg;
+            egScore -= s_params.majorProximityPenaltyEg;
+        }
+    }
+
     int rawScore = 0;
-    
-    // Phase A4: Check for air squares (prophylaxis)
-    bool hasLuft = hasAirSquares(board, side, kingSquare);
-    
-    // Apply phase-appropriate values
     switch (phase) {
         case search::GamePhase::OPENING:
         case search::GamePhase::MIDDLEGAME:
-            // Use middlegame values (king safety more important)
-            rawScore = directCount * s_params.directShieldMg + 
-                      advancedCount * s_params.advancedShieldMg;
-            // Phase A4: Add tiny bonus for air squares in middlegame
-            if (hasLuft) {
-                rawScore += s_params.airSquareBonusMg;
-            }
+            rawScore = mgScore;
             break;
-            
         case search::GamePhase::ENDGAME:
-            // Use endgame values (king safety less important, can be negative)
-            rawScore = directCount * s_params.directShieldEg + 
-                      advancedCount * s_params.advancedShieldEg;
-            // Phase A4: Air squares not relevant in endgame
+            rawScore = egScore;
             break;
     }
-    
-    // Phase KS3: enableScoring is now 1, so scoring is active
-    int finalScore = rawScore * s_params.enableScoring;
-    
-    // Return positive score for good king safety (caller handles perspective)
-    return Score(finalScore);
+
+    rawScore *= s_params.enableScoring;
+    return Score(rawScore);
 }
 
 Bitboard KingSafety::getShieldPawns(const Board& board, Color side, Square kingSquare) {
-    // Get pawns directly in front of the king (one square ahead)
-    Bitboard friendlyPawns = board.pieces(side, PAWN);
-    Bitboard shieldZone = getShieldZone(kingSquare, side);
-    
-    return friendlyPawns & shieldZone;
+    const Bitboard shieldZone = computeShieldZone(kingSquare, side, 1);
+    return board.pieces(side, PAWN) & shieldZone;
 }
 
 Bitboard KingSafety::getAdvancedShieldPawns(const Board& board, Color side, Square kingSquare) {
-    // Get pawns two ranks in front of the king
-    // For white: shield is rank 2, advanced is rank 3
-    // For black: shield is rank 7, advanced is rank 6
-    Bitboard friendlyPawns = board.pieces(side, PAWN);
-    
-    // Get the shield zone and shift it forward one rank (toward enemy)
-    Bitboard shieldZone = getShieldZone(kingSquare, side);
-    // "north" in 4ku means toward rank 8, so for both colors it's << 8
-    // But for black, "advanced" means toward white (rank 6), so >> 8
-    Bitboard advancedZone = (side == WHITE) ? shieldZone << 8 : shieldZone >> 8;
-    
-    return friendlyPawns & advancedZone;
+    const Bitboard advancedZone = computeShieldZone(kingSquare, side, 2);
+    return board.pieces(side, PAWN) & advancedZone;
 }
 
 bool KingSafety::isReasonableKingPosition(Square kingSquare, Color side) {
-    // Defensive guard: avoid undefined behavior on invalid squares
-    if (kingSquare >= 64) {
+    if (!isValidSquare(kingSquare)) {
         return false;
     }
-    // Use shared masks from header for castled/near-castled positions
-    Bitboard kingBit = 1ULL << kingSquare;
+    const Bitboard kingBit = squareBB(kingSquare);
     if (side == WHITE) {
         return (kingBit & REASONABLE_KING_SQUARES_WHITE) != 0;
-    } else {
-        return (kingBit & REASONABLE_KING_SQUARES_BLACK) != 0;
     }
+    return (kingBit & REASONABLE_KING_SQUARES_BLACK) != 0;
 }
 
 Bitboard KingSafety::getShieldZone(Square kingSquare, Color side) {
-    // 4ku's exact approach: const u64 shield = 0x700 << 5 * (file > 2);
-    // 0x700 = files a,b,c on rank 2 (for white)
-    // Shift by 5 files if king is on kingside (file > 2)
-    
-    int file = fileOf(kingSquare);
-    
-    if (side == WHITE) {
-        // 4ku logic: shield is ALWAYS on rank 2
-        // 0x700 = a2,b2,c2 for queenside
-        // 0x700 << 5 = 0xE000 = f2,g2,h2 for kingside
-        if (file > 2) {
-            // Kingside: f2, g2, h2
-            return 0xE000ULL;
-        } else {
-            // Queenside: a2, b2, c2
-            return 0x700ULL;
-        }
-    } else {  // BLACK
-        // Mirror for black: shield is on rank 7
-        if (file > 2) {
-            // Kingside: f7, g7, h7
-            return 0xE0000000000000ULL;
-        } else {
-            // Queenside: a7, b7, c7
-            return 0x7000000000000ULL;
-        }
-    }
+    return computeShieldZone(kingSquare, side, 1);
 }
 
 bool KingSafety::hasAirSquares(const Board& board, Color side, Square kingSquare) {
-    // Phase A4: Check if king has "air" squares (luft) created by pawn moves
-    // This detects moves like h2-h3, g2-g3 (for white) that create escape squares
-    // We're looking for friendly pawns that have moved forward from the king's zone
-    
-    // Only check for castled positions
-    if (!isReasonableKingPosition(kingSquare, side)) {
+    if (!isValidSquare(kingSquare)) {
         return false;
     }
-    
-    int file = fileOf(kingSquare);
-    Bitboard friendlyPawns = board.pieces(side, PAWN);
-    
-    if (side == WHITE) {
-        // For white, recognize typical luft pawn advances near the king
-        if (file > 4) {  // Kingside (f,g,h files)
-            // f2-f3, g2-g3, h2-h3
-            Bitboard luftPawns = friendlyPawns & ((1ULL << F3) | (1ULL << G3) | (1ULL << H3));
-            return luftPawns != 0;
-        } else if (file < 3) {  // Queenside (a,b,c files)
-            // a2-a3, b2-b3, c2-c3
-            Bitboard luftPawns = friendlyPawns & ((1ULL << A3) | (1ULL << B3) | (1ULL << C3));
-            return luftPawns != 0;
+
+    const Bitboard friendlyPawns = board.pieces(side, PAWN);
+    const int direction = (side == WHITE) ? 1 : -1;
+    const int kingFile = static_cast<int>(fileOf(kingSquare));
+    const int kingRank = static_cast<int>(rankOf(kingSquare));
+
+    const bool onHomeRank = (side == WHITE && kingRank == 0) || (side == BLACK && kingRank == 7);
+    const int startStep = onHomeRank ? 2 : 1;
+
+    for (int step = startStep; step <= 2; ++step) {
+        const int targetRank = kingRank + direction * step;
+        if (targetRank < 0 || targetRank >= NUM_RANKS) {
+            continue;
         }
-    } else {  // BLACK
-        if (file > 4) {  // Kingside
-            // f7-f6, g7-g6, h7-h6
-            Bitboard luftPawns = friendlyPawns & ((1ULL << F6) | (1ULL << G6) | (1ULL << H6));
-            return luftPawns != 0;
-        } else if (file < 3) {  // Queenside
-            // a7-a6, b7-b6, c7-c6
-            Bitboard luftPawns = friendlyPawns & ((1ULL << A6) | (1ULL << B6) | (1ULL << C6));
-            return luftPawns != 0;
+        for (int df = -1; df <= 1; ++df) {
+            const int file = kingFile + df;
+            if (file < 0 || file >= NUM_FILES) {
+                continue;
+            }
+            const Square sq = makeSquare(static_cast<File>(file), static_cast<Rank>(targetRank));
+            if (friendlyPawns & squareBB(sq)) {
+                return true;
+            }
         }
     }
-    
+
     return false;
 }
 
-} // namespace seajay::eval
+}  // namespace seajay::eval

@@ -14,20 +14,45 @@ public:
     // S(mg, eg) format where mg = middlegame, eg = endgame
     struct KingSafetyParams {
         // Direct shield pawns (one square in front)
-        int directShieldMg = 33;   // Middlegame value
-        int directShieldEg = -10;  // Endgame value (negative = less important)
-        
+        int directShieldMg = 28;   // Middlegame value
+        int directShieldEg = -8;   // Endgame value (negative = less important)
+
         // Advanced shield pawns (two squares in front)
-        int advancedShieldMg = 25;  // Middlegame value
-        int advancedShieldEg = -7;   // Endgame value
-        
-        // Phase A4: Prophylaxis bonus for king with air squares (luft)
-        int airSquareBonusMg = 2;   // Small nudge for prophylactic moves
-        int airSquareBonusEg = 0;   // Not important in endgame
-        
-        // Phase KS1: Set to 0 for infrastructure phase
-        // Will be enabled in Phase KS3
-        int enableScoring = 0;  // Multiplier: 0 = disabled, 1 = enabled
+        int advancedShieldMg = 12;  // Middlegame value
+        int advancedShieldEg = -3;  // Endgame value
+
+        // Missing shield penalties
+        int missingDirectPenaltyMg = 26;
+        int missingDirectPenaltyEg = 6;
+        int missingAdvancedPenaltyMg = 10;
+        int missingAdvancedPenaltyEg = 3;
+
+        // Prophylaxis bonus for king with air squares (luft)
+        int airSquareBonusMg = 4;
+        int airSquareBonusEg = 1;
+
+        // File exposure penalties
+        int semiOpenFilePenaltyMg = 18;
+        int semiOpenFilePenaltyEg = 4;
+        int openFilePenaltyMg = 28;
+        int openFilePenaltyEg = 6;
+        int rookOnOpenFilePenaltyMg = 38;
+        int rookOnOpenFilePenaltyEg = 10;
+
+        // Attacked king ring squares
+        int attackedRingPenaltyMg = 8;
+        int attackedRingPenaltyEg = 3;
+
+        // Piece proximity penalties
+        int minorProximityPenaltyMg = 11;
+        int minorProximityPenaltyEg = 4;
+        int majorProximityPenaltyMg = 16;
+        int majorProximityPenaltyEg = 7;
+        int queenContactPenaltyMg = 20;
+        int queenContactPenaltyEg = 8;
+
+        // Enable scoring toggle (kept for UCI compatibility)
+        int enableScoring = 1;
     };
     
     // Evaluate king safety for a given side

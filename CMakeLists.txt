@@ -212,6 +212,11 @@ add_executable(test_singular_regression tests/regression/singular_tests.cpp)
 target_link_libraries(test_singular_regression seajay_core)
 target_sources(test_singular_regression PRIVATE src/uci/info_builder.cpp)
 
+add_executable(test_eval_problem_positions tests/eval/problem_positions_test.cpp)
+target_link_libraries(test_eval_problem_positions seajay_core)
+target_compile_definitions(test_eval_problem_positions PRIVATE SEAJAY_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+add_test(NAME eval_problem_positions COMMAND test_eval_problem_positions --verbose)
+
 # Unit tests - DISABLED (not needed for production)
 # add_executable(test_board tests/unit/test_board.cpp)
 # target_link_libraries(test_board seajay_core)

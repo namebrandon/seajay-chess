@@ -1,0 +1,74 @@
+[
+  {
+    "fen": "4r1k1/pp5p/1qn1bQ2/4r1p1/P1p1p3/B1P3P1/2P1P1BP/1R1R3K b - - 0 26",
+    "min_cp": -450,
+    "max_cp": -200,
+    "extra_tolerance_cp": 150,
+    "enforce": false,
+    "notes": "Middlegame king exposure; peer engines score roughly -3.0 to -4.0 pawns for Black."
+  },
+  {
+    "fen": "3r2k1/1pp3pp/1bp2r2/p6q/PP2P1b1/2P2N2/2QN1PPP/3R1R1K b - - 0 17",
+    "min_cp": -350,
+    "max_cp": -100,
+    "extra_tolerance_cp": 50,
+    "enforce": true,
+    "notes": "Reference control case; SeaJay already close to peers."
+  },
+  {
+    "fen": "r1b5/1Np2pp1/2p4p/P6k/P7/2P5/5K1P/4R3 w - - 0 29",
+    "min_cp": -150,
+    "max_cp": -70,
+    "extra_tolerance_cp": 220,
+    "enforce": false,
+    "notes": "Pawn race scenario currently mis-evaluated toward equality."
+  },
+  {
+    "fen": "r1b5/1Np2pp1/2p4p/P3R2k/P7/2P5/5K1P/8 b - - 0 29",
+    "min_cp": -240,
+    "max_cp": -160,
+    "extra_tolerance_cp": 180,
+    "enforce": false,
+    "notes": "Continuation after Re5+; target is decisive advantage for Black."
+  },
+  {
+    "fen": "8/p2r1k1p/6b1/8/2p2B2/P5P1/2p2KBP/2R5 b - - 0 34",
+    "min_cp": 300,
+    "max_cp": 470,
+    "extra_tolerance_cp": 220,
+    "enforce": false,
+    "notes": "Passed pawn evaluation; SeaJay currently scores near equality."
+  },
+  {
+    "fen": "R3n1k1/2ppqppp/2p5/8/4PB2/1P5P/1bP2PP1/R5K1 w - - 0 24",
+    "min_cp": -650,
+    "max_cp": -230,
+    "extra_tolerance_cp": 260,
+    "enforce": false,
+    "notes": "Material deficit test; harsh penalty expected."
+  },
+  {
+    "fen": "5rk1/p5pp/1p4q1/3pP3/8/2Pb2P1/1P5P/R1BQ2K1 w - - 0 24",
+    "min_cp": -520,
+    "max_cp": -150,
+    "extra_tolerance_cp": 260,
+    "enforce": false,
+    "notes": "King attack vs open file; SeaJay currently optimistic."
+  },
+  {
+    "fen": "r2r2k1/pp3ppp/1n1Nq2n/1R2P3/3p4/B4QPP/P1P2P2/5BK1 b - - 0 25",
+    "min_cp": 90,
+    "max_cp": 200,
+    "extra_tolerance_cp": 20,
+    "enforce": true,
+    "notes": "Light-pressure scenario; keep SeaJay anchored near +1.0."
+  },
+  {
+    "fen": "8/p2r1k1p/6b1/8/5B2/P1p3P1/2p2KBP/2R5 w - - 0 35",
+    "min_cp": -500,
+    "max_cp": -270,
+    "extra_tolerance_cp": 220,
+    "enforce": false,
+    "notes": "Endgame bishop vs pawns; SeaJay currently far too optimistic."
+  }
+]
