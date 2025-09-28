@@ -77,6 +77,7 @@
      - Lessons: watch-list harness is effective for canary checks, but we must pair each local success with a quick SPRT. Overly aggressive king-safety penalties dramatically hurt global play even when static evals look “correct”.
    - Detailed roadmap: `docs/project_docs/eval_overhaul/Stage1_King_Safety.md`.
    - [2025-10-01] Fortress scaling + attack-unit weighting prototyped on `feature/20251001-eval-ks-stage1`; king-safety watch-list FENs now enforced in harness.
+   - [2025-10-01] Captured Stage 1 baseline (`external/eval_baselines/king_safety/king_safety_stage1_baseline_2025-10-01.csv`) and diff vs 2025-09-29 (average delta −45 cp across watch list).
    - Update harness expectations where improvements materialise.
 
 4. **Phase 2 — PST & Compensation**
