@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <vector>
 #include <atomic>
+#include <string>
 
 // Stage 13, Deliverable 5.2b: Performance optimizations
 #ifdef NDEBUG
@@ -25,6 +26,30 @@
 #include <cmath>
 
 namespace seajay::search {
+
+struct SingularDebugEvent {
+    std::string fen;
+    Move candidate = NO_MOVE;
+    int depth = 0;
+    int ply = 0;
+    int ttDepth = -1;
+    eval::Score ttScore = eval::Score::zero();
+    Bound ttBound = Bound::NONE;
+    eval::Score beta = eval::Score::zero();
+    eval::Score margin = eval::Score::zero();
+    eval::Score singularBeta = eval::Score::zero();
+    eval::Score verificationScore = eval::Score::zero();
+    int verificationReduction = 0;
+    bool verificationRan = false;
+    bool failLow = false;
+    bool failHigh = false;
+    bool extensionScheduled = false;
+    int extensionAmount = 0;
+    bool extensionApplied = false;
+    bool stackedExtension = false;
+    uint64_t nodesBefore = 0;
+    uint64_t nodesAfter = 0;
+};
 
 // Forward declarations
 class CounterMoveHistory;
@@ -195,6 +220,11 @@ struct SearchLimits {
 
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
+
+    // Singular debug logging (off by default; heavy instrumentation)
+    bool singularDebugLog = false;
+    size_t singularDebugMaxEvents = 64;
+    std::vector<SingularDebugEvent>* singularDebugSink = nullptr;
 
     // Benchmark/diagnostics
     bool suppressDebugOutput = false;     // Suppress debug stderr logging during bench
@@ -459,6 +489,8 @@ struct SearchData {
     CJ_NO_UNIQUE_ADDR SingularStats singularStats{}; // Thread-local stats (zero-overhead when unused)
 
 #undef CJ_NO_UNIQUE_ADDR
+
+    std::vector<SingularDebugEvent> singularDebugEvents;
 
     struct alignas(64) GlobalSingularStats {
         uint64_t totalExamined = 0;
@@ -1151,6 +1183,7 @@ struct SearchData {
         qsearchNodesLimited = 0;
         qsearchTTHits = 0;
         singularStats.reset();
+        singularDebugEvents.clear();
         seeStats.reset();
         lmrStats.reset();  // Stage 18: Reset LMR statistics
         nullMoveStats.reset();  // Stage 21: Reset null move statistics

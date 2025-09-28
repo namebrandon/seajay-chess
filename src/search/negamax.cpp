@@ -394,6 +394,9 @@ eval::Score negamax(Board& board,
     eval::Score ttScore = eval::Score::zero();
     Bound ttBound = Bound::NONE;
     int ttDepth = -1;
+    int singularDebugEventIndex = -1;
+    SingularDebugEvent singularDebugEvent{};
+    bool singularDebugActive = false;
     
     // Track verification-node instrumentation before other pruning kicks in
     const bool isSingularVerificationNode =
@@ -613,6 +616,26 @@ eval::Score negamax(Board& board,
             beta);
         const int singularBetaRaw = ttScore.value() - margin.value();
         singularVerificationBeta = clamp_singular_score(eval::Score(singularBetaRaw));
+
+        if (limits.singularDebugLog && !singularDebugActive &&
+            info.singularDebugEvents.size() < limits.singularDebugMaxEvents) {
+            singularDebugEvent = SingularDebugEvent{};
+            singularDebugEvent.fen = board.toFEN();
+            singularDebugEvent.candidate = singularCandidate;
+            singularDebugEvent.depth = depth;
+            singularDebugEvent.ply = ply;
+            singularDebugEvent.ttDepth = ttDepth;
+            singularDebugEvent.ttScore = ttScore;
+            singularDebugEvent.ttBound = ttBound;
+            singularDebugEvent.beta = beta;
+            singularDebugEvent.margin = margin;
+            singularDebugEvent.singularBeta = singularVerificationBeta;
+            singularDebugEvent.verificationReduction = verificationReduction;
+            singularDebugEvent.nodesBefore = info.nodes;
+            info.singularDebugEvents.push_back(singularDebugEvent);
+            singularDebugEventIndex = static_cast<int>(info.singularDebugEvents.size() - 1);
+            singularDebugActive = true;
+        }
 
         singularVerificationScore = verify_exclusion(
             board,
@@ -1232,11 +1255,11 @@ eval::Score negamax(Board& board,
                     SearchData::SingularStats::kSlackBucketCount - 1);
                 info.singularStats.failLowSlackBuckets[static_cast<std::size_t>(bucketIndex)]++;
                 const int extensionDepthConfig = std::max(limits.singularExtensionDepth, 0);
-                singularExtensionPending = extensionDepthConfig > 0;
-                singularExtensionAmountPending = extensionDepthConfig;
-            } else {
-                info.singularStats.verificationFailHigh++;
-                const int rawSlack = std::max(
+            singularExtensionPending = extensionDepthConfig > 0;
+            singularExtensionAmountPending = extensionDepthConfig;
+        } else {
+            info.singularStats.verificationFailHigh++;
+            const int rawSlack = std::max(
                     singularVerificationScore.value() - singularVerificationBeta.value(),
                     0);
                 const int cappedSlack = std::min(
@@ -1253,6 +1276,17 @@ eval::Score negamax(Board& board,
                 singularExtensionAmountPending = 0;
             }
             singularVerificationRan = false;
+        }
+
+        if (singularDebugActive && singularDebugEventIndex >= 0) {
+            auto& debugEvent = info.singularDebugEvents[static_cast<std::size_t>(singularDebugEventIndex)];
+            debugEvent.verificationRan = true;
+            debugEvent.verificationScore = singularVerificationScore;
+            debugEvent.failLow = singularExtensionPending;
+            debugEvent.failHigh = !singularExtensionPending;
+            debugEvent.extensionScheduled = singularExtensionPending;
+            debugEvent.extensionAmount = singularExtensionAmountPending;
+            debugEvent.nodesAfter = info.nodes;
         }
 
         // Phase B1: Don't increment moveCount here - wait until we know move is legal
@@ -1578,6 +1612,11 @@ eval::Score negamax(Board& board,
             if (singularExtensionAmount > 0) {
                 extension = singularExtensionAmount;
                 extensionType = ExtensionType::Singular;
+                if (singularDebugActive && singularDebugEventIndex >= 0) {
+                    auto& debugEvent = info.singularDebugEvents[static_cast<std::size_t>(singularDebugEventIndex)];
+                    debugEvent.extensionApplied = true;
+                    debugEvent.extensionAmount = singularExtensionAmount;
+                }
             }
         }
 
@@ -1609,7 +1648,16 @@ eval::Score negamax(Board& board,
                 extensionType = ExtensionType::SingularStack;
                 stackedSingularExtension = true;
                 singularStats.stackingApplied++;
+                if (singularDebugActive && singularDebugEventIndex >= 0) {
+                    auto& debugEvent = info.singularDebugEvents[static_cast<std::size_t>(singularDebugEventIndex)];
+                    debugEvent.stackedExtension = true;
+                }
             }
+        }
+
+        if (singularDebugActive && isSingularMove) {
+            singularDebugActive = false;
+            singularDebugEventIndex = -1;
         }
 
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
@@ -3016,6 +3064,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
 
     if (info.isSingularTelemetryEnabled()) {
         info.flushSingularTelemetry(false);
+    }
+    if (limits.singularDebugLog && limits.singularDebugSink != nullptr) {
+        *limits.singularDebugSink = std::move(info.singularDebugEvents);
     }
     return bestMove;
 }

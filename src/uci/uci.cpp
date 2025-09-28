@@ -677,90 +677,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     // Pass stop flag for external stop handling (LazySMP compatible)
     limits.stopFlag = &m_stopRequested;
     
-    // Stage 14, Deliverable 1.8: Pass quiescence option to search
-    limits.useQuiescence = m_useQuiescence;
-    
-    // Phase 2a: Pass ranked move picker option
-    limits.useRankedMovePicker = m_useRankedMovePicker;
-    
-    // Phase 2a.6: Pass move picker statistics option
-    limits.showMovePickerStats = m_showMovePickerStats;
-    
-    // Phase 2a.8a: Pass in-check class ordering option
-    limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
-    
-    // Phase 2b: Pass rank-aware gates option
-    limits.useRankAwareGates = m_useRankAwareGates;
-    limits.useSearchNodeAPIRefactor = m_useSearchNodeAPIRefactor;
-    limits.enableExcludedMoveParam = m_enableExcludedMoveParam;
-
-    const auto& engineConfig = seajay::getConfig();
-    limits.useSingularExtensions = engineConfig.useSingularExtensions;
-    limits.allowStackedExtensions = engineConfig.allowStackedExtensions;
-    limits.bypassSingularTTExact = engineConfig.bypassSingularTTExact;
-    limits.disableCheckDuringSingular = engineConfig.disableCheckDuringSingular;
-    limits.singularDepthMin = engineConfig.singularDepthMin;
-    limits.singularMarginBase = engineConfig.singularMarginBase;
-    limits.singularVerificationReduction = engineConfig.singularVerificationReduction;
-    limits.singularExtensionDepth = engineConfig.singularExtensionDepth;
-    limits.debugTrackedMoves = m_debugTrackedMoves;
-    
-    // Stage 14 Remediation: Pass runtime node limit and qsearch constraints
-    limits.qsearchNodeLimit = m_qsearchNodeLimit;
-    limits.maxCheckPly = m_maxCheckPly;  // Pass maximum check extension depth
-    limits.qsearchMaxCaptures = m_qsearchMaxCaptures;
-    
-    // Phase 2.2: Pass root king penalty
-    limits.rootKingPenalty = m_rootKingPenalty;
-    
-    // Stage 18: Pass LMR parameters  
-    limits.lmrEnabled = m_lmrEnabled;
-    limits.lmrMinDepth = m_lmrMinDepth;
-    limits.lmrMinMoveNumber = m_lmrMinMoveNumber;
-    limits.lmrBaseReduction = m_lmrBaseReduction;
-    limits.lmrDepthFactor = m_lmrDepthFactor;
-    limits.lmrHistoryThreshold = m_lmrHistoryThreshold;
-    limits.lmrPvReduction = m_lmrPvReduction;
-    limits.lmrNonImprovingBonus = m_lmrNonImprovingBonus;
-    
-    // Stage 21: Pass null move pruning options
-    limits.useNullMove = m_useNullMove;
-    limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
-    limits.nullMoveMinDepth = m_nullMoveMinDepth;
-    limits.nullMoveReductionBase = m_nullMoveReductionBase;
-    limits.nullMoveReductionDepth6 = m_nullMoveReductionDepth6;
-    limits.nullMoveReductionDepth12 = m_nullMoveReductionDepth12;
-    limits.nullMoveVerifyDepth = m_nullMoveVerifyDepth;
-    limits.nullMoveEvalMargin = m_nullMoveEvalMargin;
-    limits.useAggressiveNullMove = m_useAggressiveNullMove;
-    limits.aggressiveNullMinEval = m_aggressiveNullMinEval;
-    limits.aggressiveNullMaxApplications = m_aggressiveNullMaxApplications;
-    limits.aggressiveNullRequirePositiveBeta = m_aggressiveNullRequirePositiveBeta;
-    
-    // Futility pruning parameters
-    limits.useFutilityPruning = m_useFutilityPruning;
-    limits.futilityMargin1 = m_futilityMargin1;
-    limits.futilityMargin2 = m_futilityMargin2;
-    limits.futilityMargin3 = m_futilityMargin3;
-    limits.futilityMargin4 = m_futilityMargin4;
-    
-    // Phase R1: Pass razoring options
-    limits.useRazoring = m_useRazoring;
-    limits.razorMargin1 = m_razorMargin1;
-    limits.razorMargin2 = m_razorMargin2;
-    
-    // Stage 13 Remediation: Pass aspiration window parameters
-    limits.aspirationWindow = m_aspirationWindow;
-    limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
-    limits.stabilityThreshold = m_stabilityThreshold;
-    limits.useAspirationWindows = m_useAspirationWindows;
-    
-    // Stage 13 Remediation Phase 4: Pass advanced features
-    limits.aspirationGrowth = m_aspirationGrowth;
-    limits.usePhaseStability = m_usePhaseStability;
-    limits.openingStability = m_openingStability;
-    limits.middlegameStability = m_middlegameStability;
-    limits.endgameStability = m_endgameStability;
+    applyConfigurationToLimits(limits);
     
     // Stage 15: Pass SEE pruning modes
     limits.seePruningMode = m_seePruning;
@@ -806,6 +723,80 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Mark search as complete
     m_searching.store(false, std::memory_order_relaxed);
+}
+
+void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
+    limits.useQuiescence = m_useQuiescence;
+    limits.useRankedMovePicker = m_useRankedMovePicker;
+    limits.showMovePickerStats = m_showMovePickerStats;
+    limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
+    limits.useRankAwareGates = m_useRankAwareGates;
+    limits.useSearchNodeAPIRefactor = m_useSearchNodeAPIRefactor;
+    limits.enableExcludedMoveParam = m_enableExcludedMoveParam;
+
+    const auto& engineConfig = seajay::getConfig();
+    limits.useSingularExtensions = engineConfig.useSingularExtensions;
+    limits.allowStackedExtensions = engineConfig.allowStackedExtensions;
+    limits.bypassSingularTTExact = engineConfig.bypassSingularTTExact;
+    limits.disableCheckDuringSingular = engineConfig.disableCheckDuringSingular;
+    limits.singularDepthMin = engineConfig.singularDepthMin;
+    limits.singularMarginBase = engineConfig.singularMarginBase;
+    limits.singularVerificationReduction = engineConfig.singularVerificationReduction;
+    limits.singularExtensionDepth = engineConfig.singularExtensionDepth;
+    limits.debugTrackedMoves = m_debugTrackedMoves;
+
+    limits.singularDebugLog = false;
+    limits.singularDebugSink = nullptr;
+    limits.singularDebugMaxEvents = 64;
+
+    limits.qsearchNodeLimit = m_qsearchNodeLimit;
+    limits.maxCheckPly = m_maxCheckPly;
+    limits.qsearchMaxCaptures = m_qsearchMaxCaptures;
+
+    limits.rootKingPenalty = m_rootKingPenalty;
+
+    limits.lmrEnabled = m_lmrEnabled;
+    limits.lmrMinDepth = m_lmrMinDepth;
+    limits.lmrMinMoveNumber = m_lmrMinMoveNumber;
+    limits.lmrBaseReduction = m_lmrBaseReduction;
+    limits.lmrDepthFactor = m_lmrDepthFactor;
+    limits.lmrHistoryThreshold = m_lmrHistoryThreshold;
+    limits.lmrPvReduction = m_lmrPvReduction;
+    limits.lmrNonImprovingBonus = m_lmrNonImprovingBonus;
+
+    limits.useNullMove = m_useNullMove;
+    limits.nullMoveStaticMargin = m_nullMoveStaticMargin;
+    limits.nullMoveMinDepth = m_nullMoveMinDepth;
+    limits.nullMoveReductionBase = m_nullMoveReductionBase;
+    limits.nullMoveReductionDepth6 = m_nullMoveReductionDepth6;
+    limits.nullMoveReductionDepth12 = m_nullMoveReductionDepth12;
+    limits.nullMoveVerifyDepth = m_nullMoveVerifyDepth;
+    limits.nullMoveEvalMargin = m_nullMoveEvalMargin;
+    limits.useAggressiveNullMove = m_useAggressiveNullMove;
+    limits.aggressiveNullMinEval = m_aggressiveNullMinEval;
+    limits.aggressiveNullMaxApplications = m_aggressiveNullMaxApplications;
+    limits.aggressiveNullRequirePositiveBeta = m_aggressiveNullRequirePositiveBeta;
+
+    limits.useFutilityPruning = m_useFutilityPruning;
+    limits.futilityMargin1 = m_futilityMargin1;
+    limits.futilityMargin2 = m_futilityMargin2;
+    limits.futilityMargin3 = m_futilityMargin3;
+    limits.futilityMargin4 = m_futilityMargin4;
+
+    limits.useRazoring = m_useRazoring;
+    limits.razorMargin1 = m_razorMargin1;
+    limits.razorMargin2 = m_razorMargin2;
+
+    limits.aspirationWindow = m_aspirationWindow;
+    limits.aspirationMaxAttempts = m_aspirationMaxAttempts;
+    limits.stabilityThreshold = m_stabilityThreshold;
+    limits.useAspirationWindows = m_useAspirationWindows;
+
+    limits.aspirationGrowth = m_aspirationGrowth;
+    limits.usePhaseStability = m_usePhaseStability;
+    limits.openingStability = m_openingStability;
+    limits.middlegameStability = m_middlegameStability;
+    limits.endgameStability = m_endgameStability;
 }
 
 Move UCIEngine::selectRandomMove() {
@@ -2569,6 +2560,81 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             eval::Score score = eval::evaluate(m_board);
             std::cout << "Evaluation: " << score.value() << " cp" << std::endl;
             std::cout << "(Enable EvalExtended option for detailed breakdown)" << std::endl;
+        }
+    } else if (tokens.size() > 1 && tokens[1] == "singular") {
+        int depthLimit = 0;
+        int movetimeMs = 1000;
+        size_t maxEvents = 32;
+
+        for (size_t i = 2; i < tokens.size(); ++i) {
+            const std::string& key = tokens[i];
+            if ((key == "depth" || key == "d") && i + 1 < tokens.size()) {
+                depthLimit = std::max(0, std::stoi(tokens[++i]));
+            } else if ((key == "movetime" || key == "mt") && i + 1 < tokens.size()) {
+                movetimeMs = std::max(0, std::stoi(tokens[++i]));
+            } else if ((key == "limit" || key == "max") && i + 1 < tokens.size()) {
+                maxEvents = static_cast<size_t>(std::max(1, std::stoi(tokens[++i])));
+            }
+        }
+
+        stopSearch();
+
+        search::SearchLimits limits;
+        if (depthLimit > 0) {
+            limits.maxDepth = depthLimit;
+        }
+        if (movetimeMs > 0) {
+            limits.movetime = std::chrono::milliseconds(movetimeMs);
+        }
+        limits.infinite = false;
+
+        applyConfigurationToLimits(limits);
+
+        limits.singularDebugLog = true;
+        std::vector<search::SingularDebugEvent> debugEvents;
+        limits.singularDebugSink = &debugEvents;
+        limits.singularDebugMaxEvents = maxEvents;
+
+        auto boundToString = [](Bound bound) -> const char* {
+            switch (bound) {
+                case Bound::EXACT: return "EXACT";
+                case Bound::LOWER: return "LOWER";
+                case Bound::UPPER: return "UPPER";
+                default: return "NONE";
+            }
+        };
+
+        Move best = search::searchIterativeTest(m_board, limits, &m_tt);
+
+        std::cout << "info string SingularDebug summary: bestmove " << moveToUCI(best)
+                  << ", events=" << debugEvents.size() << std::endl;
+
+        if (debugEvents.empty()) {
+            std::cout << "info string SingularDebug: no singular verification events recorded"
+                      << std::endl;
+        } else {
+            for (const auto& event : debugEvents) {
+                std::ostringstream line;
+                line << "info string SingularDebug: move=" << moveToUCI(event.candidate)
+                     << " depth=" << event.depth
+                     << " ply=" << event.ply
+                     << " ttDepth=" << event.ttDepth
+                     << " ttScore=" << event.ttScore.value()
+                     << " ttBound=" << boundToString(event.ttBound)
+                     << " margin=" << event.margin.value()
+                     << " beta=" << event.beta.value()
+                     << " singularBeta=" << event.singularBeta.value()
+                     << " verifyScore=" << event.verificationScore.value()
+                     << " result=" << (event.failLow ? "fail_low" : "fail_high")
+                     << " extension=" << event.extensionAmount
+                     << " scheduled=" << (event.extensionScheduled ? 1 : 0)
+                     << " applied=" << (event.extensionApplied ? 1 : 0)
+                     << " stacked=" << (event.stackedExtension ? 1 : 0)
+                     << " nodesBefore=" << event.nodesBefore
+                     << " nodesAfter=" << event.nodesAfter
+                     << " fen=" << event.fen;
+                std::cout << line.str() << std::endl;
+            }
         }
     } else if (tokens.size() > 1 && tokens[1] == "tt") {
         // Show TT collision statistics  

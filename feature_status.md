@@ -54,6 +54,9 @@
 - **Stacked telemetry tool:** now supports offset/limit chunking and multi-pass runs so long sweeps stay under the 10 minute harness cap while preserving per-chunk reports and cumulative aggregates.
 - **Bratko-Kopec validation (28 positions @2 s):** 2 792 verifications, 16 fail-lows (all extended) with fail-low slack p95 = 4 cp and fail-high slack p95 = 44 cp, confirming the histogram cap reins in tactical spikes without muting extensions.
 - **SPSA (130k games @10+0.1):** converged to `SingularDepthMin=7`, `SingularMarginBase=51`, `SingularVerificationReduction=4`, `SingularExtensionDepth=2`; branch defaults updated with `UseSingularExtensions`/`EnableExcludedMoveParam`/`AllowStackedExtensions` enabled for continued validation.
+- **10+0.1 telemetry (sampled chunks):** `UHO_4060_v2` (40 positions), `wacnew` (80), `bratko_kopec` (28) all report fail-low slack p95 = 4 cp and fail-high slack p95 = 32 cp with 160/468/144 extensions respectively—no TT cache hits detected and Release bench remains `2350511 nodes / 1.75M nps`.
+- **`debug singular` command:** emits per-candidate logs (FEN, TT depth/bound, margin, verification score, extension outcome) to accelerate post-SPRT diagnostics without rebuilding.
+- **Regression harness:** `test_singular_regression` exercises Section 8 FENs with singular ON/OFF assertions using the debug sink (`tests/regression/singular_tests.cpp`).
 
 ## Risk Notes
 - Telemetry counters must stay cache-aligned; verify with `static_assert(alignof(SingularStats) == 64)` before enabling instrumentation.
@@ -61,5 +64,5 @@
 - Cross-machine baseline comparisons rely on normalized NPS; capture bench outputs alongside raw NPS for each data point.
 
 ## Next Actions
-1. Stage SE4.2a: add the `debug singular` UCI command with per-position diagnostics so we can spot-check verification flow during SPRTs.
-2. Draft SPSA sweep parameters (bounds, step sizes, chunk scheduling) now that singular knobs sync through `EngineConfig`, and capture a fresh bench trace with the final configuration.
+1. Stage SE4.2b: stand up the regression harness covering Section 8 positions with assertions for singular-on/off behavior.
+2. Document 10+0.1 telemetry + bench 1.754M nps for SE5 gating and monitor longer overnight sweeps if time permits.

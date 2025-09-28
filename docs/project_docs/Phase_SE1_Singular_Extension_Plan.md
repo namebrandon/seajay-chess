@@ -377,11 +377,13 @@ Each stage ends with: `./build.sh Release`, `echo "bench" | ./bin/seajay`, perft
   - Output per-position singular decision log
   - Include: position, TT info, margin, verification result
   - Expected NPS impact: -50% when enabled (heavy logging)
+  - Status: Completed 2025-09-29 on `feature/20250926-singular-extension-se31b` with per-candidate logs, margin/verification reporting, and 10+0.1 validation workflow.
 - **SE4.2b – Regression test harness**
   - Create `tests/regression/singular_tests.cpp`
   - Add deterministic test positions from Section 8
   - Verify feature ON/OFF produces expected extensions
   - Expected NPS impact: N/A (test mode only)
+  - Status: Completed 2025-09-29 via `test_singular_regression` executable covering Section 8 FENs with debug instrumentation and singular-on/off assertions.
 
 ### Stage SE5 — Validation & Rollout
 - **SE5.1a – Perft validation**

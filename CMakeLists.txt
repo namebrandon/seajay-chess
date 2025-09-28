@@ -208,6 +208,10 @@ enable_testing()
 add_executable(test_discovered_check tests/unit/search/discovered_check_tests.cpp)
 target_link_libraries(test_discovered_check seajay_core)
 
+add_executable(test_singular_regression tests/regression/singular_tests.cpp)
+target_link_libraries(test_singular_regression seajay_core)
+target_sources(test_singular_regression PRIVATE src/uci/info_builder.cpp)
+
 # Unit tests - DISABLED (not needed for production)
 # add_executable(test_board tests/unit/test_board.cpp)
 # target_link_libraries(test_board seajay_core)

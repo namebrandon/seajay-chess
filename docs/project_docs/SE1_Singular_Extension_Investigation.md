@@ -99,15 +99,29 @@
 - **Action:** Updated branch defaults (UCI + `EngineConfig`) to the tuned values with `UseSingularExtensions`/`EnableExcludedMoveParam`/`AllowStackedExtensions` enabled for subsequent validation.
 - **Follow-up:** Re-run WAC/UHO/Bratko telemetry with tuned defaults and stage SE4.2a debug tooling prior to merge.
 
+### 2025-09-29 — 10+0.1 telemetry with tuned defaults
+- **Setup:** `tools/stacked_telemetry.py` with `--movetime 10000`, tuned defaults active (`DepthMin=7`, `MarginBase=51`, `VerificationReduction=4`, `ExtensionDepth=2`).
+- **Sampled chunks:** `UHO_4060_v2.epd` (40 positions), `wacnew.epd` (80 positions), `bratko_kopec.epd` (28 positions).
+- **Summary:**
+
+  | Suite | Positions | Nodes | Fail-low | Fail-high | Extensions | Slack p95 (low/high) |
+  |-------|-----------|-------|----------|-----------|------------|----------------------|
+  | UHO_4060_v2 | 40 | 139,565,183 | 80 | 4,236 | 160 | 4 / 32 cp |
+  | WACnew | 80 | 315,172,756 | 234 | 11,642 | 468 | 4 / 32 cp |
+  | Bratko-Kopec | 28 | 105,381,642 | 72 | 2,904 | 144 | 4 / 32 cp |
+
+- **Observations:** Slack distributions remain capped at 32 cp on fail-highs with fail-low slack tightly centered at 4 cp; extension counts align with SPSA expectations, check-extension suppression remains zero. No TT cache hits detected.
+- **Tooling:** `debug singular` now produces per-candidate logs (`fen`, TT depth/bound, margin, verification score, extension outcome) for on-demand investigation at the same TC.
+- **Bench:** Release baseline with tuned defaults: `bench 2350511`, `1,754,878 nps`.
+
 ## Open Questions
 - Do we need a dedicated TT namespace/flag for verification probes to avoid returning stale exact scores (`TranspositionTable::StorePolicy` logic review)?
 - Should margin calculations consume the *verification* depth instead of parent depth to better reflect search horizon?
 - Are we double-counting failure paths when verification searches share PV context state (e.g., `childContext.setPv(true)`)?
 
 ## Next Steps Checklist
-1. **Extended telemetry:** run an overnight UHO/WAC/Bratko rotation at tournament TC to confirm slack histograms stay bounded with tuned defaults.
-2. **Debug tooling:** prototype the planned `debug singular` command (SE4.2a) to sample verification traces during suspicious SPSA runs.
-3. **Post-SPSA validation:** document bench/NPS deltas and monitor extension rates with `DepthMin=7`, `MarginBase=51`, `VerificationReduction=4`, `ExtensionDepth=2` before proposing merge.
+1. **Extended telemetry:** schedule overnight 10+0.1 sweeps (full UHO/WAC/Bratko) to confirm slack distributions and extension rates hold beyond sampled chunks.
+2. **Post-SPSA validation:** roll bench/NPS deltas and telemetry summaries into SE5 gating docs ahead of mainline integration.
 
 ---
 _Last updated: 2025-09-29_

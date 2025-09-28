@@ -13,6 +13,7 @@
 #include "../core/move_list.h"
 #include "../core/types.h"  // For Hash type
 #include "../core/transposition_table.h"  // For TT integration
+#include "../search/types.h"  // For SearchLimits configuration
 
 namespace seajay {
 
@@ -209,15 +210,17 @@ private:
     void handleSetOption(const std::vector<std::string>& tokens);  // Stage 14, Deliverable 1.8
     void handleDumpPST();  // SPSA debug: dump current PST values
     void handleDebug(const std::vector<std::string>& tokens);  // Debug command handler
-    
+
     // Position setup helpers
     bool setupPosition(const std::string& type, const std::vector<std::string>& tokens, size_t& index);
     bool applyMoves(const std::vector<std::string>& moveStrings);
-    
+
     // Move format conversion
     Move parseUCIMove(const std::string& uciMove) const;
     std::string moveToUCI(Move move) const;
-    
+
+    void applyConfigurationToLimits(search::SearchLimits& limits) const;
+
     // Time management
     struct SearchParams {
         int movetime = 0;        // Fixed time per move (ms)
