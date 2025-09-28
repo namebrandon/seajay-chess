@@ -149,6 +149,7 @@ Score KingSafety::evaluate(const Board& board, Color side) {
 
     const Color enemy = static_cast<Color>(side ^ 1);
     const auto phase = search::detectGamePhase(board);
+    const bool kingInFortress = isReasonableKingPosition(kingSquare, side);
 
     const Bitboard friendlyPawns = board.pieces(side, PAWN);
     const Bitboard enemyPawns = board.pieces(enemy, PAWN);
@@ -172,102 +173,104 @@ Score KingSafety::evaluate(const Board& board, Color side) {
     mgScore += advancedCount * s_params.advancedShieldMg;
     egScore += advancedCount * s_params.advancedShieldEg;
 
-    mgScore -= missingDirect * s_params.missingDirectPenaltyMg;
-    egScore -= missingDirect * s_params.missingDirectPenaltyEg;
-    mgScore -= missingAdvanced * s_params.missingAdvancedPenaltyMg;
-    egScore -= missingAdvanced * s_params.missingAdvancedPenaltyEg;
+    if (kingInFortress) {
+        mgScore -= missingDirect * s_params.missingDirectPenaltyMg;
+        egScore -= missingDirect * s_params.missingDirectPenaltyEg;
+        mgScore -= missingAdvanced * s_params.missingAdvancedPenaltyMg;
+        egScore -= missingAdvanced * s_params.missingAdvancedPenaltyEg;
 
-    if (hasAirSquares(board, side, kingSquare)) {
-        mgScore += s_params.airSquareBonusMg;
-        egScore += s_params.airSquareBonusEg;
-    }
-
-    const int kingFileIndex = static_cast<int>(fileOf(kingSquare));
-    for (int df = -1; df <= 1; ++df) {
-        const int file = kingFileIndex + df;
-        if (file < 0 || file >= NUM_FILES) {
-            continue;
+        if (hasAirSquares(board, side, kingSquare)) {
+            mgScore += s_params.airSquareBonusMg;
+            egScore += s_params.airSquareBonusEg;
         }
 
-        const Bitboard fileMask = fileBB(file);
-        const bool friendlyOnFile = (friendlyPawns & fileMask) != 0;
-        const bool enemyOnFile = (enemyPawns & fileMask) != 0;
+        const int kingFileIndex = static_cast<int>(fileOf(kingSquare));
+        for (int df = -1; df <= 1; ++df) {
+            const int file = kingFileIndex + df;
+            if (file < 0 || file >= NUM_FILES) {
+                continue;
+            }
 
-        if (!friendlyOnFile) {
-            if (enemyOnFile) {
-                mgScore -= s_params.semiOpenFilePenaltyMg;
-                egScore -= s_params.semiOpenFilePenaltyEg;
-            } else {
-                mgScore -= s_params.openFilePenaltyMg;
-                egScore -= s_params.openFilePenaltyEg;
+            const Bitboard fileMask = fileBB(file);
+            const bool friendlyOnFile = (friendlyPawns & fileMask) != 0;
+            const bool enemyOnFile = (enemyPawns & fileMask) != 0;
+
+            if (!friendlyOnFile) {
+                if (enemyOnFile) {
+                    mgScore -= s_params.semiOpenFilePenaltyMg;
+                    egScore -= s_params.semiOpenFilePenaltyEg;
+                } else {
+                    mgScore -= s_params.openFilePenaltyMg;
+                    egScore -= s_params.openFilePenaltyEg;
+                }
             }
         }
-    }
 
-    const Bitboard kingRing = kingRingMask(kingSquare);
-    const int attackedRingSquares = countRingAttacks(board, enemy, kingSquare, kingRing, occupancy);
-    mgScore -= attackedRingSquares * s_params.attackedRingPenaltyMg;
-    egScore -= attackedRingSquares * s_params.attackedRingPenaltyEg;
+        const Bitboard kingRing = kingRingMask(kingSquare);
+        const int attackedRingSquares = countRingAttacks(board, enemy, kingSquare, kingRing, occupancy);
+        mgScore -= attackedRingSquares * s_params.attackedRingPenaltyMg;
+        egScore -= attackedRingSquares * s_params.attackedRingPenaltyEg;
 
-    Bitboard enemyKnights = board.pieces(enemy, KNIGHT);
-    while (enemyKnights) {
-        const Square sq = popLsb(enemyKnights);
-        if (seajay::distance(sq, kingSquare) <= 2) {
-            mgScore -= s_params.minorProximityPenaltyMg;
-            egScore -= s_params.minorProximityPenaltyEg;
-        }
-    }
-
-    Bitboard enemyBishops = board.pieces(enemy, BISHOP);
-    while (enemyBishops) {
-        const Square sq = popLsb(enemyBishops);
-        if (seajay::distance(sq, kingSquare) <= 2) {
-            mgScore -= s_params.minorProximityPenaltyMg;
-            egScore -= s_params.minorProximityPenaltyEg;
+        Bitboard enemyKnights = board.pieces(enemy, KNIGHT);
+        while (enemyKnights) {
+            const Square sq = popLsb(enemyKnights);
+            if (seajay::distance(sq, kingSquare) <= 2) {
+                mgScore -= s_params.minorProximityPenaltyMg;
+                egScore -= s_params.minorProximityPenaltyEg;
+            }
         }
 
-        const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
-        const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
-        if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
-            mgScore -= s_params.majorProximityPenaltyMg;
-            egScore -= s_params.majorProximityPenaltyEg;
-        }
-    }
+        Bitboard enemyBishops = board.pieces(enemy, BISHOP);
+        while (enemyBishops) {
+            const Square sq = popLsb(enemyBishops);
+            if (seajay::distance(sq, kingSquare) <= 2) {
+                mgScore -= s_params.minorProximityPenaltyMg;
+                egScore -= s_params.minorProximityPenaltyEg;
+            }
 
-    Bitboard enemyRooks = board.pieces(enemy, ROOK);
-    while (enemyRooks) {
-        const Square sq = popLsb(enemyRooks);
-        if (seajay::distance(sq, kingSquare) <= 3) {
-            mgScore -= s_params.majorProximityPenaltyMg;
-            egScore -= s_params.majorProximityPenaltyEg;
+            const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
+            const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
+            if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
+                mgScore -= s_params.majorProximityPenaltyMg;
+                egScore -= s_params.majorProximityPenaltyEg;
+            }
         }
-        if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
-            mgScore -= s_params.rookOnOpenFilePenaltyMg;
-            egScore -= s_params.rookOnOpenFilePenaltyEg;
-        }
-    }
 
-    Bitboard enemyQueens = board.pieces(enemy, QUEEN);
-    while (enemyQueens) {
-        const Square sq = popLsb(enemyQueens);
-        const int dist = seajay::distance(sq, kingSquare);
-        if (dist <= 3) {
-            mgScore -= s_params.majorProximityPenaltyMg;
-            egScore -= s_params.majorProximityPenaltyEg;
+        Bitboard enemyRooks = board.pieces(enemy, ROOK);
+        while (enemyRooks) {
+            const Square sq = popLsb(enemyRooks);
+            if (seajay::distance(sq, kingSquare) <= 3) {
+                mgScore -= s_params.majorProximityPenaltyMg;
+                egScore -= s_params.majorProximityPenaltyEg;
+            }
+            if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
+                mgScore -= s_params.rookOnOpenFilePenaltyMg;
+                egScore -= s_params.rookOnOpenFilePenaltyEg;
+            }
         }
-        if (dist <= 2) {
-            mgScore -= s_params.queenContactPenaltyMg;
-            egScore -= s_params.queenContactPenaltyEg;
-        }
-        if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
-            mgScore -= s_params.rookOnOpenFilePenaltyMg;
-            egScore -= s_params.rookOnOpenFilePenaltyEg;
-        }
-        const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
-        const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
-        if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
-            mgScore -= s_params.majorProximityPenaltyMg;
-            egScore -= s_params.majorProximityPenaltyEg;
+
+        Bitboard enemyQueens = board.pieces(enemy, QUEEN);
+        while (enemyQueens) {
+            const Square sq = popLsb(enemyQueens);
+            const int dist = seajay::distance(sq, kingSquare);
+            if (dist <= 3) {
+                mgScore -= s_params.majorProximityPenaltyMg;
+                egScore -= s_params.majorProximityPenaltyEg;
+            }
+            if (dist <= 2) {
+                mgScore -= s_params.queenContactPenaltyMg;
+                egScore -= s_params.queenContactPenaltyEg;
+            }
+            if (static_cast<int>(fileOf(sq)) == kingFileIndex && isLineClear(sq, kingSquare, occupancy)) {
+                mgScore -= s_params.rookOnOpenFilePenaltyMg;
+                egScore -= s_params.rookOnOpenFilePenaltyEg;
+            }
+            const int fileDiff = std::abs(static_cast<int>(fileOf(sq)) - kingFileIndex);
+            const int rankDiff = std::abs(static_cast<int>(rankOf(sq)) - static_cast<int>(rankOf(kingSquare)));
+            if (fileDiff == rankDiff && fileDiff != 0 && isLineClear(sq, kingSquare, occupancy)) {
+                mgScore -= s_params.majorProximityPenaltyMg;
+                egScore -= s_params.majorProximityPenaltyEg;
+            }
         }
     }
 
