@@ -51,6 +51,12 @@ public:
         int queenContactPenaltyMg = 20;
         int queenContactPenaltyEg = 8;
 
+        // Fortress scaling (percentages where 100 = full weight)
+        int fortressBonusScale = 100;
+        int looseBonusScale = 30;
+        int fortressPenaltyScale = 100;
+        int loosePenaltyScale = 40;
+
         // Enable scoring toggle (kept for UCI compatibility)
         int enableScoring = 1;
     };

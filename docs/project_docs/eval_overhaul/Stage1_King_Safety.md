@@ -70,3 +70,7 @@
 - Enforced harness expectations and updated telemetry artifacts.
 - Integration branch merge notes, including bench figures and SPRT outcome.
 - Retrospective entry capturing lessons learned before Stage 2 kickoff.
+
+## 11. Progress Log
+- [2025-10-01] Milestone M1 complete: fortress scaling applied, shield bonuses gated for loose kings, harness regression run clean.
+- [2025-10-01] Milestone M2 in progress: attack-unit weighting implemented, ring threats aggregated with multi-attack amplification, guard FENs flipped to enforcement.

@@ -4,7 +4,7 @@
     "min_cp": -450,
     "max_cp": -200,
     "extra_tolerance_cp": 150,
-    "enforce": false,
+    "enforce": true,
     "notes": "Middlegame king exposure; peer engines score roughly -3.0 to -4.0 pawns for Black."
   },
   {
@@ -44,7 +44,7 @@
     "min_cp": -650,
     "max_cp": -230,
     "extra_tolerance_cp": 260,
-    "enforce": false,
+    "enforce": true,
     "notes": "Material deficit test; harsh penalty expected."
   },
   {

@@ -76,6 +76,7 @@
      - [2025-09-29] **Experiment – fortress pressure penalty** (`test/20250929-king-safety-watchlist@pressure`): added heavy ring-pressure scaling. Canary FENs improved but SPRT vs `main`: **‑111.4 ± 25.1 Elo**; change abandoned and reverted.
      - Lessons: watch-list harness is effective for canary checks, but we must pair each local success with a quick SPRT. Overly aggressive king-safety penalties dramatically hurt global play even when static evals look “correct”.
    - Detailed roadmap: `docs/project_docs/eval_overhaul/Stage1_King_Safety.md`.
+   - [2025-10-01] Fortress scaling + attack-unit weighting prototyped on `feature/20251001-eval-ks-stage1`; king-safety watch-list FENs now enforced in harness.
    - Update harness expectations where improvements materialise.
 
 4. **Phase 2 — PST & Compensation**
