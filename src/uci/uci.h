@@ -111,6 +111,8 @@ private:
     
     // Evaluation detail option
     bool m_evalExtended = false;        // Show detailed evaluation breakdown
+    std::string m_evalLogFile;          // Optional file to append structured eval traces
+    bool m_evalLogFileWarned = false;   // Avoid spamming when log file cannot be opened
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
     int m_pawnValueMg = 71;             // Pawn middlegame value

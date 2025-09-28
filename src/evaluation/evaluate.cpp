@@ -157,6 +157,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     // PPH2: Get cached pawn structure evaluation early
     uint64_t pawnKey = board.pawnZobristKey();
     PawnEntry* pawnEntry = g_pawnStructure.probe(pawnKey);
+
+    if constexpr (Traced) {
+        if (trace) {
+            trace->pawnKey = pawnKey;
+            trace->pawnCacheHit = (pawnEntry != nullptr);
+        }
+    }
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
     Bitboard whitePassedPawns, blackPassedPawns;
@@ -1095,6 +1102,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         // Get MG and EG material differences
         Score materialMg = material.valueMg(WHITE) - material.valueMg(BLACK);
         Score materialEg = material.valueEg(WHITE) - material.valueEg(BLACK);
+
+        if constexpr (Traced) {
+            if (trace) {
+                trace->materialMg = materialMg;
+                trace->materialEg = materialEg;
+            }
+        }
         
         // Interpolate between mg and eg values
         int interpolated = (materialMg.value() * phase + materialEg.value() * invPhase) / 256;
@@ -1102,6 +1116,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     } else {
         // Use pure middlegame values (backward compatibility)
         materialDiff = material.value(WHITE) - material.value(BLACK);
+
+        if constexpr (Traced) {
+            if (trace) {
+                trace->materialMg = materialDiff;
+                trace->materialEg = materialDiff;
+            }
+        }
     }
     
     // Trace material

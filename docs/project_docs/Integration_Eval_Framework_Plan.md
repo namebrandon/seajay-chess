@@ -32,6 +32,7 @@ Telemetry & Instrumentation Plan
 - Add optional DEBUG/DEV logging guard (`EvalLogFile`) to persist snapshots per root for curated FENs.
 - Sample counters: number of pawn-eval invocations, cache hits/misses, seconds spent in pawn eval (Release timing off by default, on via compile flag).
 - Ensure toggles compile out in production builds (macro or runtime flag) to avoid regressing OpenBench.
+  - ✅ 2025-09-19: Structured `info eval` output and `EvalLogFile` toggle landed.
 
 Evaluation Focus – Pawns & Passed Pawns
 - Audit current pawn hash data: structure keys, cached values, phase blending.

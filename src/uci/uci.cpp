@@ -25,6 +25,7 @@
 #include <cmath>
 #include <sstream>
 #include <cctype>
+#include <fstream>
 
 using namespace seajay;
 
@@ -183,6 +184,7 @@ void UCIEngine::handleUCI() {
     
     // Evaluation detail option
     std::cout << "option name EvalExtended type check default false" << std::endl;
+    std::cout << "option name EvalLogFile type string default" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
     std::cout << "option name PawnValueMg type spin default 71 min 50 max 130" << std::endl;
@@ -2302,6 +2304,26 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string EvalExtended disabled" << std::endl;
         }
     }
+    else if (optionName == "EvalLogFile") {
+        std::string trimmed = value;
+        auto lpos = trimmed.find_first_not_of(" \t");
+        if (lpos == std::string::npos) {
+            trimmed.clear();
+        } else {
+            trimmed.erase(0, lpos);
+            auto rpos = trimmed.find_last_not_of(" \t");
+            if (rpos != std::string::npos) {
+                trimmed.erase(rpos + 1);
+            }
+        }
+        m_evalLogFile = trimmed;
+        m_evalLogFileWarned = false;
+        if (trimmed.empty()) {
+            std::cerr << "info string EvalLogFile cleared" << std::endl;
+        } else {
+            std::cerr << "info string EvalLogFile set to " << trimmed << std::endl;
+        }
+    }
     // Middlegame piece values (with SPSA float rounding)
     else if (optionName == "PawnValueMg") {
         try {
@@ -2551,10 +2573,27 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
         // Show detailed evaluation if EvalExtended is enabled
         if (m_evalExtended) {
             eval::EvalTrace trace;
-            eval::Score score = eval::evaluateWithTrace(m_board, trace);
-            
-            // Print the detailed breakdown
-            trace.print(m_board.sideToMove());
+            eval::evaluateWithTrace(m_board, trace);
+
+            const Color side = m_board.sideToMove();
+            const auto lines = trace.toStructuredLines(side);
+            for (const auto& line : lines) {
+                std::cout << line << std::endl;
+            }
+
+            if (!m_evalLogFile.empty()) {
+                std::ofstream out(m_evalLogFile, std::ios::app);
+                if (out) {
+                    for (const auto& line : lines) {
+                        out << line << '\n';
+                    }
+                    out << std::flush;
+                    m_evalLogFileWarned = false;
+                } else if (!m_evalLogFileWarned) {
+                    std::cerr << "info string EvalLogFile could not be opened: " << m_evalLogFile << std::endl;
+                    m_evalLogFileWarned = true;
+                }
+            }
         } else {
             // Just show the basic score
             eval::Score score = eval::evaluate(m_board);
@@ -2708,8 +2747,27 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
         // If EvalExtended is enabled, also show evaluation
         if (m_evalExtended) {
             eval::EvalTrace trace;
-            eval::Score score = eval::evaluateWithTrace(m_board, trace);
-            trace.print(m_board.sideToMove());
+            eval::evaluateWithTrace(m_board, trace);
+
+            const Color side = m_board.sideToMove();
+            const auto lines = trace.toStructuredLines(side);
+            for (const auto& line : lines) {
+                std::cout << line << std::endl;
+            }
+
+            if (!m_evalLogFile.empty()) {
+                std::ofstream out(m_evalLogFile, std::ios::app);
+                if (out) {
+                    for (const auto& line : lines) {
+                        out << line << '\n';
+                    }
+                    out << std::flush;
+                    m_evalLogFileWarned = false;
+                } else if (!m_evalLogFileWarned) {
+                    std::cerr << "info string EvalLogFile could not be opened: " << m_evalLogFile << std::endl;
+                    m_evalLogFileWarned = true;
+                }
+            }
         }
     }
 }

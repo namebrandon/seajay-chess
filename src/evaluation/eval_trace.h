@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../core/types.h"
+#include <cstdint>
 #include <iostream>
-#include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace seajay::eval {
 
@@ -16,6 +17,8 @@ struct EvalTrace {
     Score pstMg;  // Middlegame PST component
     Score pstEg;  // Endgame PST component
     int phase256;  // Phase value 0-256 (0=endgame, 256=middlegame)
+    Score materialMg;  // Middlegame material component (for interpolation visibility)
+    Score materialEg;  // Endgame material component
     
     // Pawn structure
     Score passedPawns;
@@ -34,6 +37,10 @@ struct EvalTrace {
     // King safety
     Score kingSafety;
     
+    // Pawn hash metadata
+    uint64_t pawnKey = 0;        // Zobrist pawn hash key at evaluation time
+    bool pawnCacheHit = false;   // Whether pawn cache provided the entry
+
     // Individual component tracking for passed pawns
     struct PassedPawnDetail {
         int whiteCount = 0;
@@ -65,7 +72,9 @@ struct EvalTrace {
         pstMg = Score(0);
         pstEg = Score(0);
         phase256 = 0;
-        
+        materialMg = Score(0);
+        materialEg = Score(0);
+
         passedPawns = Score(0);
         isolatedPawns = Score(0);
         doubledPawns = Score(0);
@@ -82,6 +91,8 @@ struct EvalTrace {
         
         passedDetail = PassedPawnDetail();
         mobilityDetail = MobilityDetail();
+        pawnKey = 0ULL;
+        pawnCacheHit = false;
     }
     
     // Calculate total score
@@ -93,135 +104,114 @@ struct EvalTrace {
     
     // Print formatted evaluation breakdown
     void print(Color sideToMove) const {
-        std::cout << "\n=== Evaluation Breakdown ===" << std::endl;
-        std::cout << std::fixed << std::setprecision(2);
-        
-        // Helper to format scores
-        auto formatScore = [](Score s) -> std::string {
-            std::stringstream ss;
-            ss << std::fixed << std::setprecision(2);
-            double cp = s.value() / 100.0;
-            if (cp >= 0) ss << "+";
-            ss << cp;
-            return ss.str();
+        for (const auto& line : toStructuredLines(sideToMove)) {
+            std::cout << line << std::endl;
+        }
+    }
+
+    std::vector<std::string> toStructuredLines(Color sideToMove) const {
+        std::vector<std::string> lines;
+        lines.reserve(16);
+
+        auto pushLine = [&lines](std::string payload) {
+            lines.emplace_back("info eval " + std::move(payload));
         };
-        
-        // Phase information
-        std::cout << "\nGame Phase: " << phase256 << "/256 ";
-        std::cout << "(MG: " << (phase256 * 100 / 256) << "%, ";
-        std::cout << "EG: " << ((256 - phase256) * 100 / 256) << "%)" << std::endl;
-        
-        // Material
-        std::cout << "\n-- Material --" << std::endl;
-        std::cout << "  Material:          " << std::setw(8) << formatScore(material) << " cp" << std::endl;
-        
-        // PST with interpolation details
-        std::cout << "\n-- Piece Square Tables --" << std::endl;
-        if (phase256 < 256) {  // Show interpolation if not pure middlegame
-            std::cout << "  PST (MG):          " << std::setw(8) << formatScore(pstMg) << " cp" << std::endl;
-            std::cout << "  PST (EG):          " << std::setw(8) << formatScore(pstEg) << " cp" << std::endl;
-            std::cout << "  PST (interpolated):" << std::setw(8) << formatScore(pst) << " cp";
-            std::cout << " [" << phase256 << "*MG + " << (256-phase256) << "*EG / 256]" << std::endl;
-        } else {
-            std::cout << "  PST:               " << std::setw(8) << formatScore(pst) << " cp" << std::endl;
-        }
-        
-        // Pawn structure
-        std::cout << "\n-- Pawn Structure --" << std::endl;
-        if (passedPawns != Score(0)) {
-            std::cout << "  Passed pawns:      " << std::setw(8) << formatScore(passedPawns) << " cp";
-            if (passedDetail.whiteCount > 0 || passedDetail.blackCount > 0) {
-                std::cout << " (W:" << passedDetail.whiteCount << " B:" << passedDetail.blackCount;
-                if (passedDetail.hasProtected) std::cout << ", protected";
-                if (passedDetail.hasConnected) std::cout << ", connected";
-                if (passedDetail.hasBlockaded) std::cout << ", blockaded";
-                if (passedDetail.hasUnstoppable) std::cout << ", unstoppable!";
-                std::cout << ")";
-            }
-            std::cout << std::endl;
-        }
-        if (isolatedPawns != Score(0)) {
-            std::cout << "  Isolated pawns:   " << std::setw(8) << formatScore(isolatedPawns) << " cp" << std::endl;
-        }
-        if (doubledPawns != Score(0)) {
-            std::cout << "  Doubled pawns:     " << std::setw(8) << formatScore(doubledPawns) << " cp" << std::endl;
-        }
-        if (backwardPawns != Score(0)) {
-            std::cout << "  Backward pawns:    " << std::setw(8) << formatScore(backwardPawns) << " cp" << std::endl;
-        }
-        if (pawnIslands != Score(0)) {
-            std::cout << "  Pawn islands:      " << std::setw(8) << formatScore(pawnIslands) << " cp" << std::endl;
-        }
-        
-        // Piece evaluation
-        std::cout << "\n-- Piece Evaluation --" << std::endl;
-        if (bishopPair != Score(0)) {
-            std::cout << "  Bishop pair:       " << std::setw(8) << formatScore(bishopPair) << " cp" << std::endl;
-        }
-        if (mobility != Score(0)) {
-            std::cout << "  Mobility:          " << std::setw(8) << formatScore(mobility) << " cp";
-            std::cout << " (WN:" << mobilityDetail.whiteKnightMoves;
-            std::cout << " WB:" << mobilityDetail.whiteBishopMoves;
-            std::cout << " WR:" << mobilityDetail.whiteRookMoves;
-            std::cout << " WQ:" << mobilityDetail.whiteQueenMoves;
-            std::cout << " | BN:" << mobilityDetail.blackKnightMoves;
-            std::cout << " BB:" << mobilityDetail.blackBishopMoves;
-            std::cout << " BR:" << mobilityDetail.blackRookMoves;
-            std::cout << " BQ:" << mobilityDetail.blackQueenMoves << ")" << std::endl;
-        }
-        if (knightOutposts != Score(0)) {
-            std::cout << "  Knight outposts:   " << std::setw(8) << formatScore(knightOutposts) << " cp" << std::endl;
-        }
-        if (rookFiles != Score(0)) {
-            std::cout << "  Rook on files:     " << std::setw(8) << formatScore(rookFiles) << " cp" << std::endl;
-        }
-        if (rookKingProximity != Score(0)) {
-            std::cout << "  Rook-King prox:    " << std::setw(8) << formatScore(rookKingProximity) << " cp" << std::endl;
-        }
-        
-        // King safety
-        if (kingSafety != Score(0)) {
-            std::cout << "\n-- King Safety --" << std::endl;
-            std::cout << "  King safety:       " << std::setw(8) << formatScore(kingSafety) << " cp" << std::endl;
-        }
-        
-        // Total calculation
-        std::cout << "\n-- Total (White perspective) --" << std::endl;
+
+        pushLine("header version=1");
+
         Score totalWhite = total();
-        std::cout << "  Sum of components: " << std::setw(8) << formatScore(totalWhite) << " cp" << std::endl;
-        
-        // Show calculation
-        std::cout << "\n  Calculation: ";
-        bool first = true;
-        auto addComponent = [&](const std::string& name, Score value) {
-            if (value == Score(0)) return;
-            if (!first) std::cout << " + ";
-            std::cout << name << "(" << formatScore(value) << ")";
-            first = false;
-        };
-        
-        addComponent("mat", material);
-        addComponent("pst", pst);
-        addComponent("passed", passedPawns);
-        addComponent("isolated", isolatedPawns);
-        addComponent("doubled", doubledPawns);
-        addComponent("backward", backwardPawns);
-        addComponent("islands", pawnIslands);
-        addComponent("bishop-pair", bishopPair);
-        addComponent("mobility", mobility);
-        addComponent("outposts", knightOutposts);
-        addComponent("rook-files", rookFiles);
-        addComponent("rook-king", rookKingProximity);
-        addComponent("king-safety", kingSafety);
-        std::cout << std::endl;
-        
-        // Side to move perspective
-        std::cout << "\n-- Final Score --" << std::endl;
         Score finalScore = (sideToMove == WHITE) ? totalWhite : -totalWhite;
-        std::cout << "  From " << (sideToMove == WHITE ? "White" : "Black") << "'s perspective: ";
-        std::cout << formatScore(finalScore) << " cp" << std::endl;
-        
-        std::cout << "\n==========================" << std::endl;
+
+        {
+            std::ostringstream oss;
+            oss << "summary side=" << (sideToMove == WHITE ? "white" : "black")
+                << " total_white_cp=" << totalWhite.value()
+                << " final_cp=" << finalScore.value();
+            pushLine(oss.str());
+        }
+
+        {
+            std::ostringstream oss;
+            oss << "phase value=" << phase256
+                << " mg_pct=" << (phase256 * 100 / 256)
+                << " eg_pct=" << ((256 - phase256) * 100 / 256);
+            pushLine(oss.str());
+        }
+
+        {
+            std::ostringstream oss;
+            oss << std::hex;
+            oss << "pawn_cache key=0x" << pawnKey;
+            oss << std::dec;
+            oss << " hit=" << (pawnCacheHit ? 1 : 0);
+            pushLine(oss.str());
+        }
+
+        auto emitTerm = [&pushLine](const std::string& name, Score value) {
+            std::ostringstream oss;
+            oss << "term name=" << name << " cp=" << value.value();
+            pushLine(oss.str());
+        };
+
+        // Material and PST exposure
+        {
+            std::ostringstream oss;
+            oss << "term name=material cp=" << material.value()
+                << " mg=" << materialMg.value()
+                << " eg=" << materialEg.value();
+            pushLine(oss.str());
+        }
+
+        {
+            std::ostringstream oss;
+            oss << "term name=pst cp=" << pst.value()
+                << " mg=" << pstMg.value()
+                << " eg=" << pstEg.value();
+            pushLine(oss.str());
+        }
+
+        {
+            std::ostringstream oss;
+            oss << "term name=passed_pawns cp=" << passedPawns.value()
+                << " white=" << passedDetail.whiteCount
+                << " black=" << passedDetail.blackCount;
+            pushLine(oss.str());
+        }
+
+        emitTerm("isolated_pawns", isolatedPawns);
+        emitTerm("doubled_pawns", doubledPawns);
+        emitTerm("backward_pawns", backwardPawns);
+
+        emitTerm("pawn_islands", pawnIslands);
+        emitTerm("bishop_pair", bishopPair);
+
+        {
+            std::ostringstream oss;
+            oss << "term name=mobility cp=" << mobility.value()
+                << " wn=" << mobilityDetail.whiteKnightMoves
+                << " wb=" << mobilityDetail.whiteBishopMoves
+                << " wr=" << mobilityDetail.whiteRookMoves
+                << " wq=" << mobilityDetail.whiteQueenMoves
+                << " bn=" << mobilityDetail.blackKnightMoves
+                << " bb=" << mobilityDetail.blackBishopMoves
+                << " br=" << mobilityDetail.blackRookMoves
+                << " bq=" << mobilityDetail.blackQueenMoves;
+            pushLine(oss.str());
+        }
+
+        emitTerm("knight_outposts", knightOutposts);
+        emitTerm("rook_files", rookFiles);
+        emitTerm("rook_king_proximity", rookKingProximity);
+        emitTerm("king_safety", kingSafety);
+
+        {
+            std::ostringstream oss;
+            oss << "total white_cp=" << totalWhite.value()
+                << " final_cp=" << finalScore.value();
+            pushLine(oss.str());
+        }
+
+        return lines;
     }
 };
 
