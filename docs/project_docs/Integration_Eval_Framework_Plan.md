@@ -50,11 +50,13 @@ Alt Bench / Test Suites
 - Add new UCI command or CLI flag (`bench eval-critical`) to run suite quickly, recording: score, depth, principal move, per-term breakdown when `EvalExtended` on.
 - Baseline expected results from Komodo/Fritz to compare.
 - Include both Release (timing) and Debug (verbose logs) runs in workflow.
+  - ✅ 2025-09-19: Initial pawn/king-danger pack landed at `tests/packs/eval_pawn_focus.epd`.
 
 External Harness
 - Python driver to: run multiple engines over pack, capture stdout/JSON, produce diff tables (score delta, best move agreement, term deltas).
 - Integrate with telemetry logs (parse `EvalExtended` tags) to graph term contribution differences.
 - Provide overhead report: time per position, NPS delta vs standard bench.
+  - ✅ 2025-09-28: Harness CLI implemented with SeaJay telemetry capture (`tools/eval_harness/compare_eval.py`).
 
 Milestones & Deliverables
 1. Tooling Foundation (Phase P1)

@@ -1,0 +1,15 @@
+# SeaJay evaluation stress pack - pawn structures, passed pawns, king danger
+# Format: FEN followed by EPD comment describing the theme and known best move consensus.
+r7/2p2pp1/1bp3kp/4P3/p1P1N1b1/P2r2B1/1P3P1P/2R1R1K1 b - - 0 20 c0 "Theme: advanced a-pawn and dark-square weaknesses - reference engines prefer Bd4 (large eval gap).";
+6k1/p1p2pp1/2b4r/b1p2P2/2P3Pq/1P2N3/P3KR2/2QR4 b - - 0 37 c0 "Theme: opposite-wing kings with connected passers - SeaJay overestimates white; track black attack weight.";
+6k1/bpp2ppp/p1p1q3/P3P3/4P3/1PP2N2/3N1PPP/5R1K b - - 0 23 c0 "Theme: outside passed a-pawn vs weak king shelter - evaluate passer bonuses vs king pressure.";
+4r1k1/b1p3pp/p1pn1p2/P7/1BP5/4NqPb/1PQ2PNP/4R1K1 b - - 0 33 c0 "Theme: crashed g-pawn shield and entrenched bishop on b7; SeaJay underweights attack from f3 queen.";
+4r1k1/2p3pp/p1pn1p2/P7/1BP5/4NqPb/1PQ2P1P/4R1K1 b - - 0 34 c0 "Theme: same setup one ply later - track king danger scaling vs passed pawn race.";
+2q3k1/2p2pp1/5r1p/pP2r2P/P1pQP3/2Pb2N1/6P1/2RR2K1 b - - 0 30 c0 "Theme: connected black passers on c/d-files with rook support; SeaJay undervalues conversion.";
+6k1/1qp2pp1/4r2p/pP3NrP/P1p1P3/2Pb4/5QP1/2R1R1K1 b - - 0 33 c0 "Theme: fixed white pawn chain vs rolling c/d passers - compare blocker penalties and rook activity.";
+r5k1/pp5p/1qn1b3/4r1p1/P1p1pQ2/B1P3P1/2P1P1BP/R2R3K w - - 0 25 c0 "Theme: white king safety vs far-advanced e-pawn majority; reference Qf6 hits weak king.";
+r1bqr2k/1p4pp/p3p3/3pQ3/6R1/2PB4/2P2PPP/1R4K1 b - - 0 23 c0 "Theme: trapped black king and rook on e8; evaluate initiative vs material - consensus favors Re7/Qe7.";
+8/p2r1k1p/6b1/8/2p2B2/P5P1/2p2KBP/2R5 b - - 0 34 c0 "Theme: advanced connected passers c/p for black vs white bishop activity - SeaJay downplays c-pawn runner.";
+R3n1k1/2ppqppp/2p5/8/4PB2/1P5P/1bP2PP1/R5K1 w - - 0 24 c0 "Theme: passed a-pawn and bishop on b2 vs black pressure; SeaJay optimistic - monitor passer scaling and king safety.";
+5rk1/p5pp/1p4q1/3pP3/8/2Pb2P1/1P5P/R1BQ2K1 w - - 0 24 c0 "Theme: black outside passer with bishop support; SeaJay evaluates white ahead despite looming promotion.";
+8/p2r1k1p/6b1/8/5B2/P1p3P1/2p2KBP/2R5 w - - 0 35 c0 "Theme: same endgame from white side - test symmetry and passer recognition.";
