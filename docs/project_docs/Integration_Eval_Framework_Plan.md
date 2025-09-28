@@ -100,3 +100,5 @@ Upcoming Focus (P4 – Passed Pawn Scaling)
 - Draft SeaJay-specific design doc outlining which of these concepts map cleanly onto our existing pawn hash data (`passedDetail`, pawn cache) and what new telemetry may be required (e.g., king-distance logging).
 - Implement changes behind a branch toggle (`EvalPasserPhaseP4`) and validate via harness + standard bench before enabling by default.
 - Reference design: `docs/project_docs/Passed_Pawn_Phase_P4.md`.
+- Reduce the ~−40 nELO regression observed in OpenBench tests 692/694 by cutting the extra `isSquareAttacked` volume (≈ +26 %) before further coefficient tuning; prototype promotion-path caching or batched attack lookups and re-measure NPS impact.
+- Keep `ProfileSquareAttacks` instrumentation available for future profiling runs; capture before/after counters whenever we iterate on the passer loop.

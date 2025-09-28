@@ -42,9 +42,11 @@ Laser chess engine (src/eval.cpp ~L680) introduces several heuristics we can ada
    - Document results and decision on toggling to default.
 
 ## Current Baseline (2025-09-28)
-- Toggle `EvalPasserPhaseP4=false` (baseline) still shows >350 cp gaps on positions 10 & 13 (Komodo > SeaJay).
-- Toggle `EvalPasserPhaseP4=true` increases SeaJay’s passer scores but overshoots on a10 (Δ ≈ +600 cp) and remains negative on c/d connected passers.
-- Bench (Release, toggle on) ≈1.60 MNPS vs 1.84 MNPS baseline; track NPS impact while optimizing.
+- Toggle `EvalPasserPhaseP4=false` continues to show large gaps on eval pack positions #10 & #13 (SeaJay down ≥350 cp versus Komodo).
+- Toggle `EvalPasserPhaseP4=true` still overshoots the same positions; latest OpenBench runs (tests 692 & 694) report ≈ −40 nELO despite endgame-focused books, confirming the new passer model hurts match play at current settings.
+- Bench (Release) with toggle off: 2 371 156 nodes @ 1.59 MNPS. Toggle on: 2 645 416 nodes @ 1.74 MNPS when instrumentation was active during profiling, but OpenBench indicates an effective slowdown once full search overhead is considered (≈ −6 % versus main).
+- Attack profiling shows the new path logic drives ~26 % more `isSquareAttacked` probes per side (≈ +735k white / +727k black queries over 13 eval-pack FENs), explaining the observed NPS loss.
+- All new hooks remain default-off so mainline play is unaffected while we iterate.
 
 ## Risks
 - Increased computation per passer could reduce NPS; optimize by reusing cached masks where possible.
