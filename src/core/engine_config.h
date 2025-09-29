@@ -49,15 +49,15 @@ public:
     bool profileSquareAttacks = false;           // Instrument MoveGenerator::isSquareAttacked usage
 
     // Passed pawn Phase P4 tuning parameters (SPSA-ready via UCI)
-    int passerPathFreeBonus = 2;                 // Bonus when promotion path is empty
-    int passerPathSafeBonus = 1;                 // Bonus when enemy lacks control on path squares
-    int passerPathDefendedBonus = 1;             // Bonus when own pieces control path squares
-    int passerPathAttackedPenalty = 4;           // Penalty when enemy controls path squares
-    int passerStopDefendedBonus = 5;             // Bonus when stop square is defended
-    int passerStopAttackedPenalty = 8;           // Penalty when stop square is attacked
-    int passerRookSupportBonus = 6;              // Bonus for friendly rook/queen behind passer
-    int passerEnemyRookBehindPenalty = 6;        // Penalty for enemy heavy piece behind passer
-    int passerKingDistanceScale = 1;             // Scale for king distance differential
+    int passerPathFreeBonus = 4;                 // Bonus when promotion path is empty
+    int passerPathSafeBonus = -1;                // Bonus when enemy lacks control on path squares
+    int passerPathDefendedBonus = -1;            // Bonus when own pieces control path squares
+    int passerPathAttackedPenalty = 22;          // Penalty when enemy controls path squares
+    int passerStopDefendedBonus = 13;            // Bonus when stop square is defended
+    int passerStopAttackedPenalty = 15;          // Penalty when stop square is attacked
+    int passerRookSupportBonus = 9;              // Bonus for friendly rook/queen behind passer
+    int passerEnemyRookBehindPenalty = 0;        // Penalty for enemy heavy piece behind passer
+    int passerKingDistanceScale = 10;            // Scale for king distance differential
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11

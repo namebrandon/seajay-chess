@@ -187,15 +187,15 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalExtended type check default false" << std::endl;
     std::cout << "option name EvalLogFile type string default" << std::endl;
     std::cout << "option name EvalPasserPhaseP4 type check default false" << std::endl;
-    std::cout << "option name EvalPasserPathFreeBonus type spin default 2 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserPathSafeBonus type spin default 1 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserPathDefendedBonus type spin default 1 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserPathAttackedPenalty type spin default 4 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserStopDefendedBonus type spin default 5 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserStopAttackedPenalty type spin default 8 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserRookSupportBonus type spin default 6 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserEnemyRookBehindPenalty type spin default 6 min -64 max 64" << std::endl;
-    std::cout << "option name EvalPasserKingDistanceScale type spin default 1 min -32 max 32" << std::endl;
+    std::cout << "option name EvalPasserPathFreeBonus type spin default 4 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathSafeBonus type spin default -1 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathDefendedBonus type spin default -1 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserPathAttackedPenalty type spin default 22 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserStopDefendedBonus type spin default 13 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserStopAttackedPenalty type spin default 15 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserRookSupportBonus type spin default 9 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserEnemyRookBehindPenalty type spin default 0 min -64 max 64" << std::endl;
+    std::cout << "option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
