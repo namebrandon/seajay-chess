@@ -98,9 +98,10 @@ Current Status (P4 – Passed Pawn Scaling)
 - Tuned baseline passer defaults are live (commit `f531133`), and blockade handling now removes the “defended stop” bonus when the square is occupied (commit `4b7b229`).
 - Eval harness defaults increased to 200 ms with `StabilityThreshold=8` so the pawn pack reaches depth 12+ on the problematic FENs before we diff against references.
 - OpenBench test 702 (+11 nELO on `endgames.epd`) confirms the passer adjustments are performance-neutral to positive; continue using the same harness snapshot as the baseline for future tweaks.
+- 2025-10-02: `feature/eval-framework/pawn-path-tiers` landed tiered promotion-path logic and quadratic king-distance ramp. Initial OpenBench test 703 vs. `main` returned −2.9 ± 4.3 nELO (7,736 games, Threads=1, Hash=128 MB). Result indicates the legacy SPSA passer coefficients no longer match the gated bonuses; schedule a retune once the remaining pawn-stage branches are in place.
 
 Next Steps – Pawn Stage
-1. **`feature/eval-framework/pawn-path-tiers` – Promotion-path tiers:** Implement Laser-style tiered checks (free path, free stop, fully defended path, defended stop) and switch to a quadratic king-distance ramp so passers on ranks 5–7 gain/lose weight in both middlegames and endings.
+1. **`feature/eval-framework/pawn-path-tiers` – Promotion-path tiers:** Implementation complete on feature branch. Next action: rerun SPSA (or equivalent) on the P4 passer knobs after the other pawn-stage updates land so the new tiering recovers the lost Elo headroom.
 2. **`feature/eval-framework/pawn-semi-open-liability` – Semi-open liability penalties:** Extend isolated/backward heuristics with semi-open file surcharges when enemy heavies can pressure the pawn, and add a small rebate when our own pawns still guard the file.
 3. **`feature/eval-framework/pawn-loose-pawns` – Loose and unsupported pawns:** Flag pawns lacking pawn defenders (especially in the opponent’s half) and penalise them; reuse the data for “hanging pawn” counts in the threat module.
 4. **`feature/eval-framework/pawn-phalanx` – Phalanx and connected bonuses:** Differentiate supported vs. advancable phalanxes, include rook-backed bonuses (Perseus style), and keep the existing “connected” flag only as a fallback.
