@@ -364,6 +364,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int PASSER_KING_DISTANCE_SCALE = config.passerKingDistanceScale;
     const int SEMI_OPEN_LIABILITY_PENALTY = config.semiOpenLiabilityPenalty;
     const int SEMI_OPEN_GUARD_REBATE = config.semiOpenGuardRebate;
+    const int LOOSE_PAWN_OWN_HALF_PENALTY = config.loosePawnOwnHalfPenalty;
+    const int LOOSE_PAWN_ENEMY_HALF_PENALTY = config.loosePawnEnemyHalfPenalty;
+    const int LOOSE_PAWN_PHALANX_REBATE = config.loosePawnPhalanxRebate;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
@@ -712,6 +715,60 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int whiteSemiOpenLiability = semiOpenLiabilityFor(WHITE, whiteIsolated, whiteBackward);
     const int blackSemiOpenLiability = semiOpenLiabilityFor(BLACK, blackIsolated, blackBackward);
 
+    auto loosePawnPenaltyFor = [&](Color color, Bitboard ourPawns) -> int {
+        if (!ourPawns) {
+            return 0;
+        }
+
+        const Color enemy = (color == WHITE) ? BLACK : WHITE;
+
+        int totalPenalty = 0;
+        Bitboard pawns = ourPawns;
+
+        while (pawns) {
+            Square sq = popLsb(pawns);
+
+            Bitboard pawnSupport = ourPawns & pawnAttacks(enemy, sq);
+            if (pawnSupport) {
+                continue;
+            }
+
+            const int relRank = PawnStructure::relativeRank(color, sq);
+            int penalty = (relRank >= 4) ? LOOSE_PAWN_ENEMY_HALF_PENALTY : LOOSE_PAWN_OWN_HALF_PENALTY;
+            if (penalty <= 0) {
+                continue;
+            }
+
+            const int file = fileOf(sq);
+            Bitboard phalanxMask = 0ULL;
+            if (file > 0) {
+                Square left = static_cast<Square>(sq - 1);
+                if (fileOf(left) == file - 1 && rankOf(left) == rankOf(sq)) {
+                    phalanxMask |= squareBB(left);
+                }
+            }
+            if (file < 7) {
+                Square right = static_cast<Square>(sq + 1);
+                if (fileOf(right) == file + 1 && rankOf(right) == rankOf(sq)) {
+                    phalanxMask |= squareBB(right);
+                }
+            }
+
+            if (phalanxMask && (ourPawns & phalanxMask)) {
+                penalty = std::max(0, penalty - LOOSE_PAWN_PHALANX_REBATE);
+            }
+
+            if (penalty > 0) {
+                totalPenalty += penalty;
+            }
+        }
+
+        return totalPenalty;
+    };
+
+    const int whiteLoosePawnPenalty = loosePawnPenaltyFor(WHITE, whitePawns);
+    const int blackLoosePawnPenalty = loosePawnPenaltyFor(BLACK, blackPawns);
+
     // Phase IP2: Isolated pawn evaluation
     // Base penalties by rank (white perspective) - conservative values
     static constexpr int ISOLATED_PAWN_PENALTY[8] = {
@@ -844,11 +901,15 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     int semiOpenLiabilityValue = blackSemiOpenLiability - whiteSemiOpenLiability;
     Score semiOpenLiabilityScore(semiOpenLiabilityValue);
 
+    int loosePawnValue = blackLoosePawnPenalty - whiteLoosePawnPenalty;
+    Score loosePawnScore(loosePawnValue);
+
     // Trace backward pawn and semi-open liability scores
     if constexpr (Traced) {
         if (trace) {
             trace->backwardPawns = backwardPawnScore;
             trace->semiOpenLiability = semiOpenLiabilityScore;
+            trace->loosePawns = loosePawnScore;
         }
     }
     
@@ -1344,7 +1405,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (trace) trace->material = materialDiff;
     }
     
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {
