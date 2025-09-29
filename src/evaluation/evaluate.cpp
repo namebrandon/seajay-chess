@@ -388,6 +388,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
             bool friendlyRookBehind = false;
             bool stopDefended = false;
             bool pathFree = false;
+            bool defendedStopTier = false;
 
             int friendlyKingDist = 0;
             int enemyKingDist = 0;
@@ -473,32 +474,50 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                     }
                 }
 
-                if (pathFree && rankWeight) {
-                    p4Adjust += rankWeight * PASSER_PATH_FREE_BONUS;
-                }
-                if (!pathEnemyControl && rankWeight) {
-                    p4Adjust += rankWeight * PASSER_PATH_SAFE_BONUS;
-                }
-                if (pathEnemyControl && rankWeight) {
-                    p4Adjust -= rankWeight * PASSER_PATH_ATTACKED_PENALTY;
-                }
-                if (pathOwnControl && rankWeight) {
-                    p4Adjust += rankWeight * PASSER_PATH_DEFENDED_BONUS;
+                bool stopEnemyControl = false;
+                if (validStop) {
+                    stopEnemyControl = pathAttackCache.isAttacked(enemy, stopSquare);
+                    stopDefended = pathAttackCache.isAttacked(color, stopSquare);
+                } else {
+                    stopDefended = false;
                 }
 
-                if (validStop) {
-                    stopDefended = pathAttackCache.isAttacked(color, stopSquare);
-                    if (stopDefended) {
-                        if (hasBlocker) {
-                            int blockedPenalty = std::max(1, rankWeight) * PASSER_BLOCKED_DEFENDED_PENALTY;
-                            bonus -= blockedPenalty;
-                        } else {
-                            bonus += PASSER_STOP_DEFENDED_BONUS;
+                const bool freeStop = pathFree && validStop && !stopEnemyControl;
+                const bool pathFullyDefended = pathFree && pathOwnControl;
+                const bool pathSafe = pathFree && !pathEnemyControl;
+                const bool localDefendedStop = freeStop && pathFullyDefended && stopDefended;
+                defendedStopTier = localDefendedStop;
+
+                // Laser-style promotion path tiers: unlock bonuses only when
+                // each successive condition (free path → free stop → fully
+                // defended → defended stop) is satisfied.
+                if (rankWeight > 0 && pathFree) {
+                    p4Adjust += rankWeight * PASSER_PATH_FREE_BONUS;
+
+                    if (freeStop) {
+                        p4Adjust += rankWeight * PASSER_PATH_SAFE_BONUS;
+
+                        if (pathFullyDefended) {
+                            p4Adjust += rankWeight * PASSER_PATH_DEFENDED_BONUS;
+                        }
+
+                        if (localDefendedStop) {
+                            p4Adjust += PASSER_STOP_DEFENDED_BONUS;
                         }
                     }
-                    if (pathAttackCache.isAttacked(enemy, stopSquare)) {
-                        bonus -= PASSER_STOP_ATTACKED_PENALTY;
+
+                    if (!pathSafe) {
+                        p4Adjust -= rankWeight * PASSER_PATH_ATTACKED_PENALTY;
                     }
+                }
+
+                if (stopDefended && hasBlocker) {
+                    int blockedPenalty = std::max(1, rankWeight) * PASSER_BLOCKED_DEFENDED_PENALTY;
+                    bonus -= blockedPenalty;
+                }
+
+                if (validStop && stopEnemyControl) {
+                    bonus -= PASSER_STOP_ATTACKED_PENALTY;
                 }
 
                 int behindIdx = static_cast<int>(sq) - forward;
@@ -522,7 +541,14 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 Square promotionSquare = (color == WHITE) ? static_cast<Square>(file + 56) : static_cast<Square>(file);
                 friendlyKingDist = chebyshevDistance(friendlyKing, promotionSquare);
                 enemyKingDist = chebyshevDistance(enemyKing, promotionSquare);
-                p4Adjust += (enemyKingDist - friendlyKingDist) * PASSER_KING_DISTANCE_SCALE;
+                if (relRank >= 5) {
+                    const int kingWeight = relRank - 4;
+                    const int friendlyTerm = friendlyKingDist * friendlyKingDist;
+                    const int enemyTerm = enemyKingDist * enemyKingDist;
+                    const int distanceDiff = enemyTerm - friendlyTerm;
+                    const int scaledRamp = (distanceDiff * PASSER_KING_DISTANCE_SCALE * kingWeight) / 4;
+                    p4Adjust += scaledRamp;
+                }
 
                 // Damp Phase P4 adjustment to avoid overshooting while coefficients are tuned
                 p4Adjust = (p4Adjust * 3) / 8;
@@ -567,7 +593,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
             telemetry.connected |= hasConnectedPasser;
             telemetry.unstoppable |= unstoppable;
             telemetry.pathFree |= (usePasserPhaseP4 && pathFree);
-            telemetry.stopDefended |= (usePasserPhaseP4 && stopDefended);
+            telemetry.stopDefended |= (usePasserPhaseP4 && defendedStopTier);
             telemetry.rookSupport |= (usePasserPhaseP4 && friendlyRookBehind);
             if (usePasserPhaseP4 && relRank >= telemetry.maxRank) {
                 telemetry.maxRank = relRank;
