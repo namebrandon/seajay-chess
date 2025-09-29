@@ -201,6 +201,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalLoosePawnOwnHalfPenalty type spin default 2 min 0 max 32" << std::endl;
     std::cout << "option name EvalLoosePawnEnemyHalfPenalty type spin default 6 min 0 max 64" << std::endl;
     std::cout << "option name EvalLoosePawnPhalanxRebate type spin default 3 min 0 max 32" << std::endl;
+    std::cout << "option name EvalPasserPhalanxSupportBonus type spin default 8 min 0 max 64" << std::endl;
+    std::cout << "option name EvalPasserPhalanxAdvanceBonus type spin default 12 min 0 max 64" << std::endl;
+    std::cout << "option name EvalPasserPhalanxRookBonus type spin default 6 min 0 max 64" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2517,6 +2520,45 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalLoosePawnPhalanxRebate value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPhalanxSupportBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 64) {
+                std::cerr << "info string EvalPasserPhalanxSupportBonus out of range [0,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPhalanxSupportBonus = bonus;
+                std::cerr << "info string EvalPasserPhalanxSupportBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPhalanxSupportBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPhalanxAdvanceBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 64) {
+                std::cerr << "info string EvalPasserPhalanxAdvanceBonus out of range [0,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPhalanxAdvanceBonus = bonus;
+                std::cerr << "info string EvalPasserPhalanxAdvanceBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPhalanxAdvanceBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPasserPhalanxRookBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 64) {
+                std::cerr << "info string EvalPasserPhalanxRookBonus out of range [0,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().passerPhalanxRookBonus = bonus;
+                std::cerr << "info string EvalPasserPhalanxRookBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPasserPhalanxRookBonus value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {
