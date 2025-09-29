@@ -350,6 +350,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         0   // Rank 8
     };
 
+    static constexpr int PASSER_BLOCKED_DEFENDED_PENALTY = 6;
+
     const auto& config = seajay::getConfig();
     const int PASSER_PATH_FREE_BONUS = config.passerPathFreeBonus;
     const int PASSER_PATH_SAFE_BONUS = config.passerPathSafeBonus;
@@ -487,7 +489,12 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 if (validStop) {
                     stopDefended = pathAttackCache.isAttacked(color, stopSquare);
                     if (stopDefended) {
-                        bonus += PASSER_STOP_DEFENDED_BONUS;
+                        if (hasBlocker) {
+                            int blockedPenalty = std::max(1, rankWeight) * PASSER_BLOCKED_DEFENDED_PENALTY;
+                            bonus -= blockedPenalty;
+                        } else {
+                            bonus += PASSER_STOP_DEFENDED_BONUS;
+                        }
                     }
                     if (pathAttackCache.isAttacked(enemy, stopSquare)) {
                         bonus -= PASSER_STOP_ATTACKED_PENALTY;

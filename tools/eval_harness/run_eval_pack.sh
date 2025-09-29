@@ -4,13 +4,17 @@ set -euo pipefail
 ENGINE=${ENGINE:-./bin/seajay}
 PACK=${PACK:-tests/packs/eval_pawn_focus.epd}
 REF_ENGINE=${REF_ENGINE:-}
-MOVETIME=${MOVETIME:-100}
+MOVETIME=${MOVETIME:-200}
 DEPTH=${DEPTH:-}
 THREADS=${THREADS:-1}
 OUTDIR=${OUTDIR:-tmp/eval_reports}
 TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
 REPORT=${REPORT:-$OUTDIR/eval_${TIMESTAMP}.json}
 SUMMARY=${SUMMARY:-$OUTDIR/eval_${TIMESTAMP}_summary.json}
+
+if [[ -z "${ENGINE_OPTIONS:-}" ]]; then
+    ENGINE_OPTIONS="StabilityThreshold=8"
+fi
 
 mkdir -p "$OUTDIR"
 
