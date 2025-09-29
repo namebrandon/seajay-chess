@@ -22,6 +22,7 @@ struct EvalTrace {
     
     // Pawn structure
     Score passedPawns;
+    Score candidatePawns;
     Score isolatedPawns;
     Score doubledPawns;
     Score backwardPawns;
@@ -94,6 +95,7 @@ struct EvalTrace {
         materialEg = Score(0);
 
         passedPawns = Score(0);
+        candidatePawns = Score(0);
         isolatedPawns = Score(0);
         doubledPawns = Score(0);
         backwardPawns = Score(0);
@@ -117,7 +119,7 @@ struct EvalTrace {
     
     // Calculate total score
     Score total() const {
-        return material + pst + passedPawns + isolatedPawns + doubledPawns + 
+        return material + pst + passedPawns + candidatePawns + isolatedPawns + doubledPawns + 
                backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + mobility + 
                knightOutposts + rookFiles + rookKingProximity + kingSafety;
     }
@@ -223,6 +225,8 @@ struct EvalTrace {
             if (passedDetail.blackEnemyKingDist) oss << " black_enemy_king_dist=" << passedDetail.blackEnemyKingDist;
             pushLine(oss.str());
         }
+
+        emitTerm("candidate_pawns", candidatePawns);
 
         emitTerm("isolated_pawns", isolatedPawns);
         emitTerm("doubled_pawns", doubledPawns);

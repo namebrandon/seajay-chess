@@ -73,6 +73,12 @@ public:
     int passerPhalanxAdvanceBonus = 12;          // Additional bonus when the phalanx can safely advance
     int passerPhalanxRookBonus = 6;              // Bonus when a rook/queen backs a phalanx pair
 
+    // Candidate passed pawn tuning parameters
+    int candidateLeverBaseBonus = 4;             // Base bonus for a lever-based pawn candidate
+    int candidateLeverAdvanceBonus = 6;          // Extra when the lever can push safely
+    int candidateLeverSupportBonus = 5;          // Bonus for sufficient support ratio
+    int candidateLeverRankBonus = 3;             // Bonus per rank beyond origin
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.

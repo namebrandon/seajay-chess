@@ -204,6 +204,10 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPasserPhalanxSupportBonus type spin default 8 min 0 max 64" << std::endl;
     std::cout << "option name EvalPasserPhalanxAdvanceBonus type spin default 12 min 0 max 64" << std::endl;
     std::cout << "option name EvalPasserPhalanxRookBonus type spin default 6 min 0 max 64" << std::endl;
+    std::cout << "option name EvalCandidateLeverBaseBonus type spin default 4 min 0 max 32" << std::endl;
+    std::cout << "option name EvalCandidateLeverAdvanceBonus type spin default 6 min 0 max 32" << std::endl;
+    std::cout << "option name EvalCandidateLeverSupportBonus type spin default 5 min 0 max 32" << std::endl;
+    std::cout << "option name EvalCandidateLeverRankBonus type spin default 3 min 0 max 16" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2559,6 +2563,58 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalPasserPhalanxRookBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalCandidateLeverBaseBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 32) {
+                std::cerr << "info string EvalCandidateLeverBaseBonus out of range [0,32]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().candidateLeverBaseBonus = bonus;
+                std::cerr << "info string EvalCandidateLeverBaseBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalCandidateLeverBaseBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalCandidateLeverAdvanceBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 32) {
+                std::cerr << "info string EvalCandidateLeverAdvanceBonus out of range [0,32]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().candidateLeverAdvanceBonus = bonus;
+                std::cerr << "info string EvalCandidateLeverAdvanceBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalCandidateLeverAdvanceBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalCandidateLeverSupportBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 32) {
+                std::cerr << "info string EvalCandidateLeverSupportBonus out of range [0,32]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().candidateLeverSupportBonus = bonus;
+                std::cerr << "info string EvalCandidateLeverSupportBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalCandidateLeverSupportBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalCandidateLeverRankBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 16) {
+                std::cerr << "info string EvalCandidateLeverRankBonus out of range [0,16]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().candidateLeverRankBonus = bonus;
+                std::cerr << "info string EvalCandidateLeverRankBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalCandidateLeverRankBonus value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {
