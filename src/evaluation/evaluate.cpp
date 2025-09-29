@@ -382,6 +382,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int CANDIDATE_LEVER_ADVANCE_BONUS = config.candidateLeverAdvanceBonus;
     const int CANDIDATE_LEVER_SUPPORT_BONUS = config.candidateLeverSupportBonus;
     const int CANDIDATE_LEVER_RANK_BONUS = config.candidateLeverRankBonus;
+    const int BISHOP_COLOR_HARMONY_BONUS = config.bishopColorHarmonyBonus;
+    const int BISHOP_COLOR_TENSION_PENALTY = config.bishopColorTensionPenalty;
+    const int BISHOP_COLOR_BLOCKED_PENALTY = config.bishopColorBlockedPenalty;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
@@ -1044,7 +1047,80 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     if constexpr (Traced) {
         if (trace) trace->bishopPair = bishopPairScore;
     }
-    
+
+    // Bishop/pawn color complex evaluation
+    constexpr Bitboard CENTRAL_FILES_MASK = FILE_C_BB | FILE_D_BB | FILE_E_BB | FILE_F_BB;
+
+    int bishopColorValue = 0;
+    int lightBishops[2] = {0, 0};
+    int darkBishops[2] = {0, 0};
+    int lightPawns[2] = {0, 0};
+    int darkPawns[2] = {0, 0};
+    int harmonyPairs[2] = {0, 0};
+    int tensionPairs[2] = {0, 0};
+    int blockedSameRaw[2] = {0, 0};
+
+    auto evaluateBishopColor = [&](Color color) {
+        const int idx = static_cast<int>(color);
+        const Bitboard bishops = board.pieces(color, BISHOP);
+        const Bitboard pawns = (color == WHITE) ? whitePawns : blackPawns;
+
+        lightBishops[idx] = popCount(bishops & LIGHT_SQUARES_BB);
+        darkBishops[idx] = popCount(bishops & DARK_SQUARES_BB);
+        lightPawns[idx] = popCount(pawns & LIGHT_SQUARES_BB);
+        darkPawns[idx] = popCount(pawns & DARK_SQUARES_BB);
+
+        const int harmony = lightBishops[idx] * darkPawns[idx] + darkBishops[idx] * lightPawns[idx];
+        const int tension = lightBishops[idx] * lightPawns[idx] + darkBishops[idx] * darkPawns[idx];
+
+        harmonyPairs[idx] = harmony;
+        tensionPairs[idx] = tension;
+
+        Bitboard occupancy = board.occupied();
+        Bitboard blocked = 0ULL;
+        if (color == WHITE) {
+            blocked = pawns & (occupancy >> 8);
+        } else {
+            blocked = pawns & (occupancy << 8);
+        }
+
+        Bitboard blockedCentral = blocked & CENTRAL_FILES_MASK;
+        int blockedLight = popCount(blockedCentral & LIGHT_SQUARES_BB);
+        int blockedDark = popCount(blockedCentral & DARK_SQUARES_BB);
+
+        int blockedRaw = 0;
+        if (lightBishops[idx] > 0) blockedRaw += blockedLight;
+        if (darkBishops[idx] > 0) blockedRaw += blockedDark;
+        blockedSameRaw[idx] = blockedRaw;
+
+        const int blockedWeighted = lightBishops[idx] * blockedLight + darkBishops[idx] * blockedDark;
+
+        int component = harmony * BISHOP_COLOR_HARMONY_BONUS
+                         - tension * BISHOP_COLOR_TENSION_PENALTY
+                         - blockedWeighted * BISHOP_COLOR_BLOCKED_PENALTY;
+        bishopColorValue += (color == WHITE) ? component : -component;
+    };
+
+    evaluateBishopColor(WHITE);
+    evaluateBishopColor(BLACK);
+
+    Score bishopColorScore(bishopColorValue);
+
+    if constexpr (Traced) {
+        if (trace) {
+            trace->bishopColor = bishopColorScore;
+            for (int c = 0; c < 2; ++c) {
+                trace->bishopColorDetail.lightBishops[c] = lightBishops[c];
+                trace->bishopColorDetail.darkBishops[c] = darkBishops[c];
+                trace->bishopColorDetail.lightPawns[c] = lightPawns[c];
+                trace->bishopColorDetail.darkPawns[c] = darkPawns[c];
+                trace->bishopColorDetail.harmonyPairs[c] = harmonyPairs[c];
+                trace->bishopColorDetail.tensionPairs[c] = tensionPairs[c];
+                trace->bishopColorDetail.blockedCentralSameRaw[c] = blockedSameRaw[c];
+            }
+        }
+    }
+
     // MOB2: Piece mobility evaluation (Phase 2 - basic integration)
     // Count pseudo-legal moves for pieces, excluding squares attacked by enemy pawns
     
@@ -1508,7 +1584,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (trace) trace->candidatePawns = candidateScore;
     }
 
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + bishopColorScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {

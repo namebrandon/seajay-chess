@@ -208,6 +208,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalCandidateLeverAdvanceBonus type spin default 6 min 0 max 32" << std::endl;
     std::cout << "option name EvalCandidateLeverSupportBonus type spin default 5 min 0 max 32" << std::endl;
     std::cout << "option name EvalCandidateLeverRankBonus type spin default 3 min 0 max 16" << std::endl;
+    std::cout << "option name EvalBishopColorHarmonyBonus type spin default 2 min -16 max 16" << std::endl;
+    std::cout << "option name EvalBishopColorTensionPenalty type spin default 2 min 0 max 16" << std::endl;
+    std::cout << "option name EvalBishopColorBlockedPenalty type spin default 3 min 0 max 32" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2615,6 +2618,45 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalCandidateLeverRankBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalBishopColorHarmonyBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -16 || bonus > 16) {
+                std::cerr << "info string EvalBishopColorHarmonyBonus out of range [-16,16]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().bishopColorHarmonyBonus = bonus;
+                std::cerr << "info string EvalBishopColorHarmonyBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalBishopColorHarmonyBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalBishopColorTensionPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 16) {
+                std::cerr << "info string EvalBishopColorTensionPenalty out of range [0,16]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().bishopColorTensionPenalty = penalty;
+                std::cerr << "info string EvalBishopColorTensionPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalBishopColorTensionPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalBishopColorBlockedPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 32) {
+                std::cerr << "info string EvalBishopColorBlockedPenalty out of range [0,32]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().bishopColorBlockedPenalty = penalty;
+                std::cerr << "info string EvalBishopColorBlockedPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalBishopColorBlockedPenalty value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {

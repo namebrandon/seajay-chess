@@ -32,6 +32,7 @@ struct EvalTrace {
     
     // Piece evaluation
     Score bishopPair;
+    Score bishopColor;
     Score mobility;
     Score knightOutposts;
     Score rookFiles;
@@ -83,6 +84,16 @@ struct EvalTrace {
         int blackRookMoves = 0;
         int blackQueenMoves = 0;
     } mobilityDetail;
+
+    struct BishopColorDetail {
+        int lightBishops[2] = {0, 0};
+        int darkBishops[2] = {0, 0};
+        int lightPawns[2] = {0, 0};
+        int darkPawns[2] = {0, 0};
+        int harmonyPairs[2] = {0, 0};
+        int tensionPairs[2] = {0, 0};
+        int blockedCentralSameRaw[2] = {0, 0};
+    } bishopColorDetail;
     
     // Reset all values
     void reset() {
@@ -104,6 +115,7 @@ struct EvalTrace {
         pawnIslands = Score(0);
         
         bishopPair = Score(0);
+        bishopColor = Score(0);
         mobility = Score(0);
         knightOutposts = Score(0);
         rookFiles = Score(0);
@@ -113,6 +125,7 @@ struct EvalTrace {
         
         passedDetail = PassedPawnDetail();
         mobilityDetail = MobilityDetail();
+        bishopColorDetail = BishopColorDetail();
         pawnKey = 0ULL;
         pawnCacheHit = false;
     }
@@ -120,7 +133,7 @@ struct EvalTrace {
     // Calculate total score
     Score total() const {
         return material + pst + passedPawns + candidatePawns + isolatedPawns + doubledPawns + 
-               backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + mobility + 
+               backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + bishopColor + mobility + 
                knightOutposts + rookFiles + rookKingProximity + kingSafety;
     }
     
@@ -236,6 +249,7 @@ struct EvalTrace {
 
         emitTerm("pawn_islands", pawnIslands);
         emitTerm("bishop_pair", bishopPair);
+        emitTerm("bishop_color", bishopColor);
 
         {
             std::ostringstream oss;
@@ -255,6 +269,27 @@ struct EvalTrace {
         emitTerm("rook_files", rookFiles);
         emitTerm("rook_king_proximity", rookKingProximity);
         emitTerm("king_safety", kingSafety);
+
+        {
+            const auto& detail = bishopColorDetail;
+            std::ostringstream oss;
+            oss << "detail name=bishop_color"
+                << " white_light_bishops=" << detail.lightBishops[WHITE]
+                << " white_dark_bishops=" << detail.darkBishops[WHITE]
+                << " white_light_pawns=" << detail.lightPawns[WHITE]
+                << " white_dark_pawns=" << detail.darkPawns[WHITE]
+                << " white_harmony_pairs=" << detail.harmonyPairs[WHITE]
+                << " white_tension_pairs=" << detail.tensionPairs[WHITE]
+                << " white_blocked_same=" << detail.blockedCentralSameRaw[WHITE]
+                << " black_light_bishops=" << detail.lightBishops[BLACK]
+                << " black_dark_bishops=" << detail.darkBishops[BLACK]
+                << " black_light_pawns=" << detail.lightPawns[BLACK]
+                << " black_dark_pawns=" << detail.darkPawns[BLACK]
+                << " black_harmony_pairs=" << detail.harmonyPairs[BLACK]
+                << " black_tension_pairs=" << detail.tensionPairs[BLACK]
+                << " black_blocked_same=" << detail.blockedCentralSameRaw[BLACK];
+            pushLine(oss.str());
+        }
 
         {
             std::ostringstream oss;

@@ -79,6 +79,11 @@ public:
     int candidateLeverSupportBonus = 5;          // Bonus for sufficient support ratio
     int candidateLeverRankBonus = 3;             // Bonus per rank beyond origin
 
+    // Bishop/pawn color complex parameters
+    int bishopColorHarmonyBonus = 2;             // Bonus per opposite-color pawn pairing
+    int bishopColorTensionPenalty = 2;           // Penalty per same-color pawn pairing
+    int bishopColorBlockedPenalty = 3;           // Penalty per blocked central pawn sharing bishop color
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
