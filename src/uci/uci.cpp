@@ -198,6 +198,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32" << std::endl;
     std::cout << "option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64" << std::endl;
     std::cout << "option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32" << std::endl;
+    std::cout << "option name EvalLoosePawnOwnHalfPenalty type spin default 2 min 0 max 32" << std::endl;
+    std::cout << "option name EvalLoosePawnEnemyHalfPenalty type spin default 6 min 0 max 64" << std::endl;
+    std::cout << "option name EvalLoosePawnPhalanxRebate type spin default 3 min 0 max 32" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2475,6 +2478,45 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalSemiOpenGuardRebate value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalLoosePawnOwnHalfPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 32) {
+                std::cerr << "info string EvalLoosePawnOwnHalfPenalty out of range [0,32]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().loosePawnOwnHalfPenalty = penalty;
+                std::cerr << "info string EvalLoosePawnOwnHalfPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalLoosePawnOwnHalfPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalLoosePawnEnemyHalfPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 64) {
+                std::cerr << "info string EvalLoosePawnEnemyHalfPenalty out of range [0,64]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().loosePawnEnemyHalfPenalty = penalty;
+                std::cerr << "info string EvalLoosePawnEnemyHalfPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalLoosePawnEnemyHalfPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalLoosePawnPhalanxRebate") {
+        try {
+            int rebate = static_cast<int>(std::llround(std::stod(value)));
+            if (rebate < 0 || rebate > 32) {
+                std::cerr << "info string EvalLoosePawnPhalanxRebate out of range [0,32]: " << rebate << std::endl;
+            } else {
+                seajay::getConfig().loosePawnPhalanxRebate = rebate;
+                std::cerr << "info string EvalLoosePawnPhalanxRebate set to " << rebate << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalLoosePawnPhalanxRebate value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {

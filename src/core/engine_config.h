@@ -63,6 +63,11 @@ public:
     int semiOpenLiabilityPenalty = 12;           // Extra penalty when enemy heavies target isolated/backward pawns
     int semiOpenGuardRebate = 4;                 // Rebate when friendly pawns still guard the file
 
+    // Loose pawn tuning parameters
+    int loosePawnOwnHalfPenalty = 2;             // Penalty for unsupported pawns on our side of the board
+    int loosePawnEnemyHalfPenalty = 6;           // Penalty for unsupported pawns in enemy territory
+    int loosePawnPhalanxRebate = 3;              // Rebate when adjacent friendly pawn forms a phalanx
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
