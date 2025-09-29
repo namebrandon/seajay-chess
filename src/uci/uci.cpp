@@ -211,6 +211,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalBishopColorHarmonyBonus type spin default 2 min -16 max 16" << std::endl;
     std::cout << "option name EvalBishopColorTensionPenalty type spin default 2 min 0 max 16" << std::endl;
     std::cout << "option name EvalBishopColorBlockedPenalty type spin default 3 min 0 max 32" << std::endl;
+    std::cout << "option name EvalPawnInfiltrationBonus type spin default 4 min -32 max 32" << std::endl;
+    std::cout << "option name EvalPawnTensionPenalty type spin default 2 min 0 max 16" << std::endl;
+    std::cout << "option name EvalPawnPushThreatBonus type spin default 3 min 0 max 16" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2657,6 +2660,45 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalBishopColorBlockedPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPawnInfiltrationBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -32 || bonus > 32) {
+                std::cerr << "info string EvalPawnInfiltrationBonus out of range [-32,32]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().pawnInfiltrationBonus = bonus;
+                std::cerr << "info string EvalPawnInfiltrationBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPawnInfiltrationBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPawnTensionPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 16) {
+                std::cerr << "info string EvalPawnTensionPenalty out of range [0,16]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().pawnTensionPenalty = penalty;
+                std::cerr << "info string EvalPawnTensionPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPawnTensionPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalPawnPushThreatBonus") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < 0 || bonus > 16) {
+                std::cerr << "info string EvalPawnPushThreatBonus out of range [0,16]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().pawnPushThreatBonus = bonus;
+                std::cerr << "info string EvalPawnPushThreatBonus set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalPawnPushThreatBonus value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {
