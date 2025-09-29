@@ -29,10 +29,13 @@ struct EvalTrace {
     Score semiOpenLiability;
     Score loosePawns;
     Score pawnIslands;
-    
+
     // Piece evaluation
     Score bishopPair;
     Score bishopColor;
+    Score pawnTension;
+    Score pawnPushThreats;
+    Score pawnInfiltration;
     Score mobility;
     Score knightOutposts;
     Score rookFiles;
@@ -94,6 +97,12 @@ struct EvalTrace {
         int tensionPairs[2] = {0, 0};
         int blockedCentralSameRaw[2] = {0, 0};
     } bishopColorDetail;
+
+    struct PawnSpanDetail {
+        int tension[2] = {0, 0};
+        int pushReady[2] = {0, 0};
+        int infiltration[2] = {0, 0};
+    } pawnSpanDetail;
     
     // Reset all values
     void reset() {
@@ -116,6 +125,9 @@ struct EvalTrace {
         
         bishopPair = Score(0);
         bishopColor = Score(0);
+        pawnTension = Score(0);
+        pawnPushThreats = Score(0);
+        pawnInfiltration = Score(0);
         mobility = Score(0);
         knightOutposts = Score(0);
         rookFiles = Score(0);
@@ -126,6 +138,7 @@ struct EvalTrace {
         passedDetail = PassedPawnDetail();
         mobilityDetail = MobilityDetail();
         bishopColorDetail = BishopColorDetail();
+        pawnSpanDetail = PawnSpanDetail();
         pawnKey = 0ULL;
         pawnCacheHit = false;
     }
@@ -133,7 +146,7 @@ struct EvalTrace {
     // Calculate total score
     Score total() const {
         return material + pst + passedPawns + candidatePawns + isolatedPawns + doubledPawns + 
-               backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + bishopColor + mobility + 
+               backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + bishopColor + pawnTension + pawnPushThreats + pawnInfiltration + mobility + 
                knightOutposts + rookFiles + rookKingProximity + kingSafety;
     }
     
@@ -250,6 +263,9 @@ struct EvalTrace {
         emitTerm("pawn_islands", pawnIslands);
         emitTerm("bishop_pair", bishopPair);
         emitTerm("bishop_color", bishopColor);
+        emitTerm("pawn_tension", pawnTension);
+        emitTerm("pawn_push_threats", pawnPushThreats);
+        emitTerm("pawn_infiltration", pawnInfiltration);
 
         {
             std::ostringstream oss;
@@ -288,6 +304,19 @@ struct EvalTrace {
                 << " black_harmony_pairs=" << detail.harmonyPairs[BLACK]
                 << " black_tension_pairs=" << detail.tensionPairs[BLACK]
                 << " black_blocked_same=" << detail.blockedCentralSameRaw[BLACK];
+            pushLine(oss.str());
+        }
+
+        {
+            const auto& span = pawnSpanDetail;
+            std::ostringstream oss;
+            oss << "detail name=pawn_span"
+                << " white_tension=" << span.tension[WHITE]
+                << " white_push_ready=" << span.pushReady[WHITE]
+                << " white_infiltration=" << span.infiltration[WHITE]
+                << " black_tension=" << span.tension[BLACK]
+                << " black_push_ready=" << span.pushReady[BLACK]
+                << " black_infiltration=" << span.infiltration[BLACK];
             pushLine(oss.str());
         }
 

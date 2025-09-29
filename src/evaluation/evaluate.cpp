@@ -1177,7 +1177,49 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     
     Bitboard whitePawnAttackSpan = calculatePawnAttackSpan(whitePawns, WHITE);
     Bitboard blackPawnAttackSpan = calculatePawnAttackSpan(blackPawns, BLACK);
-    
+
+    const int PAWN_TENSION_PENALTY = config.pawnTensionPenalty;
+    const int PAWN_PUSH_THREAT_BONUS = config.pawnPushThreatBonus;
+    const int PAWN_INFILTRATION_BONUS = config.pawnInfiltrationBonus;
+
+    const int whiteTensionCount = popCount(whitePawnAttacks & blackPawns);
+    const int blackTensionCount = popCount(blackPawnAttacks & whitePawns);
+    int tensionValue = (blackTensionCount - whiteTensionCount) * PAWN_TENSION_PENALTY;
+
+    Bitboard whiteSinglePush = (whitePawns << 8) & ~occupied;
+    Bitboard blackSinglePush = (blackPawns >> 8) & ~occupied;
+    whiteSinglePush &= ~blackPawnAttacks;
+    blackSinglePush &= ~whitePawnAttacks;
+    const int whitePushReady = popCount(whiteSinglePush);
+    const int blackPushReady = popCount(blackSinglePush);
+    int pushThreatValue = (whitePushReady - blackPushReady) * PAWN_PUSH_THREAT_BONUS;
+
+    Bitboard whiteHeavyPieces = board.pieces(WHITE, ROOK) | board.pieces(WHITE, QUEEN);
+    Bitboard blackHeavyPieces = board.pieces(BLACK, ROOK) | board.pieces(BLACK, QUEEN);
+    constexpr Bitboard WHITE_TARGET_HALF = RANK_5_BB | RANK_6_BB | RANK_7_BB | RANK_8_BB;
+    constexpr Bitboard BLACK_TARGET_HALF = RANK_1_BB | RANK_2_BB | RANK_3_BB | RANK_4_BB;
+    const int whiteInfiltrationCount = popCount(whiteHeavyPieces & WHITE_TARGET_HALF & ~blackPawnAttackSpan);
+    const int blackInfiltrationCount = popCount(blackHeavyPieces & BLACK_TARGET_HALF & ~whitePawnAttackSpan);
+    int infiltrationValue = (whiteInfiltrationCount - blackInfiltrationCount) * PAWN_INFILTRATION_BONUS;
+
+    Score pawnTensionScore(tensionValue);
+    Score pawnPushThreatScore(pushThreatValue);
+    Score pawnInfiltrationScore(infiltrationValue);
+
+    if constexpr (Traced) {
+        if (trace) {
+            trace->pawnTension = pawnTensionScore;
+            trace->pawnPushThreats = pawnPushThreatScore;
+            trace->pawnInfiltration = pawnInfiltrationScore;
+            trace->pawnSpanDetail.tension[WHITE] = whiteTensionCount;
+            trace->pawnSpanDetail.tension[BLACK] = blackTensionCount;
+            trace->pawnSpanDetail.pushReady[WHITE] = whitePushReady;
+            trace->pawnSpanDetail.pushReady[BLACK] = blackPushReady;
+            trace->pawnSpanDetail.infiltration[WHITE] = whiteInfiltrationCount;
+            trace->pawnSpanDetail.infiltration[BLACK] = blackInfiltrationCount;
+        }
+    }
+
     // Get knight bitboards for outpost evaluation
     Bitboard whiteKnights = board.pieces(WHITE, KNIGHT);
     Bitboard blackKnights = board.pieces(BLACK, KNIGHT);
@@ -1584,7 +1626,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (trace) trace->candidatePawns = candidateScore;
     }
 
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + bishopColorScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + bishopColorScore + pawnTensionScore + pawnPushThreatScore + pawnInfiltrationScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {

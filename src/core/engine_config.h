@@ -84,6 +84,11 @@ public:
     int bishopColorTensionPenalty = 2;           // Penalty per same-color pawn pairing
     int bishopColorBlockedPenalty = 3;           // Penalty per blocked central pawn sharing bishop color
 
+    // Pawn span & tension parameters
+    int pawnInfiltrationBonus = 4;               // Bonus per heavy piece penetrating enemy pawn span
+    int pawnTensionPenalty = 2;                  // Penalty per pawn tension instance
+    int pawnPushThreatBonus = 3;                 // Bonus per safe single-step pawn push threat
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
