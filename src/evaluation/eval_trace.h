@@ -25,6 +25,7 @@ struct EvalTrace {
     Score isolatedPawns;
     Score doubledPawns;
     Score backwardPawns;
+    Score semiOpenLiability;
     Score pawnIslands;
     
     // Piece evaluation
@@ -95,6 +96,7 @@ struct EvalTrace {
         isolatedPawns = Score(0);
         doubledPawns = Score(0);
         backwardPawns = Score(0);
+        semiOpenLiability = Score(0);
         pawnIslands = Score(0);
         
         bishopPair = Score(0);
@@ -114,7 +116,7 @@ struct EvalTrace {
     // Calculate total score
     Score total() const {
         return material + pst + passedPawns + isolatedPawns + doubledPawns + 
-               backwardPawns + pawnIslands + bishopPair + mobility + 
+               backwardPawns + semiOpenLiability + pawnIslands + bishopPair + mobility + 
                knightOutposts + rookFiles + rookKingProximity + kingSafety;
     }
     
@@ -223,6 +225,7 @@ struct EvalTrace {
         emitTerm("isolated_pawns", isolatedPawns);
         emitTerm("doubled_pawns", doubledPawns);
         emitTerm("backward_pawns", backwardPawns);
+        emitTerm("semi_open_liability", semiOpenLiability);
 
         emitTerm("pawn_islands", pawnIslands);
         emitTerm("bishop_pair", bishopPair);

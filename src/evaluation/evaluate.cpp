@@ -362,6 +362,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int PASSER_ROOK_SUPPORT_BONUS = config.passerRookSupportBonus;
     const int PASSER_ENEMY_ROOK_BEHIND_PENALTY = config.passerEnemyRookBehindPenalty;
     const int PASSER_KING_DISTANCE_SCALE = config.passerKingDistanceScale;
+    const int SEMI_OPEN_LIABILITY_PENALTY = config.semiOpenLiabilityPenalty;
+    const int SEMI_OPEN_GUARD_REBATE = config.semiOpenGuardRebate;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
@@ -663,6 +665,53 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         }
     }
     
+    auto semiOpenLiabilityFor = [&](Color color, Bitboard isolatedSet, Bitboard backwardSet) -> int {
+        Bitboard targets = isolatedSet | backwardSet;
+        if (!targets) {
+            return 0;
+        }
+
+        const Color enemy = (color == WHITE) ? BLACK : WHITE;
+        const Bitboard enemyHeavies = board.pieces(enemy, ROOK) | board.pieces(enemy, QUEEN);
+        if (!enemyHeavies) {
+            return 0;
+        }
+
+        const Bitboard friendlyPawns = board.pieces(color, PAWN);
+        const Bitboard occupancy = board.occupied();
+        int totalPenalty = 0;
+
+        while (targets) {
+            Square sq = popLsb(targets);
+            const int file = fileOf(sq);
+
+            if (!board.isSemiOpenFile(file, enemy)) {
+                continue;
+            }
+
+            Bitboard occupancyWithoutPawn = occupancy & ~squareBB(sq);
+            Bitboard rookRay = MoveGenerator::getRookAttacks(sq, occupancyWithoutPawn);
+            if (!(rookRay & enemyHeavies)) {
+                continue;
+            }
+
+            int penalty = SEMI_OPEN_LIABILITY_PENALTY;
+            Bitboard friendlyOnFile = (friendlyPawns & fileBB(file)) & ~squareBB(sq);
+            if (friendlyOnFile) {
+                penalty -= SEMI_OPEN_GUARD_REBATE;
+            }
+
+            if (penalty > 0) {
+                totalPenalty += penalty;
+            }
+        }
+
+        return totalPenalty;
+    };
+
+    const int whiteSemiOpenLiability = semiOpenLiabilityFor(WHITE, whiteIsolated, whiteBackward);
+    const int blackSemiOpenLiability = semiOpenLiabilityFor(BLACK, blackIsolated, blackBackward);
+
     // Phase IP2: Isolated pawn evaluation
     // Base penalties by rank (white perspective) - conservative values
     static constexpr int ISOLATED_PAWN_PENALTY[8] = {
@@ -791,10 +840,16 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     // From white's perspective: penalize white's backward pawns, reward black's backward pawns
     int backwardPawnValue = (blackBackwardCount - whiteBackwardCount) * BACKWARD_PAWN_PENALTY;
     Score backwardPawnScore(backwardPawnValue);
-    
-    // Trace backward pawn score
+
+    int semiOpenLiabilityValue = blackSemiOpenLiability - whiteSemiOpenLiability;
+    Score semiOpenLiabilityScore(semiOpenLiabilityValue);
+
+    // Trace backward pawn and semi-open liability scores
     if constexpr (Traced) {
-        if (trace) trace->backwardPawns = backwardPawnScore;
+        if (trace) {
+            trace->backwardPawns = backwardPawnScore;
+            trace->semiOpenLiability = semiOpenLiabilityScore;
+        }
     }
     
     // BPB2: Bishop pair bonus integration (Phase 2 - conservative values)
@@ -1289,7 +1344,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (trace) trace->material = materialDiff;
     }
     
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {

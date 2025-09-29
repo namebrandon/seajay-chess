@@ -196,6 +196,8 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPasserRookSupportBonus type spin default 9 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserEnemyRookBehindPenalty type spin default 0 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32" << std::endl;
+    std::cout << "option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64" << std::endl;
+    std::cout << "option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2447,6 +2449,32 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalPasserKingDistanceScale value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalSemiOpenLiabilityPenalty") {
+        try {
+            int penalty = static_cast<int>(std::llround(std::stod(value)));
+            if (penalty < 0 || penalty > 64) {
+                std::cerr << "info string EvalSemiOpenLiabilityPenalty out of range [0,64]: " << penalty << std::endl;
+            } else {
+                seajay::getConfig().semiOpenLiabilityPenalty = penalty;
+                std::cerr << "info string EvalSemiOpenLiabilityPenalty set to " << penalty << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalSemiOpenLiabilityPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalSemiOpenGuardRebate") {
+        try {
+            int rebate = static_cast<int>(std::llround(std::stod(value)));
+            if (rebate < 0 || rebate > 32) {
+                std::cerr << "info string EvalSemiOpenGuardRebate out of range [0,32]: " << rebate << std::endl;
+            } else {
+                seajay::getConfig().semiOpenGuardRebate = rebate;
+                std::cerr << "info string EvalSemiOpenGuardRebate set to " << rebate << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalSemiOpenGuardRebate value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {
