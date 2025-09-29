@@ -1,5 +1,15 @@
 Title: Integration – Evaluation Framework & Pawn Evaluation Focus
 
+Prime Directives
+1. No merges to `integration/eval-framework` (or `main`) occur without explicit human approval.
+2. Every commit message MUST include a string matching the exact format `bench <node-count>` so OpenBench can parse the bench nodes.
+
+Bench Workflow Checklist
+- Build the current tree (Release) and run `bench` immediately before committing; copy the exact node count into the commit message.
+- After any amend/rebase/merge that changes the commit content, rebuild and rerun `bench` before pushing—bench strings from earlier revisions cannot be reused.
+- For SPRT branches, ensure the bench string corresponds to the exact commit OpenBench will compile; mismatches trigger OpenBench validation failures.
+- If the bench must come from another machine (e.g. the OpenBench host), coordinate with the human operator to capture the correct value before finalizing the commit.
+
 Branch Context
 - Integration branch: integration/eval-framework
 - Parent baseline: main (post-2025-09-18)
