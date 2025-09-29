@@ -94,11 +94,21 @@ Risks & Mitigations
 - Subjective hypothesis chase -> require telemetry evidence before code changes.
 - Data overload -> external harness automates comparison, keep pack size manageable (≤40 FENs initially).
 
-Upcoming Focus (P4 – Passed Pawn Scaling)
-- Use harness summary (`tools/eval_harness/run_eval_pack.sh`) to monitor top score deltas; positions 2, 3, 7, 8, 10, 13 currently lead the gap charts.
-- Reference Laser's passer heuristics (`laser-chess-engine/src/eval.cpp` ~L680) for inspiration: non-linear rank scaling, path-to-queen freedom/defence tests, rook-behind support, king-distance adjustments, and file-based bonuses.
-- Draft SeaJay-specific design doc outlining which of these concepts map cleanly onto our existing pawn hash data (`passedDetail`, pawn cache) and what new telemetry may be required (e.g., king-distance logging).
-- Implement changes behind a branch toggle (`EvalPasserPhaseP4`) and validate via harness + standard bench before enabling by default.
-- Reference design: `docs/project_docs/Passed_Pawn_Phase_P4.md`.
-- Reduce the ~−40 nELO regression observed in OpenBench tests 692/694 by cutting the extra `isSquareAttacked` volume (≈ +26 %) before further coefficient tuning; prototype promotion-path caching or batched attack lookups and re-measure NPS impact.
-- Keep `ProfileSquareAttacks` instrumentation available for future profiling runs; capture before/after counters whenever we iterate on the passer loop.
+Current Status (P4 – Passed Pawn Scaling)
+- Tuned baseline passer defaults are live (commit `f531133`), and blockade handling now removes the “defended stop” bonus when the square is occupied (commit `4b7b229`).
+- Eval harness defaults increased to 200 ms with `StabilityThreshold=8` so the pawn pack reaches depth 12+ on the problematic FENs before we diff against references.
+- OpenBench test 702 (+11 nELO on `endgames.epd`) confirms the passer adjustments are performance-neutral to positive; continue using the same harness snapshot as the baseline for future tweaks.
+
+Next Steps – Pawn Stage
+1. **`feature/eval-framework/pawn-path-tiers` – Promotion-path tiers:** Implement Laser-style tiered checks (free path, free stop, fully defended path, defended stop) and switch to a quadratic king-distance ramp so passers on ranks 5–7 gain/lose weight in both middlegames and endings.
+2. **`feature/eval-framework/pawn-semi-open-liability` – Semi-open liability penalties:** Extend isolated/backward heuristics with semi-open file surcharges when enemy heavies can pressure the pawn, and add a small rebate when our own pawns still guard the file.
+3. **`feature/eval-framework/pawn-loose-pawns` – Loose and unsupported pawns:** Flag pawns lacking pawn defenders (especially in the opponent’s half) and penalise them; reuse the data for “hanging pawn” counts in the threat module.
+4. **`feature/eval-framework/pawn-phalanx` – Phalanx and connected bonuses:** Differentiate supported vs. advancable phalanxes, include rook-backed bonuses (Perseus style), and keep the existing “connected” flag only as a fallback.
+5. **`feature/eval-framework/pawn-candidate-levers` – Candidate/lever logic:** Port Perseus’s lever-based candidate test (lever counts, lever pushes, support ratios) and candidate rank bonuses; combine with our passer path bonus so candidates/true passers share the same machinery.
+6. **`feature/eval-framework/pawn-bishop-color` – Bishop/pawn color complexes:** Add concordance scoring between bishops and friendly pawn colors (penalise locked bishops, reward harmonious structures) to catch middlegame color-complex weaknesses early.
+7. **`feature/eval-framework/pawn-span-tension` – Pawn span & tension metrics:** Build pawn-span masks (advancePathMasked) to drive queen/rook infiltration, pawn-tension counts, and pending pawn-push threats; feed these into both evaluation and telemetry.
+8. **`feature/eval-framework/pawn-telemetry-refresh` – Telemetry + harness coverage:** After each feature lands, refresh EvalExtended logs and the pawn pack summaries (positions 2, 3, 7, 8, 10, 13); keep per-branch artifacts so SPRT evidence stays isolated.
+
+Future Stage – King Safety & Pawn Storms
+- Once the pawn-stage items land, branch off for the king-focused work (shield degradation, pawn storms, king-pawn tropism, attack tables) using branch names such as `feature/eval-framework/king-shield` and `feature/eval-framework/king-storms`. Consolidate requirements from Laser’s king heuristics and our existing `king_safety.cpp`, but keep those changes isolated from the pawn commits.
+- Revisit harness packs (`endgames.epd` plus middlegame tactical suites) to ensure the king updates are validated separately from the pawn work.
