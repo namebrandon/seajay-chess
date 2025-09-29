@@ -59,6 +59,10 @@ public:
     int passerEnemyRookBehindPenalty = 0;        // Penalty for enemy heavy piece behind passer
     int passerKingDistanceScale = 10;            // Scale for king distance differential
 
+    // Semi-open liability tuning parameters
+    int semiOpenLiabilityPenalty = 12;           // Extra penalty when enemy heavies target isolated/backward pawns
+    int semiOpenGuardRebate = 4;                 // Rebate when friendly pawns still guard the file
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
