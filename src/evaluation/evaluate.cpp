@@ -262,6 +262,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     
     Bitboard whiteIsolated, blackIsolated, whiteDoubled, blackDoubled;
     Bitboard whitePassedPawns, blackPassedPawns;
+    Bitboard whiteCandidatePawns, blackCandidatePawns;
     Bitboard whiteBackward, blackBackward;  // BP2: Track backward pawns
     uint8_t whiteIslands, blackIslands;  // PI2: Track island counts
     
@@ -278,6 +279,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         newEntry.doubledPawns[BLACK] = g_pawnStructure.getDoubledPawns(BLACK, blackPawns);
         newEntry.passedPawns[WHITE] = g_pawnStructure.getPassedPawns(WHITE, whitePawns, blackPawns);
         newEntry.passedPawns[BLACK] = g_pawnStructure.getPassedPawns(BLACK, blackPawns, whitePawns);
+        newEntry.candidatePassers[WHITE] = g_pawnStructure.getCandidatePassers(WHITE, whitePawns, blackPawns);
+        newEntry.candidatePassers[BLACK] = g_pawnStructure.getCandidatePassers(BLACK, blackPawns, whitePawns);
         // BP2: Compute and cache backward pawns
         newEntry.backwardPawns[WHITE] = g_pawnStructure.getBackwardPawns(WHITE, whitePawns, blackPawns);
         newEntry.backwardPawns[BLACK] = g_pawnStructure.getBackwardPawns(BLACK, blackPawns, whitePawns);
@@ -295,6 +298,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         blackDoubled = newEntry.doubledPawns[BLACK];
         whitePassedPawns = newEntry.passedPawns[WHITE];
         blackPassedPawns = newEntry.passedPawns[BLACK];
+        whiteCandidatePawns = newEntry.candidatePassers[WHITE];
+        blackCandidatePawns = newEntry.candidatePassers[BLACK];
         whiteBackward = newEntry.backwardPawns[WHITE];  // BP2
         blackBackward = newEntry.backwardPawns[BLACK];  // BP2
         whiteIslands = newEntry.pawnIslands[WHITE];  // PI2
@@ -307,6 +312,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         blackDoubled = pawnEntry->doubledPawns[BLACK];
         whitePassedPawns = pawnEntry->passedPawns[WHITE];
         blackPassedPawns = pawnEntry->passedPawns[BLACK];
+        whiteCandidatePawns = pawnEntry->candidatePassers[WHITE];
+        blackCandidatePawns = pawnEntry->candidatePassers[BLACK];
         whiteBackward = pawnEntry->backwardPawns[WHITE];  // BP2
         blackBackward = pawnEntry->backwardPawns[BLACK];  // BP2
         whiteIslands = pawnEntry->pawnIslands[WHITE];  // PI2
@@ -315,6 +322,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     
     // Calculate passed pawn score
     int passedPawnValue = 0;
+    int candidatePawnValue = 0;
 
     struct PasserTelemetry {
         int count = 0;
@@ -370,6 +378,10 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int PASSER_PHALANX_SUPPORT_BONUS = config.passerPhalanxSupportBonus;
     const int PASSER_PHALANX_ADVANCE_BONUS = config.passerPhalanxAdvanceBonus;
     const int PASSER_PHALANX_ROOK_BONUS = config.passerPhalanxRookBonus;
+    const int CANDIDATE_LEVER_BASE_BONUS = config.candidateLeverBaseBonus;
+    const int CANDIDATE_LEVER_ADVANCE_BONUS = config.candidateLeverAdvanceBonus;
+    const int CANDIDATE_LEVER_SUPPORT_BONUS = config.candidateLeverSupportBonus;
+    const int CANDIDATE_LEVER_RANK_BONUS = config.candidateLeverRankBonus;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
@@ -654,6 +666,53 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
 
     processPassers(WHITE, whitePassedPawns, whiteTelemetry);
     processPassers(BLACK, blackPassedPawns, blackTelemetry);
+
+    auto evaluateCandidates = [&](Color color, Bitboard candidateMask, Bitboard passedMask) {
+        const Color enemy = (color == WHITE) ? BLACK : WHITE;
+        const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
+        const int forward = (color == WHITE) ? 8 : -8;
+
+        Bitboard candidates = candidateMask & ~passedMask;
+        while (candidates) {
+            Square sq = popLsb(candidates);
+            int relRank = PawnStructure::relativeRank(color, sq);
+            int bonus = CANDIDATE_LEVER_BASE_BONUS;
+
+            Square pushSq = static_cast<Square>(static_cast<int>(sq) + forward);
+            if (pushSq >= SQ_A1 && pushSq <= SQ_H8 && !(board.occupied() & squareBB(pushSq))) {
+                if (!pathAttackCache.isAttacked(enemy, pushSq)) {
+                    bonus += CANDIDATE_LEVER_ADVANCE_BONUS;
+                }
+            }
+
+            Bitboard leverTargets = pawnAttacks(color, sq) & enemyPawns;
+            if (!leverTargets) {
+                continue;
+            }
+
+            Bitboard friendlySupport = pawnAttacks(enemy, sq) & board.pieces(color);
+            int supportCount = popCount(friendlySupport) + popCount(board.pieces(color) & leverTargets);
+            Bitboard enemySupport = pawnAttacks(color, sq) & board.pieces(enemy);
+            int enemyCount = popCount(enemySupport) + popCount(board.pieces(enemy) & leverTargets);
+
+            if (supportCount >= enemyCount) {
+                bonus += CANDIDATE_LEVER_SUPPORT_BONUS;
+            }
+
+            bonus += CANDIDATE_LEVER_RANK_BONUS * std::max(0, relRank - 2);
+
+            if (bonus > 0) {
+                if (color == WHITE) {
+                    candidatePawnValue += bonus;
+                } else {
+                    candidatePawnValue -= bonus;
+                }
+            }
+        }
+    };
+
+    evaluateCandidates(WHITE, whiteCandidatePawns, whitePassedPawns);
+    evaluateCandidates(BLACK, blackCandidatePawns, blackPassedPawns);
 
 // Phase scaling: passed pawns are more valuable in endgame
     // Using cached gamePhase from Phase 2.5.b
@@ -1443,7 +1502,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (trace) trace->material = materialDiff;
     }
     
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score candidateScore(candidatePawnValue);
+
+    if constexpr (Traced) {
+        if (trace) trace->candidatePawns = candidateScore;
+    }
+
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {
