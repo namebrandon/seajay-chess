@@ -367,6 +367,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     const int LOOSE_PAWN_OWN_HALF_PENALTY = config.loosePawnOwnHalfPenalty;
     const int LOOSE_PAWN_ENEMY_HALF_PENALTY = config.loosePawnEnemyHalfPenalty;
     const int LOOSE_PAWN_PHALANX_REBATE = config.loosePawnPhalanxRebate;
+    const int PASSER_PHALANX_SUPPORT_BONUS = config.passerPhalanxSupportBonus;
+    const int PASSER_PHALANX_ADVANCE_BONUS = config.passerPhalanxAdvanceBonus;
+    const int PASSER_PHALANX_ROOK_BONUS = config.passerPhalanxRookBonus;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
     PromotionPathAttackCache pathAttackCache(board);
@@ -394,6 +397,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
             bool stopDefended = false;
             bool pathFree = false;
             bool defendedStopTier = false;
+            bool phalanxSupport = false;
+            bool phalanxAdvance = false;
+            bool connectedFallback = false;
 
             int friendlyKingDist = 0;
             int enemyKingDist = 0;
@@ -539,8 +545,38 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                     }
                     behindIdx -= forward;
                 }
+                Bitboard adjacentFilesP4 = 0ULL;
+                if (file > 0) adjacentFilesP4 |= FILE_A_BB << (file - 1);
+                if (file < 7) adjacentFilesP4 |= FILE_A_BB << (file + 1);
+                Bitboard otherPassedP4 = sameColorPassers & ~(1ULL << sq);
+                Bitboard adjacentPassedP4 = otherPassedP4 & adjacentFilesP4;
+                while (adjacentPassedP4) {
+                    Square adjSq = popLsb(adjacentPassedP4);
+                    int adjRank = PawnStructure::relativeRank(color, adjSq);
+                    if (adjRank == relRank) {
+                        phalanxSupport = true;
+                        if (pathFree && validStop && !hasBlocker) {
+                            phalanxAdvance = true;
+                        }
+                    } else if (adjRank > relRank && std::abs(adjRank - relRank) <= 1) {
+                        connectedFallback = true;
+                    }
+                }
+
                 if (friendlyRookBehind) {
                     p4Adjust += PASSER_ROOK_SUPPORT_BONUS;
+                }
+
+                if (phalanxSupport) {
+                    p4Adjust += PASSER_PHALANX_SUPPORT_BONUS;
+                    if (phalanxAdvance) {
+                        p4Adjust += PASSER_PHALANX_ADVANCE_BONUS;
+                    }
+                    if (friendlyRookBehind) {
+                        p4Adjust += PASSER_PHALANX_ROOK_BONUS;
+                    }
+                } else if (connectedFallback) {
+                    bonus = (bonus * 12) / 10;
                 }
 
                 Square promotionSquare = (color == WHITE) ? static_cast<Square>(file + 56) : static_cast<Square>(file);
@@ -562,18 +598,20 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 bonus += p4Adjust;
             }
 
-            Bitboard adjacentFiles = 0ULL;
-            if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
-            if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
-            Bitboard otherPassed = sameColorPassers & ~(1ULL << sq);
-            Bitboard adjacentPassed = otherPassed & adjacentFiles;
-            bool hasConnectedPasser = false;
-            while (adjacentPassed && !hasConnectedPasser) {
-                Square adjSq = popLsb(adjacentPassed);
-                int adjRank = PawnStructure::relativeRank(color, adjSq);
-                if (std::abs(adjRank - relRank) <= 1 && adjRank > relRank) {
-                    hasConnectedPasser = true;
-                    bonus = (bonus * 12) / 10;
+            if (!usePasserPhaseP4) {
+                Bitboard adjacentFiles = 0ULL;
+                if (file > 0) adjacentFiles |= FILE_A_BB << (file - 1);
+                if (file < 7) adjacentFiles |= FILE_A_BB << (file + 1);
+                Bitboard otherPassed = sameColorPassers & ~(1ULL << sq);
+                Bitboard adjacentPassed = otherPassed & adjacentFiles;
+                while (adjacentPassed) {
+                    Square adjSq = popLsb(adjacentPassed);
+                    int adjRank = PawnStructure::relativeRank(color, adjSq);
+                    if (adjRank > relRank && std::abs(adjRank - relRank) <= 1) {
+                        connectedFallback = true;
+                        bonus = (bonus * 12) / 10;
+                        break;
+                    }
                 }
             }
 
@@ -595,7 +633,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
             telemetry.totalBonus += bonus;
             telemetry.protectedPawn |= isProtected;
             telemetry.blockaded |= hasBlocker;
-            telemetry.connected |= hasConnectedPasser;
+            telemetry.connected |= (phalanxSupport || connectedFallback);
             telemetry.unstoppable |= unstoppable;
             telemetry.pathFree |= (usePasserPhaseP4 && pathFree);
             telemetry.stopDefended |= (usePasserPhaseP4 && defendedStopTier);

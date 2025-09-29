@@ -68,6 +68,11 @@ public:
     int loosePawnEnemyHalfPenalty = 6;           // Penalty for unsupported pawns in enemy territory
     int loosePawnPhalanxRebate = 3;              // Rebate when adjacent friendly pawn forms a phalanx
 
+    // Passed pawn phalanx tuning parameters
+    int passerPhalanxSupportBonus = 8;           // Bonus when a passer has a same-rank phalanx mate
+    int passerPhalanxAdvanceBonus = 12;          // Additional bonus when the phalanx can safely advance
+    int passerPhalanxRookBonus = 6;              // Bonus when a rook/queen backs a phalanx pair
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.
