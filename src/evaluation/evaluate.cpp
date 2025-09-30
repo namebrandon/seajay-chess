@@ -242,9 +242,11 @@ struct KingDangerComponents {
     int ringPressure = 0;
     int outerRingPressure = 0;
     int flankPressure = 0;
+    int flankMultiPressure = 0;
     int pinnedDefenders = 0;
     int shieldPawns = 0;
     int stormPawns = 0;
+    std::array<int, 3> stormTierCounts {0, 0, 0};
     std::array<int, 4> safeChecks {0, 0, 0, 0}; // N, B, R, Q
 };
 
@@ -261,10 +263,16 @@ KingDangerComponents computeKingDangerComponents(const Board& board,
     const Bitboard stormMask = KING_STORM_MASK[defender][kingSquare];
     const Bitboard occupied = board.occupied();
 
+    Bitboard flankAttackMask = 0ULL;
+    Bitboard flankMultiMask = 0ULL;
+
     auto accumulate = [&](Bitboard attacks) {
         components.ringPressure += popCount(attacks & ring);
         components.outerRingPressure += popCount(attacks & outer);
-        components.flankPressure += popCount(attacks & flank);
+        Bitboard flankAttacks = attacks & flank;
+        flankMultiMask |= flankAttackMask & flankAttacks;
+        flankAttackMask |= flankAttacks;
+        components.flankPressure += popCount(flankAttacks);
     };
 
     Bitboard temp = board.pieces(attacker, PAWN);
@@ -274,6 +282,20 @@ KingDangerComponents computeKingDangerComponents(const Board& board,
         accumulate(pawnAttacks(attacker, sq));
     }
     components.stormPawns = popCount(pawns & stormMask);
+
+    Bitboard stormPawns = pawns & stormMask;
+    Bitboard tierProbe = stormPawns;
+    while (tierProbe) {
+        Square sq = popLsb(tierProbe);
+        const int relRank = PawnStructure::relativeRank(attacker, sq);
+        if (relRank >= 6) {
+            ++components.stormTierCounts[2];
+        } else if (relRank == 5) {
+            ++components.stormTierCounts[1];
+        } else {
+            ++components.stormTierCounts[0];
+        }
+    }
 
     temp = board.pieces(attacker, KNIGHT);
     while (temp) {
@@ -304,6 +326,8 @@ KingDangerComponents computeKingDangerComponents(const Board& board,
         Square sq = popLsb(temp);
         accumulate(MoveGenerator::getKingAttacks(sq));
     }
+
+    components.flankMultiPressure = popCount(flankMultiMask);
 
     Bitboard pinned = MoveGenerator::getPinnedPieces(board, defender);
     components.pinnedDefenders = popCount(pinned & (ring | flank));
@@ -1781,7 +1805,10 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
         if (cfg.useKingDangerIndex) {
             int whiteDanger = scoreKingDanger(dangerComponents[WHITE], cfg);
             int blackDanger = scoreKingDanger(dangerComponents[BLACK], cfg);
-            kingSafetyScore += Score(whiteDanger - blackDanger);
+            // Positive danger for the opponent should benefit the side to move,
+            // so accumulate (blackDanger - whiteDanger) to keep the evaluation
+            // aligned with the existing white-minus-black convention.
+            kingSafetyScore += Score(blackDanger - whiteDanger);
         }
 
         if constexpr (Traced) {
@@ -1794,12 +1821,18 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 detail.outerRingPressure[BLACK] = dangerComponents[BLACK].outerRingPressure;
                 detail.flankPressure[WHITE] = dangerComponents[WHITE].flankPressure;
                 detail.flankPressure[BLACK] = dangerComponents[BLACK].flankPressure;
+                detail.flankMultiPressure[WHITE] = dangerComponents[WHITE].flankMultiPressure;
+                detail.flankMultiPressure[BLACK] = dangerComponents[BLACK].flankMultiPressure;
                 detail.pinnedDefenders[WHITE] = dangerComponents[WHITE].pinnedDefenders;
                 detail.pinnedDefenders[BLACK] = dangerComponents[BLACK].pinnedDefenders;
                 detail.shieldPawns[WHITE] = dangerComponents[WHITE].shieldPawns;
                 detail.shieldPawns[BLACK] = dangerComponents[BLACK].shieldPawns;
                 detail.stormPawns[WHITE] = dangerComponents[WHITE].stormPawns;
                 detail.stormPawns[BLACK] = dangerComponents[BLACK].stormPawns;
+                for (int tier = 0; tier < 3; ++tier) {
+                    detail.stormTierCounts[WHITE][tier] = dangerComponents[WHITE].stormTierCounts[tier];
+                    detail.stormTierCounts[BLACK][tier] = dangerComponents[BLACK].stormTierCounts[tier];
+                }
                 for (int i = 0; i < 4; ++i) {
                     detail.safeChecks[WHITE][i] = dangerComponents[WHITE].safeChecks[i];
                     detail.safeChecks[BLACK][i] = dangerComponents[BLACK].safeChecks[i];

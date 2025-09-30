@@ -1188,6 +1188,11 @@ eval::Score negamax(Board& board,
 #endif
         int pendingMoveCountValue = moveCount;  // Current legal moves searched before this move
         int pendingRankValue = -1;
+        bool pendingLateCaptureSeePrune = false;
+        int pendingLateCaptureRank = -1;
+#ifdef SEARCH_STATS
+        int pendingLateCaptureBucket = -1;
+#endif
         if (rankedPicker) {
             move = rankedPicker->next();
             if (move == NO_MOVE) break;
@@ -1495,19 +1500,17 @@ eval::Score negamax(Board& board,
                 
                 // Only gate late-ranked captures (rank >= 11)
                 if (rank >= 11) {
-                    // Require non-losing SEE for late captures
                     if (!seeGE(board, move, 0)) {
-                        // Track telemetry
+                        pendingLateCaptureSeePrune = true;
+                        pendingLateCaptureRank = rank;
 #ifdef SEARCH_STATS
-                        const int bucket = SearchData::RankGateStats::bucketForRank(rank);
-                        info.rankGates.pruned[bucket]++;
+                        pendingLateCaptureBucket = SearchData::RankGateStats::bucketForRank(rank);
 #endif
                         if (debugTrackedMove) {
                             std::ostringstream extra;
-                            extra << "rank=" << rank << " reason=see";
-                            logTrackedEvent("prune_capture_rank", extra.str());
+                            extra << "rank=" << rank;
+                            logTrackedEvent("capture_rank_pending", extra.str());
                         }
-                        continue;  // Skip this capture
                     }
                 }
                 // Ranks 1-10: no SEE gate (conservative)
@@ -1531,6 +1534,28 @@ eval::Score negamax(Board& board,
 
         bool givesCheckMove = inCheck(board);
         bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
+
+        if (pendingLateCaptureSeePrune) {
+            if (!givesCheckMove) {
+#ifdef SEARCH_STATS
+                if (pendingLateCaptureBucket >= 0) {
+                    info.rankGates.pruned[pendingLateCaptureBucket]++;
+                }
+#endif
+                if (debugTrackedMove) {
+                    std::ostringstream extra;
+                    extra << "rank=" << pendingLateCaptureRank << " reason=see";
+                    logTrackedEvent("prune_capture_rank", extra.str());
+                }
+                board.unmakeMove(move, undo);
+                continue;
+            }
+        }
+        pendingLateCaptureSeePrune = false;
+        pendingLateCaptureRank = -1;
+#ifdef SEARCH_STATS
+        pendingLateCaptureBucket = -1;
+#endif
 
         if (pendingMoveCountPrune && !givesCheckMove && !wasCaptureMove) {
 #ifdef DEBUG
@@ -1584,6 +1609,7 @@ eval::Score negamax(Board& board,
             SingularStack = 2,
             Recapture = 3,
             Check = 4,
+            Contact = 5,
         };
 
         auto extensionTypeToString = [](ExtensionType type) constexpr -> const char* {
@@ -1592,6 +1618,7 @@ eval::Score negamax(Board& board,
                 case ExtensionType::SingularStack: return "singular+recapture";
                 case ExtensionType::Recapture: return "recapture";
                 case ExtensionType::Check: return "check";
+                case ExtensionType::Contact: return "contact";
                 default: return "none";
             }
         };
@@ -1658,6 +1685,19 @@ eval::Score negamax(Board& board,
         if (singularDebugActive && isSingularMove) {
             singularDebugActive = false;
             singularDebugEventIndex = -1;
+        }
+
+        if (givesCheckMove && wasCaptureMove && extension == 0) {
+            Piece movedPiece = board.pieceAt(moveTo(move));
+            if (typeOf(movedPiece) == QUEEN) {
+                Color defender = board.sideToMove();
+                Square defenderKing = board.kingSquare(defender);
+                Bitboard contactMask = MoveGenerator::getKingAttacks(defenderKing);
+                if (contactMask & squareBB(moveTo(move))) {
+                    extension = 1;
+                    extensionType = ExtensionType::Contact;
+                }
+            }
         }
 
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)

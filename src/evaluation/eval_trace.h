@@ -109,9 +109,11 @@ struct EvalTrace {
         int ringPressure[2] = {0, 0};
         int outerRingPressure[2] = {0, 0};
         int flankPressure[2] = {0, 0};
+        int flankMultiPressure[2] = {0, 0};
         int pinnedDefenders[2] = {0, 0};
         int shieldPawns[2] = {0, 0};
         int stormPawns[2] = {0, 0};
+        int stormTierCounts[2][3] = {{0}}; // Far, mid, near
         int queenSafeChecks[2] = {0, 0};
         int safeChecks[2][4] = {{0}};  // N, B, R, Q
     } kingDangerDetail;
@@ -341,9 +343,13 @@ struct EvalTrace {
                     << " ring_pressure=" << kingDangerDetail.ringPressure[c]
                     << " outer_pressure=" << kingDangerDetail.outerRingPressure[c]
                     << " flank_pressure=" << kingDangerDetail.flankPressure[c]
+                    << " flank_multi=" << kingDangerDetail.flankMultiPressure[c]
                     << " pinned_defenders=" << kingDangerDetail.pinnedDefenders[c]
                     << " shield_pawns=" << kingDangerDetail.shieldPawns[c]
                     << " storm_pawns=" << kingDangerDetail.stormPawns[c]
+                    << " storm_tier_far=" << kingDangerDetail.stormTierCounts[c][0]
+                    << " storm_tier_mid=" << kingDangerDetail.stormTierCounts[c][1]
+                    << " storm_tier_near=" << kingDangerDetail.stormTierCounts[c][2]
                     << " queen_safe_checks=" << kingDangerDetail.queenSafeChecks[c]
                     << " safe_check_knight=" << kingDangerDetail.safeChecks[c][0]
                     << " safe_check_bishop=" << kingDangerDetail.safeChecks[c][1]
