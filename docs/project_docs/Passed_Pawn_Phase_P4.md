@@ -15,7 +15,7 @@ Laser chess engine (src/eval.cpp ~L680) introduces several heuristics we can ada
 5. **File-based bonuses:** central passers receive slightly higher base values.
 
 ## SeaJay Approach
-- Introduce a toggle `EvalPasserPhaseP4` (default off) to gate new scoring.
+- Introduce a toggle `EvalPasserPhaseP4` (default ON since SPRT 726) to gate new scoring while allowing regression testing when disabled.
 - Extend pawn cache or runtime evaluation to gather needed signals (path occupancy, support, king distance).
 - Maintain existing bonuses (protected/connected/unstoppable) but rebalance around the new model.
 - Emit additional telemetry fields when tracing (e.g., pathFree, rookSupport, kingDist terms) to validate behaviour.
@@ -41,12 +41,11 @@ Laser chess engine (src/eval.cpp ~L680) introduces several heuristics we can ada
    - Standard `bench` to confirm performance is within noise.
    - Document results and decision on toggling to default.
 
-## Current Baseline (2025-09-28)
-- Toggle `EvalPasserPhaseP4=false` continues to show large gaps on eval pack positions #10 & #13 (SeaJay down ≥350 cp versus Komodo).
-- Toggle `EvalPasserPhaseP4=true` still overshoots the same positions; latest OpenBench runs (tests 692 & 694) report ≈ −40 nELO despite endgame-focused books, confirming the new passer model hurts match play at current settings.
-- Bench (Release) with toggle off: 2 371 156 nodes @ 1.59 MNPS. Toggle on: 2 645 416 nodes @ 1.74 MNPS when instrumentation was active during profiling, but OpenBench indicates an effective slowdown once full search overhead is considered (≈ −6 % versus main).
-- Attack profiling shows the new path logic drives ~26 % more `isSquareAttacked` probes per side (≈ +735k white / +727k black queries over 13 eval-pack FENs), explaining the observed NPS loss.
-- All new hooks remain default-off so mainline play is unaffected while we iterate.
+## Current Baseline (2025-10-05)
+- Recent SPSA + telemetry work tightened passer-related heuristics; SPRT 726 (EvalPasserPhaseP4=true vs `main`) delivered +12.5 ± 7.0 nELO at 10+0.10, so the toggle is now default-on.
+- Legacy observations from 2025-09-28 (OpenBench tests 692/694 showing −40 nELO and ∼−6 % NPS) are retained for historical context but no longer match the tuned configuration; re-profile if new regressions appear.
+- Bench (Release, current defaults): 2 447 010 nodes @ 1.52 MNPS on the CI reference host, within expected variance relative to earlier P4-off measurements.
+- Attack profiling still shows higher `isSquareAttacked` volume under the P4 model; continue monitoring after future king-safety integrations to ensure the extra cost remains justified.
 
 ## Risks
 - Increased computation per passer could reduce NPS; optimize by reusing cached masks where possible.

@@ -186,7 +186,7 @@ void UCIEngine::handleUCI() {
     // Evaluation detail option
     std::cout << "option name EvalExtended type check default false" << std::endl;
     std::cout << "option name EvalLogFile type string default" << std::endl;
-    std::cout << "option name EvalPasserPhaseP4 type check default false" << std::endl;
+    std::cout << "option name EvalPasserPhaseP4 type check default true" << std::endl;
     std::cout << "option name EvalPasserPathFreeBonus type spin default 4 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserPathSafeBonus type spin default -1 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserPathDefendedBonus type spin default -1 min -64 max 64" << std::endl;

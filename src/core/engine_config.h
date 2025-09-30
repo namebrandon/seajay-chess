@@ -45,7 +45,7 @@ public:
     int singularExtensionDepth = 2;              // Extension plies applied on singular fail-low
 
     // Evaluation experimentation toggles
-    bool usePasserPhaseP4 = false;               // Advanced passed-pawn scaling (Phase P4)
+    bool usePasserPhaseP4 = true;                // Advanced passed-pawn scaling (Phase P4)
     bool profileSquareAttacks = false;           // Instrument MoveGenerator::isSquareAttacked usage
 
     // Passed pawn Phase P4 tuning parameters (SPSA-ready via UCI)
