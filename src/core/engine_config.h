@@ -69,15 +69,15 @@ public:
     int loosePawnPhalanxRebate = 3;              // Rebate when adjacent friendly pawn forms a phalanx
 
     // Passed pawn phalanx tuning parameters
-    int passerPhalanxSupportBonus = 8;           // Bonus when a passer has a same-rank phalanx mate
-    int passerPhalanxAdvanceBonus = 12;          // Additional bonus when the phalanx can safely advance
-    int passerPhalanxRookBonus = 6;              // Bonus when a rook/queen backs a phalanx pair
+    int passerPhalanxSupportBonus = 3;           // Bonus when a passer has a same-rank phalanx mate
+    int passerPhalanxAdvanceBonus = 16;          // Additional bonus when the phalanx can safely advance
+    int passerPhalanxRookBonus = 4;              // Bonus when a rook/queen backs a phalanx pair
 
     // Candidate passed pawn tuning parameters
-    int candidateLeverBaseBonus = 4;             // Base bonus for a lever-based pawn candidate
-    int candidateLeverAdvanceBonus = 6;          // Extra when the lever can push safely
+    int candidateLeverBaseBonus = 5;             // Base bonus for a lever-based pawn candidate
+    int candidateLeverAdvanceBonus = 9;          // Extra when the lever can push safely
     int candidateLeverSupportBonus = 5;          // Bonus for sufficient support ratio
-    int candidateLeverRankBonus = 3;             // Bonus per rank beyond origin
+    int candidateLeverRankBonus = 4;             // Bonus per rank beyond origin
 
     // Bishop/pawn color complex parameters
     int bishopColorHarmonyBonus = 2;             // Bonus per opposite-color pawn pairing

@@ -1,0 +1,15 @@
+# Parameter,Type,Start,Min,Max,C_end,R_end
+EvalSemiOpenGuardRebate, int, 4, 0, 32, 3.0, 0.002
+EvalLoosePawnOwnHalfPenalty, int, 2, 0, 32, 3.0, 0.002
+EvalLoosePawnEnemyHalfPenalty, int, 6, 0, 64, 4.0, 0.002
+EvalLoosePawnPhalanxRebate, int, 3, 0, 32, 3.0, 0.002
+EvalPasserPhalanxSupportBonus, int, 8, 0, 64, 4.0, 0.002
+EvalPasserPhalanxAdvanceBonus, int, 12, 0, 64, 4.0, 0.002
+EvalPasserPhalanxRookBonus, int, 6, 0, 64, 4.0, 0.002
+EvalCandidateLeverBaseBonus, int, 4, 0, 32, 3.0, 0.002
+EvalCandidateLeverAdvanceBonus, int, 6, 0, 32, 3.0, 0.002
+EvalCandidateLeverSupportBonus, int, 5, 0, 32, 3.0, 0.002
+EvalCandidateLeverRankBonus, int, 3, 0, 16, 2.0, 0.002
+EvalPawnInfiltrationBonus, int, 4, -32, 32, 4.0, 0.002
+EvalPawnTensionPenalty, int, 2, 0, 16, 2.0, 0.002
+EvalPawnPushThreatBonus, int, 3, 0, 16, 2.0, 0.002
