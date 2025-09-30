@@ -187,6 +187,8 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalExtended type check default false" << std::endl;
     std::cout << "option name EvalLogFile type string default" << std::endl;
     std::cout << "option name EvalPasserPhaseP4 type check default true" << std::endl;
+    std::cout << "option name EvalKingDangerIndex type check default false" << std::endl;
+    std::cout << "option name EvalKingDangerTelemetry type check default false" << std::endl;
     std::cout << "option name EvalPasserPathFreeBonus type spin default 4 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserPathSafeBonus type spin default -1 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserPathDefendedBonus type spin default -1 min -64 max 64" << std::endl;
@@ -214,6 +216,14 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPawnInfiltrationBonus type spin default 25 min -32 max 32" << std::endl;
     std::cout << "option name EvalPawnTensionPenalty type spin default 3 min 0 max 16" << std::endl;
     std::cout << "option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16" << std::endl;
+    std::cout << "option name EvalKingDangerRingWeight type spin default 12 min 0 max 64" << std::endl;
+    std::cout << "option name EvalKingDangerOuterRingWeight type spin default 6 min 0 max 64" << std::endl;
+    std::cout << "option name EvalKingDangerSafeCheckWeight type spin default 18 min 0 max 128" << std::endl;
+    std::cout << "option name EvalKingDangerQueenSafeCheckWeight type spin default 28 min 0 max 128" << std::endl;
+    std::cout << "option name EvalKingDangerFlankPressureWeight type spin default 8 min 0 max 64" << std::endl;
+    std::cout << "option name EvalKingDangerPinnedDefenderPenalty type spin default 10 min 0 max 64" << std::endl;
+    std::cout << "option name EvalKingDangerShieldBonus type spin default 6 min 0 max 32" << std::endl;
+    std::cout << "option name EvalKingDangerStormPenalty type spin default 8 min 0 max 64" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
@@ -2350,6 +2360,16 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         seajay::getConfig().usePasserPhaseP4 = enable;
         std::cerr << "info string EvalPasserPhaseP4 " << (enable ? "enabled" : "disabled") << std::endl;
     }
+    else if (optionName == "EvalKingDangerIndex") {
+        bool enable = (value == "true");
+        seajay::getConfig().useKingDangerIndex = enable;
+        std::cerr << "info string EvalKingDangerIndex " << (enable ? "enabled" : "disabled") << std::endl;
+    }
+    else if (optionName == "EvalKingDangerTelemetry") {
+        bool enable = (value == "true");
+        seajay::getConfig().logKingDangerTelemetry = enable;
+        std::cerr << "info string EvalKingDangerTelemetry " << (enable ? "enabled" : "disabled") << std::endl;
+    }
     else if (optionName == "EvalPasserPathFreeBonus") {
         try {
             int bonus = static_cast<int>(std::llround(std::stod(value)));
@@ -2699,6 +2719,110 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalPawnPushThreatBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerRingWeight") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 64) {
+                std::cerr << "info string EvalKingDangerRingWeight out of range [0,64]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerRingWeight = weight;
+                std::cerr << "info string EvalKingDangerRingWeight set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerRingWeight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerOuterRingWeight") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 64) {
+                std::cerr << "info string EvalKingDangerOuterRingWeight out of range [0,64]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerOuterRingWeight = weight;
+                std::cerr << "info string EvalKingDangerOuterRingWeight set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerOuterRingWeight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerSafeCheckWeight") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 128) {
+                std::cerr << "info string EvalKingDangerSafeCheckWeight out of range [0,128]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerSafeCheckWeight = weight;
+                std::cerr << "info string EvalKingDangerSafeCheckWeight set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerSafeCheckWeight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerQueenSafeCheckWeight") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 128) {
+                std::cerr << "info string EvalKingDangerQueenSafeCheckWeight out of range [0,128]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerQueenSafeCheckWeight = weight;
+                std::cerr << "info string EvalKingDangerQueenSafeCheckWeight set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerQueenSafeCheckWeight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerFlankPressureWeight") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 64) {
+                std::cerr << "info string EvalKingDangerFlankPressureWeight out of range [0,64]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerFlankPressureWeight = weight;
+                std::cerr << "info string EvalKingDangerFlankPressureWeight set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerFlankPressureWeight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerPinnedDefenderPenalty") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 64) {
+                std::cerr << "info string EvalKingDangerPinnedDefenderPenalty out of range [0,64]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerPinnedDefenderPenalty = weight;
+                std::cerr << "info string EvalKingDangerPinnedDefenderPenalty set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerPinnedDefenderPenalty value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerShieldBonus") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 32) {
+                std::cerr << "info string EvalKingDangerShieldBonus out of range [0,32]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerShieldBonus = weight;
+                std::cerr << "info string EvalKingDangerShieldBonus set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerShieldBonus value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalKingDangerStormPenalty") {
+        try {
+            int weight = static_cast<int>(std::llround(std::stod(value)));
+            if (weight < 0 || weight > 64) {
+                std::cerr << "info string EvalKingDangerStormPenalty out of range [0,64]: " << weight << std::endl;
+            } else {
+                seajay::getConfig().kingDangerStormPenalty = weight;
+                std::cerr << "info string EvalKingDangerStormPenalty set to " << weight << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalKingDangerStormPenalty value: " << value << std::endl;
         }
     }
     else if (optionName == "ProfileSquareAttacks") {

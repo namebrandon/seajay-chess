@@ -103,6 +103,18 @@ struct EvalTrace {
         int pushReady[2] = {0, 0};
         int infiltration[2] = {0, 0};
     } pawnSpanDetail;
+
+    struct KingDangerDetail {
+        bool enabled = false;
+        int ringPressure[2] = {0, 0};
+        int outerRingPressure[2] = {0, 0};
+        int flankPressure[2] = {0, 0};
+        int pinnedDefenders[2] = {0, 0};
+        int shieldPawns[2] = {0, 0};
+        int stormPawns[2] = {0, 0};
+        int queenSafeChecks[2] = {0, 0};
+        int safeChecks[2][4] = {{0}};  // N, B, R, Q
+    } kingDangerDetail;
     
     // Reset all values
     void reset() {
@@ -139,6 +151,7 @@ struct EvalTrace {
         mobilityDetail = MobilityDetail();
         bishopColorDetail = BishopColorDetail();
         pawnSpanDetail = PawnSpanDetail();
+        kingDangerDetail = KingDangerDetail();
         pawnKey = 0ULL;
         pawnCacheHit = false;
     }
@@ -318,6 +331,26 @@ struct EvalTrace {
                 << " black_push_ready=" << span.pushReady[BLACK]
                 << " black_infiltration=" << span.infiltration[BLACK];
             pushLine(oss.str());
+        }
+
+        if (kingDangerDetail.enabled) {
+            constexpr const char* colorNames[2] = {"white", "black"};
+            for (int c = 0; c < 2; ++c) {
+                std::ostringstream oss;
+                oss << "detail name=king_danger side=" << colorNames[c]
+                    << " ring_pressure=" << kingDangerDetail.ringPressure[c]
+                    << " outer_pressure=" << kingDangerDetail.outerRingPressure[c]
+                    << " flank_pressure=" << kingDangerDetail.flankPressure[c]
+                    << " pinned_defenders=" << kingDangerDetail.pinnedDefenders[c]
+                    << " shield_pawns=" << kingDangerDetail.shieldPawns[c]
+                    << " storm_pawns=" << kingDangerDetail.stormPawns[c]
+                    << " queen_safe_checks=" << kingDangerDetail.queenSafeChecks[c]
+                    << " safe_check_knight=" << kingDangerDetail.safeChecks[c][0]
+                    << " safe_check_bishop=" << kingDangerDetail.safeChecks[c][1]
+                    << " safe_check_rook=" << kingDangerDetail.safeChecks[c][2]
+                    << " safe_check_queen=" << kingDangerDetail.safeChecks[c][3];
+                pushLine(oss.str());
+            }
         }
 
         {

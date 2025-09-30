@@ -108,6 +108,226 @@ private:
     std::array<std::array<int8_t, 64>, NUM_COLORS> m_cache{};
 };
 
+struct KingDangerTelemetryResult {
+    bool enabled = false;
+    int queenSafeChecks[2] = {0, 0};
+};
+
+KingDangerTelemetryResult computeKingDangerTelemetry(const Board& board) {
+    KingDangerTelemetryResult result;
+
+    const Bitboard occupied = board.occupied();
+
+    for (int idx = 0; idx < 2; ++idx) {
+        Color us = static_cast<Color>(idx);
+        Color them = static_cast<Color>(idx ^ 1);
+
+        Bitboard queens = board.pieces(us, QUEEN);
+        if (!queens) {
+            continue;
+        }
+
+        const Square enemyKingSq = board.kingSquare(them);
+        const Bitboard enemyKingBB = squareBB(enemyKingSq);
+        const Bitboard enemyPieces = board.pieces(them);
+
+        Bitboard queensCopy = queens;
+        while (queensCopy) {
+            Square from = popLsb(queensCopy);
+            Bitboard queenMoves = MoveGenerator::getQueenAttacks(from, occupied);
+            Bitboard captureTargets = queenMoves & enemyPieces;
+
+            while (captureTargets) {
+                Square to = popLsb(captureTargets);
+
+                Bitboard occAfter = occupied;
+                occAfter &= ~squareBB(from);
+                occAfter &= ~squareBB(to);
+                occAfter |= squareBB(to);
+
+                Bitboard attacksAfter = MoveGenerator::getQueenAttacks(to, occAfter);
+                if (attacksAfter & enemyKingBB) {
+                    result.queenSafeChecks[idx]++;
+                }
+            }
+        }
+    }
+
+    result.enabled = true;
+    return result;
+}
+
+static const std::array<Bitboard, 64> KING_RING_MASK = []() {
+    std::array<Bitboard, 64> masks{};
+    for (int sq = 0; sq < 64; ++sq) {
+        masks[sq] = MoveGenerator::getKingAttacks(static_cast<Square>(sq));
+    }
+    return masks;
+}();
+
+static const std::array<Bitboard, 64> KING_OUTER_RING_MASK = []() {
+    std::array<Bitboard, 64> masks{};
+    for (int sq = 0; sq < 64; ++sq) {
+        Bitboard ring = KING_RING_MASK[sq];
+        Bitboard outer = 0;
+        Bitboard copy = ring;
+        while (copy) {
+            Square adj = popLsb(copy);
+            outer |= MoveGenerator::getKingAttacks(adj);
+        }
+        outer &= ~ring;
+        outer &= ~squareBB(static_cast<Square>(sq));
+        masks[sq] = outer;
+    }
+    return masks;
+}();
+
+static const std::array<std::array<Bitboard, 64>, NUM_COLORS> KING_FLANK_MASK = []() {
+    std::array<std::array<Bitboard, 64>, NUM_COLORS> masks{};
+    for (int color = 0; color < NUM_COLORS; ++color) {
+        Color side = static_cast<Color>(color);
+        for (int sq = 0; sq < 64; ++sq) {
+            int file = static_cast<int>(fileOf(static_cast<Square>(sq)));
+            int rank = static_cast<int>(rankOf(static_cast<Square>(sq)));
+            Bitboard mask = 0;
+            for (int df = -1; df <= 1; ++df) {
+                int targetFile = file + df;
+                if (targetFile < 0 || targetFile > 7) {
+                    continue;
+                }
+                for (int dr = 0; dr <= 2; ++dr) {
+                    int targetRank = (side == WHITE) ? rank + dr : rank - dr;
+                    if (targetRank < 0 || targetRank > 7) {
+                        continue;
+                    }
+                    Square target = static_cast<Square>(targetRank * 8 + targetFile);
+                    mask |= squareBB(target);
+                }
+            }
+            masks[color][sq] = mask;
+        }
+    }
+    return masks;
+}();
+
+static const std::array<std::array<Bitboard, 64>, NUM_COLORS> KING_STORM_MASK = []() {
+    std::array<std::array<Bitboard, 64>, NUM_COLORS> masks{};
+    for (int color = 0; color < NUM_COLORS; ++color) {
+        Color side = static_cast<Color>(color);
+        for (int sq = 0; sq < 64; ++sq) {
+            int file = static_cast<int>(fileOf(static_cast<Square>(sq)));
+            int rank = static_cast<int>(rankOf(static_cast<Square>(sq)));
+            Bitboard mask = 0;
+            for (int df = -1; df <= 1; ++df) {
+                int targetFile = file + df;
+                if (targetFile < 0 || targetFile > 7) {
+                    continue;
+                }
+                for (int dr = 1; dr <= 3; ++dr) {
+                    int targetRank = (side == WHITE) ? rank + dr : rank - dr;
+                    if (targetRank < 0 || targetRank > 7) {
+                        continue;
+                    }
+                    Square target = static_cast<Square>(targetRank * 8 + targetFile);
+                    mask |= squareBB(target);
+                }
+            }
+            masks[color][sq] = mask;
+        }
+    }
+    return masks;
+}();
+
+struct KingDangerComponents {
+    int ringPressure = 0;
+    int outerRingPressure = 0;
+    int flankPressure = 0;
+    int pinnedDefenders = 0;
+    int shieldPawns = 0;
+    int stormPawns = 0;
+    int safeChecks = 0;
+    int queenSafeChecks = 0;
+};
+
+KingDangerComponents computeKingDangerComponents(const Board& board,
+                                                Color defender,
+                                                const KingDangerTelemetryResult& telemetry) {
+    KingDangerComponents components;
+
+    const Color attacker = ~defender;
+    const Square kingSquare = board.kingSquare(defender);
+    const Bitboard ring = KING_RING_MASK[kingSquare];
+    const Bitboard outer = KING_OUTER_RING_MASK[kingSquare];
+    const Bitboard flank = KING_FLANK_MASK[defender][kingSquare];
+    const Bitboard stormMask = KING_STORM_MASK[defender][kingSquare];
+    const Bitboard occupied = board.occupied();
+
+    auto accumulate = [&](Bitboard attacks) {
+        components.ringPressure += popCount(attacks & ring);
+        components.outerRingPressure += popCount(attacks & outer);
+        components.flankPressure += popCount(attacks & flank);
+    };
+
+    Bitboard temp = board.pieces(attacker, PAWN);
+    Bitboard pawns = temp;
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(pawnAttacks(attacker, sq));
+    }
+    components.stormPawns = popCount(pawns & stormMask);
+
+    temp = board.pieces(attacker, KNIGHT);
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(MoveGenerator::getKnightAttacks(sq));
+    }
+
+    temp = board.pieces(attacker, BISHOP);
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(MoveGenerator::getBishopAttacks(sq, occupied));
+    }
+
+    temp = board.pieces(attacker, ROOK);
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(MoveGenerator::getRookAttacks(sq, occupied));
+    }
+
+    temp = board.pieces(attacker, QUEEN);
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(MoveGenerator::getQueenAttacks(sq, occupied));
+    }
+
+    temp = board.pieces(attacker, KING);
+    while (temp) {
+        Square sq = popLsb(temp);
+        accumulate(MoveGenerator::getKingAttacks(sq));
+    }
+
+    Bitboard pinned = MoveGenerator::getPinnedPieces(board, defender);
+    components.pinnedDefenders = popCount(pinned & (ring | flank));
+
+    components.shieldPawns = popCount(KingSafety::getShieldPawns(board, defender, kingSquare));
+    components.queenSafeChecks = telemetry.queenSafeChecks[attacker];
+
+    return components;
+}
+
+int scoreKingDanger(const KingDangerComponents& components, const EngineConfig& config) {
+    int score = 0;
+    score += config.kingDangerRingWeight * components.ringPressure;
+    score += config.kingDangerOuterRingWeight * components.outerRingPressure;
+    score += config.kingDangerFlankPressureWeight * components.flankPressure;
+    score += config.kingDangerPinnedDefenderPenalty * components.pinnedDefenders;
+    score -= config.kingDangerShieldBonus * components.shieldPawns;
+    score += config.kingDangerStormPenalty * components.stormPawns;
+    score += config.kingDangerSafeCheckWeight * components.safeChecks;
+    score += config.kingDangerQueenSafeCheckWeight * components.queenSafeChecks;
+    return score;
+}
+
 }  // namespace
 
 // PST Phase Interpolation - Phase calculation (continuous, fast)
@@ -1519,17 +1739,60 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
     Score kingSafetyScore = whiteKingSafety - blackKingSafety;
 
+    KingDangerTelemetryResult kingDangerTelemetry{};
+    bool kingDangerTelemetryEnabled = false;
+    if (seajay::getConfig().useKingDangerIndex || seajay::getConfig().logKingDangerTelemetry) {
+        kingDangerTelemetry = computeKingDangerTelemetry(board);
+        kingDangerTelemetryEnabled = kingDangerTelemetry.enabled;
+    }
+
     int kingAttackScale = seajay::getConfig().kingAttackScale;
     if (kingAttackScale != 0) {
         int scaledValue = kingSafetyScore.value() * (100 + kingAttackScale) / 100;
         kingSafetyScore = Score(scaledValue);
     }
     
-    // Trace king safety score
+    if (kingDangerTelemetryEnabled) {
+        const auto& cfg = seajay::getConfig();
+        KingDangerComponents dangerComponents[NUM_COLORS];
+        dangerComponents[WHITE] = computeKingDangerComponents(board, WHITE, kingDangerTelemetry);
+        dangerComponents[BLACK] = computeKingDangerComponents(board, BLACK, kingDangerTelemetry);
+
+        if (cfg.useKingDangerIndex) {
+            int whiteDanger = scoreKingDanger(dangerComponents[WHITE], cfg);
+            int blackDanger = scoreKingDanger(dangerComponents[BLACK], cfg);
+            kingSafetyScore += Score(whiteDanger - blackDanger);
+        }
+
+        if constexpr (Traced) {
+            if (trace) {
+                auto& detail = trace->kingDangerDetail;
+                detail.enabled = true;
+                detail.ringPressure[WHITE] = dangerComponents[WHITE].ringPressure;
+                detail.ringPressure[BLACK] = dangerComponents[BLACK].ringPressure;
+                detail.outerRingPressure[WHITE] = dangerComponents[WHITE].outerRingPressure;
+                detail.outerRingPressure[BLACK] = dangerComponents[BLACK].outerRingPressure;
+                detail.flankPressure[WHITE] = dangerComponents[WHITE].flankPressure;
+                detail.flankPressure[BLACK] = dangerComponents[BLACK].flankPressure;
+                detail.pinnedDefenders[WHITE] = dangerComponents[WHITE].pinnedDefenders;
+                detail.pinnedDefenders[BLACK] = dangerComponents[BLACK].pinnedDefenders;
+                detail.shieldPawns[WHITE] = dangerComponents[WHITE].shieldPawns;
+                detail.shieldPawns[BLACK] = dangerComponents[BLACK].shieldPawns;
+                detail.stormPawns[WHITE] = dangerComponents[WHITE].stormPawns;
+                detail.stormPawns[BLACK] = dangerComponents[BLACK].stormPawns;
+                detail.queenSafeChecks[WHITE] = dangerComponents[WHITE].queenSafeChecks;
+                detail.queenSafeChecks[BLACK] = dangerComponents[BLACK].queenSafeChecks;
+                detail.safeChecks[WHITE][3] = dangerComponents[WHITE].queenSafeChecks;
+                detail.safeChecks[BLACK][3] = dangerComponents[BLACK].queenSafeChecks;
+            }
+        }
+    }
+
+    // Trace king safety score (including king danger adjustment if applied)
     if constexpr (Traced) {
         if (trace) trace->kingSafety = kingSafetyScore;
     }
-    
+
     // Phase ROF2: Calculate rook file bonus score
     Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
     

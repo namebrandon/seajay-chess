@@ -48,6 +48,20 @@ public:
     bool usePasserPhaseP4 = true;                // Advanced passed-pawn scaling (Phase P4)
     bool profileSquareAttacks = false;           // Instrument MoveGenerator::isSquareAttacked usage
 
+    // King danger experimentation toggles
+    bool useKingDangerIndex = false;             // Enable king danger index aggregation
+    bool logKingDangerTelemetry = false;         // Emit detailed king danger telemetry blocks
+
+    // King danger weighting parameters (SPSA-ready via UCI)
+    int kingDangerRingWeight = 12;               // Weight for piece pressure on king ring squares
+    int kingDangerOuterRingWeight = 6;           // Weight for pressure on outer ring squares
+    int kingDangerSafeCheckWeight = 18;          // Bonus per safe check (non-queen)
+    int kingDangerQueenSafeCheckWeight = 28;     // Bonus per safe queen check (captures/quiet)
+    int kingDangerFlankPressureWeight = 8;       // Weight for attacks on king-adjacent files
+    int kingDangerPinnedDefenderPenalty = 10;    // Penalty when king shield pieces are pinned
+    int kingDangerShieldBonus = 6;               // Bonus per intact inner shield pawn
+    int kingDangerStormPenalty = 8;              // Penalty per opposing pawn storm square
+
     // Passed pawn Phase P4 tuning parameters (SPSA-ready via UCI)
     int passerPathFreeBonus = 4;                 // Bonus when promotion path is empty
     int passerPathSafeBonus = -1;                // Bonus when enemy lacks control on path squares
