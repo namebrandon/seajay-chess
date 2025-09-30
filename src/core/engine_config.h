@@ -64,8 +64,8 @@ public:
     int semiOpenGuardRebate = 4;                 // Rebate when friendly pawns still guard the file
 
     // Loose pawn tuning parameters
-    int loosePawnOwnHalfPenalty = 2;             // Penalty for unsupported pawns on our side of the board
-    int loosePawnEnemyHalfPenalty = 6;           // Penalty for unsupported pawns in enemy territory
+    int loosePawnOwnHalfPenalty = 6;             // Penalty for unsupported pawns on our side of the board
+    int loosePawnEnemyHalfPenalty = 13;          // Penalty for unsupported pawns in enemy territory
     int loosePawnPhalanxRebate = 3;              // Rebate when adjacent friendly pawn forms a phalanx
 
     // Passed pawn phalanx tuning parameters
@@ -85,9 +85,9 @@ public:
     int bishopColorBlockedPenalty = 3;           // Penalty per blocked central pawn sharing bishop color
 
     // Pawn span & tension parameters
-    int pawnInfiltrationBonus = 4;               // Bonus per heavy piece penetrating enemy pawn span
-    int pawnTensionPenalty = 2;                  // Penalty per pawn tension instance
-    int pawnPushThreatBonus = 3;                 // Bonus per safe single-step pawn push threat
+    int pawnInfiltrationBonus = 25;              // Bonus per heavy piece penetrating enemy pawn span
+    int pawnTensionPenalty = 3;                  // Penalty per pawn tension instance
+    int pawnPushThreatBonus = 6;                 // Bonus per safe single-step pawn push threat
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11

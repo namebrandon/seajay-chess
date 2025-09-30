@@ -198,8 +198,8 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32" << std::endl;
     std::cout << "option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64" << std::endl;
     std::cout << "option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32" << std::endl;
-    std::cout << "option name EvalLoosePawnOwnHalfPenalty type spin default 2 min 0 max 32" << std::endl;
-    std::cout << "option name EvalLoosePawnEnemyHalfPenalty type spin default 6 min 0 max 64" << std::endl;
+    std::cout << "option name EvalLoosePawnOwnHalfPenalty type spin default 6 min 0 max 32" << std::endl;
+    std::cout << "option name EvalLoosePawnEnemyHalfPenalty type spin default 13 min 0 max 64" << std::endl;
     std::cout << "option name EvalLoosePawnPhalanxRebate type spin default 3 min 0 max 32" << std::endl;
     std::cout << "option name EvalPasserPhalanxSupportBonus type spin default 3 min 0 max 64" << std::endl;
     std::cout << "option name EvalPasserPhalanxAdvanceBonus type spin default 16 min 0 max 64" << std::endl;
@@ -211,9 +211,9 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalBishopColorHarmonyBonus type spin default 2 min -16 max 16" << std::endl;
     std::cout << "option name EvalBishopColorTensionPenalty type spin default 2 min 0 max 16" << std::endl;
     std::cout << "option name EvalBishopColorBlockedPenalty type spin default 3 min 0 max 32" << std::endl;
-    std::cout << "option name EvalPawnInfiltrationBonus type spin default 4 min -32 max 32" << std::endl;
-    std::cout << "option name EvalPawnTensionPenalty type spin default 2 min 0 max 16" << std::endl;
-    std::cout << "option name EvalPawnPushThreatBonus type spin default 3 min 0 max 16" << std::endl;
+    std::cout << "option name EvalPawnInfiltrationBonus type spin default 25 min -32 max 32" << std::endl;
+    std::cout << "option name EvalPawnTensionPenalty type spin default 3 min 0 max 16" << std::endl;
+    std::cout << "option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
     
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
