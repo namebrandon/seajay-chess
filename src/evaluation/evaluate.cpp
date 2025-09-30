@@ -245,8 +245,7 @@ struct KingDangerComponents {
     int pinnedDefenders = 0;
     int shieldPawns = 0;
     int stormPawns = 0;
-    int safeChecks = 0;
-    int queenSafeChecks = 0;
+    std::array<int, 4> safeChecks {0, 0, 0, 0}; // N, B, R, Q
 };
 
 KingDangerComponents computeKingDangerComponents(const Board& board,
@@ -310,7 +309,28 @@ KingDangerComponents computeKingDangerComponents(const Board& board,
     components.pinnedDefenders = popCount(pinned & (ring | flank));
 
     components.shieldPawns = popCount(KingSafety::getShieldPawns(board, defender, kingSquare));
-    components.queenSafeChecks = telemetry.queenSafeChecks[attacker];
+    components.safeChecks[3] = telemetry.queenSafeChecks[attacker];
+
+    auto countSafeCheckers = [&](Bitboard checkers, PieceType pt) {
+        int count = 0;
+        Bitboard subset = checkers & board.pieces(attacker, pt);
+        while (subset) {
+            Square sq = popLsb(subset);
+            if (!MoveGenerator::isSquareAttacked(board, sq, defender)) {
+                ++count;
+            }
+        }
+        return count;
+    };
+
+    Bitboard knightCheckers = MoveGenerator::getKnightAttacks(kingSquare);
+    components.safeChecks[0] = countSafeCheckers(knightCheckers, KNIGHT);
+
+    Bitboard bishopCheckers = MoveGenerator::getBishopAttacks(kingSquare, occupied);
+    components.safeChecks[1] = countSafeCheckers(bishopCheckers, BISHOP);
+
+    Bitboard rookCheckers = MoveGenerator::getRookAttacks(kingSquare, occupied);
+    components.safeChecks[2] = countSafeCheckers(rookCheckers, ROOK);
 
     return components;
 }
@@ -323,8 +343,8 @@ int scoreKingDanger(const KingDangerComponents& components, const EngineConfig& 
     score += config.kingDangerPinnedDefenderPenalty * components.pinnedDefenders;
     score -= config.kingDangerShieldBonus * components.shieldPawns;
     score += config.kingDangerStormPenalty * components.stormPawns;
-    score += config.kingDangerSafeCheckWeight * components.safeChecks;
-    score += config.kingDangerQueenSafeCheckWeight * components.queenSafeChecks;
+    score += config.kingDangerSafeCheckWeight * (components.safeChecks[0] + components.safeChecks[1] + components.safeChecks[2]);
+    score += config.kingDangerQueenSafeCheckWeight * components.safeChecks[3];
     return score;
 }
 
@@ -1780,10 +1800,12 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
                 detail.shieldPawns[BLACK] = dangerComponents[BLACK].shieldPawns;
                 detail.stormPawns[WHITE] = dangerComponents[WHITE].stormPawns;
                 detail.stormPawns[BLACK] = dangerComponents[BLACK].stormPawns;
-                detail.queenSafeChecks[WHITE] = dangerComponents[WHITE].queenSafeChecks;
-                detail.queenSafeChecks[BLACK] = dangerComponents[BLACK].queenSafeChecks;
-                detail.safeChecks[WHITE][3] = dangerComponents[WHITE].queenSafeChecks;
-                detail.safeChecks[BLACK][3] = dangerComponents[BLACK].queenSafeChecks;
+                for (int i = 0; i < 4; ++i) {
+                    detail.safeChecks[WHITE][i] = dangerComponents[WHITE].safeChecks[i];
+                    detail.safeChecks[BLACK][i] = dangerComponents[BLACK].safeChecks[i];
+                }
+                detail.queenSafeChecks[WHITE] = dangerComponents[WHITE].safeChecks[3];
+                detail.queenSafeChecks[BLACK] = dangerComponents[BLACK].safeChecks[3];
             }
         }
     }
