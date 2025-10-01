@@ -248,6 +248,7 @@ private:
     std::vector<std::string> tokenize(const std::string& line);
     void sendInfo(const std::string& message);
     void sendBestMove(Move move);
+    void emitAttackCacheStats(const char* context);
     
     // Statistics for info output
     struct SearchInfo {

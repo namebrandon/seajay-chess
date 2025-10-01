@@ -57,22 +57,16 @@ public:
         
         if (entry.zobristKey == zobristKey && entry.square == square) {
             if (attackingColor == Color::WHITE && entry.validWhite) {
-                #ifdef DEBUG_CACHE_STATS
                 ++m_hits;
-                #endif
                 return {true, entry.attackedByWhite};
             }
             if (attackingColor == Color::BLACK && entry.validBlack) {
-                #ifdef DEBUG_CACHE_STATS
                 ++m_hits;
-                #endif
                 return {true, entry.attackedByBlack};
             }
         }
         
-        #ifdef DEBUG_CACHE_STATS
         ++m_misses;
-        #endif
         return {false, false};
     }
     
@@ -88,7 +82,9 @@ public:
         CacheEntry& entry = m_entries[index];
         
         // Check if we can update existing entry
-        if (entry.zobristKey == zobristKey && entry.square == square) {
+        const bool sameKey = (entry.zobristKey == zobristKey) && (entry.square == square);
+
+        if (sameKey) {
             // Update existing entry
             if (attackingColor == Color::WHITE) {
                 entry.attackedByWhite = isAttacked;
@@ -98,6 +94,9 @@ public:
                 entry.validBlack = 1;
             }
         } else {
+            if (entry.square != NO_SQUARE) {
+                ++m_evictions;
+            }
             // Replace with new entry
             entry.zobristKey = zobristKey;
             entry.square = square;
@@ -121,17 +120,14 @@ public:
             entry.validBlack = 0;
         }
         
-        #ifdef DEBUG_CACHE_STATS
-        m_hits = 0;
-        m_misses = 0;
-        #endif
+        resetStats();
     }
-    
-    #ifdef DEBUG_CACHE_STATS
-    // Cache statistics for debugging
+
+    // Cache statistics for instrumentation
     struct Stats {
         uint64_t hits;
         uint64_t misses;
+        uint64_t evictions;
         double hitRate() const {
             uint64_t total = hits + misses;
             return total > 0 ? static_cast<double>(hits) / total : 0.0;
@@ -139,22 +135,20 @@ public:
     };
     
     Stats getStats() const {
-        return {m_hits, m_misses};
+        return {m_hits, m_misses, m_evictions};
     }
     
     void resetStats() {
         m_hits = 0;
         m_misses = 0;
+        m_evictions = 0;
     }
-    #endif
     
 private:
     std::array<CacheEntry, CACHE_SIZE> m_entries{};
-    
-    #ifdef DEBUG_CACHE_STATS
     mutable uint64_t m_hits = 0;
     mutable uint64_t m_misses = 0;
-    #endif
+    mutable uint64_t m_evictions = 0;
 };
 
 // Thread-local attack cache instance

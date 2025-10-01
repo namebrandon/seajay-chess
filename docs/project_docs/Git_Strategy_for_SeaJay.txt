@@ -5,6 +5,9 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   When using OpenBench for chess engine testing (which is a core function in SeaJay development), descriptive branch names are essential for readable test identification. Instead of
   seeing cryptic test names like "fd3d575e vs b949c42", you'll see meaningful names like "feature/20250819-null-move vs main".
 
+  🔒 **No direct commits to integration branches**
+  Every change must be developed on a feature/bugfix/test/tune branch that originates from the appropriate integration branch. After the branch passes review and validation (bench + OpenBench where applicable), it is merged back into the integration branch with reviewer approval. Direct commits on `integration/*` are prohibited to preserve traceability, OpenBench history, and rollback safety.
+
   Branch Naming Convention
 
   Directory Structure

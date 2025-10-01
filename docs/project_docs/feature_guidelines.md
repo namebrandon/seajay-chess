@@ -26,6 +26,8 @@ echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
 echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
 ```
 
+⚠️ **Build, then bench:** The executable must be rebuilt from the exact sources you are committing (Make/CMake) immediately before recording the node count. Reusing a bench from an older binary will cause OpenBench to reject the commit when it cross-checks the runtime output against your commit message.
+
 ## Core Development Philosophy
 
 **STOP → TEST → PROCEED**
