@@ -241,7 +241,84 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
     ctx.kingSquare[WHITE] = board.kingSquare(WHITE);
     ctx.kingSquare[BLACK] = board.kingSquare(BLACK);
 
-    // TODO Phase B2: Populate attack bitboards
+    // ========================================================================
+    // PHASE B2: ATTACK BITBOARDS
+    // ========================================================================
+    // Compute per-piece-type attack bitboards for both colors.
+    // These are unions of all attacks from pieces of that type.
+
+    // Process both colors
+    for (Color color : {WHITE, BLACK}) {
+        const int idx = static_cast<int>(color);
+
+        // --------------------------------------------------------------------
+        // PAWN ATTACKS (batch computation via template)
+        // --------------------------------------------------------------------
+        // Uses compile-time template to generate optimal shifts for each color
+        // CRITICAL FIX: Black pawn file masks corrected per CPP Review Bug #2
+        Bitboard pawns = board.pieces(color, PAWN);
+        if (color == WHITE) {
+            ctx.pawnAttacks[idx] = computePawnAttacks<WHITE>(pawns);
+        } else {
+            ctx.pawnAttacks[idx] = computePawnAttacks<BLACK>(pawns);
+        }
+
+        // --------------------------------------------------------------------
+        // KNIGHT ATTACKS (iterate all knights, union attacks)
+        // --------------------------------------------------------------------
+        ctx.knightAttacks[idx] = 0ULL;
+        Bitboard knights = board.pieces(color, KNIGHT);
+        while (knights) {
+            Square sq = popLsb(knights);
+            ctx.knightAttacks[idx] |= MoveGenerator::getKnightAttacks(sq);
+        }
+
+        // --------------------------------------------------------------------
+        // SLIDING PIECE ATTACKS
+        // --------------------------------------------------------------------
+        // CRITICAL: Process bishops, rooks, and queens separately to avoid
+        // double-counting queens (CPP Review Bug #1).
+        //
+        // Each queen must be processed exactly once, computing BOTH diagonal
+        // and straight attacks. Bishops and rooks are processed independently.
+
+        Bitboard bishops = board.pieces(color, BISHOP);
+        Bitboard rooks = board.pieces(color, ROOK);
+        Bitboard queens = board.pieces(color, QUEEN);
+
+        // Bishops only (excluding queens)
+        ctx.bishopAttacks[idx] = 0ULL;
+        Bitboard tempBishops = bishops;
+        while (tempBishops) {
+            Square sq = popLsb(tempBishops);
+            ctx.bishopAttacks[idx] |= MoveGenerator::getBishopAttacks(sq, ctx.occupied);
+        }
+
+        // Rooks only (excluding queens)
+        ctx.rookAttacks[idx] = 0ULL;
+        Bitboard tempRooks = rooks;
+        while (tempRooks) {
+            Square sq = popLsb(tempRooks);
+            ctx.rookAttacks[idx] |= MoveGenerator::getRookAttacks(sq, ctx.occupied);
+        }
+
+        // Queens: compute both diagonal AND straight attacks
+        // This is stored separately to allow per-piece-type queries
+        ctx.queenAttacks[idx] = 0ULL;
+        Bitboard tempQueens = queens;
+        while (tempQueens) {
+            Square sq = popLsb(tempQueens);
+            Bitboard diag = MoveGenerator::getBishopAttacks(sq, ctx.occupied);
+            Bitboard straight = MoveGenerator::getRookAttacks(sq, ctx.occupied);
+            ctx.queenAttacks[idx] |= (diag | straight);
+        }
+
+        // --------------------------------------------------------------------
+        // KING ATTACKS (single king per color)
+        // --------------------------------------------------------------------
+        ctx.kingAttacks[idx] = MoveGenerator::getKingAttacks(ctx.kingSquare[idx]);
+    }
+
     // TODO Phase B3: Populate aggregated data (attackedBy, doubleAttacks, etc.)
 }
 
