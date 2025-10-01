@@ -85,7 +85,25 @@ int MvvLvaOrdering::scoreMove(const Board& board, Move move) noexcept {
         MVV_LVA_ASSERT(victim != KING, "Attempting to capture king!");
         
         // Use the simple MVV-LVA formula
-        return VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker];
+        int score = VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker];
+
+        // Contact-check sacs (e.g., Qxh7+) need higher priority than their MVV-LVA
+        // suggests. If a queen capture lands on the defender king's ring, bump the
+        // score so the move is searched earlier (helps WAC.049).
+        if (attacker == QUEEN) {
+            Color us = board.sideToMove();
+            Color defender = ~us;
+            Square defenderKing = board.kingSquare(defender);
+            if (defenderKing != NO_SQUARE) {
+                Bitboard contactMask = MoveGenerator::getKingAttacks(defenderKing);
+                if (contactMask & squareBB(toSq)) {
+                    constexpr int CONTACT_CHECK_CAPTURE_BONUS = 600;
+                    score += CONTACT_CHECK_CAPTURE_BONUS;
+                }
+            }
+        }
+
+        return score;
     }
     
     // Quiet moves get zero score (will be ordered last)

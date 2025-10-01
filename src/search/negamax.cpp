@@ -128,6 +128,8 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Phase 4.1: Depth gating - use CMH from depth >= HISTORY_GATING_DEPTH
     // Below that, fall back to basic history+countermove ordering
     // Optional SEE capture ordering first (prefix-only) when enabled
+    Move originalTT = ttMove;
+
     if (search::g_seeMoveOrdering.getMode() != search::SEEMode::OFF) {
         // SEE policy orders only captures/promotions prefix; quiets preserved
         search::g_seeMoveOrdering.orderMoves(board, moves);
@@ -138,6 +140,35 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
 
     if (searchData) {
         searchData->clearHistoryContext(ply);
+    }
+
+    Move contactMove = NO_MOVE;
+    if (!moves.empty()) {
+        Color defender = ~board.sideToMove();
+        Square defenderKing = board.kingSquare(defender);
+        if (defenderKing != NO_SQUARE) {
+            Bitboard contactMask = MoveGenerator::getKingAttacks(defenderKing);
+            auto contactIt = std::find_if(moves.begin(), moves.end(),
+                [&](const Move& m) {
+                    if (!isCapture(m)) {
+                        return false;
+                    }
+                    Piece attacker = board.pieceAt(moveFrom(m));
+                    if (attacker == NO_PIECE || typeOf(attacker) != QUEEN) {
+                        return false;
+                    }
+                    return (contactMask & squareBB(moveTo(m))) != 0;
+                });
+            if (contactIt != moves.end()) {
+                contactMove = *contactIt;
+                if (contactIt != moves.begin()) {
+                    Move temp = *contactIt;
+                    std::move_backward(moves.begin(), contactIt, contactIt + 1);
+                    *moves.begin() = temp;
+                }
+                ttMove = contactMove;
+            }
+        }
     }
 
     if (depth >= HISTORY_GATING_DEPTH && searchData != nullptr && searchData->killers && searchData->history && 
@@ -204,11 +235,24 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
     // Put TT move first AFTER all other ordering (only do this once!)
     if (ttMove != NO_MOVE) {
         auto it = std::find(moves.begin(), moves.end(), ttMove);
-        if (it != moves.end() && it != moves.begin()) {
-            // Move TT move to front
-            Move temp = *it;
-            std::move_backward(moves.begin(), it, it + 1);
-            *moves.begin() = temp;
+        if (it != moves.end()) {
+            if (it != moves.begin()) {
+                Move temp = *it;
+                std::move_backward(moves.begin(), it, it + 1);
+                *moves.begin() = temp;
+            }
+        }
+    }
+
+    if (contactMove != NO_MOVE && originalTT != NO_MOVE && originalTT != contactMove && moves.size() > 1) {
+        auto it = std::find(moves.begin(), moves.end(), originalTT);
+        if (it != moves.end()) {
+            auto target = moves.begin() + 1;
+            if (it != target) {
+                Move temp = *it;
+                std::move_backward(target, it, it + 1);
+                *target = temp;
+            }
         }
     }
 }
@@ -1534,6 +1578,7 @@ eval::Score negamax(Board& board,
 
         bool givesCheckMove = inCheck(board);
         bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
+        bool isContactQueenCapture = false;
 
         if (pendingLateCaptureSeePrune) {
             if (!givesCheckMove) {
@@ -1687,15 +1732,18 @@ eval::Score negamax(Board& board,
             singularDebugEventIndex = -1;
         }
 
-        if (givesCheckMove && wasCaptureMove && extension == 0) {
+        if (givesCheckMove && wasCaptureMove) {
             Piece movedPiece = board.pieceAt(moveTo(move));
             if (typeOf(movedPiece) == QUEEN) {
                 Color defender = board.sideToMove();
                 Square defenderKing = board.kingSquare(defender);
                 Bitboard contactMask = MoveGenerator::getKingAttacks(defenderKing);
                 if (contactMask & squareBB(moveTo(move))) {
-                    extension = 1;
-                    extensionType = ExtensionType::Contact;
+                    isContactQueenCapture = true;
+                    if (extension == 0) {
+                        extension = 1;
+                        extensionType = ExtensionType::Contact;
+                    }
                 }
             }
         }
@@ -1711,6 +1759,9 @@ eval::Score negamax(Board& board,
                               info.counterMoves->getCounterMove(prevMove) == move);
         // Determine whether the CHILD would be a PV node: at a PV parent, only the first legal move is PV
         bool childIsPV = (isPvNode && legalMoveCount == 1);
+        if (!childIsPV && isContactQueenCapture) {
+            childIsPV = true;
+        }
         NodeContext childContext = makeChildContext(context, childIsPV);
 #ifdef DEBUG
         childContext.clearExcluded();
@@ -1930,6 +1981,14 @@ eval::Score negamax(Board& board,
             
             // Phase 3: Late Move Reductions (LMR)
             int reduction = 0;
+
+            if (isContactQueenCapture) {
+                appliedReduction = 0;
+                TriangularPV* contactPV = (pv != nullptr && childIsPV) ? childPVPtr : nullptr;
+                score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+                                -beta, -alpha, searchInfo, info, limits, tt,
+                                contactPV);
+            } else {
             
             // Phase 2b.7: PVS re-search smoothing - compute early for both LMR and LMP
             bool applySmoothing = false;
@@ -2131,6 +2190,7 @@ eval::Score negamax(Board& board,
                       << " reSearch=" << (didReSearch ? 1 : 0);
                 logTrackedEvent("lmr_applied", extra.str());
             }
+        }
         }
 
         int childStaticEval = 0;
