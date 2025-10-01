@@ -150,6 +150,15 @@ namespace detail {
  *              With alignas(64), rounds to 256 bytes (4 × 64-byte cache lines)
  */
 struct alignas(64) EvalContext {
+    static constexpr int kMaxMobilityEntries = 16;
+
+    struct MobilityEntryList {
+        uint8_t count = 0;
+        std::array<Bitboard, kMaxMobilityEntries> attacks{};
+        std::array<uint8_t, kMaxMobilityEntries> squares{};
+        std::array<uint8_t, kMaxMobilityEntries> pieceTypes{};
+    };
+
     // ========================================================================
     // CACHE LINE 1: Basic position info (64 bytes)
     // ========================================================================
@@ -180,6 +189,7 @@ struct alignas(64) EvalContext {
     Bitboard kingRing[2];           // 8 squares around king
     Bitboard kingRingAttacks[2];    // Enemy attacks on king ring (precomputed)
     Bitboard pawnAttackSpan[2];     // All squares pawns could ever attack (for outposts)
+    MobilityEntryList mobilityPieces[2];  // Per-piece attacks cached for mobility
 
     // ========================================================================
     // Constructor: Zero-initialize all bitboards
@@ -200,6 +210,7 @@ struct alignas(64) EvalContext {
         , kingRing{0ULL, 0ULL}
         , kingRingAttacks{0ULL, 0ULL}
         , pawnAttackSpan{0ULL, 0ULL}
+        , mobilityPieces{}
     {}
 };
 
@@ -215,8 +226,21 @@ inline Bitboard computePawnAttacks(Bitboard pawns) noexcept {
     } else {
         // Black pawns attack diagonally downward (southwest and southeast)
         // CRITICAL FIX: Correct file masking per CPP Review Bug #2
-        return ((pawns & ~FILE_H_BB) >> 9) | ((pawns & ~FILE_A_BB) >> 7);
+        return ((pawns & ~FILE_A_BB) >> 9) | ((pawns & ~FILE_H_BB) >> 7);
     }
+}
+
+inline void appendMobilityEntry(EvalContext& ctx, Color color, PieceType type,
+                                Square square, Bitboard attacks) noexcept {
+    auto& list = ctx.mobilityPieces[static_cast<int>(color)];
+    if (list.count >= EvalContext::kMaxMobilityEntries) {
+        return;
+    }
+
+    const uint8_t idx = list.count++;
+    list.attacks[idx] = attacks;
+    list.squares[idx] = static_cast<uint8_t>(square);
+    list.pieceTypes[idx] = static_cast<uint8_t>(type);
 }
 
 /**
@@ -250,6 +274,7 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
     // Process both colors
     for (Color color : {WHITE, BLACK}) {
         const int idx = static_cast<int>(color);
+        ctx.mobilityPieces[idx].count = 0;
 
         // --------------------------------------------------------------------
         // PAWN ATTACKS (batch computation via template)
@@ -270,7 +295,9 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         Bitboard knights = board.pieces(color, KNIGHT);
         while (knights) {
             Square sq = popLsb(knights);
-            ctx.knightAttacks[idx] |= MoveGenerator::getKnightAttacks(sq);
+            Bitboard knightAttacks = MoveGenerator::getKnightAttacks(sq);
+            ctx.knightAttacks[idx] |= knightAttacks;
+            appendMobilityEntry(ctx, color, KNIGHT, sq, knightAttacks);
         }
 
         // --------------------------------------------------------------------
@@ -291,7 +318,9 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         Bitboard tempBishops = bishops;
         while (tempBishops) {
             Square sq = popLsb(tempBishops);
-            ctx.bishopAttacks[idx] |= MoveGenerator::getBishopAttacks(sq, ctx.occupied);
+            Bitboard attacks = MoveGenerator::getBishopAttacks(sq, ctx.occupied);
+            ctx.bishopAttacks[idx] |= attacks;
+            appendMobilityEntry(ctx, color, BISHOP, sq, attacks);
         }
 
         // Rooks only (excluding queens)
@@ -299,7 +328,9 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         Bitboard tempRooks = rooks;
         while (tempRooks) {
             Square sq = popLsb(tempRooks);
-            ctx.rookAttacks[idx] |= MoveGenerator::getRookAttacks(sq, ctx.occupied);
+            Bitboard attacks = MoveGenerator::getRookAttacks(sq, ctx.occupied);
+            ctx.rookAttacks[idx] |= attacks;
+            appendMobilityEntry(ctx, color, ROOK, sq, attacks);
         }
 
         // Queens: compute both diagonal AND straight attacks
@@ -310,7 +341,9 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
             Square sq = popLsb(tempQueens);
             Bitboard diag = MoveGenerator::getBishopAttacks(sq, ctx.occupied);
             Bitboard straight = MoveGenerator::getRookAttacks(sq, ctx.occupied);
-            ctx.queenAttacks[idx] |= (diag | straight);
+            Bitboard attacks = diag | straight;
+            ctx.queenAttacks[idx] |= attacks;
+            appendMobilityEntry(ctx, color, QUEEN, sq, attacks);
         }
 
         // --------------------------------------------------------------------
@@ -456,7 +489,8 @@ inline int phase0to256(const Board& board) noexcept {
 }
 // Template implementation for evaluation with optional tracing
 template<bool Traced>
-Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
+Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
+                   const detail::EvalContext* spineCtx = nullptr) {
     // Reset trace if provided
     if constexpr (Traced) {
         if (trace) trace->reset();
@@ -1585,243 +1619,145 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     // Phase 2: Conservative mobility bonuses per move count
     // Phase 2.5.e-3: Using SIMD-optimized batched mobility calculation
     static constexpr int MOBILITY_BONUS_PER_MOVE = 2;  // 2 centipawns per available move
-    
+
     int whiteMobilityScore = 0;
     int blackMobilityScore = 0;
-    
-    // Count white piece mobility with batched processing for better ILP
-    // Knights - process in batches for better cache usage
-    Bitboard wn = whiteKnights;
-    {
-        // Extract up to 4 knight positions for parallel processing
-        Square knightSqs[4];
-        int knightCount = 0;
-        Bitboard tempKnights = wn;
-        while (tempKnights && knightCount < 4) {
-            knightSqs[knightCount++] = popLsb(tempKnights);
-        }
-        
-        // Process all knights in parallel (compiler may vectorize)
-        for (int i = 0; i < knightCount; ++i) {
-            Bitboard attacks = MoveGenerator::getKnightAttacks(knightSqs[i]);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            int moveCount = popCount(attacks);
-            whiteMobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
-            if constexpr (Traced) {
-                if (trace) trace->mobilityDetail.whiteKnightMoves += moveCount;
-            }
-        }
-        
-        // Process remaining knights if any
-        while (tempKnights) {
-            Square sq = popLsb(tempKnights);
-            Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-    }
-    
-    // Bishops - batch process for better ILP
-    Bitboard whiteBishops = board.pieces(WHITE, BISHOP);
-    Bitboard wb = whiteBishops;
-    {
-        // Process bishops in groups of 3 for register pressure balance
-        Square bishopSqs[3];
-        int bishopCount = 0;
-        Bitboard tempBishops = wb;
-        
-        while (tempBishops && bishopCount < 3) {
-            bishopSqs[bishopCount++] = popLsb(tempBishops);
-        }
-        
-        // Calculate all bishop attacks in parallel
-        for (int i = 0; i < bishopCount; ++i) {
-            Bitboard attacks = MoveGenerator::getBishopAttacks(bishopSqs[i], occupied);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-        
-        // Process remaining bishops
-        while (tempBishops) {
-            Square sq = popLsb(tempBishops);
-            Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-    }
-    
-    // Rooks - batch process with file bonus tracking
-    Bitboard whiteRooks = board.pieces(WHITE, ROOK);
-    Bitboard wr = whiteRooks;
-    // Phase ROF2: Track rook open file bonus separately
+    int whiteKnightMoves = 0;
+    int whiteBishopMoves = 0;
+    int whiteRookMoves = 0;
+    int whiteQueenMoves = 0;
+    int blackKnightMoves = 0;
+    int blackBishopMoves = 0;
+    int blackRookMoves = 0;
+    int blackQueenMoves = 0;
     int whiteRookFileBonus = 0;
-    {
-        // Batch process rooks for better ILP
-        Square rookSqs[3];
-        int rookCount = 0;
-        Bitboard tempRooks = wr;
-        
-        while (tempRooks && rookCount < 3) {
-            rookSqs[rookCount++] = popLsb(tempRooks);
-        }
-        
-        // Process rooks in parallel
-        for (int i = 0; i < rookCount; ++i) {
-            Bitboard attacks = MoveGenerator::getRookAttacks(rookSqs[i], occupied);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-            
-            // Phase ROF2: Add open/semi-open file bonuses
-            int file = fileOf(rookSqs[i]);
-            if (board.isOpenFile(file)) {
-                whiteRookFileBonus += 25;
-            } else if (board.isSemiOpenFile(file, WHITE)) {
-                whiteRookFileBonus += 15;
-            }
-        }
-        
-        // Process remaining rooks
-        while (tempRooks) {
-            Square sq = popLsb(tempRooks);
-            Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
-            attacks &= ~board.pieces(WHITE);
-            attacks &= ~blackPawnAttacks;
-            whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-            
-            int file = fileOf(sq);
-            if (board.isOpenFile(file)) {
-                whiteRookFileBonus += 25;
-            } else if (board.isSemiOpenFile(file, WHITE)) {
-                whiteRookFileBonus += 15;
-            }
-        }
-    }
-    
-    // Queens - batch process (usually fewer queens)
-    Bitboard whiteQueens = board.pieces(WHITE, QUEEN);
-    Bitboard wq = whiteQueens;
-    while (wq) {
-        Square sq = popLsb(wq);
-        // Queens use combined bishop and rook attacks
-        Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
-        attacks &= ~board.pieces(WHITE);
-        attacks &= ~blackPawnAttacks;
-        whiteMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-    }
-    
-    // Count black piece mobility with batched processing
-    // Knights - batch process
-    Bitboard bn = blackKnights;
-    {
-        Square knightSqs[4];
-        int knightCount = 0;
-        Bitboard tempKnights = bn;
-        
-        while (tempKnights && knightCount < 4) {
-            knightSqs[knightCount++] = popLsb(tempKnights);
-        }
-        
-        for (int i = 0; i < knightCount; ++i) {
-            Bitboard attacks = MoveGenerator::getKnightAttacks(knightSqs[i]);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-        
-        while (tempKnights) {
-            Square sq = popLsb(tempKnights);
-            Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-    }
-    
-    // Bishops - batch process
-    Bitboard blackBishops = board.pieces(BLACK, BISHOP);
-    Bitboard bb = blackBishops;
-    {
-        Square bishopSqs[3];
-        int bishopCount = 0;
-        Bitboard tempBishops = bb;
-        
-        while (tempBishops && bishopCount < 3) {
-            bishopSqs[bishopCount++] = popLsb(tempBishops);
-        }
-        
-        for (int i = 0; i < bishopCount; ++i) {
-            Bitboard attacks = MoveGenerator::getBishopAttacks(bishopSqs[i], occupied);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-        
-        while (tempBishops) {
-            Square sq = popLsb(tempBishops);
-            Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-        }
-    }
-    
-    // Rooks - batch process
-    Bitboard blackRooks = board.pieces(BLACK, ROOK);
-    Bitboard br = blackRooks;
     int blackRookFileBonus = 0;
-    {
-        Square rookSqs[3];
-        int rookCount = 0;
-        Bitboard tempRooks = br;
-        
-        while (tempRooks && rookCount < 3) {
-            rookSqs[rookCount++] = popLsb(tempRooks);
-        }
-        
-        for (int i = 0; i < rookCount; ++i) {
-            Bitboard attacks = MoveGenerator::getRookAttacks(rookSqs[i], occupied);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-            
-            int file = fileOf(rookSqs[i]);
-            if (board.isOpenFile(file)) {
-                blackRookFileBonus += 25;
-            } else if (board.isSemiOpenFile(file, BLACK)) {
-                blackRookFileBonus += 15;
+
+    if (spineCtx) {
+        auto accumulateColor = [&](Color color, int& mobilityScore, int& knightMoves,
+                                   int& bishopMoves, int& rookMoves, int& queenMoves,
+                                   int& rookFileBonus) {
+            const int colorIdx = static_cast<int>(color);
+            const Bitboard mobilityMask = spineCtx->mobilityArea[colorIdx];
+            const auto& entries = spineCtx->mobilityPieces[colorIdx];
+
+            for (uint8_t i = 0; i < entries.count; ++i) {
+                const PieceType pt = static_cast<PieceType>(entries.pieceTypes[i]);
+                const int moveCount = popCount(entries.attacks[i] & mobilityMask);
+
+                switch (pt) {
+                    case KNIGHT:
+                        knightMoves += moveCount;
+                        break;
+                    case BISHOP:
+                        bishopMoves += moveCount;
+                        break;
+                    case ROOK: {
+                        rookMoves += moveCount;
+                        const Square sq = static_cast<Square>(entries.squares[i]);
+                        const int file = fileOf(sq);
+                        if (board.isOpenFile(file)) {
+                            rookFileBonus += 25;
+                        } else if (board.isSemiOpenFile(file, color)) {
+                            rookFileBonus += 15;
+                        }
+                        break;
+                    }
+                    case QUEEN:
+                        queenMoves += moveCount;
+                        break;
+                    default:
+                        break;
+                }
+
+                mobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
             }
-        }
-        
-        while (tempRooks) {
-            Square sq = popLsb(tempRooks);
-            Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
-            attacks &= ~board.pieces(BLACK);
-            attacks &= ~whitePawnAttacks;
-            blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
-            
-            int file = fileOf(sq);
-            if (board.isOpenFile(file)) {
-                blackRookFileBonus += 25;
-            } else if (board.isSemiOpenFile(file, BLACK)) {
-                blackRookFileBonus += 15;
+        };
+        accumulateColor(WHITE, whiteMobilityScore, whiteKnightMoves, whiteBishopMoves,
+                        whiteRookMoves, whiteQueenMoves, whiteRookFileBonus);
+        accumulateColor(BLACK, blackMobilityScore, blackKnightMoves, blackBishopMoves,
+                        blackRookMoves, blackQueenMoves, blackRookFileBonus);
+    } else {
+        auto accumulateLegacy = [&](Color color, Bitboard knights, Bitboard bishops,
+                                    Bitboard rooks, Bitboard queens, Bitboard enemyPawnAttacks,
+                                    int& mobilityScore, int& knightMoves, int& bishopMoves,
+                                    int& rookMoves, int& queenMoves, int& rookFileBonus) {
+            const Bitboard ownPieces = board.pieces(color);
+
+            Bitboard temp = knights;
+            while (temp) {
+                Square sq = popLsb(temp);
+                Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
+                attacks &= ~ownPieces;
+                attacks &= ~enemyPawnAttacks;
+                const int moves = popCount(attacks);
+                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
+                knightMoves += moves;
             }
-        }
+
+            temp = bishops;
+            while (temp) {
+                Square sq = popLsb(temp);
+                Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
+                attacks &= ~ownPieces;
+                attacks &= ~enemyPawnAttacks;
+                const int moves = popCount(attacks);
+                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
+                bishopMoves += moves;
+            }
+
+            temp = rooks;
+            while (temp) {
+                Square sq = popLsb(temp);
+                Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
+                attacks &= ~ownPieces;
+                attacks &= ~enemyPawnAttacks;
+                const int moves = popCount(attacks);
+                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
+                rookMoves += moves;
+
+                const int file = fileOf(sq);
+                if (board.isOpenFile(file)) {
+                    rookFileBonus += 25;
+                } else if (board.isSemiOpenFile(file, color)) {
+                    rookFileBonus += 15;
+                }
+            }
+
+            temp = queens;
+            while (temp) {
+                Square sq = popLsb(temp);
+                Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
+                attacks &= ~ownPieces;
+                attacks &= ~enemyPawnAttacks;
+                const int moves = popCount(attacks);
+                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
+                queenMoves += moves;
+            }
+        };
+
+        accumulateLegacy(WHITE, whiteKnights, board.pieces(WHITE, BISHOP),
+                         board.pieces(WHITE, ROOK), board.pieces(WHITE, QUEEN),
+                         blackPawnAttacks, whiteMobilityScore, whiteKnightMoves,
+                         whiteBishopMoves, whiteRookMoves, whiteQueenMoves, whiteRookFileBonus);
+
+        accumulateLegacy(BLACK, blackKnights, board.pieces(BLACK, BISHOP),
+                         board.pieces(BLACK, ROOK), board.pieces(BLACK, QUEEN),
+                         whitePawnAttacks, blackMobilityScore, blackKnightMoves,
+                         blackBishopMoves, blackRookMoves, blackQueenMoves, blackRookFileBonus);
     }
-    
-    // Queens - usually fewer, process directly
-    Bitboard blackQueens = board.pieces(BLACK, QUEEN);
-    Bitboard bq = blackQueens;
-    while (bq) {
-        Square sq = popLsb(bq);
-        Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
-        attacks &= ~board.pieces(BLACK);
-        attacks &= ~whitePawnAttacks;
-        blackMobilityScore += popCount(attacks) * MOBILITY_BONUS_PER_MOVE;
+
+    if constexpr (Traced) {
+        if (trace) {
+            trace->mobilityDetail.whiteKnightMoves += whiteKnightMoves;
+            trace->mobilityDetail.whiteBishopMoves += whiteBishopMoves;
+            trace->mobilityDetail.whiteRookMoves += whiteRookMoves;
+            trace->mobilityDetail.whiteQueenMoves += whiteQueenMoves;
+            trace->mobilityDetail.blackKnightMoves += blackKnightMoves;
+            trace->mobilityDetail.blackBishopMoves += blackBishopMoves;
+            trace->mobilityDetail.blackRookMoves += blackRookMoves;
+            trace->mobilityDetail.blackQueenMoves += blackQueenMoves;
+        }
     }
     
     // Phase 2: Apply mobility difference to evaluation
@@ -1979,9 +1915,8 @@ Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
     detail::EvalContext ctx;
     detail::populateContext(ctx, board);
 
-    // TODO Phase C-D: Replace legacy evaluator with context-based evaluation
-    // For now, context is built but not used (validates construction cost)
-    return evaluateImpl<Traced>(board, trace);
+    // Phase C1: Reuse legacy evaluator while providing precomputed context
+    return evaluateImpl<Traced>(board, trace, &ctx);
 }
 
 // ============================================================================
@@ -1994,7 +1929,7 @@ Score evaluate(const Board& board) {
     if (seajay::getConfig().evalUseSpine) {
         return evaluateSpine<false>(board, nullptr);
     } else {
-        return evaluateImpl<false>(board, nullptr);
+        return evaluateImpl<false>(board, nullptr, nullptr);
     }
 }
 
@@ -2003,7 +1938,7 @@ Score evaluateWithTrace(const Board& board, EvalTrace& trace) {
     if (seajay::getConfig().evalUseSpine) {
         return evaluateSpine<true>(board, &trace);
     } else {
-        return evaluateImpl<true>(board, &trace);
+        return evaluateImpl<true>(board, &trace, nullptr);
     }
 }
 
