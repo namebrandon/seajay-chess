@@ -74,6 +74,9 @@ Example: PP1, PP2, PP3a, PP3b
 
 2. **Local Testing**
    ```bash
+   # Rebuild from the current branch before capturing bench output
+   ./build.sh Release
+
    # Run benchmark
    echo "bench" | ./bin/seajay | grep "Benchmark complete"
 
