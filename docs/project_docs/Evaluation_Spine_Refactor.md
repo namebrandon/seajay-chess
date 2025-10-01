@@ -76,7 +76,7 @@ All new evaluation logic will be gated behind UCI option `EvalUseSpine` (default
 
 ### Integration Branch: `integration/evaluation-spine`
 
-**⚠️ CRITICAL: All evaluation spine work happens on the integration branch and feature branches derived from it. NEVER merge directly to `main` without explicit human approval.**
+**⚠️ CRITICAL: All evaluation spine work happens on feature branches that fork from `integration/evaluation-spine`. No direct commits are allowed on the integration branch. NEVER merge directly to `main` without explicit human approval.**
 
 ### Branch Hierarchy
 
@@ -107,6 +107,7 @@ Each implementation phase follows this workflow:
    git pull origin integration/evaluation-spine  # Ensure up to date
    git checkout -b feature/spine-phase-X-description
    ```
+   > 🚫 Do **not** commit directly to `integration/evaluation-spine`. Every code change must live on a feature branch until it is reviewed, validated, and merged back.
 
 2. **Implement Phase**
    - Follow phase implementation details from this document

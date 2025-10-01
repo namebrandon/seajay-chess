@@ -608,8 +608,15 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (profile) {
         g_attackCalls[colorIdx].fetch_add(1, std::memory_order_relaxed);
     }
+    auto registerHit = [&](void) {
+        if (profile) {
+            g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
+        }
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true, profile);
+    };
+
     // Phase 2.1.b: Try cache first with lightweight per-square caching
-    auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor);
+    auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor, profile);
     if (hit) {
         return isAttacked;
     }
@@ -619,10 +626,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 1. Check knight attacks first (most common attackers in middlegame, simple lookup)
     Bitboard knights = board.pieces(attackingColor, KNIGHT);
     if (knights & getKnightAttacks(square)) {
-        if (profile) {
-            g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-        }
-        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        registerHit();
         return true;
     }
     
@@ -631,10 +635,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     if (pawns) {
         Bitboard pawnAttacks = getPawnAttacks(square, ~attackingColor); // Reverse perspective
         if (pawns & pawnAttacks) {
-            if (profile) {
-                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-            }
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+            registerHit();
             return true;
         }
     }
@@ -642,46 +643,24 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 3. Get occupied bitboard once (avoid multiple calls)
     Bitboard occupied = board.occupied();
     
-    // 4. Check queen attacks (can attack like both bishop and rook)
     Bitboard queens = board.pieces(attackingColor, QUEEN);
-    if (queens) {
-        // Compute combined diagonal and straight attacks for queens
-        // Use direct magic bitboard calls to avoid runtime config check in hot path
-        Bitboard queenAttacks = seajay::magicBishopAttacks(square, occupied) | 
-                               seajay::magicRookAttacks(square, occupied);
-        if (queens & queenAttacks) {
-            if (profile) {
-                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-            }
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
-            return true;
-        }
-    }
-    
-    // 5. Check bishop attacks (only if no queen found it on diagonal)
     Bitboard bishops = board.pieces(attackingColor, BISHOP);
-    if (bishops) {
-        // Direct magic bitboard call for hot path optimization
-        Bitboard bishopAttacks = seajay::magicBishopAttacks(square, occupied);
-        if (bishops & bishopAttacks) {
-            if (profile) {
-                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-            }
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+    Bitboard rooks = board.pieces(attackingColor, ROOK);
+
+    // 4. Check diagonal sliders (bishops and queens) with single magic lookup
+    if (bishops | queens) {
+        Bitboard diagonalAttacks = seajay::magicBishopAttacks(square, occupied);
+        if ((bishops | queens) & diagonalAttacks) {
+            registerHit();
             return true;
         }
     }
-    
-    // 6. Check rook attacks (only if no queen found it on rank/file)
-    Bitboard rooks = board.pieces(attackingColor, ROOK);
-    if (rooks) {
-        // Direct magic bitboard call for hot path optimization
-        Bitboard rookAttacks = seajay::magicRookAttacks(square, occupied);
-        if (rooks & rookAttacks) {
-            if (profile) {
-                g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-            }
-            t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+
+    // 5. Check orthogonal sliders (rooks and queens) with single magic lookup
+    if (rooks | queens) {
+        Bitboard straightAttacks = seajay::magicRookAttacks(square, occupied);
+        if ((rooks | queens) & straightAttacks) {
+            registerHit();
             return true;
         }
     }
@@ -689,15 +668,12 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     // 7. Check king attacks last (least likely attacker in most positions)
     Bitboard king = board.pieces(attackingColor, KING);
     if (king & getKingAttacks(square)) {
-        if (profile) {
-            g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
-        }
-        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        registerHit();
         return true;
     }
 
     // Not attacked - cache the negative result
-    t_attackCache.store(board.zobristKey(), square, attackingColor, false);
+    t_attackCache.store(board.zobristKey(), square, attackingColor, false, profile);
     if (profile) {
         g_attackFalse[colorIdx].fetch_add(1, std::memory_order_relaxed);
     }

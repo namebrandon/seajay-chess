@@ -14,6 +14,7 @@
 #include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../core/move_generation.h"  // For attack profiling snapshots
+#include "../core/attack_cache.h"     // Attack cache instrumentation
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // For evaluation functions
 #include "../evaluation/eval_trace.h"  // For evaluation tracing
@@ -659,6 +660,11 @@ void UCIEngine::search(const SearchParams& params) {
 }
 
 void UCIEngine::searchThreadFunc(const SearchParams& params) {
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     // Stage 9b: Check for immediate draw before searching
     if (m_board.isDraw()) {
         reportDrawIfDetected();
@@ -755,6 +761,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Mark search as complete
     m_searching.store(false, std::memory_order_relaxed);
+
+    if (trackAttacks) {
+        emitAttackCacheStats("search");
+    }
 }
 
 void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
@@ -894,6 +904,11 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
         }
     }
     
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     // Run the SEARCH benchmark suite (deterministic search signature)
     auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
@@ -906,11 +921,20 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
     std::cout << result.totalNodes << " nodes "
               << std::fixed << std::setprecision(0) << result.averageNps()
               << " nps" << std::endl;
+
+    if (trackAttacks) {
+        emitAttackCacheStats("bench");
+    }
 }
 
 void UCIEngine::runBenchmark(int depth) {
     // Run search benchmark directly without UCI loop (for OpenBench)
     // Use verbose=true to show per-position lines as requested
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Output final result as info string (OpenBench format)
@@ -921,6 +945,10 @@ void UCIEngine::runBenchmark(int depth) {
     std::cout << result.totalNodes << " nodes "
               << std::fixed << std::setprecision(0) << result.averageNps()
               << " nps" << std::endl;
+
+    if (trackAttacks) {
+        emitAttackCacheStats("bench");
+    }
 }
 
 void UCIEngine::sendInfo(const std::string& message) {
@@ -929,6 +957,25 @@ void UCIEngine::sendInfo(const std::string& message) {
 
 void UCIEngine::sendBestMove(Move move) {
     std::cout << "bestmove " << moveToUCI(move) << std::endl;
+}
+
+void UCIEngine::emitAttackCacheStats(const char* context) {
+    const auto stats = seajay::t_attackCache.getStats();
+    if (stats.hits == 0 && stats.misses == 0 && stats.evictions == 0) {
+        return;
+    }
+
+    std::ostringstream oss;
+    oss << "AttackCache";
+    if (context && *context) {
+        oss << '[' << context << ']';
+    }
+    oss << " hits=" << stats.hits
+        << " misses=" << stats.misses
+        << " evictions=" << stats.evictions
+        << " hitrate=" << std::fixed << std::setprecision(2) << (stats.hitRate() * 100.0) << '%';
+
+    sendInfo(oss.str());
 }
 
 std::vector<std::string> UCIEngine::tokenize(const std::string& line) {
