@@ -1741,15 +1741,52 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
     }
 }
 
+// ============================================================================
+// EVALUATION SPINE: New evaluator using centralized attack context
+// ============================================================================
+
+/**
+ * Evaluation spine stub (Phase A2).
+ *
+ * Currently calls legacy evaluateImpl, but will be replaced with context-based
+ * evaluation in Phase B+.
+ *
+ * @param board Position to evaluate
+ * @param trace Optional evaluation trace (for debugging)
+ * @return Score from side-to-move perspective
+ */
+template<bool Traced>
+Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
+    // Phase A2: Stub implementation - call legacy evaluator
+    // TODO Phase B: Build EvalContext and use spine-based evaluation
+    // detail::EvalContext ctx;
+    // detail::populateContext(ctx, board);
+    // ... evaluate using ctx ...
+
+    return evaluateImpl<Traced>(board, trace);
+}
+
+// ============================================================================
+// PUBLIC INTERFACES
+// ============================================================================
+
 // Public interfaces for evaluation
 Score evaluate(const Board& board) {
-    // Normal evaluation with no tracing - zero overhead
-    return evaluateImpl<false>(board, nullptr);
+    // Route to spine or legacy evaluator based on UCI option
+    if (seajay::getConfig().evalUseSpine) {
+        return evaluateSpine<false>(board, nullptr);
+    } else {
+        return evaluateImpl<false>(board, nullptr);
+    }
 }
 
 Score evaluateWithTrace(const Board& board, EvalTrace& trace) {
-    // Evaluation with detailed tracing
-    return evaluateImpl<true>(board, &trace);
+    // Route to spine or legacy evaluator based on UCI option
+    if (seajay::getConfig().evalUseSpine) {
+        return evaluateSpine<true>(board, &trace);
+    } else {
+        return evaluateImpl<true>(board, &trace);
+    }
 }
 
 #ifdef DEBUG
