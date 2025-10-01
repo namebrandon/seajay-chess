@@ -223,10 +223,27 @@ inline Bitboard computePawnAttacks(Bitboard pawns) noexcept {
  * Populate EvalContext with attack and position data.
  * Call once at start of evaluation.
  *
+ * Phase B1: Populate basic position info only
+ * Phase B2: Will add attack bitboards
+ * Phase B3: Will add aggregated data
+ *
  * @param ctx Context to populate (output parameter)
  * @param board Position to analyze
  */
-void populateContext(EvalContext& ctx, const Board& board) noexcept;
+void populateContext(EvalContext& ctx, const Board& board) noexcept {
+    // ========================================================================
+    // PHASE B1: BASIC POSITION INFO
+    // ========================================================================
+    // Cache frequently-accessed position data for fast lookup
+    ctx.occupied = board.occupied();
+    ctx.occupiedByColor[WHITE] = board.pieces(WHITE);
+    ctx.occupiedByColor[BLACK] = board.pieces(BLACK);
+    ctx.kingSquare[WHITE] = board.kingSquare(WHITE);
+    ctx.kingSquare[BLACK] = board.kingSquare(BLACK);
+
+    // TODO Phase B2: Populate attack bitboards
+    // TODO Phase B3: Populate aggregated data (attackedBy, doubleAttacks, etc.)
+}
 
 } // namespace detail
 
@@ -1761,10 +1778,10 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
 // ============================================================================
 
 /**
- * Evaluation spine stub (Phase A2).
+ * Evaluation spine (Phase B1).
  *
- * Currently calls legacy evaluateImpl, but will be replaced with context-based
- * evaluation in Phase B+.
+ * Builds EvalContext with basic position info, but still uses legacy evaluator.
+ * Full spine-based evaluation will be implemented in Phase C-D.
  *
  * @param board Position to evaluate
  * @param trace Optional evaluation trace (for debugging)
@@ -1772,12 +1789,12 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr) {
  */
 template<bool Traced>
 Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
-    // Phase A2: Stub implementation - call legacy evaluator
-    // TODO Phase B: Build EvalContext and use spine-based evaluation
-    // detail::EvalContext ctx;
-    // detail::populateContext(ctx, board);
-    // ... evaluate using ctx ...
+    // Phase B1: Build context with basic position info
+    detail::EvalContext ctx;
+    detail::populateContext(ctx, board);
 
+    // TODO Phase C-D: Replace legacy evaluator with context-based evaluation
+    // For now, context is built but not used (validates construction cost)
     return evaluateImpl<Traced>(board, trace);
 }
 
