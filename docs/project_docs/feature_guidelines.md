@@ -60,6 +60,8 @@ Example: PP1, PP2, PP3a, PP3b
 
 ### 3. Development Workflow
 
+> **Test early, test often.** Every meaningful change should land in the smallest reviewable slice, committed and pushed immediately for SPRT coverage. Delaying pushes piles changes together, hides regressions (e.g., the -13 nELO attack-cache instrumentation incident), and turns debugging into archaeology. Keep deltas bite-sized so OpenBench can flag issues before they snowball.
+
 #### For Each Phase:
 
 1. **Implementation**

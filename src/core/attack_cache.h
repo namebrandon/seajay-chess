@@ -50,23 +50,29 @@ public:
      * @param attackingColor The attacking color
      * @return pair<bool, bool> - first=cache hit, second=is attacked
      */
-    std::pair<bool, bool> probe(Hash zobristKey, Square square, Color attackingColor) const {
+    std::pair<bool, bool> probe(Hash zobristKey, Square square, Color attackingColor, bool recordStats = false) const {
         // Combine zobrist and square for unique cache key
         const size_t index = (zobristKey ^ (square * 0x9e3779b97f4a7c15ULL)) & CACHE_MASK;
         const CacheEntry& entry = m_entries[index];
         
         if (entry.zobristKey == zobristKey && entry.square == square) {
             if (attackingColor == Color::WHITE && entry.validWhite) {
-                ++m_hits;
+                if (recordStats) {
+                    ++m_hits;
+                }
                 return {true, entry.attackedByWhite};
             }
             if (attackingColor == Color::BLACK && entry.validBlack) {
-                ++m_hits;
+                if (recordStats) {
+                    ++m_hits;
+                }
                 return {true, entry.attackedByBlack};
             }
         }
         
-        ++m_misses;
+        if (recordStats) {
+            ++m_misses;
+        }
         return {false, false};
     }
     
@@ -77,14 +83,12 @@ public:
      * @param attackingColor The attacking color
      * @param isAttacked Whether the square is attacked
      */
-    void store(Hash zobristKey, Square square, Color attackingColor, bool isAttacked) {
+    void store(Hash zobristKey, Square square, Color attackingColor, bool isAttacked, bool recordStats = false) {
         const size_t index = (zobristKey ^ (square * 0x9e3779b97f4a7c15ULL)) & CACHE_MASK;
         CacheEntry& entry = m_entries[index];
         
         // Check if we can update existing entry
-        const bool sameKey = (entry.zobristKey == zobristKey) && (entry.square == square);
-
-        if (sameKey) {
+        if (entry.zobristKey == zobristKey && entry.square == square) {
             // Update existing entry
             if (attackingColor == Color::WHITE) {
                 entry.attackedByWhite = isAttacked;
@@ -94,7 +98,7 @@ public:
                 entry.validBlack = 1;
             }
         } else {
-            if (entry.square != NO_SQUARE) {
+            if (recordStats && entry.square != NO_SQUARE) {
                 ++m_evictions;
             }
             // Replace with new entry
@@ -120,30 +124,31 @@ public:
             entry.validBlack = 0;
         }
         
-        resetStats();
+        m_hits = 0;
+        m_misses = 0;
+        m_evictions = 0;
     }
 
-    // Cache statistics for instrumentation
     struct Stats {
-        uint64_t hits;
-        uint64_t misses;
-        uint64_t evictions;
+        uint64_t hits = 0;
+        uint64_t misses = 0;
+        uint64_t evictions = 0;
         double hitRate() const {
-            uint64_t total = hits + misses;
+            const uint64_t total = hits + misses;
             return total > 0 ? static_cast<double>(hits) / total : 0.0;
         }
     };
-    
+
     Stats getStats() const {
         return {m_hits, m_misses, m_evictions};
     }
-    
+
     void resetStats() {
         m_hits = 0;
         m_misses = 0;
         m_evictions = 0;
     }
-    
+
 private:
     std::array<CacheEntry, CACHE_SIZE> m_entries{};
     mutable uint64_t m_hits = 0;

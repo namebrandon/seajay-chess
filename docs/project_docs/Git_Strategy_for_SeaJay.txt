@@ -8,6 +8,9 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   🔒 **No direct commits to integration branches**
   Every change must be developed on a feature/bugfix/test/tune branch that originates from the appropriate integration branch. After the branch passes review and validation (bench + OpenBench where applicable), it is merged back into the integration branch with reviewer approval. Direct commits on `integration/*` are prohibited to preserve traceability, OpenBench history, and rollback safety.
 
+  ⏱️ **Push early, push often**
+  Small, reviewable commits should be pushed as soon as they build and bench. Frequent SPRT runs catch regressions (like the -13 nELO attack-cache instrumentation hit) before they stack up and become expensive to unwind. Treat OpenBench like CI: don’t batch large sets of changes.
+
   Branch Naming Convention
 
   Directory Structure

@@ -612,11 +612,11 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
         if (profile) {
             g_attackHits[colorIdx].fetch_add(1, std::memory_order_relaxed);
         }
-        t_attackCache.store(board.zobristKey(), square, attackingColor, true);
+        t_attackCache.store(board.zobristKey(), square, attackingColor, true, profile);
     };
 
     // Phase 2.1.b: Try cache first with lightweight per-square caching
-    auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor);
+    auto [hit, isAttacked] = t_attackCache.probe(board.zobristKey(), square, attackingColor, profile);
     if (hit) {
         return isAttacked;
     }
@@ -642,7 +642,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     
     // 3. Get occupied bitboard once (avoid multiple calls)
     Bitboard occupied = board.occupied();
-
+    
     Bitboard queens = board.pieces(attackingColor, QUEEN);
     Bitboard bishops = board.pieces(attackingColor, BISHOP);
     Bitboard rooks = board.pieces(attackingColor, ROOK);
@@ -673,7 +673,7 @@ bool MoveGenerator::isSquareAttacked(const Board& board, Square square, Color at
     }
 
     // Not attacked - cache the negative result
-    t_attackCache.store(board.zobristKey(), square, attackingColor, false);
+    t_attackCache.store(board.zobristKey(), square, attackingColor, false, profile);
     if (profile) {
         g_attackFalse[colorIdx].fetch_add(1, std::memory_order_relaxed);
     }

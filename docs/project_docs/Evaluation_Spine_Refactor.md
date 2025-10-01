@@ -176,7 +176,7 @@ Each implementation phase follows this workflow:
 
 - **Branch:** `integration/evaluation-spine`
 - **Created from:** `main` at commit `98553ea` (SeaJay version 20250930)
-- **Baseline bench:** `2631548 nodes`
+- **Baseline bench:** `2428308 nodes`
 - **Purpose:** Aggregate all evaluation spine refactor work before merging to `main`
 
 ### Related Investigation
