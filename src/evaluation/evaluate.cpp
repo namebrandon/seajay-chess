@@ -118,7 +118,8 @@ private:
 // This eliminates redundant isSquareAttacked calls and improves NPS by 15-25%.
 //
 // Design: Stack-allocated, cache-aligned, thread-safe, LazySMP-ready
-// Size: 192 bytes (3 cache lines) - optimized per CPP Review recommendations
+// Size: 256 bytes (4 cache lines) in current implementation
+//       CPP Review recommended 192 bytes; deferred pending Phase C-D profiling
 // ============================================================================
 
 namespace detail {
@@ -129,10 +130,24 @@ namespace detail {
  * Computed once at the start of evaluation, consumed by all evaluation terms.
  * Stack-allocated, thread-local, LazySMP-safe.
  *
- * Memory Layout: 192 bytes (3 cache lines) optimized for access patterns
- * - Cache line 1: Basic position data (most frequently accessed)
- * - Cache line 2: Per-piece-type attacks
- * - Cache line 3: Aggregated attack data
+ * Memory Layout: 256 bytes (4 cache lines) - Current Implementation
+ *
+ * OPTIMIZATION NOTE: CPP Review recommended 192 bytes (3 cache lines) via:
+ *   - Lazy evaluation for rarely-used fields (mobilityArea, pawnAttackSpan)
+ *   - More aggressive field pruning
+ *   - Access-pattern-based grouping vs logical grouping
+ *
+ * We chose 256 bytes for Phase A-B to:
+ *   1. Get infrastructure working first
+ *   2. Profile actual access patterns in Phase C-D
+ *   3. Optimize based on measured hotspots, not speculation
+ *   4. 256 bytes is still excellent (<512-byte threshold)
+ *
+ * Future: After Phase C-D profiling, consider 192-byte optimization if measurements
+ *         show significant L1 cache benefit.
+ *
+ * Actual size: 27 Bitboards (216 bytes) + 2 Squares (8 bytes) = 224 bytes raw
+ *              With alignas(64), rounds to 256 bytes (4 × 64-byte cache lines)
  */
 struct alignas(64) EvalContext {
     // ========================================================================
