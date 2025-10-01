@@ -1,5 +1,10 @@
 Git Branch Management for SeaJay Development / OpenBench Testing
 
+  CRITICAL DIRECTIVE
+
+  - Commit and push after each logical change so OpenBench SPRT runs can isolate regressions to a single revision. Bundled changes
+    without validation are prohibited.
+
   Overview
 
   When using OpenBench for chess engine testing (which is a core function in SeaJay development), descriptive branch names are essential for readable test identification. Instead of
