@@ -319,7 +319,116 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         ctx.kingAttacks[idx] = MoveGenerator::getKingAttacks(ctx.kingSquare[idx]);
     }
 
-    // TODO Phase B3: Populate aggregated data (attackedBy, doubleAttacks, etc.)
+    // ========================================================================
+    // PHASE B3: AGGREGATED ATTACK DATA
+    // ========================================================================
+    // Compute derived attack data from per-piece-type attacks.
+    // This data is used by multiple evaluation terms (mobility, king safety, threats).
+
+    for (Color color : {WHITE, BLACK}) {
+        const int idx = static_cast<int>(color);
+        const int enemyIdx = 1 - idx;
+
+        // --------------------------------------------------------------------
+        // ATTACKED BY: Union of all piece attacks
+        // --------------------------------------------------------------------
+        // This bitboard represents all squares attacked by pieces of this color.
+        // Used for: mobility calculation, threat detection, king safety
+        ctx.attackedBy[idx] = ctx.pawnAttacks[idx] |
+                              ctx.knightAttacks[idx] |
+                              ctx.bishopAttacks[idx] |
+                              ctx.rookAttacks[idx] |
+                              ctx.queenAttacks[idx] |
+                              ctx.kingAttacks[idx];
+
+        // --------------------------------------------------------------------
+        // DOUBLE ATTACKS: Squares attacked 2+ times
+        // --------------------------------------------------------------------
+        // Optimized O(n) algorithm per CPP Review Section 4.
+        // Tracks which squares are attacked by multiple piece types.
+        // Used for: threat evaluation (forks, pins), tactical bonuses
+        Bitboard singleAttack = 0ULL;
+        Bitboard doubleOrMore = 0ULL;
+
+        // Lambda to merge attacks and track overlaps
+        auto mergeAttacks = [&](Bitboard attacks) {
+            doubleOrMore |= singleAttack & attacks;  // Track new overlaps
+            singleAttack |= attacks;                  // Add new attacks
+        };
+
+        // Process piece attacks in order (most to least common)
+        mergeAttacks(ctx.pawnAttacks[idx]);
+        mergeAttacks(ctx.knightAttacks[idx]);
+        mergeAttacks(ctx.bishopAttacks[idx]);
+        mergeAttacks(ctx.rookAttacks[idx]);
+        mergeAttacks(ctx.queenAttacks[idx]);
+        mergeAttacks(ctx.kingAttacks[idx]);
+
+        ctx.doubleAttacks[idx] = doubleOrMore;
+
+        // --------------------------------------------------------------------
+        // MOBILITY AREA: Safe squares for mobility calculation
+        // --------------------------------------------------------------------
+        // Squares that are NOT:
+        // - Occupied by own pieces
+        // - Attacked by enemy pawns
+        // This gives a "safe mobility" metric for pieces.
+        ctx.mobilityArea[idx] = ~ctx.occupiedByColor[idx] & ~ctx.pawnAttacks[enemyIdx];
+
+        // --------------------------------------------------------------------
+        // KING SAFETY DATA: King ring and attacks on it
+        // --------------------------------------------------------------------
+        // King ring: 8 squares around the king (or fewer if king is on edge)
+        ctx.kingRing[idx] = MoveGenerator::getKingAttacks(ctx.kingSquare[idx]);
+
+        // Precompute enemy attacks on our king ring (used frequently in king safety)
+        ctx.kingRingAttacks[idx] = ctx.kingRing[idx] & ctx.attackedBy[enemyIdx];
+    }
+
+    // ========================================================================
+    // PAWN ATTACK SPANS: All squares pawns could ever attack
+    // ========================================================================
+    // Used for: outpost detection (squares that can never be attacked by pawns)
+    // Computed separately as it requires forward-fill logic.
+
+    for (Color color : {WHITE, BLACK}) {
+        const int idx = static_cast<int>(color);
+        Bitboard pawns = board.pieces(color, PAWN);
+
+        // Pawn attack span: all squares pawns could ever attack as they advance
+        // Algorithm: Fill forward (toward promotion), then expand diagonally
+        Bitboard span = 0ULL;
+
+        if (color == WHITE) {
+            // Fill all squares forward of white pawns (toward rank 8)
+            Bitboard filled = pawns;
+            for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance (rank 2->8)
+                filled |= (filled << 8) & ~RANK_8_BB;  // Move forward one rank
+            }
+
+            // Expand to diagonal attack squares
+            span = ((filled & ~FILE_A_BB) << 7) |   // Northwest attacks
+                   ((filled & ~FILE_H_BB) << 9);     // Northeast attacks
+
+            // Pawns can't attack their own starting ranks
+            span &= ~(RANK_1_BB | RANK_2_BB);
+        } else {
+            // Fill all squares backward of black pawns (toward rank 1)
+            Bitboard filled = pawns;
+            for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance (rank 7->1)
+                filled |= (filled >> 8) & ~RANK_1_BB;  // Move backward one rank
+            }
+
+            // Expand to diagonal attack squares
+            span = ((filled & ~FILE_H_BB) >> 7) |   // Southeast attacks
+                   ((filled & ~FILE_A_BB) >> 9);     // Southwest attacks
+
+            // Pawns can't attack their own starting ranks
+            span &= ~(RANK_7_BB | RANK_8_BB);
+        }
+
+        ctx.pawnAttackSpan[idx] = span;
+    }
 }
 
 } // namespace detail
