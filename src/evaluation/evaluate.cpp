@@ -1523,53 +1523,64 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     // Calculate squares attacked by pawns (for safer mobility calculation)
     Bitboard whitePawnAttacks = 0;
     Bitboard blackPawnAttacks = 0;
-    
-    // Calculate pawn attacks for each side
-    Bitboard wp = whitePawns;
-    while (wp) {
-        Square sq = popLsb(wp);
-        whitePawnAttacks |= pawnAttacks(WHITE, sq);
-    }
-    
-    Bitboard bp = blackPawns;
-    while (bp) {
-        Square sq = popLsb(bp);
-        blackPawnAttacks |= pawnAttacks(BLACK, sq);
-    }
-    
+
     // Calculate pawn attack spans - all squares pawns could ever attack
-    // For white pawns: fill forward and expand diagonally
-    // For black pawns: fill backward and expand diagonally
-    auto calculatePawnAttackSpan = [](Bitboard pawns, Color color) -> Bitboard {
-        Bitboard span = 0;
-        
-        if (color == WHITE) {
-            // Fill all squares forward of white pawns
-            Bitboard filled = pawns;
-            for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
-                filled |= (filled << 8) & ~RANK_8_BB;  // Move forward one rank
-            }
-            // Expand to diagonals (squares that could be attacked)
-            span = ((filled & ~FILE_A_BB) << 7) | ((filled & ~FILE_H_BB) << 9);
-            // Remove rank 1 and 2 (pawns can't attack backwards)
-            span &= ~(RANK_1_BB | RANK_2_BB);
-        } else {
-            // Fill all squares backward of black pawns  
-            Bitboard filled = pawns;
-            for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
-                filled |= (filled >> 8) & ~RANK_1_BB;  // Move backward one rank
-            }
-            // Expand to diagonals (squares that could be attacked)
-            span = ((filled & ~FILE_H_BB) >> 7) | ((filled & ~FILE_A_BB) >> 9);
-            // Remove rank 7 and 8 (pawns can't attack backwards)
-            span &= ~(RANK_7_BB | RANK_8_BB);
+    Bitboard whitePawnAttackSpan = 0;
+    Bitboard blackPawnAttackSpan = 0;
+
+    if (spineCtx) {
+        whitePawnAttacks = spineCtx->pawnAttacks[WHITE];
+        blackPawnAttacks = spineCtx->pawnAttacks[BLACK];
+        whitePawnAttackSpan = spineCtx->pawnAttackSpan[WHITE];
+        blackPawnAttackSpan = spineCtx->pawnAttackSpan[BLACK];
+    } else {
+        // Calculate pawn attacks for each side
+        Bitboard wp = whitePawns;
+        while (wp) {
+            Square sq = popLsb(wp);
+            whitePawnAttacks |= pawnAttacks(WHITE, sq);
         }
-        
-        return span;
-    };
-    
-    Bitboard whitePawnAttackSpan = calculatePawnAttackSpan(whitePawns, WHITE);
-    Bitboard blackPawnAttackSpan = calculatePawnAttackSpan(blackPawns, BLACK);
+
+        Bitboard bp = blackPawns;
+        while (bp) {
+            Square sq = popLsb(bp);
+            blackPawnAttacks |= pawnAttacks(BLACK, sq);
+        }
+
+        // Calculate pawn attack spans - all squares pawns could ever attack
+        // For white pawns: fill forward and expand diagonally
+        // For black pawns: fill backward and expand diagonally
+        auto calculatePawnAttackSpan = [](Bitboard pawns, Color color) -> Bitboard {
+            Bitboard span = 0;
+
+            if (color == WHITE) {
+                // Fill all squares forward of white pawns
+                Bitboard filled = pawns;
+                for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
+                    filled |= (filled << 8) & ~RANK_8_BB;  // Move forward one rank
+                }
+                // Expand to diagonals (squares that could be attacked)
+                span = ((filled & ~FILE_A_BB) << 7) | ((filled & ~FILE_H_BB) << 9);
+                // Remove rank 1 and 2 (pawns can't attack backwards)
+                span &= ~(RANK_1_BB | RANK_2_BB);
+            } else {
+                // Fill all squares backward of black pawns
+                Bitboard filled = pawns;
+                for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
+                    filled |= (filled >> 8) & ~RANK_1_BB;  // Move backward one rank
+                }
+                // Expand to diagonals (squares that could be attacked)
+                span = ((filled & ~FILE_H_BB) >> 7) | ((filled & ~FILE_A_BB) >> 9);
+                // Remove rank 7 and 8 (pawns can't attack backwards)
+                span &= ~(RANK_7_BB | RANK_8_BB);
+            }
+
+            return span;
+        };
+
+        whitePawnAttackSpan = calculatePawnAttackSpan(whitePawns, WHITE);
+        blackPawnAttackSpan = calculatePawnAttackSpan(blackPawns, BLACK);
+    }
 
     const int PAWN_TENSION_PENALTY = config.pawnTensionPenalty;
     const int PAWN_PUSH_THREAT_BONUS = config.pawnPushThreatBonus;
