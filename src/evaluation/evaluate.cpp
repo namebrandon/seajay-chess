@@ -16,100 +16,6 @@
 
 namespace seajay::eval {
 
-namespace {
-
-// Lightweight cache for promotion-path attack lookups. We amortize the cost of
-// computing attackers to a given square by storing both colors' results on the
-// first query. Passed-pawn evaluation may touch the same squares multiple
-// times (stop square, promotion path, telemetry hooks), so this keeps the
-// walker from hammering MoveGenerator::isSquareAttacked repeatedly.
-class PromotionPathAttackCache {
-public:
-    explicit PromotionPathAttackCache(const Board& board) noexcept
-        : m_occupied(board.occupied()) {
-        m_colorBitboards[WHITE] = board.pieces(WHITE);
-        m_colorBitboards[BLACK] = board.pieces(BLACK);
-        m_pawns[WHITE] = board.pieces(WHITE, PAWN);
-        m_pawns[BLACK] = board.pieces(BLACK, PAWN);
-        m_knights = board.pieces(WHITE, KNIGHT) | board.pieces(BLACK, KNIGHT);
-        m_bishops = board.pieces(WHITE, BISHOP) | board.pieces(BLACK, BISHOP);
-        m_rooks = board.pieces(WHITE, ROOK) | board.pieces(BLACK, ROOK);
-        m_queens = board.pieces(WHITE, QUEEN) | board.pieces(BLACK, QUEEN);
-        m_kings = board.pieces(WHITE, KING) | board.pieces(BLACK, KING);
-
-        for (auto& perColor : m_cache) {
-            perColor.fill(kUnknown);
-        }
-    }
-
-    bool isAttacked(Color color, Square square) {
-        const int colorIndex = static_cast<int>(color);
-        const size_t sqIndex = static_cast<size_t>(square);
-        int8_t state = m_cache[colorIndex][sqIndex];
-        if (state == kUnknown) {
-            populateCache(square);
-            state = m_cache[colorIndex][sqIndex];
-        }
-        return state == kTrue;
-    }
-
-private:
-    static constexpr int8_t kUnknown = -1;
-    static constexpr int8_t kFalse = 0;
-    static constexpr int8_t kTrue = 1;
-
-    void populateCache(Square square) {
-        const size_t sqIndex = static_cast<size_t>(square);
-        const Bitboard attackers = attackersTo(square);
-        m_cache[WHITE][sqIndex] = (attackers & m_colorBitboards[WHITE]) ? kTrue : kFalse;
-        m_cache[BLACK][sqIndex] = (attackers & m_colorBitboards[BLACK]) ? kTrue : kFalse;
-    }
-
-    Bitboard attackersTo(Square square) const {
-        Bitboard attackers = 0ULL;
-        const int file = fileOf(square);
-        const int rank = rankOf(square);
-        const int sqIdx = static_cast<int>(square);
-
-        if (rank > 0) {
-            if (file > 0) {
-                attackers |= squareBB(static_cast<Square>(sqIdx - 9)) & m_pawns[WHITE];
-            }
-            if (file < 7) {
-                attackers |= squareBB(static_cast<Square>(sqIdx - 7)) & m_pawns[WHITE];
-            }
-        }
-
-        if (rank < 7) {
-            if (file > 0) {
-                attackers |= squareBB(static_cast<Square>(sqIdx + 7)) & m_pawns[BLACK];
-            }
-            if (file < 7) {
-                attackers |= squareBB(static_cast<Square>(sqIdx + 9)) & m_pawns[BLACK];
-            }
-        }
-
-        attackers |= MoveGenerator::getKnightAttacks(square) & m_knights;
-        attackers |= MoveGenerator::getKingAttacks(square) & m_kings;
-        attackers |= MoveGenerator::getBishopAttacks(square, m_occupied) & (m_bishops | m_queens);
-        attackers |= MoveGenerator::getRookAttacks(square, m_occupied) & (m_rooks | m_queens);
-
-        return attackers;
-    }
-
-    const Bitboard m_occupied;
-    std::array<Bitboard, NUM_COLORS> m_colorBitboards{};
-    std::array<Bitboard, NUM_COLORS> m_pawns{};
-    Bitboard m_knights{};
-    Bitboard m_bishops{};
-    Bitboard m_rooks{};
-    Bitboard m_queens{};
-    Bitboard m_kings{};
-    std::array<std::array<int8_t, 64>, NUM_COLORS> m_cache{};
-};
-
-}  // namespace
-
 // ============================================================================
 // EVALUATION SPINE: Context-Based Attack Computation
 // ============================================================================
@@ -241,6 +147,50 @@ inline void appendMobilityEntry(EvalContext& ctx, Color color, PieceType type,
     list.attacks[idx] = attacks;
     list.squares[idx] = static_cast<uint8_t>(square);
     list.pieceTypes[idx] = static_cast<uint8_t>(type);
+}
+
+inline Bitboard computeAttackedByColor(const Board& board, Color color) noexcept {
+    const Bitboard occupied = board.occupied();
+    Bitboard attacks = 0ULL;
+
+    Bitboard pawns = board.pieces(color, PAWN);
+    if (color == WHITE) {
+        attacks |= computePawnAttacks<WHITE>(pawns);
+    } else {
+        attacks |= computePawnAttacks<BLACK>(pawns);
+    }
+
+    Bitboard knights = board.pieces(color, KNIGHT);
+    while (knights) {
+        Square sq = popLsb(knights);
+        attacks |= MoveGenerator::getKnightAttacks(sq);
+    }
+
+    Bitboard bishops = board.pieces(color, BISHOP);
+    while (bishops) {
+        Square sq = popLsb(bishops);
+        attacks |= MoveGenerator::getBishopAttacks(sq, occupied);
+    }
+
+    Bitboard rooks = board.pieces(color, ROOK);
+    while (rooks) {
+        Square sq = popLsb(rooks);
+        attacks |= MoveGenerator::getRookAttacks(sq, occupied);
+    }
+
+    Bitboard queens = board.pieces(color, QUEEN);
+    while (queens) {
+        Square sq = popLsb(queens);
+        attacks |= MoveGenerator::getBishopAttacks(sq, occupied);
+        attacks |= MoveGenerator::getRookAttacks(sq, occupied);
+    }
+
+    Square kingSq = board.kingSquare(color);
+    if (kingSq != NO_SQUARE) {
+        attacks |= MoveGenerator::getKingAttacks(kingSq);
+    }
+
+    return attacks;
 }
 
 /**
@@ -744,11 +694,20 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     const int BISHOP_COLOR_BLOCKED_PENALTY = config.bishopColorBlockedPenalty;
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
-    PromotionPathAttackCache pathAttackCache(board);
+
+    std::array<Bitboard, NUM_COLORS> fallbackAttackedBy{};
+    if (!spineCtx) {
+        fallbackAttackedBy[WHITE] = detail::computeAttackedByColor(board, WHITE);
+        fallbackAttackedBy[BLACK] = detail::computeAttackedByColor(board, BLACK);
+    }
 
     auto processPassers = [&](Color color, Bitboard passersBase, PasserTelemetry& telemetry) {
         Bitboard passers = passersBase;
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
+        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(enemy)]
+                                               : fallbackAttackedBy[static_cast<int>(enemy)];
+        const Bitboard friendlyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(color)]
+                                                  : fallbackAttackedBy[static_cast<int>(color)];
         const Bitboard ownPawns = (color == WHITE) ? whitePawns : blackPawns;
         const Square friendlyKing = (color == WHITE) ? whiteKingSquare : blackKingSquare;
         const Square enemyKing = (color == WHITE) ? blackKingSquare : whiteKingSquare;
@@ -844,23 +803,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
                 }
 
                 pathFree = ((pathSquares & board.occupied()) == 0);
-                bool pathEnemyControl = false;
-                bool pathOwnControl = true;
-                Bitboard temp = pathSquares;
-                while (temp && (!pathEnemyControl || pathOwnControl)) {
-                    Square pathSq = popLsb(temp);
-                    if (!pathEnemyControl && pathAttackCache.isAttacked(enemy, pathSq)) {
-                        pathEnemyControl = true;
-                    }
-                    if (pathOwnControl && !pathAttackCache.isAttacked(color, pathSq)) {
-                        pathOwnControl = false;
-                    }
-                }
-
+                const bool pathEnemyControl = (pathSquares & enemyAttacks) != 0;
+                const bool pathOwnControl = (pathSquares & ~friendlyAttacks) == 0;
                 bool stopEnemyControl = false;
                 if (validStop) {
-                    stopEnemyControl = pathAttackCache.isAttacked(enemy, stopSquare);
-                    stopDefended = pathAttackCache.isAttacked(color, stopSquare);
+                    Bitboard stopMask = squareBB(stopSquare);
+                    stopEnemyControl = (stopMask & enemyAttacks) != 0;
+                    stopDefended = (stopMask & friendlyAttacks) != 0;
                 } else {
                     stopDefended = false;
                 }
@@ -1029,6 +978,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
 
     auto evaluateCandidates = [&](Color color, Bitboard candidateMask, Bitboard passedMask) {
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
+        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(enemy)]
+                                               : fallbackAttackedBy[static_cast<int>(enemy)];
         const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
         const int forward = (color == WHITE) ? 8 : -8;
 
@@ -1040,7 +991,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
 
             Square pushSq = static_cast<Square>(static_cast<int>(sq) + forward);
             if (pushSq >= SQ_A1 && pushSq <= SQ_H8 && !(board.occupied() & squareBB(pushSq))) {
-                if (!pathAttackCache.isAttacked(enemy, pushSq)) {
+                if ((squareBB(pushSq) & enemyAttacks) == 0) {
                     bonus += CANDIDATE_LEVER_ADVANCE_BONUS;
                 }
             }
