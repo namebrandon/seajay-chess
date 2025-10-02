@@ -68,7 +68,7 @@ Implement an **evaluation spine** architecture where all attack bitboards are co
 - **Total:** 3-4 weeks
 
 ### Gating Mechanism
-All new evaluation logic will be gated behind UCI option `EvalUseSpine` (default: false) to allow parallel development and A/B testing without disrupting production code.
+All new evaluation logic was originally gated behind UCI option `EvalUseSpine` (default: false) to allow parallel development and A/B testing. After Phase E2 integration this option was removed—spine evaluation is now always active.
 
 ---
 
@@ -361,7 +361,7 @@ Score evaluateSpine(const Board& board) {
 
 #### 4. UCI-Gated (Parallel Development)
 **Why:** Build new evaluator alongside old, A/B test before switching
-**Mechanism:** `EvalUseSpine` option (default: false)
+**Mechanism:** Historical `EvalUseSpine` option (default: false). This toggle was removed after Phase E2; the spine evaluator is now always active.
 
 ---
 
@@ -373,7 +373,7 @@ Score evaluateSpine(const Board& board) {
 |-------|-------------|-----------------|----------------|------|
 | **Phase 0** | isSquareAttacked quick wins | 1-2% NPS | Identical nodes | 2-3 days |
 | **Phase A1** | EvalContext struct definition | 0% | Identical nodes | 1 day |
-| **Phase A2** | UCI option + evaluateSpine stub | 0% | Identical nodes | 1 day |
+| **Phase A2** | (Historical) UCI option + evaluateSpine stub | 0% | Identical nodes | 1 day |
 | **Phase B1** | Populate basic position info | 0% | Identical nodes | 1 day |
 | **Phase B2** | Populate attack bitboards | 0% | Identical nodes | 2 days |
 | **Phase B3** | Populate aggregated data | 0% | Identical nodes | 1 day |
@@ -746,13 +746,14 @@ echo "bench" | ./seajay
 # Verify: nodes IDENTICAL to baseline
 
 # Test with spine enabled (should be identical, it's a stub)
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL to baseline
 
 # Test UCI option registration
+# Legacy command (option removed post-integration)
 echo "uci" | ./seajay | grep "EvalUseSpine"
-# Verify: "option name EvalUseSpine type check default false"
+# Verify: "option name EvalUseSpine type check default false" (historical output)
 ```
 
 **Commit:**
@@ -854,8 +855,8 @@ Score evaluateSpine(const Board& board, EvalTrace* trace) {
 
 **Testing:**
 ```bash
-# With EvalUseSpine=true
-echo "setoption name EvalUseSpine value true" | ./seajay
+# With spine evaluator (default)
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL (context built but unused)
 
@@ -868,7 +869,7 @@ echo "bench" | ./seajay
 git commit -m "feat: populate basic position info in EvalContext (Phase B1)
 
 Populate occupied bitboards and king squares in context.
-Context built on every evaluation when EvalUseSpine=true.
+Context built on every evaluation when spine evaluator (default).
 
 No behavior change (context not used by evaluation terms yet).
 
@@ -989,7 +990,7 @@ void populateContext(EvalContext& ctx, const Board& board) {
 # Add debug print in populateContext:
 #   std::cout << "White pawn attacks: " << std::bitset<64>(ctx.pawnAttacks[WHITE]) << "\n";
 
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL
 
@@ -1140,7 +1141,7 @@ void populateContext(EvalContext& ctx, const Board& board) {
 # Add debug asserts in populateContext:
 #   assert(ctx.attackedBy[WHITE] == (ctx.pawnAttacks[WHITE] | ... | ctx.kingAttacks[WHITE]));
 
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL
 
@@ -1290,9 +1291,9 @@ Score evaluateSpine(const Board& board, EvalTrace* trace) {
 **Testing:**
 ```bash
 # CRITICAL: Mobility must evaluate identically to before
-# Test with EvalUseSpine=true
+# Test with spine evaluator (default)
 
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay > phase_c1.txt
 
 # Verify: nodes IDENTICAL to baseline (same move ordering)
@@ -1464,7 +1465,7 @@ int evaluatePassedPawns(const Board& board, const EvalContext& ctx,
 # CRITICAL: Passed pawn scores must be identical
 # Create test position with passed pawns:
 echo "position fen 4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1" | ./seajay
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "eval" | ./seajay
 # Compare passed pawn component with legacy evaluator
 
@@ -1538,7 +1539,7 @@ Score evaluateKingSafetySpine(const Board& board, const EvalContext& ctx, Color 
 
 **Testing:**
 ```bash
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL
 
@@ -1583,7 +1584,7 @@ Bitboard whiteOutpostSquares = WHITE_OUTPOST_RANKS &
 
 **Testing:**
 ```bash
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay
 # Verify: nodes IDENTICAL
 
@@ -1690,7 +1691,7 @@ Score evaluateSpine(const Board& board, EvalTrace* trace) {
 **Testing:**
 ```bash
 # This WILL change bench nodes (new term affects move ordering)
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay > phase_e1.txt
 
 # Record NEW bench count
@@ -1698,7 +1699,7 @@ grep "nodes:" phase_e1.txt
 # Example: bench 19234567 (different from 19191913)
 
 # SPRT test threat evaluation
-# Run OpenBench with EvalUseSpine=true vs EvalUseSpine=false
+# Run OpenBench with spine evaluator vs legacy (option removed post-integration)
 # Bounds: [0.0, 5.0] (expect small positive gain from better move ordering)
 ```
 
@@ -1723,7 +1724,7 @@ bench 19234567"
 
 ---
 
-**Status Update (2025-10-02):** Phase E1 implementation resides on `feature/spine-phase-e1-threat-eval`. Release bench with `EvalUseSpine=true` now reports `2508823` nodes (previous parity baseline: `2428308`). Legacy fallback remains unchanged; threat evaluation only executes on the spine path.
+**Status Update (2025-10-02):** Phase E1 implementation resides on `feature/spine-phase-e1-threat-eval`. Release bench with `spine evaluator (default)` now reports `2508823` nodes (previous parity baseline: `2428308`). Legacy fallback remains unchanged; threat evaluation only executes on the spine path.
 
 #### Phase E2: Validation and Documentation
 
@@ -1740,7 +1741,7 @@ bench 19234567"
 
 4. **Profiling:**
    ```bash
-   # Instruction profiling (callgrind) – EvalUseSpine=true
+   # Instruction profiling (callgrind) – spine evaluator (default)
    valgrind --tool=callgrind --callgrind-out-file=callgrind.eval_spine ./bin/seajay bench
    callgrind_annotate callgrind.eval_spine | grep -i isSquareAttacked
    # Result: isSquareAttacked ≈ 6.6% of instructions (goal <4%)
@@ -1770,7 +1771,7 @@ Validation results:
 - Tactical suite: 269/300 solved (89.7%)
 - Self-play: skipped (covered during Phase D)
 - Profiling: isSquareAttacked ≈ 6.6% of instructions (Callgrind)
-- NPS: bench 2508823 nodes (EvalUseSpine=true)
+- NPS: bench 2508823 nodes (spine evaluator (default))
 - Memory: Massif peak ≈ 272 MB (TT dominated), stack ~0 B
 
 All phases complete. Evaluation spine refactor successful.
@@ -1793,7 +1794,7 @@ grep "nodes:" baseline.txt
 # Example: nodes: 19191913
 
 # After each phase (A1 through D2)
-echo "setoption name EvalUseSpine value true" | ./seajay
+# Legacy: EvalUseSpine option removed; spine always active
 echo "bench" | ./seajay > phase_XX.txt
 grep "nodes:" phase_XX.txt
 # MUST BE: nodes: 19191913 (exactly same as baseline)
@@ -2062,8 +2063,8 @@ g_contextConstructionTime += std::chrono::duration_cast<std::chrono::nanoseconds
 **Problem:** During Phases A-D, bench nodes change (indicates evaluation bug).
 
 **How to debug:**
-1. Run with `EvalUseSpine=false` (legacy): Record nodes
-2. Run with `EvalUseSpine=true` (spine): Record nodes
+1. Run with `legacy evaluator (removed)` (legacy): Record nodes
+2. Run with `spine evaluator (default)` (spine): Record nodes
 3. If different, evaluation is not identical
 4. Add debug prints to compare individual term scores:
    ```cpp
@@ -2308,7 +2309,7 @@ Score evaluatePawns(const Board& board, const EvalContext& ctx) {
 2. **Pass context by const reference** - Evaluation terms read context, never modify
 3. **Stack-allocate context** - No heap allocation, no global state (LazySMP ready)
 4. **Test after every commit** - SPRT validate on OpenBench
-5. **UCI-gate all changes** - `EvalUseSpine` option allows parallel development
+5. **UCI-gate all changes** - `EvalUseSpine` option (historical; removed after Phase E2) allowed parallel development
 
 ### When in Doubt
 

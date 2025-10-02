@@ -617,8 +617,8 @@ inline int phase0to256(const Board& board) noexcept {
 }
 // Template implementation for evaluation with optional tracing
 template<bool Traced>
-Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
-                   const detail::EvalContext* spineCtx = nullptr) {
+Score evaluateImpl(const Board& board, const detail::EvalContext& ctx,
+                   EvalTrace* trace = nullptr) {
     // Reset trace if provided
     if constexpr (Traced) {
         if (trace) trace->reset();
@@ -873,21 +873,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
 
     const bool usePasserPhaseP4 = config.usePasserPhaseP4;
 
-    std::array<Bitboard, NUM_COLORS> fallbackAttackedBy{};
-    if (!spineCtx) {
-        fallbackAttackedBy[WHITE] = detail::computeAttackedByColor(board, WHITE);
-        fallbackAttackedBy[BLACK] = detail::computeAttackedByColor(board, BLACK);
-    }
-
     auto processPassers = [&](Color color, Bitboard passersBase, PasserTelemetry& telemetry) {
         Bitboard passers = passersBase;
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
         const int colorIdx = static_cast<int>(color);
         const int enemyIdx = static_cast<int>(enemy);
-        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[enemyIdx]
-                                               : fallbackAttackedBy[enemyIdx];
-        const Bitboard friendlyAttacks = spineCtx ? spineCtx->attackedBy[colorIdx]
-                                                  : fallbackAttackedBy[colorIdx];
+        const Bitboard enemyAttacks = ctx.attackedBy[enemyIdx];
+        const Bitboard friendlyAttacks = ctx.attackedBy[colorIdx];
         const Bitboard enemyUnsafe = enemyAttacks;
         const Bitboard blockMask = board.occupied();
         const Bitboard ownPawns = (color == WHITE) ? whitePawns : blackPawns;
@@ -1162,8 +1154,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
         const int colorIdx = static_cast<int>(color);
         const int enemyIdx = static_cast<int>(enemy);
-        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[enemyIdx]
-                                               : fallbackAttackedBy[enemyIdx];
+        const Bitboard enemyAttacks = ctx.attackedBy[enemyIdx];
         const Bitboard enemyUnsafe = enemyAttacks;
         const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
         const int forward = (color == WHITE) ? 8 : -8;
@@ -1628,59 +1619,10 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     Bitboard whitePawnAttackSpan = 0;
     Bitboard blackPawnAttackSpan = 0;
 
-    if (spineCtx) {
-        whitePawnAttacks = spineCtx->pawnAttacks[WHITE];
-        blackPawnAttacks = spineCtx->pawnAttacks[BLACK];
-        whitePawnAttackSpan = spineCtx->pawnAttackSpan[WHITE];
-        blackPawnAttackSpan = spineCtx->pawnAttackSpan[BLACK];
-    } else {
-        // Calculate pawn attacks for each side
-        Bitboard wp = whitePawns;
-        while (wp) {
-            Square sq = popLsb(wp);
-            whitePawnAttacks |= pawnAttacks(WHITE, sq);
-        }
-
-        Bitboard bp = blackPawns;
-        while (bp) {
-            Square sq = popLsb(bp);
-            blackPawnAttacks |= pawnAttacks(BLACK, sq);
-        }
-
-        // Calculate pawn attack spans - all squares pawns could ever attack
-        // For white pawns: fill forward and expand diagonally
-        // For black pawns: fill backward and expand diagonally
-        auto calculatePawnAttackSpan = [](Bitboard pawns, Color color) -> Bitboard {
-            Bitboard span = 0;
-
-            if (color == WHITE) {
-                // Fill all squares forward of white pawns
-                Bitboard filled = pawns;
-                for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
-                    filled |= (filled << 8) & ~RANK_8_BB;  // Move forward one rank
-                }
-                // Expand to diagonals (squares that could be attacked)
-                span = ((filled & ~FILE_A_BB) << 7) | ((filled & ~FILE_H_BB) << 9);
-                // Remove rank 1 and 2 (pawns can't attack backwards)
-                span &= ~(RANK_1_BB | RANK_2_BB);
-            } else {
-                // Fill all squares backward of black pawns
-                Bitboard filled = pawns;
-                for (int i = 0; i < 6; i++) {  // Max 6 ranks to advance
-                    filled |= (filled >> 8) & ~RANK_1_BB;  // Move backward one rank
-                }
-                // Expand to diagonals (squares that could be attacked)
-                span = ((filled & ~FILE_H_BB) >> 7) | ((filled & ~FILE_A_BB) >> 9);
-                // Remove rank 7 and 8 (pawns can't attack backwards)
-                span &= ~(RANK_7_BB | RANK_8_BB);
-            }
-
-            return span;
-        };
-
-        whitePawnAttackSpan = calculatePawnAttackSpan(whitePawns, WHITE);
-        blackPawnAttackSpan = calculatePawnAttackSpan(blackPawns, BLACK);
-    }
+    whitePawnAttacks = ctx.pawnAttacks[WHITE];
+    blackPawnAttacks = ctx.pawnAttacks[BLACK];
+    whitePawnAttackSpan = ctx.pawnAttackSpan[WHITE];
+    blackPawnAttackSpan = ctx.pawnAttackSpan[BLACK];
 
     const int PAWN_TENSION_PENALTY = config.pawnTensionPenalty;
     const int PAWN_PUSH_THREAT_BONUS = config.pawnPushThreatBonus;
@@ -1780,119 +1722,50 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     int whiteRookFileBonus = 0;
     int blackRookFileBonus = 0;
 
-    if (spineCtx) {
-        auto accumulateColor = [&](Color color, int& mobilityScore, int& knightMoves,
-                                   int& bishopMoves, int& rookMoves, int& queenMoves,
-                                   int& rookFileBonus) {
-            const int colorIdx = static_cast<int>(color);
-            const Bitboard mobilityMask = spineCtx->mobilityArea[colorIdx];
-            const auto& entries = spineCtx->mobilityPieces[colorIdx];
+    auto accumulateColor = [&](Color color, int& mobilityScore, int& knightMoves,
+                               int& bishopMoves, int& rookMoves, int& queenMoves,
+                               int& rookFileBonus) {
+        const int colorIdx = static_cast<int>(color);
+        const Bitboard mobilityMask = ctx.mobilityArea[colorIdx];
+        const auto& entries = ctx.mobilityPieces[colorIdx];
 
-            for (uint8_t i = 0; i < entries.count; ++i) {
-                const PieceType pt = static_cast<PieceType>(entries.pieceTypes[i]);
-                const int moveCount = popCount(entries.attacks[i] & mobilityMask);
+        for (uint8_t i = 0; i < entries.count; ++i) {
+            const PieceType pt = static_cast<PieceType>(entries.pieceTypes[i]);
+            const int moveCount = popCount(entries.attacks[i] & mobilityMask);
 
-                switch (pt) {
-                    case KNIGHT:
-                        knightMoves += moveCount;
-                        break;
-                    case BISHOP:
-                        bishopMoves += moveCount;
-                        break;
-                    case ROOK: {
-                        rookMoves += moveCount;
-                        const Square sq = static_cast<Square>(entries.squares[i]);
-                        const int file = fileOf(sq);
-                        if (board.isOpenFile(file)) {
-                            rookFileBonus += 25;
-                        } else if (board.isSemiOpenFile(file, color)) {
-                            rookFileBonus += 15;
-                        }
-                        break;
+            switch (pt) {
+                case KNIGHT:
+                    knightMoves += moveCount;
+                    break;
+                case BISHOP:
+                    bishopMoves += moveCount;
+                    break;
+                case ROOK: {
+                    rookMoves += moveCount;
+                    const Square sq = static_cast<Square>(entries.squares[i]);
+                    const int file = fileOf(sq);
+                    if (board.isOpenFile(file)) {
+                        rookFileBonus += 25;
+                    } else if (board.isSemiOpenFile(file, color)) {
+                        rookFileBonus += 15;
                     }
-                    case QUEEN:
-                        queenMoves += moveCount;
-                        break;
-                    default:
-                        break;
+                    break;
                 }
-
-                mobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
-            }
-        };
-        accumulateColor(WHITE, whiteMobilityScore, whiteKnightMoves, whiteBishopMoves,
-                        whiteRookMoves, whiteQueenMoves, whiteRookFileBonus);
-        accumulateColor(BLACK, blackMobilityScore, blackKnightMoves, blackBishopMoves,
-                        blackRookMoves, blackQueenMoves, blackRookFileBonus);
-    } else {
-        auto accumulateLegacy = [&](Color color, Bitboard knights, Bitboard bishops,
-                                    Bitboard rooks, Bitboard queens, Bitboard enemyPawnAttacks,
-                                    int& mobilityScore, int& knightMoves, int& bishopMoves,
-                                    int& rookMoves, int& queenMoves, int& rookFileBonus) {
-            const Bitboard ownPieces = board.pieces(color);
-
-            Bitboard temp = knights;
-            while (temp) {
-                Square sq = popLsb(temp);
-                Bitboard attacks = MoveGenerator::getKnightAttacks(sq);
-                attacks &= ~ownPieces;
-                attacks &= ~enemyPawnAttacks;
-                const int moves = popCount(attacks);
-                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
-                knightMoves += moves;
+                case QUEEN:
+                    queenMoves += moveCount;
+                    break;
+                default:
+                    break;
             }
 
-            temp = bishops;
-            while (temp) {
-                Square sq = popLsb(temp);
-                Bitboard attacks = MoveGenerator::getBishopAttacks(sq, occupied);
-                attacks &= ~ownPieces;
-                attacks &= ~enemyPawnAttacks;
-                const int moves = popCount(attacks);
-                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
-                bishopMoves += moves;
-            }
+            mobilityScore += moveCount * MOBILITY_BONUS_PER_MOVE;
+        }
+    };
 
-            temp = rooks;
-            while (temp) {
-                Square sq = popLsb(temp);
-                Bitboard attacks = MoveGenerator::getRookAttacks(sq, occupied);
-                attacks &= ~ownPieces;
-                attacks &= ~enemyPawnAttacks;
-                const int moves = popCount(attacks);
-                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
-                rookMoves += moves;
-
-                const int file = fileOf(sq);
-                if (board.isOpenFile(file)) {
-                    rookFileBonus += 25;
-                } else if (board.isSemiOpenFile(file, color)) {
-                    rookFileBonus += 15;
-                }
-            }
-
-            temp = queens;
-            while (temp) {
-                Square sq = popLsb(temp);
-                Bitboard attacks = MoveGenerator::getQueenAttacks(sq, occupied);
-                attacks &= ~ownPieces;
-                attacks &= ~enemyPawnAttacks;
-                const int moves = popCount(attacks);
-                mobilityScore += moves * MOBILITY_BONUS_PER_MOVE;
-                queenMoves += moves;
-            }
-        };
-
-        accumulateLegacy(WHITE, whiteKnights, board.pieces(WHITE, BISHOP),
-                         board.pieces(WHITE, ROOK), board.pieces(WHITE, QUEEN),
-                         blackPawnAttacks, whiteMobilityScore, whiteKnightMoves,
-                         whiteBishopMoves, whiteRookMoves, whiteQueenMoves, whiteRookFileBonus);
-
-        accumulateLegacy(BLACK, blackKnights, board.pieces(BLACK, BISHOP),
-                         board.pieces(BLACK, ROOK), board.pieces(BLACK, QUEEN),
-                         whitePawnAttacks, blackMobilityScore, blackKnightMoves,
-                         blackBishopMoves, blackRookMoves, blackQueenMoves, blackRookFileBonus);
-    }
+    accumulateColor(WHITE, whiteMobilityScore, whiteKnightMoves, whiteBishopMoves,
+                    whiteRookMoves, whiteQueenMoves, whiteRookFileBonus);
+    accumulateColor(BLACK, blackMobilityScore, blackKnightMoves, blackBishopMoves,
+                    blackRookMoves, blackQueenMoves, blackRookFileBonus);
 
     if constexpr (Traced) {
         if (trace) {
@@ -1917,15 +1790,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     }
     
     // Phase KS2: King safety evaluation (integrated but returns 0 score)
-    Score whiteKingSafety;
-    Score blackKingSafety;
-    if (spineCtx) {
-        whiteKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, WHITE, *spineCtx);
-        blackKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, BLACK, *spineCtx);
-    } else {
-        whiteKingSafety = KingSafety::evaluate(board, WHITE);
-        blackKingSafety = KingSafety::evaluate(board, BLACK);
-    }
+    Score whiteKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, WHITE, ctx);
+    Score blackKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, BLACK, ctx);
     
     // King safety is from each side's perspective, so we subtract black's from white's
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
@@ -1942,11 +1808,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         if (trace) trace->kingSafety = kingSafetyScore;
     }
 
-    Score threatScore = Score(0);
-    if (spineCtx) {
-        const int threatValue = detail::evaluateThreats(board, *spineCtx);
-        threatScore = Score(threatValue);
-    }
+    const int threatValue = detail::evaluateThreats(board, ctx);
+    Score threatScore(threatValue);
 
     if constexpr (Traced) {
         if (trace) trace->threats = threatScore;
@@ -2074,42 +1937,9 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
  */
 template<bool Traced>
 Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
-    // Phase B1: Build context with basic position info
     detail::EvalContext ctx;
     detail::populateContext(ctx, board);
-
-    // Phase C1: Reuse legacy evaluator while providing precomputed context
-    Score spineScore = evaluateImpl<Traced>(board, trace, &ctx);
-
-    static const bool debugParity = (std::getenv("SEAJAY_SPINE_PARITY") != nullptr);
-    if (debugParity) {
-        Bitboard legacyAttacksWhite = detail::computeAttackedByColor(board, WHITE);
-        Bitboard legacyAttacksBlack = detail::computeAttackedByColor(board, BLACK);
-        if (legacyAttacksWhite != ctx.attackedBy[WHITE] || legacyAttacksBlack != ctx.attackedBy[BLACK]) {
-            static int attackDiffCount = 0;
-            if (attackDiffCount < 32) {
-                ++attackDiffCount;
-                std::cerr << "SPINE ATTACK MISMATCH " << attackDiffCount
-                          << " fen=" << board.toFEN()
-                          << " white_diff=" << (legacyAttacksWhite ^ ctx.attackedBy[WHITE])
-                          << " black_diff=" << (legacyAttacksBlack ^ ctx.attackedBy[BLACK])
-                          << std::endl;
-            }
-        }
-        Score legacyScore = evaluateImpl<false>(board, nullptr, nullptr);
-        if (legacyScore.value() != spineScore.value()) {
-            static int diffCount = 0;
-            if (diffCount < 32) {
-                ++diffCount;
-                std::cerr << "SPINE PARITY MISMATCH " << diffCount
-                          << " fen=" << board.toFEN()
-                          << " legacy=" << legacyScore.value()
-                          << " spine=" << spineScore.value() << std::endl;
-            }
-        }
-    }
-
-    return spineScore;
+    return evaluateImpl<Traced>(board, ctx, trace);
 }
 
 // ============================================================================
@@ -2118,21 +1948,11 @@ Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
 
 // Public interfaces for evaluation
 Score evaluate(const Board& board) {
-    // Route to spine or legacy evaluator based on UCI option
-    if (seajay::getConfig().evalUseSpine) {
-        return evaluateSpine<false>(board, nullptr);
-    } else {
-        return evaluateImpl<false>(board, nullptr, nullptr);
-    }
+    return evaluateSpine<false>(board, nullptr);
 }
 
 Score evaluateWithTrace(const Board& board, EvalTrace& trace) {
-    // Route to spine or legacy evaluator based on UCI option
-    if (seajay::getConfig().evalUseSpine) {
-        return evaluateSpine<true>(board, &trace);
-    } else {
-        return evaluateImpl<true>(board, &trace, nullptr);
-    }
+    return evaluateSpine<true>(board, &trace);
 }
 
 #ifdef DEBUG
