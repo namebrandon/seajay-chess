@@ -704,10 +704,19 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     auto processPassers = [&](Color color, Bitboard passersBase, PasserTelemetry& telemetry) {
         Bitboard passers = passersBase;
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
-        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(enemy)]
-                                               : fallbackAttackedBy[static_cast<int>(enemy)];
-        const Bitboard friendlyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(color)]
-                                                  : fallbackAttackedBy[static_cast<int>(color)];
+        const int colorIdx = static_cast<int>(color);
+        const int enemyIdx = static_cast<int>(enemy);
+        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[enemyIdx]
+                                               : fallbackAttackedBy[enemyIdx];
+        const Bitboard friendlyAttacks = spineCtx ? spineCtx->attackedBy[colorIdx]
+                                                  : fallbackAttackedBy[colorIdx];
+        Bitboard enemyUnsafe = enemyAttacks;
+        Bitboard blockMask = board.occupied();
+        if (spineCtx) {
+            const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
+            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks) | spineCtx->doubleAttacks[enemyIdx];
+            blockMask |= enemyUnsafe;
+        }
         const Bitboard ownPawns = (color == WHITE) ? whitePawns : blackPawns;
         const Square friendlyKing = (color == WHITE) ? whiteKingSquare : blackKingSquare;
         const Square enemyKing = (color == WHITE) ? blackKingSquare : whiteKingSquare;
@@ -802,13 +811,13 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
                     pathIdx += forward;
                 }
 
-                pathFree = ((pathSquares & board.occupied()) == 0);
-                const bool pathEnemyControl = (pathSquares & enemyAttacks) != 0;
+                pathFree = (pathSquares & blockMask) == 0;
+                const bool pathEnemyControl = (pathSquares & enemyUnsafe) != 0;
                 const bool pathOwnControl = (pathSquares & ~friendlyAttacks) == 0;
                 bool stopEnemyControl = false;
                 if (validStop) {
                     Bitboard stopMask = squareBB(stopSquare);
-                    stopEnemyControl = (stopMask & enemyAttacks) != 0;
+                    stopEnemyControl = (stopMask & enemyUnsafe) != 0;
                     stopDefended = (stopMask & friendlyAttacks) != 0;
                 } else {
                     stopDefended = false;
@@ -978,8 +987,15 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
 
     auto evaluateCandidates = [&](Color color, Bitboard candidateMask, Bitboard passedMask) {
         const Color enemy = (color == WHITE) ? BLACK : WHITE;
-        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[static_cast<int>(enemy)]
-                                               : fallbackAttackedBy[static_cast<int>(enemy)];
+        const int colorIdx = static_cast<int>(color);
+        const int enemyIdx = static_cast<int>(enemy);
+        const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[enemyIdx]
+                                               : fallbackAttackedBy[enemyIdx];
+        Bitboard enemyUnsafe = enemyAttacks;
+        if (spineCtx) {
+            const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
+            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks) | spineCtx->doubleAttacks[enemyIdx];
+        }
         const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
         const int forward = (color == WHITE) ? 8 : -8;
 
@@ -991,7 +1007,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
 
             Square pushSq = static_cast<Square>(static_cast<int>(sq) + forward);
             if (pushSq >= SQ_A1 && pushSq <= SQ_H8 && !(board.occupied() & squareBB(pushSq))) {
-                if ((squareBB(pushSq) & enemyAttacks) == 0) {
+                if ((squareBB(pushSq) & enemyUnsafe) == 0) {
                     bonus += CANDIDATE_LEVER_ADVANCE_BONUS;
                 }
             }
