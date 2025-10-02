@@ -222,6 +222,11 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
     // These are unions of all attacks from pieces of that type.
 
     // Process both colors
+    const Bitboard pinnedMasks[NUM_COLORS] = {
+        MoveGenerator::getPinnedPieces(board, WHITE),
+        MoveGenerator::getPinnedPieces(board, BLACK)
+    };
+
     for (Color color : {WHITE, BLACK}) {
         const int idx = static_cast<int>(color);
         ctx.mobilityPieces[idx].count = 0;
@@ -356,7 +361,24 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         // - Occupied by own pieces
         // - Attacked by enemy pawns
         // This gives a "safe mobility" metric for pieces.
-        ctx.mobilityArea[idx] = ~ctx.occupiedByColor[idx] & ~ctx.pawnAttacks[enemyIdx];
+        Bitboard mobilityMask = ctx.occupiedByColor[idx] | ctx.pawnAttacks[enemyIdx];
+
+        const Bitboard ourPawns = board.pieces(color, PAWN);
+        const Bitboard blockedPawns = (color == WHITE)
+                                          ? (ourPawns & shift<NORTH>(board.occupied()))
+                                          : (ourPawns & shift<SOUTH>(board.occupied()));
+        mobilityMask |= blockedPawns;
+
+        const Bitboard underDeveloped = (color == WHITE)
+                                            ? (ourPawns & (RANK_7_BB | RANK_6_BB))
+                                            : (ourPawns & (RANK_2_BB | RANK_3_BB));
+        mobilityMask |= underDeveloped;
+
+        mobilityMask |= pinnedMasks[idx];
+        mobilityMask |= board.pieces(color, KING);
+        mobilityMask |= board.pieces(color, QUEEN);
+
+        ctx.mobilityArea[idx] = ~mobilityMask;
 
         // --------------------------------------------------------------------
         // KING SAFETY DATA: King ring and attacks on it
