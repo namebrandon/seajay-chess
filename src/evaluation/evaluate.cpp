@@ -436,6 +436,53 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
     }
 }
 
+inline Score evaluateKingSafetyWithContext(const Board& board,
+                                           search::GamePhase gamePhase,
+                                           Color side,
+                                           const EvalContext& ctx) noexcept {
+    const int colorIdx = static_cast<int>(side);
+
+    Square kingSquare = ctx.kingSquare[colorIdx];
+    if (kingSquare == NO_SQUARE) {
+        kingSquare = board.kingSquare(side);
+    }
+
+    if (!KingSafety::isReasonableKingPosition(kingSquare, side)) {
+        return Score(0);
+    }
+
+    // Shield detection still relies on board pawn bitboards; reuse existing helpers.
+    Bitboard directShield = KingSafety::getShieldPawns(board, side, kingSquare);
+    Bitboard advancedShield = KingSafety::getAdvancedShieldPawns(board, side, kingSquare);
+
+    const int directCount = popCount(directShield);
+    const int advancedCount = popCount(advancedShield);
+    const bool hasLuft = KingSafety::hasAirSquares(board, side, kingSquare);
+
+    [[maybe_unused]] const Bitboard kingRingAttacks = ctx.kingRingAttacks[colorIdx];
+
+    const auto& params = KingSafety::getParams();
+    int rawScore = 0;
+
+    switch (gamePhase) {
+        case search::GamePhase::OPENING:
+        case search::GamePhase::MIDDLEGAME:
+            rawScore = directCount * params.directShieldMg +
+                       advancedCount * params.advancedShieldMg;
+            if (hasLuft) {
+                rawScore += params.airSquareBonusMg;
+            }
+            break;
+        case search::GamePhase::ENDGAME:
+            rawScore = directCount * params.directShieldEg +
+                       advancedCount * params.advancedShieldEg;
+            break;
+    }
+
+    const int finalScore = rawScore * params.enableScoring;
+    return Score(finalScore);
+}
+
 } // namespace detail
 
 // PST Phase Interpolation - Phase calculation (continuous, fast)
@@ -1759,9 +1806,15 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     }
     
     // Phase KS2: King safety evaluation (integrated but returns 0 score)
-    // Evaluate for both sides and combine
-    Score whiteKingSafety = KingSafety::evaluate(board, WHITE);
-    Score blackKingSafety = KingSafety::evaluate(board, BLACK);
+    Score whiteKingSafety;
+    Score blackKingSafety;
+    if (spineCtx) {
+        whiteKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, WHITE, *spineCtx);
+        blackKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, BLACK, *spineCtx);
+    } else {
+        whiteKingSafety = KingSafety::evaluate(board, WHITE);
+        blackKingSafety = KingSafety::evaluate(board, BLACK);
+    }
     
     // King safety is from each side's perspective, so we subtract black's from white's
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
