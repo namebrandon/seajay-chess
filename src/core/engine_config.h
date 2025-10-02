@@ -91,16 +91,16 @@ public:
     int pawnPushThreatBonus = 6;                 // Bonus per safe single-step pawn push threat
 
     // Threat evaluation tuning parameters
-    int threatHangingPawnBonus = 12;             // Bonus when a pawn hangs to a cheaper attacker
-    int threatHangingKnightBonus = 18;           // Bonus when a knight hangs to a cheaper attacker
-    int threatHangingBishopBonus = 18;           // Bonus when a bishop hangs to a cheaper attacker
-    int threatHangingRookBonus = 26;             // Bonus when a rook hangs to a cheaper attacker
-    int threatHangingQueenBonus = 40;            // Bonus when a queen hangs to a cheaper attacker
-    int threatDoublePawnBonus = 8;               // Bonus when a pawn is forked by a cheaper attacker
-    int threatDoubleKnightBonus = 14;            // Bonus when a knight is forked by a cheaper attacker
-    int threatDoubleBishopBonus = 14;            // Bonus when a bishop is forked by a cheaper attacker
-    int threatDoubleRookBonus = 22;              // Bonus when a rook is forked by a cheaper attacker
-    int threatDoubleQueenBonus = 32;             // Bonus when a queen is forked by a cheaper attacker
+    int threatHangingPawnBonus = 57;             // Bonus when a pawn hangs to a cheaper attacker
+    int threatHangingKnightBonus = 63;           // Bonus when a knight hangs to a cheaper attacker
+    int threatHangingBishopBonus = 7;            // Bonus when a bishop hangs to a cheaper attacker
+    int threatHangingRookBonus = 38;             // Bonus when a rook hangs to a cheaper attacker
+    int threatHangingQueenBonus = 52;            // Bonus when a queen hangs to a cheaper attacker
+    int threatDoublePawnBonus = 22;              // Bonus when a pawn is forked by a cheaper attacker
+    int threatDoubleKnightBonus = -20;           // Bonus when a knight is forked by a cheaper attacker
+    int threatDoubleBishopBonus = 0;             // Bonus when a bishop is forked by a cheaper attacker
+    int threatDoubleRookBonus = 14;              // Bonus when a rook is forked by a cheaper attacker
+    int threatDoubleQueenBonus = -7;             // Bonus when a queen is forked by a cheaper attacker
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
