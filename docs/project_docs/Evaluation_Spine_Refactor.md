@@ -1723,6 +1723,8 @@ bench 19234567"
 
 ---
 
+**Status Update (2025-10-02):** Phase E1 implementation resides on `feature/spine-phase-e1-threat-eval`. Release bench with `EvalUseSpine=true` now reports `2508823` nodes (previous parity baseline: `2428308`). Legacy fallback remains unchanged; threat evaluation only executes on the spine path.
+
 #### Phase E2: Validation and Documentation
 
 **What:** Comprehensive testing, profiling, documentation.
