@@ -216,7 +216,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPawnTensionPenalty type spin default 3 min 0 max 16" << std::endl;
     std::cout << "option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
-    std::cout << "option name EvalUseSpine type check default false" << std::endl;
+    std::cout << "option name EvalUseSpine type check default true" << std::endl;
 
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
     std::cout << "option name PawnValueMg type spin default 71 min 50 max 130" << std::endl;
