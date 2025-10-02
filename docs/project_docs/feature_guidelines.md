@@ -26,6 +26,8 @@ echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
 echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
 ```
 
+⚠️ **Build, then bench:** The executable must be rebuilt from the exact sources you are committing (Make/CMake) immediately before recording the node count. Reusing a bench from an older binary will cause OpenBench to reject the commit when it cross-checks the runtime output against your commit message.
+
 ## Core Development Philosophy
 
 **STOP → TEST → PROCEED**
@@ -58,6 +60,8 @@ Example: PP1, PP2, PP3a, PP3b
 
 ### 3. Development Workflow
 
+> **Test early, test often.** Every meaningful change should land in the smallest reviewable slice, committed and pushed immediately for SPRT coverage. Delaying pushes piles changes together, hides regressions (e.g., the -13 nELO attack-cache instrumentation incident), and turns debugging into archaeology. Keep deltas bite-sized so OpenBench can flag issues before they snowball.
+
 #### For Each Phase:
 
 1. **Implementation**
@@ -72,6 +76,9 @@ Example: PP1, PP2, PP3a, PP3b
 
 2. **Local Testing**
    ```bash
+   # Rebuild from the current branch before capturing bench output
+   ./build.sh Release
+
    # Run benchmark
    echo "bench" | ./bin/seajay | grep "Benchmark complete"
 

@@ -14,6 +14,7 @@
 #include <cmath>                       // For std::round in SPSA float parsing
 #include "../core/magic_bitboards.h"  // Phase 3.3.a: For initialization
 #include "../core/move_generation.h"  // For attack profiling snapshots
+#include "../core/attack_cache.h"     // Attack cache instrumentation
 #include "../evaluation/pawn_structure.h"  // Phase PP2: For initialization
 #include "../evaluation/evaluate.h"   // For evaluation functions
 #include "../evaluation/eval_trace.h"  // For evaluation tracing
@@ -196,6 +197,16 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPasserRookSupportBonus type spin default 9 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserEnemyRookBehindPenalty type spin default 0 min -64 max 64" << std::endl;
     std::cout << "option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32" << std::endl;
+    std::cout << "option name EvalThreatHangingPawn type spin default 12 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatHangingKnight type spin default 18 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatHangingBishop type spin default 18 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatHangingRook type spin default 26 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatHangingQueen type spin default 40 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatDoublePawn type spin default 8 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatDoubleKnight type spin default 14 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatDoubleBishop type spin default 14 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatDoubleRook type spin default 22 min -64 max 64" << std::endl;
+    std::cout << "option name EvalThreatDoubleQueen type spin default 32 min -64 max 64" << std::endl;
     std::cout << "option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64" << std::endl;
     std::cout << "option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32" << std::endl;
     std::cout << "option name EvalLoosePawnOwnHalfPenalty type spin default 6 min 0 max 32" << std::endl;
@@ -215,7 +226,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name EvalPawnTensionPenalty type spin default 3 min 0 max 16" << std::endl;
     std::cout << "option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16" << std::endl;
     std::cout << "option name ProfileSquareAttacks type check default false" << std::endl;
-    
+
     // Middlegame piece values (SPSA tuned 2025-01-04 with 150k games)
     std::cout << "option name PawnValueMg type spin default 71 min 50 max 130" << std::endl;
     std::cout << "option name KnightValueMg type spin default 325 min 280 max 360" << std::endl;
@@ -659,6 +670,11 @@ void UCIEngine::search(const SearchParams& params) {
 }
 
 void UCIEngine::searchThreadFunc(const SearchParams& params) {
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     // Stage 9b: Check for immediate draw before searching
     if (m_board.isDraw()) {
         reportDrawIfDetected();
@@ -755,6 +771,10 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
     
     // Mark search as complete
     m_searching.store(false, std::memory_order_relaxed);
+
+    if (trackAttacks) {
+        emitAttackCacheStats("search");
+    }
 }
 
 void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
@@ -894,6 +914,11 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
         }
     }
     
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     // Run the SEARCH benchmark suite (deterministic search signature)
     auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
@@ -906,11 +931,20 @@ void UCIEngine::handleBench(const std::vector<std::string>& tokens) {
     std::cout << result.totalNodes << " nodes "
               << std::fixed << std::setprecision(0) << result.averageNps()
               << " nps" << std::endl;
+
+    if (trackAttacks) {
+        emitAttackCacheStats("bench");
+    }
 }
 
 void UCIEngine::runBenchmark(int depth) {
     // Run search benchmark directly without UCI loop (for OpenBench)
     // Use verbose=true to show per-position lines as requested
+    const bool trackAttacks = seajay::getConfig().profileSquareAttacks;
+    if (trackAttacks) {
+        seajay::t_attackCache.resetStats();
+    }
+
     auto result = BenchmarkSuite::runSearchBenchmark(depth, true);
     
     // Output final result as info string (OpenBench format)
@@ -921,6 +955,10 @@ void UCIEngine::runBenchmark(int depth) {
     std::cout << result.totalNodes << " nodes "
               << std::fixed << std::setprecision(0) << result.averageNps()
               << " nps" << std::endl;
+
+    if (trackAttacks) {
+        emitAttackCacheStats("bench");
+    }
 }
 
 void UCIEngine::sendInfo(const std::string& message) {
@@ -929,6 +967,25 @@ void UCIEngine::sendInfo(const std::string& message) {
 
 void UCIEngine::sendBestMove(Move move) {
     std::cout << "bestmove " << moveToUCI(move) << std::endl;
+}
+
+void UCIEngine::emitAttackCacheStats(const char* context) {
+    const auto stats = seajay::t_attackCache.getStats();
+    if (stats.hits == 0 && stats.misses == 0 && stats.evictions == 0) {
+        return;
+    }
+
+    std::ostringstream oss;
+    oss << "AttackCache";
+    if (context && *context) {
+        oss << '[' << context << ']';
+    }
+    oss << " hits=" << stats.hits
+        << " misses=" << stats.misses
+        << " evictions=" << stats.evictions
+        << " hitrate=" << std::fixed << std::setprecision(2) << (stats.hitRate() * 100.0) << '%';
+
+    sendInfo(oss.str());
 }
 
 std::vector<std::string> UCIEngine::tokenize(const std::string& line) {
@@ -2465,6 +2522,136 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid EvalPasserKingDistanceScale value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatHangingPawn") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatHangingPawn out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatHangingPawnBonus = bonus;
+                std::cerr << "info string EvalThreatHangingPawn set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatHangingPawn value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatHangingKnight") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatHangingKnight out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatHangingKnightBonus = bonus;
+                std::cerr << "info string EvalThreatHangingKnight set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatHangingKnight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatHangingBishop") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatHangingBishop out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatHangingBishopBonus = bonus;
+                std::cerr << "info string EvalThreatHangingBishop set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatHangingBishop value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatHangingRook") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatHangingRook out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatHangingRookBonus = bonus;
+                std::cerr << "info string EvalThreatHangingRook set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatHangingRook value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatHangingQueen") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatHangingQueen out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatHangingQueenBonus = bonus;
+                std::cerr << "info string EvalThreatHangingQueen set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatHangingQueen value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatDoublePawn") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatDoublePawn out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatDoublePawnBonus = bonus;
+                std::cerr << "info string EvalThreatDoublePawn set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatDoublePawn value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatDoubleKnight") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatDoubleKnight out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatDoubleKnightBonus = bonus;
+                std::cerr << "info string EvalThreatDoubleKnight set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatDoubleKnight value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatDoubleBishop") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatDoubleBishop out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatDoubleBishopBonus = bonus;
+                std::cerr << "info string EvalThreatDoubleBishop set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatDoubleBishop value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatDoubleRook") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatDoubleRook out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatDoubleRookBonus = bonus;
+                std::cerr << "info string EvalThreatDoubleRook set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatDoubleRook value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "EvalThreatDoubleQueen") {
+        try {
+            int bonus = static_cast<int>(std::llround(std::stod(value)));
+            if (bonus < -64 || bonus > 64) {
+                std::cerr << "info string EvalThreatDoubleQueen out of range [-64,64]: " << bonus << std::endl;
+            } else {
+                seajay::getConfig().threatDoubleQueenBonus = bonus;
+                std::cerr << "info string EvalThreatDoubleQueen set to " << bonus << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid EvalThreatDoubleQueen value: " << value << std::endl;
         }
     }
     else if (optionName == "EvalSemiOpenLiabilityPenalty") {
