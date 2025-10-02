@@ -13,6 +13,7 @@
 #include <cstdlib>  // PP3b: For std::abs
 #include <algorithm>  // For std::clamp
 #include <array>
+#include <iostream>
 
 namespace seajay::eval {
 
@@ -222,11 +223,6 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
     // These are unions of all attacks from pieces of that type.
 
     // Process both colors
-    const Bitboard pinnedMasks[NUM_COLORS] = {
-        MoveGenerator::getPinnedPieces(board, WHITE),
-        MoveGenerator::getPinnedPieces(board, BLACK)
-    };
-
     for (Color color : {WHITE, BLACK}) {
         const int idx = static_cast<int>(color);
         ctx.mobilityPieces[idx].count = 0;
@@ -361,24 +357,7 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
         // - Occupied by own pieces
         // - Attacked by enemy pawns
         // This gives a "safe mobility" metric for pieces.
-        Bitboard mobilityMask = ctx.occupiedByColor[idx] | ctx.pawnAttacks[enemyIdx];
-
-        const Bitboard ourPawns = board.pieces(color, PAWN);
-        const Bitboard blockedPawns = (color == WHITE)
-                                          ? (ourPawns & shift<NORTH>(board.occupied()))
-                                          : (ourPawns & shift<SOUTH>(board.occupied()));
-        mobilityMask |= blockedPawns;
-
-        const Bitboard underDeveloped = (color == WHITE)
-                                            ? (ourPawns & (RANK_7_BB | RANK_6_BB))
-                                            : (ourPawns & (RANK_2_BB | RANK_3_BB));
-        mobilityMask |= underDeveloped;
-
-        mobilityMask |= pinnedMasks[idx];
-        mobilityMask |= board.pieces(color, KING);
-        mobilityMask |= board.pieces(color, QUEEN);
-
-        ctx.mobilityArea[idx] = ~mobilityMask;
+        ctx.mobilityArea[idx] = ~ctx.occupiedByColor[idx] & ~ctx.pawnAttacks[enemyIdx];
 
         // --------------------------------------------------------------------
         // KING SAFETY DATA: King ring and attacks on it
@@ -779,13 +758,8 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
                                                : fallbackAttackedBy[enemyIdx];
         const Bitboard friendlyAttacks = spineCtx ? spineCtx->attackedBy[colorIdx]
                                                   : fallbackAttackedBy[colorIdx];
-        Bitboard enemyUnsafe = enemyAttacks;
-        Bitboard blockMask = board.occupied();
-        if (spineCtx) {
-            const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
-            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks);
-            blockMask |= enemyUnsafe;
-        }
+        const Bitboard enemyUnsafe = enemyAttacks;
+        const Bitboard blockMask = board.occupied();
         const Bitboard ownPawns = (color == WHITE) ? whitePawns : blackPawns;
         const Square friendlyKing = (color == WHITE) ? whiteKingSquare : blackKingSquare;
         const Square enemyKing = (color == WHITE) ? blackKingSquare : whiteKingSquare;
@@ -880,7 +854,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
                     pathIdx += forward;
                 }
 
-                pathFree = (pathSquares & blockMask) == 0;
+                pathFree = ((pathSquares & blockMask) == 0);
                 const bool pathEnemyControl = (pathSquares & enemyUnsafe) != 0;
                 const bool pathOwnControl = (pathSquares & ~friendlyAttacks) == 0;
                 bool stopEnemyControl = false;
@@ -1060,11 +1034,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         const int enemyIdx = static_cast<int>(enemy);
         const Bitboard enemyAttacks = spineCtx ? spineCtx->attackedBy[enemyIdx]
                                                : fallbackAttackedBy[enemyIdx];
-        Bitboard enemyUnsafe = enemyAttacks;
-        if (spineCtx) {
-            const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
-            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks);
-        }
+        const Bitboard enemyUnsafe = enemyAttacks;
         const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
         const int forward = (color == WHITE) ? 8 : -8;
 
@@ -1969,7 +1939,37 @@ Score evaluateSpine(const Board& board, EvalTrace* trace = nullptr) {
     detail::populateContext(ctx, board);
 
     // Phase C1: Reuse legacy evaluator while providing precomputed context
-    return evaluateImpl<Traced>(board, trace, &ctx);
+    Score spineScore = evaluateImpl<Traced>(board, trace, &ctx);
+
+    static const bool debugParity = (std::getenv("SEAJAY_SPINE_PARITY") != nullptr);
+    if (debugParity) {
+        Bitboard legacyAttacksWhite = detail::computeAttackedByColor(board, WHITE);
+        Bitboard legacyAttacksBlack = detail::computeAttackedByColor(board, BLACK);
+        if (legacyAttacksWhite != ctx.attackedBy[WHITE] || legacyAttacksBlack != ctx.attackedBy[BLACK]) {
+            static int attackDiffCount = 0;
+            if (attackDiffCount < 32) {
+                ++attackDiffCount;
+                std::cerr << "SPINE ATTACK MISMATCH " << attackDiffCount
+                          << " fen=" << board.toFEN()
+                          << " white_diff=" << (legacyAttacksWhite ^ ctx.attackedBy[WHITE])
+                          << " black_diff=" << (legacyAttacksBlack ^ ctx.attackedBy[BLACK])
+                          << std::endl;
+            }
+        }
+        Score legacyScore = evaluateImpl<false>(board, nullptr, nullptr);
+        if (legacyScore.value() != spineScore.value()) {
+            static int diffCount = 0;
+            if (diffCount < 32) {
+                ++diffCount;
+                std::cerr << "SPINE PARITY MISMATCH " << diffCount
+                          << " fen=" << board.toFEN()
+                          << " legacy=" << legacyScore.value()
+                          << " spine=" << spineScore.value() << std::endl;
+            }
+        }
+    }
+
+    return spineScore;
 }
 
 // ============================================================================
