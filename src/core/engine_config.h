@@ -47,7 +47,7 @@ public:
     // Evaluation experimentation toggles
     bool usePasserPhaseP4 = true;                // Advanced passed-pawn scaling (Phase P4)
     bool profileSquareAttacks = false;           // Instrument MoveGenerator::isSquareAttacked usage
-    bool evalUseSpine = false;                   // Use evaluation spine context (Phase A2, default OFF for parallel development)
+    bool evalUseSpine = true;                    // Use evaluation spine context (default ON - optimized path)
 
     // Passed pawn Phase P4 tuning parameters (SPSA-ready via UCI)
     int passerPathFreeBonus = 4;                 // Bonus when promotion path is empty
