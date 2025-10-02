@@ -40,24 +40,6 @@ constexpr std::array<int, static_cast<size_t>(PieceType::NO_PIECE_TYPE)> kThreat
     20000 // KING (sentinel)
 };
 
-constexpr std::array<int, static_cast<size_t>(PieceType::NO_PIECE_TYPE)> kHangingThreatBonus = {
-    12,  // Pawn hanging to a cheaper attacker
-    18,  // Knight
-    18,  // Bishop
-    26,  // Rook
-    40,  // Queen
-    0    // King (ignored)
-};
-
-constexpr std::array<int, static_cast<size_t>(PieceType::NO_PIECE_TYPE)> kDoubleAttackBonus = {
-    8,   // Pawn double attacked
-    14,  // Knight
-    14,  // Bishop
-    22,  // Rook
-    32,  // Queen
-    0    // King (ignored)
-};
-
 /**
  * EvalContext: Centralized attack and position data for evaluation.
  *
@@ -512,6 +494,30 @@ inline Bitboard attacksByPieceType(const EvalContext& ctx,
     }
 }
 
+inline int threatHangingBonus(PieceType type) noexcept {
+    const auto& config = seajay::getConfig();
+    switch (type) {
+        case PAWN:   return config.threatHangingPawnBonus;
+        case KNIGHT: return config.threatHangingKnightBonus;
+        case BISHOP: return config.threatHangingBishopBonus;
+        case ROOK:   return config.threatHangingRookBonus;
+        case QUEEN:  return config.threatHangingQueenBonus;
+        default:     return 0;
+    }
+}
+
+inline int threatDoubleBonus(PieceType type) noexcept {
+    const auto& config = seajay::getConfig();
+    switch (type) {
+        case PAWN:   return config.threatDoublePawnBonus;
+        case KNIGHT: return config.threatDoubleKnightBonus;
+        case BISHOP: return config.threatDoubleBishopBonus;
+        case ROOK:   return config.threatDoubleRookBonus;
+        case QUEEN:  return config.threatDoubleQueenBonus;
+        default:     return 0;
+    }
+}
+
 inline bool hasLowerValueAttacker(const EvalContext& ctx,
                                   Color side,
                                   PieceType targetType,
@@ -547,7 +553,6 @@ inline int evaluateThreatsForSide(const Board& board,
 
     for (int pt = PAWN; pt <= QUEEN; ++pt) {
         const auto pieceType = static_cast<PieceType>(pt);
-        const size_t index = static_cast<size_t>(pieceType);
         Bitboard targets = hanging & board.pieces(enemy, pieceType);
         if (targets == 0ULL) {
             continue;
@@ -555,13 +560,15 @@ inline int evaluateThreatsForSide(const Board& board,
         if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
             continue;
         }
-        score += popCount(targets) * kHangingThreatBonus[index];
+        const int bonus = threatHangingBonus(pieceType);
+        if (bonus != 0) {
+            score += popCount(targets) * bonus;
+        }
     }
 
     Bitboard doubleTargets = ctx.doubleAttacks[sideIdx] & enemyPieces;
     for (int pt = PAWN; pt <= QUEEN; ++pt) {
         const auto pieceType = static_cast<PieceType>(pt);
-        const size_t index = static_cast<size_t>(pieceType);
         Bitboard targets = doubleTargets & board.pieces(enemy, pieceType);
         if (targets == 0ULL) {
             continue;
@@ -569,7 +576,10 @@ inline int evaluateThreatsForSide(const Board& board,
         if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
             continue;
         }
-        score += popCount(targets) * kDoubleAttackBonus[index];
+        const int bonus = threatDoubleBonus(pieceType);
+        if (bonus != 0) {
+            score += popCount(targets) * bonus;
+        }
     }
 
     return score;
