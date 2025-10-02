@@ -31,6 +31,15 @@ namespace seajay::eval {
 
 namespace detail {
 
+constexpr std::array<int, static_cast<size_t>(PieceType::NO_PIECE_TYPE)> kThreatPieceValue = {
+    100,  // PAWN
+    320,  // KNIGHT
+    330,  // BISHOP
+    500,  // ROOK
+    900,  // QUEEN
+    20000 // KING (sentinel)
+};
+
 /**
  * EvalContext: Centralized attack and position data for evaluation.
  *
@@ -460,6 +469,127 @@ inline Score evaluateKingSafetyWithContext(const Board& board,
 
     const int finalScore = rawScore * params.enableScoring;
     return Score(finalScore);
+}
+
+inline Bitboard attacksByPieceType(const EvalContext& ctx,
+                                   Color side,
+                                   PieceType type) noexcept {
+    const int idx = static_cast<int>(side);
+    switch (type) {
+        case PAWN:
+            return ctx.pawnAttacks[idx];
+        case KNIGHT:
+            return ctx.knightAttacks[idx];
+        case BISHOP:
+            return ctx.bishopAttacks[idx];
+        case ROOK:
+            return ctx.rookAttacks[idx];
+        case QUEEN:
+            return ctx.queenAttacks[idx];
+        case KING:
+            return ctx.kingAttacks[idx];
+        case NO_PIECE_TYPE:
+        default:
+            return 0ULL;
+    }
+}
+
+inline int threatHangingBonus(PieceType type) noexcept {
+    const auto& config = seajay::getConfig();
+    switch (type) {
+        case PAWN:   return config.threatHangingPawnBonus;
+        case KNIGHT: return config.threatHangingKnightBonus;
+        case BISHOP: return config.threatHangingBishopBonus;
+        case ROOK:   return config.threatHangingRookBonus;
+        case QUEEN:  return config.threatHangingQueenBonus;
+        default:     return 0;
+    }
+}
+
+inline int threatDoubleBonus(PieceType type) noexcept {
+    const auto& config = seajay::getConfig();
+    switch (type) {
+        case PAWN:   return config.threatDoublePawnBonus;
+        case KNIGHT: return config.threatDoubleKnightBonus;
+        case BISHOP: return config.threatDoubleBishopBonus;
+        case ROOK:   return config.threatDoubleRookBonus;
+        case QUEEN:  return config.threatDoubleQueenBonus;
+        default:     return 0;
+    }
+}
+
+inline bool hasLowerValueAttacker(const EvalContext& ctx,
+                                  Color side,
+                                  PieceType targetType,
+                                  Bitboard targetSquares) noexcept {
+    const int targetIndex = static_cast<int>(targetType);
+    for (int attacker = PAWN; attacker <= QUEEN; ++attacker) {
+        const auto attackerType = static_cast<PieceType>(attacker);
+        const int attackerIndex = static_cast<int>(attackerType);
+        if (kThreatPieceValue[attackerIndex] >= kThreatPieceValue[targetIndex]) {
+            continue;
+        }
+        const Bitboard attacks = attacksByPieceType(ctx, side, attackerType);
+        if (attacks & targetSquares) {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline int evaluateThreatsForSide(const Board& board,
+                                  const EvalContext& ctx,
+                                  Color side) noexcept {
+    const Color enemy = static_cast<Color>(side ^ 1);
+    const int sideIdx = static_cast<int>(side);
+    const int enemyIdx = static_cast<int>(enemy);
+
+    const Bitboard enemyPieces = board.pieces(enemy) & ~board.pieces(enemy, KING);
+    const Bitboard sideAttacks = ctx.attackedBy[sideIdx];
+    const Bitboard enemyAttacks = ctx.attackedBy[enemyIdx];
+
+    Bitboard hanging = enemyPieces & sideAttacks & ~enemyAttacks;
+    int score = 0;
+
+    for (int pt = PAWN; pt <= QUEEN; ++pt) {
+        const auto pieceType = static_cast<PieceType>(pt);
+        Bitboard targets = hanging & board.pieces(enemy, pieceType);
+        if (targets == 0ULL) {
+            continue;
+        }
+        if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
+            continue;
+        }
+        const int bonus = threatHangingBonus(pieceType);
+        if (bonus != 0) {
+            score += popCount(targets) * bonus;
+        }
+    }
+
+    Bitboard doubleTargets = ctx.doubleAttacks[sideIdx] & enemyPieces;
+    for (int pt = PAWN; pt <= QUEEN; ++pt) {
+        const auto pieceType = static_cast<PieceType>(pt);
+        Bitboard targets = doubleTargets & board.pieces(enemy, pieceType);
+        if (targets == 0ULL) {
+            continue;
+        }
+        if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
+            continue;
+        }
+        const int bonus = threatDoubleBonus(pieceType);
+        if (bonus != 0) {
+            score += popCount(targets) * bonus;
+        }
+    }
+
+    return score;
+}
+
+inline int evaluateThreats(const Board& board,
+                           const EvalContext& ctx) noexcept {
+    const int whiteThreats = evaluateThreatsForSide(board, ctx, WHITE);
+    const int blackThreats = evaluateThreatsForSide(board, ctx, BLACK);
+    return whiteThreats - blackThreats;
 }
 
 } // namespace detail
@@ -1811,10 +1941,20 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     if constexpr (Traced) {
         if (trace) trace->kingSafety = kingSafetyScore;
     }
-    
+
+    Score threatScore = Score(0);
+    if (spineCtx) {
+        const int threatValue = detail::evaluateThreats(board, *spineCtx);
+        threatScore = Score(threatValue);
+    }
+
+    if constexpr (Traced) {
+        if (trace) trace->threats = threatScore;
+    }
+
     // Phase ROF2: Calculate rook file bonus score
     Score rookFileScore = Score(whiteRookFileBonus - blackRookFileBonus);
-    
+
     // Trace rook file score
     if constexpr (Traced) {
         if (trace) trace->rookFiles = rookFileScore;
@@ -1862,7 +2002,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
     }
     
     // Calculate total evaluation from white's perspective
-    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + rook files + knight outposts
+    // Material difference + PST score + passed pawn score + isolated pawn score + doubled pawn score + island score + backward score + bishop pair + mobility + king safety + threats + rook files + knight outposts
     
     // Phase-interpolated material evaluation
     Score materialDiff;
@@ -1908,7 +2048,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         if (trace) trace->candidatePawns = candidateScore;
     }
 
-    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + bishopColorScore + pawnTensionScore + pawnPushThreatScore + pawnInfiltrationScore + mobilityScore + kingSafetyScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
+    Score totalWhite = materialDiff + pstValue + passedPawnScore + candidateScore + isolatedPawnScore + doubledPawnScore + pawnIslandScore + backwardPawnScore + semiOpenLiabilityScore + loosePawnScore + bishopPairScore + bishopColorScore + pawnTensionScore + pawnPushThreatScore + pawnInfiltrationScore + mobilityScore + kingSafetyScore + threatScore + rookFileScore + rookKingProximityScore + knightOutpostScore;
     
     // Return from side-to-move perspective
     if (sideToMove == WHITE) {

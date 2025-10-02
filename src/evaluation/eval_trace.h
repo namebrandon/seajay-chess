@@ -40,7 +40,8 @@ struct EvalTrace {
     Score knightOutposts;
     Score rookFiles;
     Score rookKingProximity;
-    
+    Score threats;
+
     // King safety
     Score kingSafety;
     
@@ -132,6 +133,7 @@ struct EvalTrace {
         knightOutposts = Score(0);
         rookFiles = Score(0);
         rookKingProximity = Score(0);
+        threats = Score(0);
         
         kingSafety = Score(0);
         
@@ -147,7 +149,7 @@ struct EvalTrace {
     Score total() const {
         return material + pst + passedPawns + candidatePawns + isolatedPawns + doubledPawns + 
                backwardPawns + semiOpenLiability + loosePawns + pawnIslands + bishopPair + bishopColor + pawnTension + pawnPushThreats + pawnInfiltration + mobility + 
-               knightOutposts + rookFiles + rookKingProximity + kingSafety;
+               knightOutposts + rookFiles + rookKingProximity + threats + kingSafety;
     }
     
     // Print formatted evaluation breakdown
@@ -284,6 +286,7 @@ struct EvalTrace {
         emitTerm("knight_outposts", knightOutposts);
         emitTerm("rook_files", rookFiles);
         emitTerm("rook_king_proximity", rookKingProximity);
+        emitTerm("threats", threats);
         emitTerm("king_safety", kingSafety);
 
         {
