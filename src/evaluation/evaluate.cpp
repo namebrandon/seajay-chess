@@ -783,7 +783,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         Bitboard blockMask = board.occupied();
         if (spineCtx) {
             const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
-            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks) | spineCtx->doubleAttacks[enemyIdx];
+            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks);
             blockMask |= enemyUnsafe;
         }
         const Bitboard ownPawns = (color == WHITE) ? whitePawns : blackPawns;
@@ -1063,7 +1063,7 @@ Score evaluateImpl(const Board& board, EvalTrace* trace = nullptr,
         Bitboard enemyUnsafe = enemyAttacks;
         if (spineCtx) {
             const Bitboard friendlyPawnAttacks = spineCtx->pawnAttacks[colorIdx];
-            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks) | spineCtx->doubleAttacks[enemyIdx];
+            enemyUnsafe = (enemyAttacks & ~friendlyPawnAttacks);
         }
         const Bitboard enemyPawns = (color == WHITE) ? blackPawns : whitePawns;
         const int forward = (color == WHITE) ? 8 : -8;
