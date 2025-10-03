@@ -36,6 +36,11 @@ struct MoveScore {
     }
 };
 
+enum class QuietOrderingRequest : uint8_t {
+    Full,
+    ChecksOnly
+};
+
 // MVV-LVA piece value tables
 // Victim values: higher value pieces are worth more points when captured
 // Indexed by PieceType: PAWN=0, KNIGHT=1, BISHOP=2, ROOK=3, QUEEN=4, KING=5, NO_PIECE_TYPE=6
@@ -114,24 +119,27 @@ public:
     
     // Order moves with both killers and history (Stage 20, Phase B2)
     void orderMovesWithHistory(const Board& board, MoveList& moves,
-                              const KillerMoves& killers, 
-                              const HistoryHeuristic& history, int ply) const;
-    
+                              const KillerMoves& killers,
+                              const HistoryHeuristic& history, int ply,
+                              QuietOrderingRequest request = QuietOrderingRequest::Full) const;
+
     // Order moves with killers, history, and countermoves (Stage 23, CM3.2)
     void orderMovesWithHistory(const Board& board, MoveList& moves,
-                              const KillerMoves& killers, 
+                              const KillerMoves& killers,
                               const HistoryHeuristic& history,
                               const CounterMoves& counterMoves,
-                              Move prevMove, int ply, int countermoveBonus) const;
-    
+                              Move prevMove, int ply, int countermoveBonus,
+                              QuietOrderingRequest request = QuietOrderingRequest::Full) const;
+
     // Phase 4.3.a: Order moves with counter-move history
     void orderMovesWithHistory(const Board& board, MoveList& moves,
-                              const KillerMoves& killers, 
+                              const KillerMoves& killers,
                               const HistoryHeuristic& history,
                               const CounterMoves& counterMoves,
                               const CounterMoveHistory& counterMoveHistory,
                               Move prevMove, int ply, int countermoveBonus,
-                              float cmhWeight = 1.5f) const;
+                              float cmhWeight = 1.5f,
+                              QuietOrderingRequest request = QuietOrderingRequest::Full) const;
     
     // Score a single move (exposed for testing)
     static int scoreMove(const Board& board, Move move) noexcept;

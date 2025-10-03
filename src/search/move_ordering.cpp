@@ -7,6 +7,8 @@
 #include <sstream>
 #include <numeric>
 #include <cassert>
+#include <cstdint>
+#include <optional>
 
 // Debug output control
 #ifdef DEBUG_MOVE_ORDERING
@@ -137,6 +139,214 @@ struct CaptureScoreBuffer {
     std::array<int, seajay::MAX_MOVES> scores{};
     std::array<std::size_t, seajay::MAX_MOVES> order{};
 };
+
+inline bool isQuietMoveCandidate(Move move) noexcept {
+    return !isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+}
+
+struct QuietOrderingBuffers {
+    std::array<Move, seajay::MAX_MOVES> moves{};
+    std::array<int32_t, seajay::MAX_MOVES> scores{};
+    std::array<uint8_t, seajay::MAX_MOVES> used{};
+    std::array<Move, seajay::MAX_MOVES> ordered{};
+};
+
+MoveList::iterator findQuietRangeEnd(MoveList::iterator quietStart,
+                                     MoveList::iterator listEnd) {
+    return std::find_if(quietStart, listEnd, [](const Move& move) {
+        return isPromotion(move) || isCapture(move) || isEnPassant(move);
+    });
+}
+
+void applyOrderedQuietMoves(MoveList::iterator quietStart,
+                            const QuietOrderingBuffers& buffers,
+                            std::size_t quietCount) {
+    auto dest = quietStart;
+    for (std::size_t idx = 0; idx < quietCount; ++idx, ++dest) {
+        *dest = buffers.ordered[idx];
+    }
+}
+
+void populateQuietBuffers(const Board& board,
+                          MoveList::iterator quietStart,
+                          MoveList::iterator quietEnd,
+                          QuietOrderingBuffers& buffers,
+                          const HistoryHeuristic& history,
+                          std::optional<int32_t> cmhNumerator,
+                          const CounterMoveHistory* counterMoveHistory,
+                          Move prevMove) {
+    const std::size_t quietCount = static_cast<std::size_t>(std::distance(quietStart, quietEnd));
+    Color side = board.sideToMove();
+
+    for (std::size_t idx = 0; idx < quietCount; ++idx) {
+        const Move move = *(quietStart + static_cast<std::ptrdiff_t>(idx));
+        buffers.moves[idx] = move;
+        buffers.used[idx] = 0;
+
+        int32_t baseScore = static_cast<int32_t>(history.getScore(side, moveFrom(move), moveTo(move)));
+
+        if (cmhNumerator && counterMoveHistory && prevMove != NO_MOVE) {
+            constexpr int cmhDenominator = 2;
+            int32_t cmhScore = static_cast<int32_t>(counterMoveHistory->getScore(prevMove, move));
+            cmhScore = (cmhScore * *cmhNumerator) / cmhDenominator;
+            buffers.scores[idx] = baseScore * 2 + cmhScore;
+        } else if (cmhNumerator) {
+            buffers.scores[idx] = baseScore * 2;
+        } else {
+            buffers.scores[idx] = baseScore;
+        }
+    }
+}
+
+bool emitIfPresent(const Board& board,
+                   Move move,
+                   std::size_t quietCount,
+                   QuietOrderingBuffers& buffers,
+                   std::size_t& writeIndex) {
+    if (!isQuietMoveCandidate(move)) {
+        return false;
+    }
+
+    Square from = moveFrom(move);
+    Piece piece = board.pieceAt(from);
+    if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
+        return false;
+    }
+
+    for (std::size_t idx = 0; idx < quietCount; ++idx) {
+        if (!buffers.used[idx] && buffers.moves[idx] == move) {
+            buffers.used[idx] = 1;
+            buffers.ordered[writeIndex++] = move;
+            return true;
+        }
+    }
+    return false;
+}
+
+void emitRemainingInOrder(QuietOrderingBuffers& buffers,
+                          std::size_t quietCount,
+                          std::size_t& writeIndex) {
+    for (std::size_t idx = 0; idx < quietCount; ++idx) {
+        if (!buffers.used[idx]) {
+            buffers.used[idx] = 1;
+            buffers.ordered[writeIndex++] = buffers.moves[idx];
+        }
+    }
+}
+
+void emitRemainingByScore(QuietOrderingBuffers& buffers,
+                          std::size_t quietCount,
+                          std::size_t& writeIndex) {
+    while (true) {
+        std::size_t best = quietCount;
+        for (std::size_t idx = 0; idx < quietCount; ++idx) {
+            if (buffers.used[idx]) {
+                continue;
+            }
+            if (best == quietCount || buffers.scores[idx] > buffers.scores[best]) {
+                best = idx;
+            }
+        }
+
+        if (best == quietCount) {
+            break;
+        }
+
+        buffers.used[best] = 1;
+        buffers.ordered[writeIndex++] = buffers.moves[best];
+    }
+}
+
+void reorderQuietSectionBasic(const Board& board,
+                              MoveList::iterator quietStart,
+                              MoveList::iterator quietEnd,
+                              const KillerMoves& killers,
+                              const HistoryHeuristic& history,
+                              const CounterMoves* counterMoves,
+                              Move prevMove,
+                              int ply,
+                              int countermoveBonus,
+                              QuietOrderingRequest request) {
+    const std::size_t quietCount = static_cast<std::size_t>(std::distance(quietStart, quietEnd));
+    if (quietCount == 0) {
+        return;
+    }
+
+    if (request == QuietOrderingRequest::Full) {
+        recordStableSortForStats(MovePickingSortKind::Quiet, quietCount);
+    }
+
+    QuietOrderingBuffers buffers;
+    populateQuietBuffers(board, quietStart, quietEnd, buffers, history, std::nullopt, nullptr, NO_MOVE);
+
+    std::size_t writeIndex = 0;
+    for (int slot = 0; slot < 2; ++slot) {
+        emitIfPresent(board, killers.getKiller(ply, slot), quietCount, buffers, writeIndex);
+    }
+
+    if (counterMoves && countermoveBonus > 0 && prevMove != NO_MOVE) {
+        emitIfPresent(board, counterMoves->getCounterMove(prevMove), quietCount, buffers, writeIndex);
+    }
+
+    if (request == QuietOrderingRequest::ChecksOnly) {
+        emitRemainingInOrder(buffers, quietCount, writeIndex);
+    } else {
+        emitRemainingByScore(buffers, quietCount, writeIndex);
+    }
+
+#ifdef DEBUG
+    assert(writeIndex == quietCount && "All quiet moves must be emitted");
+#endif
+
+    applyOrderedQuietMoves(quietStart, buffers, quietCount);
+}
+
+void reorderQuietSectionWithHistory(const Board& board,
+                                    MoveList::iterator quietStart,
+                                    MoveList::iterator quietEnd,
+                                    const KillerMoves& killers,
+                                    const HistoryHeuristic& history,
+                                    const CounterMoves& counterMoves,
+                                    const CounterMoveHistory& counterMoveHistory,
+                                    Move prevMove,
+                                    int ply,
+                                    QuietOrderingRequest request,
+                                    float cmhWeight) {
+    const std::size_t quietCount = static_cast<std::size_t>(std::distance(quietStart, quietEnd));
+    if (quietCount == 0) {
+        return;
+    }
+
+    if (request == QuietOrderingRequest::Full) {
+        recordStableSortForStats(MovePickingSortKind::Auxiliary, quietCount);
+    }
+
+    QuietOrderingBuffers buffers;
+    const int32_t cmhNumerator = static_cast<int32_t>(cmhWeight * 2.0f + 0.5f);
+    populateQuietBuffers(board, quietStart, quietEnd, buffers, history, cmhNumerator,
+                         &counterMoveHistory, prevMove);
+
+    std::size_t writeIndex = 0;
+    for (int slot = 0; slot < 2; ++slot) {
+        emitIfPresent(board, killers.getKiller(ply, slot), quietCount, buffers, writeIndex);
+    }
+
+    if (prevMove != NO_MOVE) {
+        emitIfPresent(board, counterMoves.getCounterMove(prevMove), quietCount, buffers, writeIndex);
+    }
+
+    if (request == QuietOrderingRequest::ChecksOnly) {
+        emitRemainingInOrder(buffers, quietCount, writeIndex);
+    } else {
+        emitRemainingByScore(buffers, quietCount, writeIndex);
+    }
+
+#ifdef DEBUG
+    assert(writeIndex == quietCount && "All quiet moves must be emitted");
+#endif
+
+    applyOrderedQuietMoves(quietStart, buffers, quietCount);
+}
 }
 
 // MVV-LVA scoring uses the simple formula:
@@ -378,8 +588,9 @@ void MvvLvaOrdering::orderMovesWithKillers(const Board& board, MoveList& moves,
 
 // Order moves with both killers and history (Stage 20, Phase B2)
 void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
-                                          const KillerMoves& killers, 
-                                          const HistoryHeuristic& history, int ply) const {
+                                          const KillerMoves& killers,
+                                          const HistoryHeuristic& history, int ply,
+                                          QuietOrderingRequest request) const {
     // Nothing to order if empty or single move
     if (moves.size() <= 1) {
         return;
@@ -399,53 +610,30 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         return;
     }
     
-    // First, move killer moves to the front of quiet moves
-    auto killerEnd = quietStart;
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // Phase 4.1.b: Fast-path validation to skip obviously stale killers
-            Square from = moveFrom(killer);
-            Piece piece = board.pieceAt(from);
-            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
-                continue;  // Skip stale killer - wrong color or no piece
-            }
-            
-            // Find this killer in the quiet moves section
-            // If it's found, it's already valid (generated by move generator)
-            auto it = std::find(killerEnd, moves.end(), killer);
-            if (it != moves.end() && it != killerEnd) {
-                // Move killer to front of quiet moves
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // Next killer goes after this one
-            }
-        }
+    auto quietEnd = findQuietRangeEnd(quietStart, moves.end());
+    if (quietEnd == quietStart) {
+        return;
     }
-    
-    // Now sort the remaining quiet moves by history score
-    // (moves after killerEnd are non-killer quiet moves)
-    if (killerEnd != moves.end()) {
-        recordStableSortForStats(MovePickingSortKind::Quiet,
-                                 static_cast<std::size_t>(std::distance(killerEnd, moves.end())));
-        Color side = board.sideToMove();
-        std::stable_sort(killerEnd, moves.end(),
-            [&history, side](const Move& a, const Move& b) {
-                // Get history scores for both moves
-                int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
-                int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
-                
-                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
-                return scoreA > scoreB;  // Higher scores first
-            });
-    }
+
+    reorderQuietSectionBasic(board,
+                              quietStart,
+                              quietEnd,
+                              killers,
+                              history,
+                              nullptr,
+                              NO_MOVE,
+                              ply,
+                              0,
+                              request);
 }
 
 // Order moves with killers, history, and countermoves (Stage 23, CM3.3)
 void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
-                                          const KillerMoves& killers, 
+                                          const KillerMoves& killers,
                                           const HistoryHeuristic& history,
                                           const CounterMoves& counterMoves,
-                                          Move prevMove, int ply, int countermoveBonus) const {
+                                          Move prevMove, int ply, int countermoveBonus,
+                                          QuietOrderingRequest request) const {
     // Nothing to order if empty or single move
     if (moves.size() <= 1) {
         return;
@@ -465,71 +653,21 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         return;
     }
     
-    // First, move killer moves to the front of quiet moves
-    auto killerEnd = quietStart;
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // Phase 4.1.b: Fast-path validation to skip obviously stale killers
-            Square from = moveFrom(killer);
-            Piece piece = board.pieceAt(from);
-            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
-                continue;  // Skip stale killer - wrong color or no piece
-            }
-            
-            // Find this killer in the quiet moves section
-            // If it's found, it's already valid (generated by move generator)
-            auto it = std::find(killerEnd, moves.end(), killer);
-            if (it != moves.end() && it != killerEnd) {
-                // Move killer to front of quiet moves
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // Next killer goes after this one
-            }
-        }
+    auto quietEnd = findQuietRangeEnd(quietStart, moves.end());
+    if (quietEnd == quietStart) {
+        return;
     }
-    
-    // CM4.1: Position countermove with hit tracking
-    if (countermoveBonus > 0 && prevMove != NO_MOVE) {
-        Move counterMove = counterMoves.getCounterMove(prevMove);
-        
-        if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
-            // Phase 4.1.b: Fast-path validation for countermove
-            Square from = moveFrom(counterMove);
-            Piece piece = board.pieceAt(from);
-            
-            // Only proceed if piece exists and is the right color
-            if (piece != NO_PIECE && colorOf(piece) == board.sideToMove()) {
-                // Find the countermove in the remaining quiet moves
-                // If it's found, it's already valid (generated by move generator)
-                auto it = std::find(killerEnd, moves.end(), counterMove);
-                if (it != moves.end() && it != killerEnd) {
-                    // Move countermove right after killers
-                    std::rotate(killerEnd, it, it + 1);
-                    ++killerEnd;  // History moves go after countermove
-                    
-                    // CM4.1: Track that we found and used a countermove
-                    // This will be picked up by SearchData stats later
-                }
-            }
-        }
-    }
-    
-    // Now sort the remaining quiet moves by history score
-    // (moves after killerEnd are non-killer, non-countermove quiet moves)
-    if (killerEnd != moves.end()) {
-        recordStableSortForStats(MovePickingSortKind::Quiet,
-                                 static_cast<std::size_t>(std::distance(killerEnd, moves.end())));
-        Color side = board.sideToMove();
-        std::stable_sort(killerEnd, moves.end(),
-            [&history, side](const Move& a, const Move& b) {
-                // Get history scores for both moves
-                int scoreA = history.getScore(side, moveFrom(a), moveTo(a));
-                int scoreB = history.getScore(side, moveFrom(b), moveTo(b));
-                
-                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
-                return scoreA > scoreB;  // Higher scores first
-            });
-    }
+
+    reorderQuietSectionBasic(board,
+                              quietStart,
+                              quietEnd,
+                              killers,
+                              history,
+                              &counterMoves,
+                              prevMove,
+                              ply,
+                              countermoveBonus,
+                              request);
 }
 
 // Phase 4.3.a: Order moves with counter-move history
@@ -539,7 +677,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                                           const CounterMoves& counterMoves,
                                           const CounterMoveHistory& counterMoveHistory,
                                           Move prevMove, int ply, int countermoveBonus,
-                                          float cmhWeight) const {
+                                          float cmhWeight,
+                                          QuietOrderingRequest request) const {
     // Nothing to order if empty or single move
     if (moves.size() <= 1) {
         return;
@@ -558,120 +697,23 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         // No quiet moves, nothing more to do
         return;
     }
-    
-    // First, move killer moves to the front of quiet moves
-    auto killerEnd = quietStart;
-    for (int slot = 0; slot < 2; ++slot) {
-        Move killer = killers.getKiller(ply, slot);
-        if (killer != NO_MOVE && !isCapture(killer) && !isPromotion(killer)) {
-            // Phase 4.1.b: Fast-path validation to skip obviously stale killers
-            Square from = moveFrom(killer);
-            Piece piece = board.pieceAt(from);
-            if (piece == NO_PIECE || colorOf(piece) != board.sideToMove()) {
-                continue;  // Skip stale killer - wrong color or no piece
-            }
-            
-            // Find this killer in the quiet moves section
-            auto it = std::find(killerEnd, moves.end(), killer);
-            if (it != moves.end() && it != killerEnd) {
-                // Move killer to front of quiet moves
-                std::rotate(killerEnd, it, it + 1);
-                ++killerEnd;  // Next killer goes after this one
-            }
-        }
+
+    auto quietEnd = findQuietRangeEnd(quietStart, moves.end());
+    if (quietEnd == quietStart) {
+        return;
     }
-    
-    // Phase 4.3.a-fix2: Position countermove after killers regardless of bonus
-    // The countermove positioning is valuable even when countermoveBonus=0
-    // This decoupling prevents silent feature disable when UCI option is 0
-    if (prevMove != NO_MOVE) {
-        Move counterMove = counterMoves.getCounterMove(prevMove);
-        
-        if (counterMove != NO_MOVE && !isCapture(counterMove) && !isPromotion(counterMove)) {
-            // Fast-path validation for countermove
-            Square from = moveFrom(counterMove);
-            Piece piece = board.pieceAt(from);
-            
-            if (piece != NO_PIECE && colorOf(piece) == board.sideToMove()) {
-                // Find this countermove in the quiet moves section (after killers)
-                auto it = std::find(killerEnd, moves.end(), counterMove);
-                if (it != moves.end() && it != killerEnd) {
-                    // Move countermove to position after killers
-                    std::rotate(killerEnd, it, it + 1);
-                    ++killerEnd;  // Update end of special moves
-                }
-            }
-        }
-    }
-    
-    // Phase 4.3.a-fix3: Pre-compute scores before sorting to reduce comparator overhead
-    // This avoids repeated score calculations during O(n log n) comparisons
-    if (killerEnd != moves.end()) {
-        Color side = board.sideToMove();
-        
-        // Pure integer arithmetic for CMH weight (avoid float conversion overhead)
-        // cmhWeight of 1.5 becomes 3/2, 1.0 becomes 2/2, etc.
-        // We multiply by 2 first to avoid precision loss
-        int cmhNumerator = static_cast<int>(cmhWeight * 2.0f + 0.5f);  // Round to nearest
-        constexpr int cmhDenominator = 2;
-        
-        // Pre-compute combined scores for all quiet moves
-        const size_t numQuietMoves = std::distance(killerEnd, moves.end());
-        
-        // Use a small struct to pair moves with their scores
-        struct MoveScore {
-            Move move;
-            int32_t score;  // Use int32_t to prevent overflow
-            bool operator<(const MoveScore& other) const {
-                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
-                return score > other.score;  // Higher scores first
-            }
-        };
-        
-        // Stack allocation for small numbers of moves, heap for larger
-        // This avoids heap allocation for typical cases (< 32 quiet moves)
-        constexpr size_t STACK_SIZE = 32;
-        MoveScore stackBuffer[STACK_SIZE];
-        std::vector<MoveScore> heapBuffer;
-        MoveScore* scoreBuffer;
-        
-        if (numQuietMoves <= STACK_SIZE) {
-            scoreBuffer = stackBuffer;
-        } else {
-            heapBuffer.resize(numQuietMoves);
-            scoreBuffer = heapBuffer.data();
-        }
-        
-        // Pre-compute all scores once
-        size_t idx = 0;
-        for (auto it = killerEnd; it != moves.end(); ++it, ++idx) {
-            Move move = *it;
-            Square from = moveFrom(move);
-            Square to = moveTo(move);
-            
-            // Compute combined score with overflow prevention
-            // History range: [-8192, 8192], scaled by 2 -> [-16384, 16384]
-            // CMH range: [-8192, 8192], scaled by weight -> max [-12288, 12288] at 1.5x
-            // Total max range: [-28672, 28672] which fits in int32_t
-            int32_t histScore = static_cast<int32_t>(history.getScore(side, from, to)) * 2;
-            int32_t cmhScore = (static_cast<int32_t>(counterMoveHistory.getScore(prevMove, move)) * cmhNumerator) / cmhDenominator;
-            
-            scoreBuffer[idx].move = move;
-            scoreBuffer[idx].score = histScore + cmhScore;
-        }
-        
-        // Sort by pre-computed scores
-        if (numQuietMoves > 0) {
-            recordStableSortForStats(MovePickingSortKind::Auxiliary, numQuietMoves);
-            std::stable_sort(scoreBuffer, scoreBuffer + numQuietMoves);
-        }
-        
-        // Copy sorted moves back
-        idx = 0;
-        for (auto it = killerEnd; it != moves.end(); ++it, ++idx) {
-            *it = scoreBuffer[idx].move;
-        }
-    }
+
+    reorderQuietSectionWithHistory(board,
+                                    quietStart,
+                                    quietEnd,
+                                    killers,
+                                    history,
+                                    counterMoves,
+                                    counterMoveHistory,
+                                    prevMove,
+                                    ply,
+                                    request,
+                                    cmhWeight);
 }
 
 // Template implementation for integrating with existing code

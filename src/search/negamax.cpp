@@ -116,10 +116,11 @@ inline void orderMovesSimple(MoveContainer& moves) noexcept {
 // Move ordering function for alpha-beta pruning efficiency
 // Orders moves in-place: TT move first, then promotions, then captures (MVV-LVA), then killers, then quiet moves
 template<typename MoveContainer>
-inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE, 
+inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = NO_MOVE,
                       SearchData* searchData = nullptr, int ply = 0,
                       Move prevMove = NO_MOVE, int countermoveBonus = 0,
-                      const SearchLimits* limits = nullptr, int depth = 0) noexcept {
+                      const SearchLimits* limits = nullptr, int depth = 0,
+                      QuietOrderingRequest quietRequest = QuietOrderingRequest::Full) noexcept {
     // Stage 11: Base MVV-LVA ordering (always available)
     // Stage 15: Optional SEE ordering for captures when enabled via UCI
     // Stage 19/20/23: Killers, history, countermoves for quiets
@@ -156,12 +157,13 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         }
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
                                     *searchData->counterMoves, *searchData->counterMoveHistory,
-                                    prevMove, ply, countermoveBonus, cmhWeight);
+                                    prevMove, ply, countermoveBonus, cmhWeight, quietRequest);
     } else if (searchData != nullptr && searchData->killers && searchData->history && searchData->counterMoves) {
         searchData->registerHistoryApplication(ply, SearchData::HistoryContext::Basic);
         // Fallback to basic countermoves without history
         mvvLva.orderMovesWithHistory(board, moves, *searchData->killers, *searchData->history,
-                                    *searchData->counterMoves, prevMove, ply, countermoveBonus);
+                                    *searchData->counterMoves, prevMove, ply, countermoveBonus,
+                                    quietRequest);
     } else if (searchData != nullptr) {
         searchData->clearHistoryContext(ply);
     }
