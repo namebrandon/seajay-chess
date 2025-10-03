@@ -6,6 +6,7 @@
 #include <chrono>  // For timestamp in log file
 #include <sstream>
 #include <numeric>
+#include <cassert>
 
 // Debug output control
 #ifdef DEBUG_MOVE_ORDERING
@@ -247,25 +248,84 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     // Only sort the captures/promotions portion if there are any
     if (captureCount != 0) {
         CaptureScoreBuffer cache;
+        std::array<std::size_t, seajay::MAX_MOVES> goodIndices{};
+        std::array<std::size_t, seajay::MAX_MOVES> badIndices{};
+        std::size_t goodCount = 0;
+        std::size_t badCount = 0;
+
         auto it = moves.begin();
         for (std::size_t idx = 0; idx < captureCount; ++idx, ++it) {
-            cache.moves[idx] = *it;
-            cache.scores[idx] = scoreMove(board, *it);
+            const Move move = *it;
+            cache.moves[idx] = move;
+            cache.scores[idx] = scoreMove(board, move);
             cache.order[idx] = idx;
+
+            const bool isPromotionMove = isPromotion(move);
+            bool isGoodCapture = isPromotionMove;
+            if (!isGoodCapture) {
+                if (cache.scores[idx] >= 0) {
+                    isGoodCapture = true;
+                } else {
+                    isGoodCapture = seajay::seeGE(board, move, 0);
+                }
+            }
+
+            if (isGoodCapture) {
+                goodIndices[goodCount++] = idx;
+            } else {
+                badIndices[badCount++] = idx;
+            }
         }
 
-        recordStableSortForStats(MovePickingSortKind::Captures, captureCount);
-        std::stable_sort(cache.order.begin(), cache.order.begin() + captureCount,
-            [&cache](std::size_t lhs, std::size_t rhs) {
-                return cache.scores[lhs] > cache.scores[rhs];
-            });
+        auto stableSelect = [&cache](std::array<std::size_t, seajay::MAX_MOVES>& indices,
+                                     std::size_t count) {
+            for (std::size_t i = 0; i < count; ++i) {
+                std::size_t best = i;
+                for (std::size_t j = i + 1; j < count; ++j) {
+                    const int scoreBest = cache.scores[indices[best]];
+                    const int scoreCandidate = cache.scores[indices[j]];
+                    if (scoreCandidate > scoreBest) {
+                        best = j;
+                    }
+                }
+                if (best != i) {
+                    std::swap(indices[i], indices[best]);
+                }
+            }
+        };
+
+        if (goodCount > 0) {
+            recordStableSortForStats(MovePickingSortKind::Captures, goodCount);
+            stableSelect(goodIndices, goodCount);
+        }
+        if (badCount > 0) {
+            recordStableSortForStats(MovePickingSortKind::Auxiliary, badCount);
+            stableSelect(badIndices, badCount);
+        }
+
+        std::array<Move, seajay::MAX_MOVES> reordered{};
+        std::size_t writeIndex = 0;
+
+        for (std::size_t i = 0; i < goodCount; ++i) {
+            reordered[writeIndex++] = cache.moves[goodIndices[i]];
+        }
+
+        for (auto quietIt = captureEnd; quietIt != moves.end(); ++quietIt) {
+            reordered[writeIndex++] = *quietIt;
+        }
+
+        for (std::size_t i = 0; i < badCount; ++i) {
+            reordered[writeIndex++] = cache.moves[badIndices[i]];
+        }
+
+        assert(writeIndex == moves.size());
 
         auto dest = moves.begin();
-        for (std::size_t rank = 0; rank < captureCount; ++rank, ++dest) {
-            *dest = cache.moves[cache.order[rank]];
+        for (std::size_t i = 0; i < writeIndex; ++i, ++dest) {
+            *dest = reordered[i];
         }
     }
-    
+
     // Quiet moves remain at the end in their original order (castling first, etc.)
 }
 
