@@ -2250,27 +2250,6 @@ eval::Score negamax(Board& board,
                         if (rankedPicker->wasInShortlist(move)) {
                             info.movePickerStats.shortlistHits++;
                         }
-
-                        using YieldCategory = RankedMovePicker::YieldCategory;
-                        switch (rankedPicker->lastYieldCategory()) {
-                            case YieldCategory::Killer:
-                                info.movePickerStats.killerCutoffs++;
-                                break;
-                            case YieldCategory::CounterMove:
-                                info.movePickerStats.countermoveCutoffs++;
-                                break;
-                            case YieldCategory::Quiet:
-                                if (histCtx == SearchData::HistoryContext::Counter) {
-                                    info.movePickerStats.quietCounterCutoffs++;
-                                } else if (histCtx == SearchData::HistoryContext::Basic) {
-                                    info.movePickerStats.quietBasicCutoffs++;
-                                } else {
-                                    info.movePickerStats.quietFallbackCutoffs++;
-                                }
-                                break;
-                            default:
-                                break;
-                        }
                     }
 #endif
                     if (debugTrackedMove) {
@@ -2956,11 +2935,6 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         std::cout << " captures=" << info.movePickerStats.capturesTotal;
         std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
         std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
-        std::cout << " killers=" << info.movePickerStats.killerCutoffs;
-        std::cout << " counter=" << info.movePickerStats.countermoveCutoffs;
-        std::cout << " quietBasic=" << info.movePickerStats.quietBasicCutoffs;
-        std::cout << " quietCounter=" << info.movePickerStats.quietCounterCutoffs;
-        std::cout << " quietFallback=" << info.movePickerStats.quietFallbackCutoffs;
         std::cout << std::endl;
     }
 #endif
