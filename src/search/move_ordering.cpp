@@ -286,7 +286,7 @@ void reorderQuietSectionBasic(const Board& board,
         emitIfPresent(board, killers.getKiller(ply, slot), quietCount, buffers, writeIndex);
     }
 
-    if (counterMoves && countermoveBonus > 0 && prevMove != NO_MOVE) {
+    if (counterMoves && prevMove != NO_MOVE) {
         emitIfPresent(board, counterMoves->getCounterMove(prevMove), quietCount, buffers, writeIndex);
     }
 
