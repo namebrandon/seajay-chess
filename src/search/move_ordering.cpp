@@ -237,23 +237,25 @@ void emitRemainingInOrder(QuietOrderingBuffers& buffers,
 void emitRemainingByScore(QuietOrderingBuffers& buffers,
                           std::size_t quietCount,
                           std::size_t& writeIndex) {
-    while (true) {
-        std::size_t best = quietCount;
-        for (std::size_t idx = 0; idx < quietCount; ++idx) {
-            if (buffers.used[idx]) {
-                continue;
-            }
-            if (best == quietCount || buffers.scores[idx] > buffers.scores[best]) {
-                best = idx;
-            }
+    std::vector<std::size_t> remaining;
+    remaining.reserve(quietCount);
+    for (std::size_t idx = 0; idx < quietCount; ++idx) {
+        if (!buffers.used[idx]) {
+            remaining.push_back(idx);
         }
+    }
 
-        if (best == quietCount) {
-            break;
-        }
+    std::stable_sort(remaining.begin(), remaining.end(),
+        [&buffers](std::size_t lhs, std::size_t rhs) {
+            if (buffers.scores[lhs] == buffers.scores[rhs]) {
+                return lhs < rhs;  // Preserve generator order on ties
+            }
+            return buffers.scores[lhs] > buffers.scores[rhs];
+        });
 
-        buffers.used[best] = 1;
-        buffers.ordered[writeIndex++] = buffers.moves[best];
+    for (std::size_t idx : remaining) {
+        buffers.used[idx] = 1;
+        buffers.ordered[writeIndex++] = buffers.moves[idx];
     }
 }
 
