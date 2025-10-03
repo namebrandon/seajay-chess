@@ -990,11 +990,16 @@ struct SearchData {
         // SEE call tracking (expected ~0 in 2a since we don't use SEE yet)
         uint64_t seeCallsLazy = 0;       // SEE evaluations performed
         uint64_t capturesTotal = 0;      // Total captures observed
-        
+
         // Optional: Additional tracking
         uint64_t ttFirstYield = 0;       // TT move yielded first
         uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
-        
+        uint64_t killerCutoffs = 0;      // Beta cutoffs produced by killer moves
+        uint64_t countermoveCutoffs = 0; // Beta cutoffs produced by countermoves
+        uint64_t quietBasicCutoffs = 0;  // Quiet cutoffs under basic history gating
+        uint64_t quietCounterCutoffs = 0;// Quiet cutoffs under counter-move history
+        uint64_t quietFallbackCutoffs = 0;// Quiet cutoffs when no gating was active
+
         void reset() {
             for (int i = 0; i < 4; i++) bestMoveRank[i] = 0;
             shortlistHits = 0;
@@ -1002,6 +1007,11 @@ struct SearchData {
             capturesTotal = 0;
             ttFirstYield = 0;
             remainderYields = 0;
+            killerCutoffs = 0;
+            countermoveCutoffs = 0;
+            quietBasicCutoffs = 0;
+            quietCounterCutoffs = 0;
+            quietFallbackCutoffs = 0;
         }
     } movePickerStats;
     

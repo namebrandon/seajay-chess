@@ -25,6 +25,7 @@ option(DEBUG_MAGIC "Enable magic bitboard debug output" OFF)
 option(TT_DEBUG "Enable transposition table debug checks" OFF)
 option(TT_PARANOID "Enable paranoid TT validation (slow)" OFF)
 option(TT_SHADOW "Enable shadow hashing for TT validation" OFF)
+option(SEARCH_STATS "Enable extended search/move-picker statistics" OFF)
 
 # Stage 14 Remediation: Quiescence node limits now controlled via UCI at runtime
 # No compile-time modes needed
@@ -46,6 +47,11 @@ endif()
 if(TT_SHADOW)
     add_compile_definitions(TT_SHADOW)
     message(STATUS "TT Shadow hashing enabled")
+endif()
+
+if(SEARCH_STATS)
+    add_compile_definitions(SEARCH_STATS)
+    message(STATUS "Search statistics instrumentation enabled")
 endif()
 
 # Enable Quiescence Search
