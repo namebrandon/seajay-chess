@@ -286,7 +286,7 @@ void reorderQuietSectionBasic(const Board& board,
         emitIfPresent(board, killers.getKiller(ply, slot), quietCount, buffers, writeIndex);
     }
 
-    if (counterMoves && prevMove != NO_MOVE) {
+    if (counterMoves && prevMove != NO_MOVE && countermoveBonus > 0) {
         emitIfPresent(board, counterMoves->getCounterMove(prevMove), quietCount, buffers, writeIndex);
     }
 
@@ -312,6 +312,7 @@ void reorderQuietSectionWithHistory(const Board& board,
                                     const CounterMoveHistory& counterMoveHistory,
                                     Move prevMove,
                                     int ply,
+                                    int countermoveBonus,
                                     QuietOrderingRequest request,
                                     float cmhWeight) {
     const std::size_t quietCount = static_cast<std::size_t>(std::distance(quietStart, quietEnd));
@@ -333,7 +334,7 @@ void reorderQuietSectionWithHistory(const Board& board,
         emitIfPresent(board, killers.getKiller(ply, slot), quietCount, buffers, writeIndex);
     }
 
-    if (prevMove != NO_MOVE) {
+    if (countermoveBonus > 0 && prevMove != NO_MOVE) {
         emitIfPresent(board, counterMoves.getCounterMove(prevMove), quietCount, buffers, writeIndex);
     }
 
@@ -714,6 +715,7 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
                                     counterMoveHistory,
                                     prevMove,
                                     ply,
+                                    countermoveBonus,
                                     request,
                                     cmhWeight);
 }

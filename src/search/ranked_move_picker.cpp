@@ -3,15 +3,52 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>  // For std::fill
+#include <cstdlib>
+#include <cstdio>
+#include <sstream>
+#include <unordered_set>
 #ifdef DEBUG
 #include <iostream> // DEV one-shot logging (debug builds only)
 #endif
+
+#include "../core/board_safety.h"
 
 namespace seajay {
 namespace search {
 
 namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
+
+struct DumpMoveOrderConfig {
+    bool enabled = false;
+    int plyLimit = 0;
+    int countLimit = 0;
+};
+
+const DumpMoveOrderConfig& dumpMoveOrderConfig() {
+    static const DumpMoveOrderConfig cfg = [] {
+        DumpMoveOrderConfig config;
+        const char* flag = std::getenv("MOVE_ORDER_DUMP");
+        if (!flag || flag[0] == '\0') {
+            return config;
+        }
+        config.enabled = true;
+        config.plyLimit = 2;
+        config.countLimit = 64;
+        int parsedPly = 0;
+        int parsedCount = 0;
+        if (std::sscanf(flag, "%d:%d", &parsedPly, &parsedCount) >= 1) {
+            if (parsedPly > 0) config.plyLimit = parsedPly;
+            if (parsedCount > 0) config.countLimit = parsedCount;
+        }
+        return config;
+    }();
+    return cfg;
+}
+
+bool dumpMoveOrderEnabled() {
+    return dumpMoveOrderConfig().enabled;
+}
 }
 
 // Use the MVV-LVA constants from move_ordering.h
@@ -511,6 +548,23 @@ RankedMovePicker::RankedMovePicker(const Board& board,
                 break;
             }
             }
+        }
+    }
+
+    if (dumpMoveOrderEnabled() && m_ply <= dumpMoveOrderConfig().plyLimit) {
+        static int dumpCount = 0;
+        static std::unordered_set<uint64_t> seen;
+        uint64_t taggedKey = board.zobristKey() ^ (static_cast<uint64_t>(m_ply) << 48);
+        if (dumpCount < dumpMoveOrderConfig().countLimit && seen.insert(taggedKey).second) {
+            std::ostringstream oss;
+            oss << "info string PickerOrder ply=" << m_ply
+                << " hash=" << board.zobristKey()
+                << " moves:";
+            for (const Move& move : m_moves) {
+                oss << ' ' << SafeMoveExecutor::moveToString(move);
+            }
+            std::cout << oss.str() << std::endl;
+            ++dumpCount;
         }
     }
 }
