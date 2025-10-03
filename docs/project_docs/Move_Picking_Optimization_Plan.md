@@ -110,3 +110,9 @@ bench <nodes>`
 
 - Should we pipeline incremental selection into qsearch pruning helpers (SEE) simultaneously or defer to a follow-up feature?
 - Is additional instrumentation required for `killers`/`history` hit rates once selection changes?
+
+## 2025-10-03 Rollback Notes
+
+- SPRT 771 (`a0beed684257c008e1985b7809c367b25f579abf` vs `main`) failed at −39 ± 14 Elo, so the staged picker rewrite was reverted.
+- A control SPRT on the same commit with `UseRankedMovePicker=false` vs `true` produced +22 ± 10 Elo, confirming the regression is isolated to the new picker code path.
+- Next iteration should restart from `16152a47c5e77570ea3d8c22dfff86b85d0cbd3b`, reintroducing incremental stages gradually while preserving feature parity and validating each change with telemetry.
