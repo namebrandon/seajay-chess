@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <chrono>  // For timestamp in log file
+#include <sstream>
 
 // Debug output control
 #ifdef DEBUG_MOVE_ORDERING
@@ -13,6 +14,120 @@
 #endif
 
 namespace seajay::search {
+
+#ifdef SEAJAY_DEBUG_MOVE_PICKING
+namespace {
+MovePickingStats g_movePickingStats;
+}
+
+bool movePickingStatsEnabled() noexcept {
+    return true;
+}
+
+void resetMovePickingStats() noexcept {
+    g_movePickingStats = MovePickingStats{};
+}
+
+void recordMoveListForStats(std::size_t totalMoves) noexcept {
+    g_movePickingStats.moveLists++;
+    g_movePickingStats.totalMoves += static_cast<uint64_t>(totalMoves);
+}
+
+void recordCapturePartitionForStats(std::size_t captureMoves) noexcept {
+    if (captureMoves == 0) {
+        return;
+    }
+    g_movePickingStats.capturePartitions++;
+    g_movePickingStats.capturePartitionMoves += static_cast<uint64_t>(captureMoves);
+}
+
+static void accumulateSortCounters(MovePickingSortKind kind, std::size_t sortedMoves) {
+    const uint64_t moveCount = static_cast<uint64_t>(sortedMoves);
+    switch (kind) {
+        case MovePickingSortKind::Captures:
+            g_movePickingStats.captureStableSorts++;
+            g_movePickingStats.captureStableSortMoves += moveCount;
+            break;
+        case MovePickingSortKind::Quiet:
+            g_movePickingStats.quietStableSorts++;
+            g_movePickingStats.quietStableSortMoves += moveCount;
+            break;
+        case MovePickingSortKind::RootQuiet:
+            g_movePickingStats.rootQuietStableSorts++;
+            g_movePickingStats.rootQuietStableSortMoves += moveCount;
+            break;
+        case MovePickingSortKind::Auxiliary:
+        default:
+            g_movePickingStats.auxiliaryStableSorts++;
+            g_movePickingStats.auxiliaryStableSortMoves += moveCount;
+            break;
+    }
+}
+
+void recordStableSortForStats(MovePickingSortKind kind, std::size_t sortedMoves) noexcept {
+    if (sortedMoves == 0) {
+        return;
+    }
+    accumulateSortCounters(kind, sortedMoves);
+}
+
+MovePickingStats snapshotMovePickingStats() noexcept {
+    return g_movePickingStats;
+}
+
+std::string formatMovePickingStats(const MovePickingStats& stats) {
+    if (stats.moveLists == 0) {
+        return {};
+    }
+
+    std::ostringstream oss;
+    oss << "lists=" << stats.moveLists
+        << " moves=" << stats.totalMoves;
+
+    if (stats.capturePartitions > 0) {
+        oss << " capturePartition=" << stats.capturePartitions
+            << "(" << stats.capturePartitionMoves << ")";
+    }
+    if (stats.captureStableSorts > 0) {
+        oss << " captureSorts=" << stats.captureStableSorts
+            << "(" << stats.captureStableSortMoves << ")";
+    }
+    if (stats.quietStableSorts > 0) {
+        oss << " quietSorts=" << stats.quietStableSorts
+            << "(" << stats.quietStableSortMoves << ")";
+    }
+    if (stats.rootQuietStableSorts > 0) {
+        oss << " rootQuietSorts=" << stats.rootQuietStableSorts
+            << "(" << stats.rootQuietStableSortMoves << ")";
+    }
+    if (stats.auxiliaryStableSorts > 0) {
+        oss << " auxSorts=" << stats.auxiliaryStableSorts
+            << "(" << stats.auxiliaryStableSortMoves << ")";
+    }
+
+    return oss.str();
+}
+
+#else
+
+bool movePickingStatsEnabled() noexcept {
+    return false;
+}
+
+void resetMovePickingStats() noexcept {}
+void recordMoveListForStats(std::size_t) noexcept {}
+void recordCapturePartitionForStats(std::size_t) noexcept {}
+void recordStableSortForStats(MovePickingSortKind, std::size_t) noexcept {}
+
+MovePickingStats snapshotMovePickingStats() noexcept {
+    return MovePickingStats{};
+}
+
+std::string formatMovePickingStats(const MovePickingStats&) {
+    return {};
+}
+
+#endif
 
 // MVV-LVA scoring uses the simple formula:
 // score = VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker]
@@ -100,6 +215,8 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
     if (moves.size() <= 1) {
         return;
     }
+
+    recordMoveListForStats(moves.size());
     
 #ifdef DEBUG_MOVE_ORDERING
     if (g_debugMoveOrdering) {
@@ -114,11 +231,14 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
             // Promotions and captures go to the front
             return isPromotion(move) || isCapture(move) || isEnPassant(move);
         });
+    recordCapturePartitionForStats(static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
     
     // Only sort the captures/promotions portion if there are any
     if (captureEnd != moves.begin()) {
         // Sort captures by MVV-LVA score (higher scores first)
         // Use stable_sort to maintain relative order of equal scores
+        recordStableSortForStats(MovePickingSortKind::Captures,
+                                 static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
         std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 // Use scoreMove function for consistency and maintainability
@@ -230,6 +350,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     // Now sort the remaining quiet moves by history score
     // (moves after killerEnd are non-killer quiet moves)
     if (killerEnd != moves.end()) {
+        recordStableSortForStats(MovePickingSortKind::Quiet,
+                                 static_cast<std::size_t>(std::distance(killerEnd, moves.end())));
         Color side = board.sideToMove();
         std::stable_sort(killerEnd, moves.end(),
             [&history, side](const Move& a, const Move& b) {
@@ -320,6 +442,8 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
     // Now sort the remaining quiet moves by history score
     // (moves after killerEnd are non-killer, non-countermove quiet moves)
     if (killerEnd != moves.end()) {
+        recordStableSortForStats(MovePickingSortKind::Quiet,
+                                 static_cast<std::size_t>(std::distance(killerEnd, moves.end())));
         Color side = board.sideToMove();
         std::stable_sort(killerEnd, moves.end(),
             [&history, side](const Move& a, const Move& b) {
@@ -462,7 +586,10 @@ void MvvLvaOrdering::orderMovesWithHistory(const Board& board, MoveList& moves,
         }
         
         // Sort by pre-computed scores
-        std::stable_sort(scoreBuffer, scoreBuffer + numQuietMoves);
+        if (numQuietMoves > 0) {
+            recordStableSortForStats(MovePickingSortKind::Auxiliary, numQuietMoves);
+            std::stable_sort(scoreBuffer, scoreBuffer + numQuietMoves);
+        }
         
         // Copy sorted moves back
         idx = 0;
@@ -712,9 +839,12 @@ void SEEMoveOrdering::orderMovesTestingMode(const Board& board, MoveList& moves)
         [this](const Move& move) {
             return shouldUseSEE(move);
         });
-    
+    recordCapturePartitionForStats(static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
+
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
+        recordStableSortForStats(MovePickingSortKind::Captures,
+                                 static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
         std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
@@ -755,6 +885,8 @@ void SEEMoveOrdering::orderMovesShadowMode(const Board& board, MoveList& moves) 
         });
     
     if (seeCaptureEnd != seeOrdered.begin()) {
+        recordStableSortForStats(MovePickingSortKind::Auxiliary,
+                                 static_cast<std::size_t>(std::distance(seeOrdered.begin(), seeCaptureEnd)));
         std::stable_sort(seeOrdered.begin(), seeCaptureEnd,
             [this, &board](const Move& a, const Move& b) {
                 SEEValue seeA = m_see.see(board, a);
@@ -798,9 +930,12 @@ void SEEMoveOrdering::orderMovesWithSEE(const Board& board, MoveList& moves) con
         [this](const Move& move) {
             return shouldUseSEE(move);
         });
-    
+    recordCapturePartitionForStats(static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
+
     // Sort captures by SEE value
     if (captureEnd != moves.begin()) {
+        recordStableSortForStats(MovePickingSortKind::Captures,
+                                 static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
         std::stable_sort(moves.begin(), captureEnd,
             [this, &board](const Move& a, const Move& b) {
                 // Get SEE values without exceptions (SEE is noexcept)

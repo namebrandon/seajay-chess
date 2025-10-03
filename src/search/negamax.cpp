@@ -241,6 +241,10 @@ eval::Score negamax(Board& board,
 
     const bool isPvNode = context.isPv();
 
+    if (ply == 0 && context.isRoot() && movePickingStatsEnabled()) {
+        resetMovePickingStats();
+    }
+
 #ifdef DEBUG
     if (ply == 0) {
         assert(context.isRoot() && "Root context flag lost at ply 0");
@@ -2992,6 +2996,13 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
                   << ",cuts=" << info.historyStats.basicCutoffs << "+" << info.historyStats.counterCutoffs
                   << ",re=" << info.historyStats.totalReSearches() << ")"
                   << std::endl;
+
+        if (movePickingStatsEnabled()) {
+            const auto moveStatsReport = formatMovePickingStats(snapshotMovePickingStats());
+            if (!moveStatsReport.empty()) {
+                std::cout << "info string MovePickingStats: " << moveStatsReport << std::endl;
+            }
+        }
 
         if (info.isSingularTelemetryEnabled()) {
             const auto singularTotals = info.singularTotals().snapshot();

@@ -17,6 +17,8 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <cstdint>
+#include <string>
 
 namespace seajay::search {
 
@@ -167,6 +169,37 @@ public:
         std::cout << "  Quiet moves: " << stats.quiet_moves << "\n";
     }
 };
+
+// Optional instrumentation for move picking evolution (Phase MP0)
+struct MovePickingStats {
+    uint64_t moveLists = 0;
+    uint64_t totalMoves = 0;
+    uint64_t capturePartitions = 0;
+    uint64_t capturePartitionMoves = 0;
+    uint64_t captureStableSorts = 0;
+    uint64_t captureStableSortMoves = 0;
+    uint64_t quietStableSorts = 0;
+    uint64_t quietStableSortMoves = 0;
+    uint64_t rootQuietStableSorts = 0;
+    uint64_t rootQuietStableSortMoves = 0;
+    uint64_t auxiliaryStableSorts = 0;
+    uint64_t auxiliaryStableSortMoves = 0;
+};
+
+enum class MovePickingSortKind : uint8_t {
+    Captures,
+    Quiet,
+    RootQuiet,
+    Auxiliary
+};
+
+bool movePickingStatsEnabled() noexcept;
+void resetMovePickingStats() noexcept;
+void recordMoveListForStats(std::size_t totalMoves) noexcept;
+void recordCapturePartitionForStats(std::size_t captureMoves) noexcept;
+void recordStableSortForStats(MovePickingSortKind kind, std::size_t sortedMoves) noexcept;
+MovePickingStats snapshotMovePickingStats() noexcept;
+std::string formatMovePickingStats(const MovePickingStats& stats);
 
 // Helper function to order moves with MVV-LVA (integrates with existing code)
 template<typename MoveContainer>
