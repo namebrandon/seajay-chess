@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>  // For timestamp in log file
 #include <sstream>
+#include <numeric>
 
 // Debug output control
 #ifdef DEBUG_MOVE_ORDERING
@@ -129,6 +130,14 @@ std::string formatMovePickingStats(const MovePickingStats&) {
 
 #endif
 
+namespace {
+struct CaptureScoreBuffer {
+    std::array<Move, seajay::MAX_MOVES> moves{};
+    std::array<int, seajay::MAX_MOVES> scores{};
+    std::array<std::size_t, seajay::MAX_MOVES> order{};
+};
+}
+
 // MVV-LVA scoring uses the simple formula:
 // score = VICTIM_VALUES[victim] - ATTACKER_VALUES[attacker]
 // This gives us scores like PxQ=899, QxP=91, PxP=99
@@ -231,24 +240,30 @@ void MvvLvaOrdering::orderMoves(const Board& board, MoveList& moves) const {
             // Promotions and captures go to the front
             return isPromotion(move) || isCapture(move) || isEnPassant(move);
         });
-    recordCapturePartitionForStats(static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
-    
+
+    const std::size_t captureCount = static_cast<std::size_t>(std::distance(moves.begin(), captureEnd));
+    recordCapturePartitionForStats(captureCount);
+
     // Only sort the captures/promotions portion if there are any
-    if (captureEnd != moves.begin()) {
-        // Sort captures by MVV-LVA score (higher scores first)
-        // Use stable_sort to maintain relative order of equal scores
-        recordStableSortForStats(MovePickingSortKind::Captures,
-                                 static_cast<std::size_t>(std::distance(moves.begin(), captureEnd)));
-        std::stable_sort(moves.begin(), captureEnd,
-            [this, &board](const Move& a, const Move& b) {
-                // Use scoreMove function for consistency and maintainability
-                // Modern compilers will inline this anyway
-                int scoreA = scoreMove(board, a);
-                int scoreB = scoreMove(board, b);
-                
-                // Phase 2a.5a: Use stable_sort to preserve legacy tie order
-                return scoreA > scoreB;  // Higher scores first
+    if (captureCount != 0) {
+        CaptureScoreBuffer cache;
+        auto it = moves.begin();
+        for (std::size_t idx = 0; idx < captureCount; ++idx, ++it) {
+            cache.moves[idx] = *it;
+            cache.scores[idx] = scoreMove(board, *it);
+            cache.order[idx] = idx;
+        }
+
+        recordStableSortForStats(MovePickingSortKind::Captures, captureCount);
+        std::stable_sort(cache.order.begin(), cache.order.begin() + captureCount,
+            [&cache](std::size_t lhs, std::size_t rhs) {
+                return cache.scores[lhs] > cache.scores[rhs];
             });
+
+        auto dest = moves.begin();
+        for (std::size_t rank = 0; rank < captureCount; ++rank, ++dest) {
+            *dest = cache.moves[cache.order[rank]];
+        }
     }
     
     // Quiet moves remain at the end in their original order (castling first, etc.)

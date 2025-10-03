@@ -201,6 +201,26 @@ void recordStableSortForStats(MovePickingSortKind kind, std::size_t sortedMoves)
 MovePickingStats snapshotMovePickingStats() noexcept;
 std::string formatMovePickingStats(const MovePickingStats& stats);
 
+// Stage-machine scaffolding (to be wired up in future phases)
+enum class MovePickerStage : uint8_t {
+    TT,
+    GenerateGoodCaptures,
+    EmitGoodCaptures,
+    GenerateKillers,
+    EmitKillers,
+    GenerateQuiets,
+    EmitQuiets,
+    GenerateBadCaptures,
+    EmitBadCaptures,
+    End
+};
+
+struct [[maybe_unused]] MovePickerPipeline {
+    MovePickerStage stage = MovePickerStage::TT;
+    MovePickerStage emitStage = MovePickerStage::TT;
+    std::size_t emitted = 0;
+};
+
 // Helper function to order moves with MVV-LVA (integrates with existing code)
 template<typename MoveContainer>
 void orderMovesWithMvvLva(const Board& board, MoveContainer& moves) noexcept;
