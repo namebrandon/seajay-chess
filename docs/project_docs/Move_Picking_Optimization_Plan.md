@@ -141,6 +141,15 @@ bench <nodes>`
 - Final tuned defaults (Oct 5 2025 SPSA): `AspirationWindow=9`, `AspirationMaxAttempts=6`, `StabilityThreshold=5`.
 - Suggested diagnostic order: (1) leave the guard in place, (2) if needed, explore `UseAspirationWindows`, `AspirationGrowth`, or root-order heuristics, and (3) use `LogRootTTStores=true` during every run so the coverage tables verify each tweak before we commit.
 
+## 2025-10-06 SPRT Result
+
+- OpenBench test #784 (`feature/20251002-move-picking` vs `main`, 10+0.1, Hash=128MB, 1 thread) with the new aspiration defaults produced **−44.47 ± 14.85 nELO** (LLR −2.99).
+- Despite improved TT coverage depth (logs in `docs/project_docs/telemetry/TTCoverage_WAC_PostSPSA.md`), search strength regressed.
+- Immediate follow-up actions:
+  1. Analyse why better coverage is not translating to Elo – inspect root PV oscillation, aspiration growth mode, and TT fill rate (hashfull only ~0.3%).
+  2. Run targeted experiments (WAC harness, specific tactical suites) toggling aspiration growth / root ordering before altering move-picker heuristics.
+  3. Only schedule another SPRT once a mitigation shows neutral or positive performance in diagnostics.
+
 ## Reboot Checklist (TT Coverage & Aspiration Guard)
 
 If resuming after a long pause:

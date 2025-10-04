@@ -1,6 +1,6 @@
 # Move Picking / TT Coverage Prompt (2025-10-05)
 
-Resume guide for `feature/20251002-move-picking` (commit `9fe2182 fix: round aspiration tuning options`).
+Resume guide for `feature/20251002-move-picking` (commit `9c510f8 docs: log TT coverage after SPSA defaults`).
 
 ## Current State
 - TT instrumentation buckets probes/stores by ply and kind (PV / NonPV / Quiescence). `debug tt` prints compact `Coverage` lines.
@@ -22,13 +22,14 @@ printf 'uci\nsetoption name LogRootTTStores value true\nposition fen <FEN>\ngo d
 - Root logging shows PV movement; `Coverage` lines reveal where non-PV reuse collapses.
 
 ## Recent Findings
-- Baseline ordered runs: first <40% non-PV bucket at ply 9 (WAC.049) and 9 (WAC.002).
-- Disabling aspiration pushes the cliff to ply 10–11; unordered picker keeps coverage high (used for diagnostics only).
+- Baseline ordered runs with new defaults still hit ≥40% non-PV coverage through ply 9 (see `docs/project_docs/telemetry/TTCoverage_WAC_PostSPSA.md`).
+- OpenBench test #784 (`feature/20251002-move-picking` vs `main`, 10+0.1) showed −44.5 ± 14.9 nELO despite the coverage improvements.
+- Disabling aspiration pushes the cliff to ply 10–11; unordered picker keeps coverage high (diagnostics only).
 
 ## Next Actions
-1. Re-run the WAC.049 / WAC.002 depth-10 harness (ordered + SEE-off) with `LogRootTTStores=true` whenever hardware or code changes to confirm coverage still holds through ply 9.
-2. If coverage regresses, examine root move-order heuristics (e.g., aspiration growth mode, ordering toggles) before touching deeper picker logic.
-3. Once coverage is stable, schedule a short SPRT against `main` to validate the combined aspiration guard + new defaults.
+1. Investigate why improved coverage still yields a −44 nELO SPRT result (OpenBench #784). Focus on root oscillation, aspiration growth mode, and TT saturation (hashfull ≈3/1000).
+2. Use WAC.049/WAC.002 depth-10 harness (ordered + SEE-off) with `LogRootTTStores=true` after each tweak to confirm coverage depth.
+3. Once diagnostics show neutral or positive behaviour, schedule another short SPRT vs `main` with the standard option pack (`UseRankedMovePicker=true`, `UseSearchNodeAPIRefactor=false`, `EnableExcludedMoveParam=false`, `ShowMovePickerStats=true`).
 
 ## Reference Logs
 - Ordered baseline: `logs/tt_probe/wac049_base_ttcoverage_afterfix.log`, `logs/tt_probe/wac002_base_ttcoverage_afterfix.log`

@@ -22,10 +22,11 @@
 - MP2 baseline: `2531668 nodes / 1,203,819 nps`
 
 ## SPRT
-- Test 769 vs `main`
+- Test 784 vs `main`
 - Elo: −8.84 ± 7.15 (95%)
 - LLR: −2.88 (bounds [−2.94, 2.94]) – regression indicated
 - Games: 4,716 (W:1261 / L:1381 / D:2074)
+- Test 784 (aspiration guard + new defaults) vs `main`: Elo −44.47 ± 14.85 (LLR −2.99) – significant regression.
 
 ## Observations
 - Root move order (`MoveOrder`) matches MP2 after the countermove fix.
@@ -53,3 +54,4 @@
 - Added an aspiration guard that skips the window for one iteration whenever the root PV changes; WAC.049 keeps non-PV coverage ≥40% through ply 9 without touching move ordering.
 - See `docs/project_docs/Move_Picking_Optimization_Plan.md` ("Reboot Checklist") for a quick-start guide when resuming this work.
 - Latest SPSA pass (2025-10-05) set `AspirationWindow=9`, `AspirationMaxAttempts=6`, `StabilityThreshold=5`.
+- Despite improved coverage, the latest SPRT regressed. Next focus: root aspiration growth / ordering tweaks before further picker changes.
