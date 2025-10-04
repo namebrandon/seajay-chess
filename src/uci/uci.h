@@ -167,7 +167,10 @@ private:
     bool m_useStagedMovePicker = false; // Toggle for staged MovePicker (scaffold only)
     bool m_useRankedMovePicker = true;  // Default ON: ranked MovePicker (Phase 2a)
     bool m_useUnorderedMovePicker = false; // Diagnostic: bypass move ordering
+    bool m_useTTPriorityRepair = false; // Prototype: repair TT move priority when shortlist displaces it
+    bool m_trackTTDiagnostics = false;  // Instrument TT legality diagnostics (expensive)
     bool m_showMovePickerStats = false; // Toggle for move picker statistics (Phase 2a.6)
+    bool m_logRootTTStores = false;     // Emit root TT probe/store diagnostics
     bool m_useInCheckClassOrdering = true; // Default ON: in-check class ordering (Phase 2a.8a)
     bool m_useRankAwareGates = true;    // Phase 2b: rank-aware pruning gates (default ON for integration)
     bool m_useSearchNodeAPIRefactor = true; // Phase 6: NodeContext plumbing (default ON after Stage 6g)

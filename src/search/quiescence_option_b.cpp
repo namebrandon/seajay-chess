@@ -71,7 +71,7 @@ eval::Score quiescence(
     if (tt.isEnabled()) {
         Hash zobristKey = board.zobristKey();
         tt.prefetch(zobristKey);  // Prefetch TT entry to hide memory latency
-        ttEntry = tt.probe(zobristKey);
+        ttEntry = tt.probe(zobristKey, ply, TranspositionTable::CoverageKind::Quiescence);
     }
     
     if (ttEntry != nullptr) {
@@ -480,8 +480,10 @@ eval::Score quiescence(
                         // Note: 'move' is the best move that caused the beta cutoff
                         // Only store real static eval, not minus_infinity when in check
                         int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
-                        tt.store(board.zobristKey(), move, scoreToStore.value(), 
-                                evalToStore, 0, Bound::LOWER);
+                        tt.store(board.zobristKey(), move, scoreToStore.value(),
+                                 evalToStore, 0, Bound::LOWER,
+                                 ply,
+                                 TranspositionTable::CoverageKind::Quiescence);
                     }
                     
                     return score;
@@ -520,7 +522,9 @@ eval::Score quiescence(
         // Only store real static eval, not minus_infinity when in check
         int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
         tt.store(board.zobristKey(), bestMove, scoreToStore.value(),
-                evalToStore, 0, bound);
+                evalToStore, 0, bound,
+                ply,
+                TranspositionTable::CoverageKind::Quiescence);
     }
     
     return bestScore;

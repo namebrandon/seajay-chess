@@ -572,12 +572,22 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 Move RankedMovePicker::next() {
     // Phase 2a.4: Yield TT move first if legal and not yet yielded
     if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
-        m_ttMoveYielded = true;
-        
         // Check if TT move is in our move list
         // For in-check: TT must be a valid evasion (in m_moves)
         // For normal: TT must be pseudo-legal (in m_moves)
         bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
+        bool ttFallback = false;
+
+        if (!ttMoveInList && m_limits && m_limits->useTTPriorityRepair) {
+            if (MoveGenerator::isLegal(m_board, m_ttMove)) {
+                ttFallback = true;
+#ifdef SEARCH_STATS
+                if (m_searchData) {
+                    m_searchData->movePickerStats.ttFallbackRepairs++;
+                }
+#endif
+            }
+        }
         
 #ifdef DEBUG
         // Phase 2a.8a: Assert TT move validity when in check
@@ -588,7 +598,8 @@ Move RankedMovePicker::next() {
         }
 #endif
         
-        if (ttMoveInList) {
+        if (ttMoveInList || ttFallback) {
+            m_ttMoveYielded = true;
             // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
             m_yieldIndex++;  // Increment yield index for TT move
             
@@ -597,6 +608,9 @@ Move RankedMovePicker::next() {
             if (m_limits && m_limits->showMovePickerStats) {
                 // Phase 2a.6b: Track TT first yield
                 if (m_searchData) {
+                    if (ttFallback) {
+                        m_searchData->movePickerStats.ttFirstYieldFallback++;
+                    }
                     m_searchData->movePickerStats.ttFirstYield++;
                 }
             }

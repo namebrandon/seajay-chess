@@ -1,6 +1,6 @@
 # Feature Status – Move Picking Optimization (MP Series)
 
-**Updated:** 2025-10-03
+**Updated:** 2025-10-05
 
 ## Current Phase
 - Phase MP3 (quiet move selection integration) – in progress
@@ -14,6 +14,8 @@
 - Captured MP2 baseline `MOVE_ORDER_DUMP` traces for comparison with MP3 instrumentation.
 - Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
 - Added move ordering telemetry (`firstCutoff` buckets, TT availability) and the `UseUnorderedMovePicker` diagnostic toggle (see `docs/project_docs/move_ordering_telemetry.md`).
+- Added depth-aware TT coverage counters (PV / non-PV / quiescence) and the `LogRootTTStores` UCI toggle; `debug tt` now reports per-ply coverage so we can track where availability collapses.
+- Added an aspiration guard that skips the window for one iteration whenever the root PV changes; WAC.049 now keeps non-PV coverage ≥40% through ply 9 without touching move ordering.
 
 ## Benchmarks (SEE off)
 - MP3 head: `2441603 nodes / 1,310,720 nps`
@@ -30,12 +32,14 @@
 - Instrumentation showed MP3 was always promoting countermoves ahead of the quiet sorter; MP2 only does so when `countermoveBonus > 0`. Fixing the guard realigns the ordering (e.g. hashes `11026875567868458929`, `8171775095838377669`).
 - Updated bench dumps and spot checks against the neutral branch now show matching quiet sequences for the sampled hashes.
 - Stage machine is still unused; search requests a fully ordered `MoveList`, so quiet-array rewrites remain in place.
+- New TT coverage buckets confirm instrumentation is working; need fresh WAC runs to quantify PV vs non-PV availability before touching picker heuristics again.
 
 ## Open Questions / Next Tasks
 1. Expand MOVE_ORDER_DUMP comparisons beyond the initial sample (ensure remaining hashes match MP2 now that gating is fixed).
 2. Evaluate the impact of the new quiet selection helpers on LMR/LMP statistics (rank buckets, cutoff indices).
 3. Plan staged picker integration (fully incremental `NextMove()` pipeline) to eliminate bulk quiet reorder.
-4. Re-run SPRT after addressing the above to confirm recovery.
+4. Capture WAC.049 / WAC.002 depth-10 traces with `LogRootTTStores=true` and compare `debug tt` coverage tables (ordered vs SEE-off) to identify the TT coverage gap. (In progress: aspiration guard now shifts the drop-off one ply deeper.)
+5. Sweep aspiration-related UCI options (e.g., via SPSA) to find the best trade-off between PV stability and pruning, then re-run SPRT to confirm recovery.
 
 ## Notes
 - SEE production remains disabled; enabling it still costs ~7% NPS with no proven Elo benefit.

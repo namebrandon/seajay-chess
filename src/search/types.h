@@ -186,7 +186,9 @@ struct SearchLimits {
     // Phase 2a: Ranked MovePicker
     bool useRankedMovePicker = false;    // Enable ranked move picker (Phase 2a)
     bool useUnorderedMovePicker = false; // Diagnostic: bypass all move ordering for baseline comparisons
-    
+    bool useTTPriorityRepair = false;    // Prototype: reinsert TT move when shortlist displaces it
+    bool trackTTDiagnostics = false;     // Enable expensive TT legality diagnostics
+
     // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
     bool showMovePickerStats = false;     // Show move picker statistics at end of search
 
@@ -221,6 +223,7 @@ struct SearchLimits {
 
     // Debug instrumentation: track specific moves through the search pipeline
     std::vector<std::string> debugTrackedMoves;  // UCI move strings (e.g., h3h7) to trace during search
+    bool logRootTTStores = false;                // Emit root TT probe/store diagnostics
 
     // Singular debug logging (off by default; heavy instrumentation)
     bool singularDebugLog = false;
@@ -1026,6 +1029,8 @@ ALWAYS_INLINE constexpr const char* movePickerBucketName(MovePickerBucket bucket
         // Optional: Additional tracking
         uint64_t ttFirstYield = 0;       // TT move yielded first
         uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
+        uint64_t ttFallbackRepairs = 0;  // Times TT move was restored via fallback repair
+        uint64_t ttFirstYieldFallback = 0; // Times TT move first-yield used fallback path
 
         std::array<uint64_t, static_cast<size_t>(MovePickerBucket::Count)> firstCutoffBuckets{{0}};
         std::array<uint64_t, static_cast<size_t>(MovePickerBucket::Count)> cutoffBuckets{{0}};
@@ -1041,6 +1046,8 @@ ALWAYS_INLINE constexpr const char* movePickerBucketName(MovePickerBucket bucket
             capturesTotal = 0;
             ttFirstYield = 0;
             remainderYields = 0;
+            ttFallbackRepairs = 0;
+            ttFirstYieldFallback = 0;
             firstCutoffBuckets.fill(0);
             cutoffBuckets.fill(0);
             firstCutoffTotal = 0;

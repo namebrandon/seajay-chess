@@ -144,8 +144,9 @@ void TranspositionTable::resize(size_t sizeInMB) {
 #endif
 }
 
-void TranspositionTable::store(Hash key, Move move, int16_t score, 
-                               int16_t evalScore, uint8_t depth, Bound bound) {
+void TranspositionTable::store(Hash key, Move move, int16_t score,
+                               int16_t evalScore, uint8_t depth, Bound bound,
+                               int ply, CoverageKind coverageKind) {
     if (!m_enabled) return;
 
     const StorePolicy policy = g_storePolicy;
@@ -157,12 +158,40 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             m_stats.verificationStores++;
         }
 #endif
+        m_stats.recordStore(ply, coverageKind);
     };
 
     auto recordVerificationSkip = [&]() {
 #ifdef TT_STATS_ENABLED
         if (policy == StorePolicy::Verification) {
             m_stats.verificationSkips++;
+        }
+#endif
+    };
+
+    enum class StoreSkipReason {
+        ProtectFreshMove,
+        DepthNotImproved,
+        CollisionNoMove,
+        Other,
+    };
+
+    auto recordSkip = [&](StoreSkipReason reason) {
+#ifdef TT_STATS_ENABLED
+        switch (reason) {
+            case StoreSkipReason::ProtectFreshMove:
+                m_stats.storeSkipsProtectMove.fetch_add(1, std::memory_order_relaxed);
+                break;
+            case StoreSkipReason::DepthNotImproved:
+                m_stats.storeSkipsDepth.fetch_add(1, std::memory_order_relaxed);
+                break;
+            case StoreSkipReason::CollisionNoMove:
+                m_stats.storeSkipsCollisionNoMove.fetch_add(1, std::memory_order_relaxed);
+                break;
+            case StoreSkipReason::Other:
+            default:
+                m_stats.storeSkipsOther.fetch_add(1, std::memory_order_relaxed);
+                break;
         }
 #endif
     };
@@ -199,7 +228,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             recordVerificationSkip();
             return;  // No suitable slot; skip to avoid polluting primary entries
         }
-        
+
         // Single-pass victim selection with inline scoring
         size_t bestVictim = 0;
         int bestScore = INT32_MAX;
@@ -258,6 +287,7 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
         // data is a shallow heuristic (NO_MOVE) in the current generation.
         const bool victimIsFresh = victim->generation() == m_generation;
         if (move == NO_MOVE && victim->move != NO_MOVE && victimIsFresh && depth < victim->depth) {
+            recordSkip(StoreSkipReason::ProtectFreshMove);
             return;
         }
 
@@ -322,8 +352,10 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
             // TT pollution fix: Protect entries with moves from shallow NO_MOVE overwrites
             const bool entryIsFresh = entry->generation() == m_generation;
             if (!entryIsVerification && move == NO_MOVE && entry->move != NO_MOVE && entryIsFresh && depth <= entry->depth) {
+                recordSkip(StoreSkipReason::ProtectFreshMove);
                 // Don't replace a valuable move-carrying entry with a NO_MOVE heuristic
                 canReplace = false;
+                return;
             } else if (entryIsVerification) {
                 canReplace = true;
             } else if (entry->generation() != m_generation) {
@@ -332,21 +364,30 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
                 if (depth >= entry->depth - 2) {  // Allow 2 ply grace for old entries
                     canReplace = true;
                 }
+                else {
+                    recordSkip(StoreSkipReason::DepthNotImproved);
+                    return;
+                }
             } else {
                 // Case 3: Same generation - replace if deeper
                 if (depth >= entry->depth) {
                     canReplace = true;
+                } else {
+                    recordSkip(StoreSkipReason::DepthNotImproved);
+                    return;
                 }
             }
         } else {
             // Different position (collision) - use depth-preferred replacement
-            
+
             // TT pollution fix: Be more conservative with NO_MOVE heuristic entries
             if (entryIsVerification) {
                 canReplace = true;
             } else if (move == NO_MOVE && depth <= entry->depth + 2) {
                 // Don't displace entries for shallow heuristics
                 canReplace = false;
+                recordSkip(StoreSkipReason::CollisionNoMove);
+                return;
             } else if (depth > entry->depth + 2) {
                 // Replace if new entry is significantly deeper
                 canReplace = true;
@@ -358,20 +399,27 @@ void TranspositionTable::store(Hash key, Move move, int16_t score,
                 // Even if shallower, old entries must be replaceable
                 canReplace = true;
             }
+            else {
+                recordSkip(StoreSkipReason::DepthNotImproved);
+                return;
+            }
             // Note: If none of above, canReplace stays false (same gen, shallower, with move)
         }
-        
+
         if (canReplace) {
             ensureVerificationSlot(*entry);
             entry->save(key32, move, score, evalScore, depth, bound, m_generation);
             recordStore();
         }
+        else {
+            recordSkip(StoreSkipReason::Other);
+        }
     }
 }
 
-TTEntry* TranspositionTable::probe(Hash key) {
+TTEntry* TranspositionTable::probe(Hash key, int ply, CoverageKind coverageKind) {
     if (!m_enabled) return nullptr;
-    
+
 #ifdef TT_STATS_ENABLED
     m_stats.probes++;
 #endif
@@ -398,6 +446,7 @@ TTEntry* TranspositionTable::probe(Hash key) {
             m_stats.hits++;
             m_stats.totalScanLength += 1;
 #endif
+            m_stats.recordProbe(ply, coverageKind, true);
             return e0;
         }
         if (e1->key32 == key32 && !e1->isEmpty()) {
@@ -405,6 +454,7 @@ TTEntry* TranspositionTable::probe(Hash key) {
             m_stats.hits++;
             m_stats.totalScanLength += 2;
 #endif
+            m_stats.recordProbe(ply, coverageKind, true);
             return e1;
         }
         if (e2->key32 == key32 && !e2->isEmpty()) {
@@ -412,6 +462,7 @@ TTEntry* TranspositionTable::probe(Hash key) {
             m_stats.hits++;
             m_stats.totalScanLength += 3;
 #endif
+            m_stats.recordProbe(ply, coverageKind, true);
             return e2;
         }
         if (e3->key32 == key32 && !e3->isEmpty()) {
@@ -419,6 +470,7 @@ TTEntry* TranspositionTable::probe(Hash key) {
             m_stats.hits++;
             m_stats.totalScanLength += 4;
 #endif
+            m_stats.recordProbe(ply, coverageKind, true);
             return e3;
         }
         
@@ -434,12 +486,13 @@ TTEntry* TranspositionTable::probe(Hash key) {
         m_stats.totalScanLength += 4;
 #endif
         
+        m_stats.recordProbe(ply, coverageKind, false);
         return nullptr;
     } else {
         // Regular mode: single entry
         size_t idx = index(key);
         TTEntry* entry = &m_entries[idx];
-        
+
 #ifdef TT_STATS_ENABLED
         // Track probe-side collisions for diagnostics
         if (entry->isEmpty()) {
@@ -447,6 +500,7 @@ TTEntry* TranspositionTable::probe(Hash key) {
         } else {
             if (entry->key32 == key32) {
                 m_stats.hits++;
+                m_stats.recordProbe(ply, coverageKind, true);
                 return entry;
             } else {
                 // Non-empty slot with wrong key = collision
@@ -456,10 +510,11 @@ TTEntry* TranspositionTable::probe(Hash key) {
 #else
         // Fast path without stats
         if (!entry->isEmpty() && entry->key32 == key32) {
+            m_stats.recordProbe(ply, coverageKind, true);
             return entry;
         }
 #endif
-        
+        m_stats.recordProbe(ply, coverageKind, false);
         return nullptr;
     }
 }

@@ -23,6 +23,7 @@
 #include <iomanip>
 #include <random>
 #include <algorithm>
+#include <array>
 #include <thread>
 #include <cmath>
 #include <sstream>
@@ -180,6 +181,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name SearchStats type check default false" << std::endl;
     // Debug move tracing option (space/comma separated list of UCI moves)
     std::cout << "option name DebugTrackedMoves type string default" << std::endl;
+    std::cout << "option name LogRootTTStores type check default false" << std::endl;
 
     // Node explosion diagnostics option
     std::cout << "option name NodeExplosionDiagnostics type check default false" << std::endl;
@@ -312,6 +314,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
     std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
     std::cout << "option name UseUnorderedMovePicker type check default false" << std::endl;
+    std::cout << "option name RepairTTPriority type check default false" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
@@ -782,6 +785,7 @@ void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
     limits.useQuiescence = m_useQuiescence;
     limits.useRankedMovePicker = m_useRankedMovePicker;
     limits.useUnorderedMovePicker = m_useUnorderedMovePicker;
+    limits.useTTPriorityRepair = m_useTTPriorityRepair;
     limits.showMovePickerStats = m_showMovePickerStats;
     limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
     limits.useRankAwareGates = m_useRankAwareGates;
@@ -798,6 +802,7 @@ void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
     limits.singularVerificationReduction = engineConfig.singularVerificationReduction;
     limits.singularExtensionDepth = engineConfig.singularExtensionDepth;
     limits.debugTrackedMoves = m_debugTrackedMoves;
+    limits.logRootTTStores = m_logRootTTStores;
 
     limits.singularDebugLog = false;
     limits.singularDebugSink = nullptr;
@@ -1210,6 +1215,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useUnorderedMovePicker = false;
             std::cerr << "info string Unordered move picker disabled" << std::endl;
+        }
+    }
+    else if (optionName == "RepairTTPriority") {
+        if (value == "true") {
+            m_useTTPriorityRepair = true;
+            std::cerr << "info string TT priority repair enabled" << std::endl;
+        } else if (value == "false") {
+            m_useTTPriorityRepair = false;
+            std::cerr << "info string TT priority repair disabled" << std::endl;
         }
     }
     // Phase 2a.6: ShowMovePickerStats
@@ -2384,6 +2398,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string DebugTrackedMoves set to: " << oss.str() << std::endl;
         }
     }
+    else if (optionName == "LogRootTTStores") {
+        if (value == "true") {
+            m_logRootTTStores = true;
+            std::cerr << "info string Root TT probe/store logging enabled" << std::endl;
+        } else if (value == "false") {
+            m_logRootTTStores = false;
+            std::cerr << "info string Root TT probe/store logging disabled" << std::endl;
+        }
+    }
     else if (optionName == "NodeExplosionDiagnostics") {
         if (value == "true") {
             m_nodeExplosionDiagnostics = true;
@@ -3298,6 +3321,11 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "  Non-exact: " << stats.replacedNonExact.load() << std::endl;
             std::cout << "  No-move: " << stats.replacedNoMove.load() << std::endl;
             std::cout << "  Oldest: " << stats.replacedOldest.load() << std::endl;
+            std::cout << "Store skips:" << std::endl;
+            std::cout << "  Protect move: " << stats.storeSkipsProtectMove.load() << std::endl;
+            std::cout << "  Depth: " << stats.storeSkipsDepth.load() << std::endl;
+            std::cout << "  Collision (NO_MOVE): " << stats.storeSkipsCollisionNoMove.load() << std::endl;
+            std::cout << "  Other: " << stats.storeSkipsOther.load() << std::endl;
 #else
             std::cout << "Probes: " << stats.probes << std::endl;
             std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
@@ -3314,6 +3342,11 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "  Non-exact: " << stats.replacedNonExact << std::endl;
             std::cout << "  No-move: " << stats.replacedNoMove << std::endl;
             std::cout << "  Oldest: " << stats.replacedOldest << std::endl;
+            std::cout << "Store skips:" << std::endl;
+            std::cout << "  Protect move: " << stats.storeSkipsProtectMove << std::endl;
+            std::cout << "  Depth: " << stats.storeSkipsDepth << std::endl;
+            std::cout << "  Collision (NO_MOVE): " << stats.storeSkipsCollisionNoMove << std::endl;
+            std::cout << "  Other: " << stats.storeSkipsOther << std::endl;
 #endif
         } else {
             std::cout << "Backend: Regular (single-entry)" << std::endl;
@@ -3325,6 +3358,11 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "Probe empties: " << stats.probeEmpties.load() << std::endl;
             std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches.load() 
                       << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Store skips:" << std::endl;
+            std::cout << "  Protect move: " << stats.storeSkipsProtectMove.load() << std::endl;
+            std::cout << "  Depth: " << stats.storeSkipsDepth.load() << std::endl;
+            std::cout << "  Collision (NO_MOVE): " << stats.storeSkipsCollisionNoMove.load() << std::endl;
+            std::cout << "  Other: " << stats.storeSkipsOther.load() << std::endl;
 #else
             std::cout << "Probes: " << stats.probes << std::endl;
             std::cout << "Hits: " << stats.hits << " (" << stats.hitRate() << "%)" << std::endl;
@@ -3333,7 +3371,53 @@ void UCIEngine::handleDebug(const std::vector<std::string>& tokens) {
             std::cout << "Probe empties: " << stats.probeEmpties << std::endl;
             std::cout << "Probe mismatches (real collisions): " << stats.probeMismatches 
                       << " (" << stats.collisionRate() << "%)" << std::endl;
+            std::cout << "Store skips:" << std::endl;
+            std::cout << "  Protect move: " << stats.storeSkipsProtectMove << std::endl;
+            std::cout << "  Depth: " << stats.storeSkipsDepth << std::endl;
+            std::cout << "  Collision (NO_MOVE): " << stats.storeSkipsCollisionNoMove << std::endl;
+            std::cout << "  Other: " << stats.storeSkipsOther << std::endl;
 #endif
+        }
+
+        constexpr int kCoverageDumpLimit = 32;
+        const std::array<std::pair<TranspositionTable::CoverageKind, const char*>, 3> coverageKinds{{
+            {TranspositionTable::CoverageKind::PV, "PV"},
+            {TranspositionTable::CoverageKind::NonPV, "NonPV"},
+            {TranspositionTable::CoverageKind::Quiescence, "Q"}
+        }};
+
+        for (const auto& [kind, label] : coverageKinds) {
+            int lastWithData = -1;
+            for (int ply = 0; ply < TranspositionTable::COVERAGE_PLY_BUCKETS; ++ply) {
+                if (stats.coverageProbesAt(static_cast<TTCoverageKind>(kind), ply) > 0 ||
+                    stats.coverageStoresAt(static_cast<TTCoverageKind>(kind), ply) > 0) {
+                    lastWithData = ply;
+                }
+            }
+            if (lastWithData < 0) {
+                continue;
+            }
+
+            const int upper = std::min(lastWithData, kCoverageDumpLimit - 1);
+            std::cout << "Coverage " << label << ": ";
+            bool firstBucket = true;
+            for (int ply = 0; ply <= upper; ++ply) {
+                uint64_t probes = stats.coverageProbesAt(static_cast<TTCoverageKind>(kind), ply);
+                uint64_t hits = stats.coverageHitsAt(static_cast<TTCoverageKind>(kind), ply);
+                uint64_t stores = stats.coverageStoresAt(static_cast<TTCoverageKind>(kind), ply);
+                if (!firstBucket) {
+                    std::cout << ' ';
+                }
+                firstBucket = false;
+                std::cout << ply << '=' << hits << '/' << probes;
+                if (stores > 0) {
+                    std::cout << '|' << stores << 's';
+                }
+            }
+            if (lastWithData >= kCoverageDumpLimit) {
+                std::cout << " ...";
+            }
+            std::cout << std::endl;
         }
         
         std::cout << "Hashfull: " << m_tt.hashfull() << "/1000" << std::endl;

@@ -35,9 +35,40 @@
 
 namespace seajay::search {
 
+#ifdef SEARCH_STATS
+using MovePickerBucket = SearchData::MovePickerBucket;
+
+ALWAYS_INLINE constexpr const char* movePickerBucketNameLocal(MovePickerBucket bucket) noexcept {
+    switch (bucket) {
+        case MovePickerBucket::TT: return "TT";
+        case MovePickerBucket::GoodCapture: return "GoodCapture";
+        case MovePickerBucket::BadCapture: return "BadCapture";
+        case MovePickerBucket::Promotion: return "Promotion";
+        case MovePickerBucket::Killer: return "Killer";
+        case MovePickerBucket::CounterMove: return "Counter";
+        case MovePickerBucket::QuietCounterHistory: return "QuietCMH";
+        case MovePickerBucket::QuietHistory: return "QuietHist";
+        case MovePickerBucket::QuietFallback: return "QuietOther";
+        case MovePickerBucket::Other:
+        default:
+            return "Other";
+    }
+}
+#endif
+
 namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
 constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
+
+const char* boundName(Bound bound) {
+    switch (bound) {
+        case Bound::NONE:  return "NONE";
+        case Bound::LOWER: return "LOWER";
+        case Bound::UPPER: return "UPPER";
+        case Bound::EXACT: return "EXACT";
+        default:           return "UNKNOWN";
+    }
+}
 
 #ifdef SEARCH_STATS
 static MovePickerBucket classifyCutoffMove(const Board& board,
@@ -455,6 +486,7 @@ eval::Score negamax(Board& board,
     int singularDebugEventIndex = -1;
     SingularDebugEvent singularDebugEvent{};
     bool singularDebugActive = false;
+    bool rootTTLogged = false;
     
     // Track verification-node instrumentation before other pruning kicks in
     const bool isSingularVerificationNode =
@@ -547,7 +579,22 @@ eval::Score negamax(Board& board,
         if (tt && tt->isEnabled()) {
             Hash zobristKey = board.zobristKey();
             tt->prefetch(zobristKey);
-            ttEntry = tt->probe(zobristKey);
+            const auto coverageKind = isPvNode ? TranspositionTable::CoverageKind::PV
+                                               : TranspositionTable::CoverageKind::NonPV;
+            ttEntry = tt->probe(zobristKey, ply, coverageKind);
+            if (ply == 0 && limits.logRootTTStores) {
+                const bool hit = ttEntry && ttEntry->key32 == (zobristKey >> 32);
+                std::ostringstream probeMsg;
+                probeMsg << "info string RootTTProbe depth=" << depth
+                         << " key=0x" << std::hex << std::setw(16) << std::setfill('0') << zobristKey
+                         << std::dec << " hit=" << (hit ? 1 : 0);
+                if (hit) {
+                    probeMsg << " bound=" << boundName(ttEntry->bound())
+                             << " ttDepth=" << static_cast<int>(ttEntry->depth)
+                             << " score=" << ttEntry->score;
+                }
+                std::cout << probeMsg.str() << std::endl;
+            }
             info.ttProbes++;
 
             if (ttEntry && ttEntry->key32 == (zobristKey >> 32)) {
@@ -647,6 +694,21 @@ eval::Score negamax(Board& board,
                 }
             }
         }
+    }
+
+    if (ply == 0 && !limits.debugTrackedMoves.empty() && !rootTTLogged) {
+        std::ostringstream oss;
+        oss << "info string RootTT key=" << board.zobristKey();
+        if (ttMove != NO_MOVE) {
+            oss << " move=" << SafeMoveExecutor::moveToString(ttMove);
+        } else {
+            oss << " move=NONE";
+        }
+        oss << " depth=" << ttDepth
+            << " score=" << ttScore.to_cp()
+            << " bound=" << boundName(ttBound);
+        std::cerr << oss.str() << std::endl;
+        rootTTLogged = true;
     }
 
     if (isSingularVerificationNode && !verificationNodeReturnedViaTT) {
@@ -765,7 +827,9 @@ eval::Score negamax(Board& board,
                     // FIX: Use depth 0 since static-null is heuristic, not searched
                     int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
                     tt->store(zobristKey, NO_MOVE, scoreToStore, evalToStore,
-                             0, Bound::LOWER);  // Depth 0 for heuristic bound
+                             0, Bound::LOWER,
+                             ply,
+                             TranspositionTable::CoverageKind::NonPV);  // Depth 0 for heuristic bound
                     info.ttStores++;
                     // No longer track as missing store
                 } else if (!tt || !tt->isEnabled()) {
@@ -949,7 +1013,9 @@ eval::Score negamax(Board& board,
                         // Store with NO_MOVE since this is a null-move cutoff
                         // Use LOWER bound since we're failing high (score >= beta)
                         tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
-                                 static_cast<uint8_t>(depth), Bound::LOWER);
+                                 static_cast<uint8_t>(depth), Bound::LOWER,
+                                 ply,
+                                 TranspositionTable::CoverageKind::NonPV);
                         info.ttStores++;
                         // No longer track as missing store
                     } else {
@@ -987,7 +1053,9 @@ eval::Score negamax(Board& board,
                     // Store with NO_MOVE since this is a null-move cutoff
                     // Use LOWER bound since we're failing high (score >= beta)
                     tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
-                             static_cast<uint8_t>(depth), Bound::LOWER);
+                             static_cast<uint8_t>(depth), Bound::LOWER,
+                             ply,
+                             TranspositionTable::CoverageKind::NonPV);
                     info.ttStores++;
                     // No longer track as missing store
                 } else {
@@ -1109,8 +1177,11 @@ eval::Score negamax(Board& board,
                                 scoreToStore = qScore.value() - ply;  // Adjust mated score
                             }
                             
-                            tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE, 
-                                     static_cast<uint8_t>(depth), Bound::UPPER);
+                            tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                                     static_cast<uint8_t>(depth), Bound::UPPER,
+                                     ply,
+                                     isPvNode ? TranspositionTable::CoverageKind::PV
+                                              : TranspositionTable::CoverageKind::NonPV);
                             info.ttStores++;
                         }
                         
@@ -2498,9 +2569,26 @@ eval::Score negamax(Board& board,
             // Phase 4.2.c: Store the TRUE static eval, not the search score
             // This allows better eval reuse and improving position detection
             int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
-            tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore, 
-                     static_cast<uint8_t>(depth), bound);
+            tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore,
+                     static_cast<uint8_t>(depth), bound,
+                     ply,
+                     isPvNode ? TranspositionTable::CoverageKind::PV
+                              : TranspositionTable::CoverageKind::NonPV);
             info.ttStores++;
+            if (ply == 0 && limits.logRootTTStores) {
+                std::ostringstream storeMsg;
+                storeMsg << "info string RootTTStore depth=" << depth
+                         << " key=0x" << std::hex << std::setw(16) << std::setfill('0') << zobristKey
+                         << std::dec
+                         << " bound=" << boundName(bound)
+                         << " move=" << SafeMoveExecutor::moveToString(bestMove)
+                         << " score=" << bestScore.to_cp()
+                         << " stored=" << scoreToStore.value();
+                if (evalToStore != TT_EVAL_NONE) {
+                    storeMsg << " eval=" << evalToStore;
+                }
+                std::cout << storeMsg.str() << std::endl;
+            }
     }
 
     // Root safety net: ensure we always have a move to play.
@@ -2633,6 +2721,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     Move bestMove;
     Move previousBestMove = NO_MOVE;  // Track best move from previous iteration
     eval::Score previousScore = eval::Score::zero();  // Track score for aspiration windows
+    bool suppressAspirationNext = false;  // Skip aspiration once after PV oscillation
     
     // Advance TT generation for new search to enable proper replacement strategy
     if (tt) {
@@ -2659,9 +2748,12 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         AspirationWindow window;
         
         // Stage 13 Remediation: Use configurable aspiration windows
-        if (limits.useAspirationWindows && 
+        const bool aspirationActive = (!suppressAspirationNext &&
+            limits.useAspirationWindows && 
             depth >= AspirationConstants::MIN_DEPTH && 
-            previousScore != eval::Score::zero()) {
+            previousScore != eval::Score::zero());
+
+        if (aspirationActive) {
             // Calculate aspiration window based on previous score with configurable delta
             window = calculateInitialWindow(previousScore, depth, limits.aspirationWindow);
             alpha = window.alpha;
@@ -2670,6 +2762,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             // Use infinite window for shallow depths or when disabled
             alpha = eval::Score::minus_infinity();
             beta = eval::Score::infinity();
+            if (suppressAspirationNext) {
+                suppressAspirationNext = false;  // Reset after the widened iteration
+            }
         }
         
         // Phase PV2: Pass root PV arena to collect principal variation at root
@@ -2781,6 +2876,9 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             
             info.recordIteration(iter);
             info.updateStability(iter);  // Update stability tracking (Deliverable 2.1e)
+            if (previousBestMove != NO_MOVE && info.bestMove != NO_MOVE && info.bestMove != previousBestMove) {
+                suppressAspirationNext = true;  // Next iteration starts with full window
+            }
             previousBestMove = info.bestMove;  // Update for next iteration
             previousScore = score;  // Save score for next iteration's aspiration window
             
@@ -3016,6 +3114,8 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         std::cout << " captures=" << info.movePickerStats.capturesTotal;
         std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
         std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
+        std::cout << " ttFallbackRepairs=" << info.movePickerStats.ttFallbackRepairs;
+        std::cout << " ttFirstYieldFallback=" << info.movePickerStats.ttFirstYieldFallback;
 
         if (info.movePickerStats.firstCutoffTotal > 0) {
             std::cout << " firstCutoffs=" << info.movePickerStats.firstCutoffTotal;
@@ -3031,7 +3131,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             for (size_t i = 0; i < static_cast<size_t>(MovePickerBucket::Count); ++i) {
                 uint64_t count = info.movePickerStats.firstCutoffBuckets[i];
                 if (count == 0) continue;
-                std::cout << ' ' << movePickerBucketName(static_cast<MovePickerBucket>(i))
+                std::cout << ' ' << movePickerBucketNameLocal(static_cast<MovePickerBucket>(i))
                           << '=' << count;
             }
         }
@@ -3041,7 +3141,7 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
             for (size_t i = 0; i < static_cast<size_t>(MovePickerBucket::Count); ++i) {
                 uint64_t count = info.movePickerStats.cutoffBuckets[i];
                 if (count == 0) continue;
-                std::cout << ' ' << movePickerBucketName(static_cast<MovePickerBucket>(i))
+                std::cout << ' ' << movePickerBucketNameLocal(static_cast<MovePickerBucket>(i))
                           << '=' << count;
             }
         }

@@ -192,7 +192,22 @@ static eval::Score negamax_legacy(Board& board,
         if (tt && tt->isEnabled()) {
             Hash zobristKey = board.zobristKey();
             tt->prefetch(zobristKey);
-            ttEntry = tt->probe(zobristKey);
+            const auto coverageKind = isPvNode ? TranspositionTable::CoverageKind::PV
+                                               : TranspositionTable::CoverageKind::NonPV;
+            ttEntry = tt->probe(zobristKey, ply, coverageKind);
+            if (ply == 0 && limits.logRootTTStores) {
+                const bool hit = ttEntry && ttEntry->key32 == (zobristKey >> 32);
+                std::ostringstream probeMsg;
+                probeMsg << "info string RootTTProbe depth=" << depth
+                         << " key=0x" << std::hex << std::setw(16) << std::setfill('0') << zobristKey
+                         << std::dec << " hit=" << (hit ? 1 : 0);
+                if (hit) {
+                    probeMsg << " bound=" << boundName(ttEntry->bound())
+                             << " ttDepth=" << static_cast<int>(ttEntry->depth)
+                             << " score=" << ttEntry->score;
+                }
+                std::cout << probeMsg.str() << std::endl;
+            }
             info.ttProbes++;
 
             if (ttEntry && ttEntry->key32 == (zobristKey >> 32)) {
@@ -317,7 +332,9 @@ static eval::Score negamax_legacy(Board& board,
                     // FIX: Use depth 0 since static-null is heuristic, not searched
                     int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
                     tt->store(zobristKey, NO_MOVE, scoreToStore, evalToStore,
-                             0, Bound::LOWER);  // Depth 0 for heuristic bound
+                             0, Bound::LOWER,
+                             ply,
+                             TranspositionTable::CoverageKind::NonPV);  // Depth 0 for heuristic bound
                     info.ttStores++;
                     // No longer track as missing store
                 } else if (!tt || !tt->isEnabled()) {
@@ -485,7 +502,9 @@ static eval::Score negamax_legacy(Board& board,
                         // Store with NO_MOVE since this is a null-move cutoff
                         // Use LOWER bound since we're failing high (score >= beta)
                         tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
-                                 static_cast<uint8_t>(depth), Bound::LOWER);
+                                 static_cast<uint8_t>(depth), Bound::LOWER,
+                                 ply,
+                                 TranspositionTable::CoverageKind::NonPV);
                         info.ttStores++;
                         // No longer track as missing store
                     } else {
@@ -523,7 +542,9 @@ static eval::Score negamax_legacy(Board& board,
                     // Store with NO_MOVE since this is a null-move cutoff
                     // Use LOWER bound since we're failing high (score >= beta)
                     tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
-                             static_cast<uint8_t>(depth), Bound::LOWER);
+                             static_cast<uint8_t>(depth), Bound::LOWER,
+                             ply,
+                             TranspositionTable::CoverageKind::NonPV);
                     info.ttStores++;
                     // No longer track as missing store
                 } else {
@@ -627,8 +648,11 @@ static eval::Score negamax_legacy(Board& board,
                                 scoreToStore = qScore.value() - ply;  // Adjust mated score
                             }
                             
-                            tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE, 
-                                     static_cast<uint8_t>(depth), Bound::UPPER);
+                            tt->store(zobristKey, NO_MOVE, scoreToStore, TT_EVAL_NONE,
+                                     static_cast<uint8_t>(depth), Bound::UPPER,
+                                     ply,
+                                     isPvNode ? TranspositionTable::CoverageKind::PV
+                                              : TranspositionTable::CoverageKind::NonPV);
                             info.ttStores++;
                         }
                         
@@ -1752,9 +1776,26 @@ static eval::Score negamax_legacy(Board& board,
             // Phase 4.2.c: Store the TRUE static eval, not the search score
             // This allows better eval reuse and improving position detection
             int16_t evalToStore = staticEvalComputed ? staticEval.value() : TT_EVAL_NONE;
-            tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore, 
-                     static_cast<uint8_t>(depth), bound);
+            tt->store(zobristKey, bestMove, scoreToStore.value(), evalToStore,
+                     static_cast<uint8_t>(depth), bound,
+                     ply,
+                     isPvNode ? TranspositionTable::CoverageKind::PV
+                              : TranspositionTable::CoverageKind::NonPV);
             info.ttStores++;
+            if (ply == 0 && limits.logRootTTStores) {
+                std::ostringstream storeMsg;
+                storeMsg << "info string RootTTStore depth=" << depth
+                         << " key=0x" << std::hex << std::setw(16) << std::setfill('0') << zobristKey
+                         << std::dec
+                         << " bound=" << boundName(bound)
+                         << " move=" << SafeMoveExecutor::moveToString(bestMove)
+                         << " score=" << bestScore.to_cp()
+                         << " stored=" << scoreToStore.value();
+                if (evalToStore != TT_EVAL_NONE) {
+                    storeMsg << " eval=" << evalToStore;
+                }
+                std::cout << storeMsg.str() << std::endl;
+            }
     }
 
     // Root safety net: ensure we always have a move to play.

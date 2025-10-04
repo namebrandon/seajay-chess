@@ -123,3 +123,19 @@ bench <nodes>`
 - Added UCI option `UseUnorderedMovePicker` to bypass move ordering for diagnostic baselines.
 - Ordered vs unordered depth-10 comparison on `r3k2r/...`: ~127k nodes vs ~3.19M nodes (≈96% reduction with ordering); first-cutoff TT usage ≈65%.
 - Next focus area: improve first-move fail-high rate (current average ~87%) using the new bucket telemetry.
+
+## 2025-10-05 TT Coverage Instrumentation
+
+- Instrumented the transposition table with per-ply coverage buckets split by PV/non-PV/quiescence. `debug tt` now prints `Coverage` lines (≤32 plies) so we can spot where probes stop hitting.
+- Added UCI toggle `LogRootTTStores` to emit `info string RootTTProbe/RootTTStore` lines for each depth. This makes it easy to correlate stored zobrist keys with subsequent misses in the harness logs under `logs/tt_probe/`.
+- Search and quiescence both feed the new counters; instrumentation is on by default while ENABLE_TT_STATS remains active.
+- Next steps:
+  - Run the WAC.049/WAC.002 depth-10 harness (ordered + SEE-off controls) with `LogRootTTStores=true` to capture coverage traces.
+  - Chart PV vs non-PV coverage from the `debug tt` snapshots to confirm where availability collapses.
+  - Evaluate mitigation ideas (earlier root stores, TT size, cluster size) once the drop-off depth is confirmed.
+
+## 2025-10-05 Aspiration Guardrails
+
+- Iterative deepening now disables aspiration for one depth whenever the root PV changes. That single widened iteration keeps non-PV coverage ≥40 % about one ply deeper on WAC.049 (ply 9 vs 8) without touching picker heuristics.
+- Full aspiration disable still pushes the cliff to ply 10–11, and unordered move picking keeps coverage high everywhere, confirming the gap is caused by root oscillation rather than TT replacement pressure.
+- Suggested diagnostic order: (1) leave the guard in place, (2) sweep `UseAspirationWindows`, `AspirationWindow`, `AspirationGrowth`, `AspirationMaxAttempts` via SPSA or manual tuning, and (3) use `LogRootTTStores=true` during every run so the coverage tables verify each tweak before we commit.
