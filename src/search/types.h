@@ -27,20 +27,6 @@
 
 namespace seajay::search {
 
-enum class MovePickerBucket : uint8_t {
-    TT = 0,
-    GoodCapture,
-    BadCapture,
-    Promotion,
-    Killer,
-    CounterMove,
-    QuietCounterHistory,
-    QuietHistory,
-    QuietFallback,
-    Other,
-    Count
-};
-
 struct SingularDebugEvent {
     std::string fen;
     Move candidate = NO_MOVE;
@@ -989,12 +975,15 @@ struct SearchData {
     // - Prevents time losses while maintaining performance
     static constexpr uint64_t TIME_CHECK_INTERVAL = 2048;  // Check every 2048 nodes
     
+    // Phase 2a.6: Move picker telemetry (compiled out in Release)
+    // This struct tracks effectiveness of the ranked move picker
+    // All fields are thread-local, no atomics needed for single-thread OB
 #ifdef SEARCH_STATS
     struct MovePickerStats {
         // Best move rank distribution
         // [0]=rank 1, [1]=ranks 2-5, [2]=ranks 6-10, [3]=ranks 11+
         uint64_t bestMoveRank[4] = {0, 0, 0, 0};
-
+        
         // Shortlist coverage
         uint64_t shortlistHits = 0;      // Cutoff moves that were in shortlist
         
@@ -1005,10 +994,7 @@ struct SearchData {
         // Optional: Additional tracking
         uint64_t ttFirstYield = 0;       // TT move yielded first
         uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
-
-        // Phase MP3 scaffolding: heuristic yield buckets for staged picker parity
-        std::array<uint64_t, static_cast<size_t>(MovePickerBucket::Count)> legacyYields{{0}};
-
+        
         void reset() {
             for (int i = 0; i < 4; i++) bestMoveRank[i] = 0;
             shortlistHits = 0;
@@ -1016,7 +1002,6 @@ struct SearchData {
             capturesTotal = 0;
             ttFirstYield = 0;
             remainderYields = 0;
-            legacyYields.fill(0);
         }
     } movePickerStats;
     
