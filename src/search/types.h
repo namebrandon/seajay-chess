@@ -93,9 +93,9 @@ struct SearchLimits {
     bool useQuiescence = true;  // Enable/disable quiescence search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
-    int aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
-    int aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
-    int stabilityThreshold = 6;       // Iterations needed for move stability
+    int aspirationWindow = 9;         // SPSA-tuned (2025-10-05)
+    int aspirationMaxAttempts = 6;    // SPSA-tuned (2025-10-05)
+    int stabilityThreshold = 5;       // Iterations needed for move stability
     bool useAspirationWindows = true; // Enable/disable aspiration windows
     
     // Stage 13 Remediation Phase 4: Advanced features

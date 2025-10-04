@@ -186,9 +186,9 @@ private:
     std::vector<std::string> m_debugTrackedMoves; // UCI move strings to trace during search
     
     // Stage 13 Remediation: Aspiration window parameters (SPSA-tuned 2025-09-04)
-    int m_aspirationWindow = 13;        // SPSA-tuned with 250k games (2025-09-04)
-    int m_aspirationMaxAttempts = 5;    // SPSA-tuned with 250k games (2025-09-04)
-    int m_stabilityThreshold = 6;       // Iterations needed for move stability
+    int m_aspirationWindow = 9;         // SPSA-tuned (2025-10-05)
+    int m_aspirationMaxAttempts = 6;    // SPSA-tuned (2025-10-05)
+    int m_stabilityThreshold = 5;       // Iterations needed for move stability
     bool m_useAspirationWindows = true; // Enable/disable aspiration windows
     
     // Stage 13 Remediation Phase 4: Advanced features

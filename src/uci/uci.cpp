@@ -333,7 +333,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name Threads type spin default 1 min 1 max 1024" << std::endl;
     
     // Stage 13 Remediation: Aspiration window and time management options
-    std::cout << "option name AspirationWindow type spin default 13 min 5 max 50" << std::endl;
+    std::cout << "option name AspirationWindow type spin default 9 min 5 max 50" << std::endl;
     
     // Stage 22 Phase P3.5: PVS statistics output option
     std::cout << "option name ShowPVSStats type check default false" << std::endl;
@@ -354,8 +354,8 @@ void UCIEngine::handleUCI() {
     std::cout << "option name MoveCountHistoryBonus type spin default 6 min 0 max 20" << std::endl;
     std::cout << "option name MoveCountImprovingRatio type spin default 75 min 50 max 100" << std::endl;
     
-    std::cout << "option name AspirationMaxAttempts type spin default 5 min 3 max 10" << std::endl;
-    std::cout << "option name StabilityThreshold type spin default 6 min 3 max 12" << std::endl;
+    std::cout << "option name AspirationMaxAttempts type spin default 6 min 3 max 10" << std::endl;
+    std::cout << "option name StabilityThreshold type spin default 5 min 3 max 12" << std::endl;
     std::cout << "option name UseAspirationWindows type check default true" << std::endl;
     
     // Stage 13 Remediation Phase 4: Advanced features

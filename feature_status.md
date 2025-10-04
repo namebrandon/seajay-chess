@@ -52,3 +52,4 @@
 - Added depth-aware TT coverage counters (PV / non-PV / quiescence) and the `LogRootTTStores` UCI toggle; `debug tt` now reports per-ply coverage so we can track where availability collapses.
 - Added an aspiration guard that skips the window for one iteration whenever the root PV changes; WAC.049 keeps non-PV coverage ≥40% through ply 9 without touching move ordering.
 - See `docs/project_docs/Move_Picking_Optimization_Plan.md` ("Reboot Checklist") for a quick-start guide when resuming this work.
+- Latest SPSA pass (2025-10-05) set `AspirationWindow=9`, `AspirationMaxAttempts=6`, `StabilityThreshold=5`.

@@ -1,11 +1,12 @@
 # Move Picking / TT Coverage Prompt (2025-10-05)
 
-Resume guide for `feature/20251002-move-picking` (commit `83857cf docs: capture TT coverage state for reboot`).
+Resume guide for `feature/20251002-move-picking` (commit `9fe2182 fix: round aspiration tuning options`).
 
 ## Current State
 - TT instrumentation buckets probes/stores by ply and kind (PV / NonPV / Quiescence). `debug tt` prints compact `Coverage` lines.
 - Root logging (`setoption name LogRootTTStores value true`) dumps `info string RootTTProbe/RootTTStore` per iteration.
 - Iterative deepening suppresses aspiration for one iteration whenever the root PV changes; this keeps non-PV coverage ≥40% through ply 9 on WAC.049.
+- Current defaults after SPSA (2025-10-05): `AspirationWindow=9`, `AspirationMaxAttempts=6`, `StabilityThreshold=5`.
 
 ## Key Files
 - TT stats & API: `src/core/transposition_table.h/.cpp`
@@ -25,13 +26,9 @@ printf 'uci\nsetoption name LogRootTTStores value true\nposition fen <FEN>\ngo d
 - Disabling aspiration pushes the cliff to ply 10–11; unordered picker keeps coverage high (used for diagnostics only).
 
 ## Next Actions
-1. Run directional SPSA on numeric aspiration options:
-   - `AspirationWindow,int,13,8,28,2.0,0.002`
-   - `AspirationMaxAttempts,int,5,3,8,1.0,0.002`
-   - `StabilityThreshold,int,6,3,12,1.5,0.002`
-   Keep `LogRootTTStores=true` so every candidate shows a coverage curve before measuring Elo.
-2. After tuning, capture WAC.049/WAC.002 depth-10 logs (ordered vs SEE-off) to confirm coverage depth.
-3. If coverage still drops at ply 9, evaluate root move-order heuristics before altering non-root picker logic.
+1. Re-run the WAC.049 / WAC.002 depth-10 harness (ordered + SEE-off) with `LogRootTTStores=true` whenever hardware or code changes to confirm coverage still holds through ply 9.
+2. If coverage regresses, examine root move-order heuristics (e.g., aspiration growth mode, ordering toggles) before touching deeper picker logic.
+3. Once coverage is stable, schedule a short SPRT against `main` to validate the combined aspiration guard + new defaults.
 
 ## Reference Logs
 - Ordered baseline: `logs/tt_probe/wac049_base_ttcoverage_afterfix.log`, `logs/tt_probe/wac002_base_ttcoverage_afterfix.log`
