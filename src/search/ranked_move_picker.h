@@ -44,7 +44,6 @@
 #include "killer_moves.h"
 #include "countermoves.h"
 #include "countermove_history.h"
-#include "move_ordering.h"
 #include "types.h"  // For SearchData and SearchLimits
 
 namespace seajay {
@@ -97,13 +96,6 @@ public:
 private:
     // Constants
     static constexpr int MAX_SHORTLIST_SIZE = 8;  // Maximum K value for deep searches
-
-    enum class LegacyYieldStage : uint8_t {
-        TT,
-        Shortlist,
-        Remainder,
-        BadCapture
-    };
     
     // References to tables (no ownership)
     const Board& m_board;
@@ -130,21 +122,16 @@ private:
     int m_shortlistIndex;
     int m_effectiveShortlistSize;  // Depth-based K value
     bool m_inCheck;  // Flag to bypass shortlist when in check
-
+    
     // Legacy-ordered move list
     MoveList m_moves;
     size_t m_moveIndex;
-    size_t m_captureScanIndex;
-    Move m_badCaptures[::seajay::MAX_MOVES];
-    int m_badCaptureCount;
-    int m_badCaptureIndex;
     bool m_ttMoveYielded;
-
-    MovePickerStage m_stage = MovePickerStage::TT;
-
+    
     // Performance optimization: O(1) lookup for shortlist membership
     // Index corresponds to position in m_moves array
-    bool m_inShortlistMap[::seajay::MAX_MOVES];  // True if move at index is in shortlist
+    static constexpr size_t MAX_MOVES = 256;  // Max possible moves in a position
+    bool m_inShortlistMap[MAX_MOVES];  // True if move at index is in shortlist
     
     // Phase 2b.2-fix: Always track yield index for rank-aware gates
     // Lightweight counter, minimal overhead even in Release builds
@@ -156,15 +143,7 @@ private:
     int16_t computePromotionScore(Move move) const;
     void insertIntoShortlist(Move move, int16_t score);
     bool isInShortlist(Move move) const;
-
-    MovePickerBucket classifyLegacyYield(Move move, LegacyYieldStage stage) const;
-    void recordLegacyYield(Move move, MovePickerBucket bucket, LegacyYieldStage stage) const;
-
-    Move emitTTMove();
-    Move emitShortlistMove();
-    Move emitRemainderMove();
-    Move emitBadCaptureMove();
-
+    
 public:
     // Phase 2b.2-fix: Lightweight accessor for rank-aware gates
     // Always available to avoid moveCount mismatch with pseudo-legal skips
@@ -215,8 +194,6 @@ private:
     const Board& m_board;
     Move m_ttMove;
 };
-
-const char* movePickerBucketName(MovePickerBucket bucket) noexcept;
 
 } // namespace search
 } // namespace seajay

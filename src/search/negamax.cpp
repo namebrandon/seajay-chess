@@ -2935,19 +2935,6 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
         std::cout << " captures=" << info.movePickerStats.capturesTotal;
         std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
         std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
-        bool printedBucketHeader = false;
-        for (size_t i = 0; i < info.movePickerStats.legacyYields.size(); ++i) {
-            uint64_t count = info.movePickerStats.legacyYields[i];
-            if (count == 0) {
-                continue;
-            }
-            if (!printedBucketHeader) {
-                std::cout << " buckets";
-                printedBucketHeader = true;
-            }
-            std::cout << ' ' << movePickerBucketName(static_cast<MovePickerBucket>(i))
-                      << '=' << count;
-        }
         std::cout << std::endl;
     }
 #endif
