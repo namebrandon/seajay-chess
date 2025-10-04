@@ -1,0 +1,538 @@
+SeaJay Chess Engine v20251002
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+id name SeaJay v20251002
+id author Brandon Harris
+option name UseMagicBitboards type check default true
+option name UseQuiescence type check default true
+option name QSearchNodeLimit type spin default 0 min 0 max 10000000
+option name QSearchMaxCaptures type spin default 32 min 4 max 128
+option name MaxCheckPly type spin default 6 min 0 max 10
+option name RootKingPenalty type spin default 0 min 0 max 1000
+option name SEEMode type combo default off var off var testing var shadow var production
+option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name LMREnabled type check default true
+option name LMRMinDepth type spin default 2 min 0 max 10
+option name LMRMinMoveNumber type spin default 2 min 0 max 20
+option name LMRBaseReduction type spin default 50 min 0 max 200
+option name LMRDepthFactor type spin default 225 min 100 max 400
+option name LMRHistoryThreshold type spin default 50 min 10 max 90
+option name LMRPvReduction type spin default 1 min 0 max 2
+option name LMRNonImprovingBonus type spin default 1 min 0 max 3
+option name UseNullMove type check default true
+option name UseAggressiveNullMove type check default false
+option name AggressiveNullMinEval type spin default 600 min 0 max 2000
+option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000
+option name AggressiveNullRequirePositiveBeta type check default true
+option name NullMoveStaticMargin type spin default 87 min 50 max 300
+option name NullMoveMinDepth type spin default 2 min 2 max 5
+option name NullMoveReductionBase type spin default 4 min 1 max 6
+option name NullMoveReductionDepth6 type spin default 4 min 2 max 6
+option name NullMoveReductionDepth12 type spin default 5 min 3 max 7
+option name NullMoveVerifyDepth type spin default 10 min 6 max 14
+option name NullMoveEvalMargin type spin default 198 min 100 max 400
+option name UsePSTInterpolation type check default true
+option name ShowPhaseInfo type check default true
+option name SearchStats type check default false
+option name DebugTrackedMoves type string default
+option name NodeExplosionDiagnostics type check default false
+option name EvalExtended type check default false
+option name EvalLogFile type string default
+option name EvalPasserPhaseP4 type check default true
+option name EvalPasserPathFreeBonus type spin default 4 min -64 max 64
+option name EvalPasserPathSafeBonus type spin default -1 min -64 max 64
+option name EvalPasserPathDefendedBonus type spin default -1 min -64 max 64
+option name EvalPasserPathAttackedPenalty type spin default 22 min -64 max 64
+option name EvalPasserStopDefendedBonus type spin default 13 min -64 max 64
+option name EvalPasserStopAttackedPenalty type spin default 15 min -64 max 64
+option name EvalPasserRookSupportBonus type spin default 9 min -64 max 64
+option name EvalPasserEnemyRookBehindPenalty type spin default 0 min -64 max 64
+option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32
+option name EvalThreatHangingPawn type spin default 12 min -64 max 64
+option name EvalThreatHangingKnight type spin default 18 min -64 max 64
+option name EvalThreatHangingBishop type spin default 18 min -64 max 64
+option name EvalThreatHangingRook type spin default 26 min -64 max 64
+option name EvalThreatHangingQueen type spin default 40 min -64 max 64
+option name EvalThreatDoublePawn type spin default 8 min -64 max 64
+option name EvalThreatDoubleKnight type spin default 14 min -64 max 64
+option name EvalThreatDoubleBishop type spin default 14 min -64 max 64
+option name EvalThreatDoubleRook type spin default 22 min -64 max 64
+option name EvalThreatDoubleQueen type spin default 32 min -64 max 64
+option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64
+option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32
+option name EvalLoosePawnOwnHalfPenalty type spin default 6 min 0 max 32
+option name EvalLoosePawnEnemyHalfPenalty type spin default 13 min 0 max 64
+option name EvalLoosePawnPhalanxRebate type spin default 3 min 0 max 32
+option name EvalPasserPhalanxSupportBonus type spin default 3 min 0 max 64
+option name EvalPasserPhalanxAdvanceBonus type spin default 16 min 0 max 64
+option name EvalPasserPhalanxRookBonus type spin default 4 min 0 max 64
+option name EvalCandidateLeverBaseBonus type spin default 5 min 0 max 32
+option name EvalCandidateLeverAdvanceBonus type spin default 9 min 0 max 32
+option name EvalCandidateLeverSupportBonus type spin default 5 min 0 max 32
+option name EvalCandidateLeverRankBonus type spin default 4 min 0 max 16
+option name EvalBishopColorHarmonyBonus type spin default 2 min -16 max 16
+option name EvalBishopColorTensionPenalty type spin default 2 min 0 max 16
+option name EvalBishopColorBlockedPenalty type spin default 3 min 0 max 32
+option name EvalPawnInfiltrationBonus type spin default 25 min -32 max 32
+option name EvalPawnTensionPenalty type spin default 3 min 0 max 16
+option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16
+option name ProfileSquareAttacks type check default false
+option name PawnValueMg type spin default 71 min 50 max 130
+option name KnightValueMg type spin default 325 min 280 max 360
+option name BishopValueMg type spin default 344 min 290 max 370
+option name RookValueMg type spin default 487 min 450 max 570
+option name QueenValueMg type spin default 895 min 850 max 1050
+option name PawnValueEg type spin default 92 min 60 max 140
+option name KnightValueEg type spin default 311 min 270 max 340
+option name BishopValueEg type spin default 327 min 300 max 380
+option name RookValueEg type spin default 510 min 480 max 600
+option name QueenValueEg type spin default 932 min 830 max 1030
+option name UseRazoring type check default true
+option name RazorMargin1 type spin default 274 min 100 max 800
+option name RazorMargin2 type spin default 468 min 200 max 1200
+option name UseFutilityPruning type check default true
+option name FutilityMargin1 type spin default 240 min 50 max 400
+option name FutilityMargin2 type spin default 313 min 100 max 500
+option name FutilityMargin3 type spin default 386 min 150 max 600
+option name FutilityMargin4 type spin default 459 min 200 max 700
+option name KingAttackScale type spin default 2 min 0 max 500
+option name pawn_eg_r3_d type spin default 8 min 0 max 30
+option name pawn_eg_r3_e type spin default 7 min 0 max 30
+option name pawn_eg_r4_d type spin default 18 min 10 max 50
+option name pawn_eg_r4_e type spin default 16 min 10 max 50
+option name pawn_eg_r5_d type spin default 29 min 20 max 70
+option name pawn_eg_r5_e type spin default 27 min 20 max 70
+option name pawn_eg_r6_d type spin default 51 min 30 max 100
+option name pawn_eg_r6_e type spin default 48 min 30 max 100
+option name pawn_eg_r7_center type spin default 75 min 50 max 150
+option name knight_eg_center type spin default 15 min 5 max 25
+option name knight_eg_extended type spin default 10 min 0 max 20
+option name knight_eg_edge type spin default -25 min -40 max -10
+option name knight_eg_corner type spin default -40 min -50 max -20
+option name bishop_eg_long_diag type spin default 19 min 10 max 35
+option name bishop_eg_center type spin default 14 min 5 max 25
+option name bishop_eg_edge type spin default -5 min -15 max 5
+option name rook_eg_7th type spin default 20 min 15 max 40
+option name rook_eg_active type spin default 12 min 5 max 20
+option name rook_eg_passive type spin default 5 min 0 max 15
+option name queen_eg_center type spin default 9 min 5 max 20
+option name queen_eg_active type spin default 7 min 0 max 20
+option name queen_eg_back type spin default -5 min -10 max 5
+option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50
+option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40
+option name KingSafetyEnableScoring type spin default 1 min 0 max 1
+option name king_mg_e1 type spin default 21 min -50 max 50
+option name king_mg_b1 type spin default -5 min -50 max 50
+option name king_mg_g1 type spin default 16 min -50 max 50
+option name king_mg_a1 type spin default 25 min -50 max 50
+option name king_mg_h1 type spin default 12 min -50 max 50
+option name king_mg_c1 type spin default 8 min -50 max 50
+option name king_mg_d1 type spin default -27 min -50 max 50
+option name king_mg_f1 type spin default -28 min -50 max 50
+option name Hash type spin default 128 min 1 max 16384
+option name UseTranspositionTable type check default true
+option name UseClusteredTT type check default true
+option name UseStagedMovePicker type check default false
+option name UseRankedMovePicker type check default true
+option name ShowMovePickerStats type check default false
+option name UseInCheckClassOrdering type check default true
+option name UseRankAwareGates type check default true
+option name UseSearchNodeAPIRefactor type check default true
+option name EnableExcludedMoveParam type check default true
+option name UseSingularExtensions type check default true
+option name AllowStackedExtensions type check default true
+option name BypassSingularTTExact type check default false
+option name DisableCheckDuringSingular type check default false
+option name SingularDepthMin type spin default 7 min 4 max 20
+option name SingularMarginBase type spin default 51 min 20 max 200
+option name SingularVerificationReduction type spin default 4 min 2 max 5
+option name SingularExtensionDepth type spin default 2 min 1 max 2
+option name Threads type spin default 1 min 1 max 1024
+option name AspirationWindow type spin default 13 min 5 max 50
+option name ShowPVSStats type check default false
+option name CountermoveBonus type spin default 7960 min 0 max 20000
+option name MoveCountPruning type check default true
+option name MoveCountLimit3 type spin default 7 min 3 max 50
+option name MoveCountLimit4 type spin default 15 min 5 max 60
+option name MoveCountLimit5 type spin default 20 min 8 max 70
+option name MoveCountLimit6 type spin default 25 min 10 max 80
+option name MoveCountLimit7 type spin default 36 min 12 max 90
+option name MoveCountLimit8 type spin default 42 min 15 max 100
+option name MoveCountMaxDepth type spin default 8 min 3 max 20
+option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000
+option name MoveCountHistoryBonus type spin default 6 min 0 max 20
+option name MoveCountImprovingRatio type spin default 75 min 50 max 100
+option name AspirationMaxAttempts type spin default 5 min 3 max 10
+option name StabilityThreshold type spin default 6 min 3 max 12
+option name UseAspirationWindows type check default true
+option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive
+option name UsePhaseStability type check default true
+option name OpeningStability type spin default 4 min 2 max 8
+option name MiddlegameStability type spin default 6 min 3 max 10
+option name EndgameStability type spin default 8 min 4 max 12
+option name FutilityPruning type check default true
+option name FutilityMaxDepth type spin default 7 min 0 max 10
+option name FutilityBase type spin default 240 min 50 max 500
+option name FutilityScale type spin default 73 min 20 max 200
+info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
+uciok
+readyok
+info depth 1 seldepth 8 score cp 90 nodes 49 nps 4900 time 0 tthits 0.00 hashfull 0 pv e2a6
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=h3g2
+info string PickerStage ply=1 index=3 stage=Shortlist bucket=GoodCapture move=e6d5
+info string PickerStage ply=1 index=4 stage=Remainder bucket=QuietOther move=b4b3
+info string PickerStage ply=1 index=5 stage=Remainder bucket=QuietOther move=g6g5
+info string PickerStage ply=1 index=6 stage=Remainder bucket=QuietOther move=c7c6
+info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=c7c5
+info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=d7d6
+info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=b6a4
+info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=b6c4
+info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=b6c8
+info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=f6g4
+info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=f6h5
+info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=f6h7
+info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g8
+info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=g7h6
+info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=g7f8
+info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=a8b8
+info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=a8c8
+info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=a8d8
+info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=h8h4
+info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=h8h5
+info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=h8h6
+info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h7
+info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8f8
+info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8g8
+info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=e7c5
+info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=e7d6
+info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=e7d8
+info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7f8
+info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e8d8
+info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e8f8
+info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e8g8
+info string PickerStage ply=1 index=34 stage=BadCaptures bucket=BadCapture move=b6d5
+info string PickerStage ply=1 index=35 stage=BadCaptures bucket=BadCapture move=f6e4
+info string PickerStage ply=1 index=36 stage=BadCaptures bucket=BadCapture move=f6d5
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=g7f6
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=f7g6
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=h8h3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=a6e2
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=a6e2
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=a6e2
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b6a4
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=e6d5
+info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=h3g2
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=d7c6
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=a6d3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=f6g4
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=e6f5
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=g6h5
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info depth 2 seldepth 9 score cp 90 nodes 157 nps 11214 time 0 moveeff 93.62 tthits 20.00 hashfull 0 pv e2a6 b4c3
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
+info string PickerStage ply=2 index=1 stage=Shortlist bucket=GoodCapture move=g2h3
+info string PickerStage ply=2 index=2 stage=Shortlist bucket=GoodCapture move=d5e6
+info string PickerStage ply=2 index=3 stage=Shortlist bucket=GoodCapture move=b2c3
+info string PickerStage ply=2 index=4 stage=Shortlist bucket=GoodCapture move=d2c3
+info string PickerStage ply=2 index=5 stage=Shortlist bucket=GoodCapture move=f3c3
+info string PickerStage ply=2 index=6 stage=Remainder bucket=QuietOther move=a2a3
+info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=a2a4
+info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=b2b3
+info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=b2b4
+info string PickerStage ply=2 index=10 stage=Remainder bucket=QuietOther move=g2g3
+info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=g2g4
+info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=d5d6
+info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=e5d3
+info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=e5c4
+info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=e5g4
+info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=e5c6
+info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=d2c1
+info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=d2e3
+info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=d2f4
+info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=d2g5
+info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=d2h6
+info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=a6f1
+info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=a6e2
+info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=a6d3
+info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=a6c4
+info string PickerStage ply=2 index=26 stage=Remainder bucket=QuietOther move=a6b5
+info string PickerStage ply=2 index=27 stage=Remainder bucket=QuietOther move=a6b7
+info string PickerStage ply=2 index=28 stage=Remainder bucket=QuietOther move=a6c8
+info string PickerStage ply=2 index=29 stage=Remainder bucket=QuietOther move=a1b1
+info string PickerStage ply=2 index=30 stage=Remainder bucket=QuietOther move=a1c1
+info string PickerStage ply=2 index=31 stage=Remainder bucket=QuietOther move=a1d1
+info string PickerStage ply=2 index=32 stage=Remainder bucket=QuietOther move=h1f1
+info string PickerStage ply=2 index=33 stage=Remainder bucket=QuietOther move=h1g1
+info string PickerStage ply=2 index=34 stage=Remainder bucket=QuietOther move=f3d1
+info string PickerStage ply=2 index=35 stage=Remainder bucket=QuietOther move=f3e2
+info string PickerStage ply=2 index=36 stage=Remainder bucket=QuietOther move=f3d3
+info string PickerStage ply=2 index=37 stage=Remainder bucket=QuietOther move=f3e3
+info string PickerStage ply=2 index=38 stage=Remainder bucket=QuietOther move=f3g3
+info string PickerStage ply=2 index=39 stage=Remainder bucket=QuietOther move=f3f4
+info string PickerStage ply=2 index=40 stage=Remainder bucket=QuietOther move=f3g4
+info string PickerStage ply=2 index=41 stage=Remainder bucket=QuietOther move=f3f5
+info string PickerStage ply=2 index=42 stage=Remainder bucket=QuietOther move=f3h5
+info string PickerStage ply=2 index=43 stage=Remainder bucket=QuietOther move=e1d1
+info string PickerStage ply=2 index=44 stage=Remainder bucket=QuietOther move=e1f1
+info string PickerStage ply=2 index=45 stage=Remainder bucket=QuietOther move=e1e2
+info string PickerStage ply=2 index=46 stage=Remainder bucket=QuietOther move=e1g1
+info string PickerStage ply=2 index=47 stage=Remainder bucket=QuietOther move=e1c1
+info string PickerStage ply=2 index=48 stage=BadCaptures bucket=BadCapture move=f3f6
+info string PickerStage ply=2 index=49 stage=BadCaptures bucket=BadCapture move=e5d7
+info string PickerStage ply=2 index=50 stage=BadCaptures bucket=BadCapture move=e5f7
+info string PickerStage ply=2 index=51 stage=BadCaptures bucket=BadCapture move=e5g6
+info string PickerStage ply=2 index=52 stage=BadCaptures bucket=BadCapture move=f3h3
+info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=h3g2
+info string PickerStage ply=1 index=3 stage=Shortlist bucket=GoodCapture move=e6d5
+info string PickerStage ply=1 index=4 stage=Remainder bucket=QuietOther move=b4b3
+info string PickerStage ply=1 index=5 stage=Remainder bucket=QuietOther move=g6g5
+info string PickerStage ply=1 index=6 stage=Remainder bucket=QuietOther move=c7c6
+info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=c7c5
+info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=d7d6
+info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=b6a4
+info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=b6c4
+info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=b6c8
+info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=f6g4
+info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=f6h5
+info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=f6h7
+info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g8
+info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=g7h6
+info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=g7f8
+info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=a8b8
+info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=a8c8
+info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=a8d8
+info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=h8h4
+info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=h8h5
+info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=h8h6
+info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h7
+info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8f8
+info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8g8
+info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=e7c5
+info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=e7d6
+info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=e7d8
+info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7f8
+info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e8d8
+info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e8f8
+info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e8g8
+info string PickerStage ply=1 index=34 stage=BadCaptures bucket=BadCapture move=b6d5
+info string PickerStage ply=1 index=35 stage=BadCaptures bucket=BadCapture move=f6e4
+info string PickerStage ply=1 index=36 stage=BadCaptures bucket=BadCapture move=f6d5
+info string PickerStage ply=1 index=1 stage=TT bucket=TT move=g7f6
+info string PickerStage ply=2 index=1 stage=Shortlist bucket=GoodCapture move=e2a6
+info string PickerStage ply=2 index=2 stage=Shortlist bucket=GoodCapture move=d5e6
+info string PickerStage ply=2 index=3 stage=Shortlist bucket=GoodCapture move=g2h3
+info string PickerStage ply=2 index=4 stage=Remainder bucket=QuietOther move=a2a3
+info string PickerStage ply=2 index=5 stage=Remainder bucket=QuietOther move=a2a4
+info string PickerStage ply=2 index=6 stage=Remainder bucket=QuietOther move=b2b3
+info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=f2f3
+info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=f2f4
+info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=g2g3
+info string PickerStage ply=2 index=10 stage=Remainder bucket=QuietOther move=g2g4
+info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=d5d6
+info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=c3b1
+info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=c3d1
+info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=c3a4
+info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=c3b5
+info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=e5d3
+info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=e5f3
+info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=e5c4
+info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=e5g4
+info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=e5c6
+info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=d2c1
+info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=d2e3
+info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=d2f4
+info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=d2g5
+info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=d2h6
+info depth 3 seldepth 18 score cp 9 ebf 2.20 nodes 855 nps 47500 time 0 moveeff 92.78 tthits 70.06 hashfull 0 pv e2a6 b4c3 d2c3
+info depth 4 seldepth 18 score cp 9 ebf 4.76 nodes 1731 nps 86550 time 0 moveeff 97.10 tthits 42.80 hashfull 0 pv e2a6 b4c3 d2c3 h3g2
+info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
+info depth 5 seldepth 21 score cp -17 bound [-6,24] ebf 3.20 nodes 6216 nps 200516 time 0 moveeff 96.97 tthits 53.57 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5
+info string Countermoves: updates=4 hits=2 hitRate=50.0% bonus=7960
+info string MoveOrdering: totalCutoffs=643 TT=497 Cap=142 Kill=0 nodes=6216
+info string MoveOrdering cutoffs: TT=77.3% 1stCap=22.1% Killer=0.0% Counter=0.0% Quiet=0.2% BadCap=0.5%
+info string Cutoff by index: [0]=97.0% [1]=1.7% [2]=0.8% [3]=0.2% [4]=0.2% [5+]=0.0% [10+]=0.3%
+info string Bad captures: QxP=453 attempts (0.7% cutoff) RxP=6 attempts (0.0% cutoff)
+info string Phase distribution: Opening=87.9% Middle=12.1% Endgame=0.0%
+info depth 6 seldepth 21 score cp -17 string fail-low(1) bound [-36,9] string unstable ebf 4.13 nodes 9418 nps 254540 time 0 moveeff 97.98 tthits 48.56 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5 h3g2
+info string Countermoves: updates=6 hits=4 hitRate=66.7% bonus=7960
+info depth 7 seldepth 23 score cp -65 bound [-33,-1] ebf 2.30 nodes 28954 nps 376025 time 0 moveeff 95.01 tthits 48.60 hashfull 1 pv e2a6 e6d5 e1c1
+info string Countermoves: updates=54 hits=26 hitRate=48.1% bonus=7960
+info depth 8 seldepth 23 score cp -73 string fail-low(2) bound [-193,-1] string unstable ebf 4.09 nodes 43844 nps 405962 time 0 moveeff 94.48 tthits 46.67 hashfull 2 pv d5e6
+info string Countermoves: updates=98 hits=48 hitRate=49.0% bonus=7960
+info depth 9 seldepth 23 score cp -56 bound [-82,-48] string unstable ebf 2.53 nodes 61275 nps 431514 time 0 moveeff 94.61 tthits 48.40 hashfull 4 pv d5e6 a6e2 c3e2 e7e6 d2f4 h3g2 f3g2 e6h3
+info string Countermoves: updates=157 hits=71 hitRate=45.2% bonus=7960
+info depth 10 seldepth 23 score cp -66 string fail-high(1) bound [-73,-22] string unstable ebf 2.13 nodes 88889 nps 448934 time 0 moveeff 94.79 tthits 50.51 hashfull 5 pv d5e6 a6e2 c3e2 e7e6 d2f4 h3g2 f3g2 f6h5
+info string Countermoves: updates=248 hits=115 hitRate=46.4% bonus=7960
+info string MoveOrdering: totalCutoffs=10187 TT=6715 Cap=3228 Kill=81 nodes=88889
+info string MoveOrdering cutoffs: TT=65.9% 1stCap=31.7% Killer=0.8% Counter=0.1% Quiet=0.6% BadCap=0.9%
+info string Cutoff by index: [0]=94.8% [1]=2.5% [2]=1.2% [3]=0.4% [4]=0.4% [5+]=0.4% [10+]=0.3%
+info string Bad captures: QxP=5198 attempts (1.7% cutoff) RxP=416 attempts (1.0% cutoff)
+info string Phase distribution: Opening=41.2% Middle=58.8% Endgame=0.0%
+info string SEE pruning final: 30229/83862 captures pruned (36.0%) [Conservative mode]
+bestmove d5e6
+readyok
+info depth 1 seldepth 4 score cp 38 nodes 38 nps 0 time 0 tthits 0.00 hashfull 0 pv a8e8
+info depth 2 seldepth 6 score cp 25 nodes 235 nps 0 time 0 moveeff 100.00 tthits 60.53 hashfull 0 pv d5d4
+info string Countermoves: updates=2 hits=0 hitRate=0.0% bonus=7960
+info depth 3 seldepth 6 score cp 52 ebf 5.18 nodes 432 nps 0 time 0 moveeff 97.37 tthits 81.25 hashfull 0 pv d5d4 c3e4 h7g8
+info string Countermoves: updates=3 hits=0 hitRate=0.0% bonus=7960
+info depth 4 seldepth 13 score cp 44 ebf 2.67 nodes 811 nps 811000 time 0 moveeff 96.63 tthits 82.12 hashfull 0 pv d5d4 c3e4 a8c8
+info string Countermoves: updates=8 hits=0 hitRate=0.0% bonus=7960
+info depth 5 seldepth 13 score cp 69 bound [37,67] ebf 2.34 nodes 1425 nps 712500 time 0 moveeff 94.85 tthits 80.54 hashfull 0 pv d5d4 c3e4 a8c8 e4c5
+info string Countermoves: updates=36 hits=4 hitRate=11.1% bonus=7960
+info string MoveOrdering: totalCutoffs=203 TT=126 Cap=36 Kill=24 nodes=1425
+info string MoveOrdering cutoffs: TT=62.1% 1stCap=17.7% Killer=11.8% Counter=0.0% Quiet=3.4% BadCap=4.9%
+info string Cutoff by index: [0]=94.8% [1]=1.0% [2]=1.0% [3]=1.0% [4]=0.5% [5+]=0.0% [10+]=1.5%
+info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=46 attempts (21.7% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 6 seldepth 13 score cp 66 string fail-high(1) bound [44,89] string unstable ebf 1.58 nodes 2672 nps 890666 time 0 moveeff 95.04 tthits 77.03 hashfull 0 pv d5d4 c3e2
+info string Countermoves: updates=61 hits=9 hitRate=14.8% bonus=7960
+info depth 7 seldepth 13 score cp 80 bound [53,85] ebf 1.87 nodes 4854 nps 970800 time 0 moveeff 93.66 tthits 70.87 hashfull 0 pv d5d4 c3e2 e6e5 e2g3
+info string Countermoves: updates=119 hits=21 hitRate=17.6% bonus=7960
+info depth 8 seldepth 13 score cp 63 bound [50,82] string unstable ebf 1.81 nodes 7926 nps 990750 time 0 moveeff 93.24 tthits 67.12 hashfull 0 pv d5d4 c3e2 e6e5 e2g3 a8e8 a1d1 f7f6
+info string Countermoves: updates=173 hits=32 hitRate=18.5% bonus=7960
+info depth 9 seldepth 13 score cp 74 string fail-low(1) bound [29,80] string unstable ebf 1.66 nodes 10690 nps 971818 time 0 moveeff 93.02 tthits 65.09 hashfull 0 pv d5d4 c3e2 e6e5 e2g3 a8e8 g3e4
+info string Countermoves: updates=276 hits=98 hitRate=35.5% bonus=7960
+info depth 10 seldepth 18 score cp 73 bound [46,80] string unstable ebf 1.26 nodes 18219 nps 958894 time 0 moveeff 91.98 tthits 65.31 hashfull 0 pv d5d4 c3e2 e6e5 e2c1
+info string Countermoves: updates=482 hits=170 hitRate=35.3% bonus=7960
+info string MoveOrdering: totalCutoffs=2125 TT=1051 Cap=582 Kill=293 nodes=18219
+info string MoveOrdering cutoffs: TT=49.5% 1stCap=27.4% Killer=13.8% Counter=0.5% Quiet=3.2% BadCap=5.7%
+info string Cutoff by index: [0]=92.0% [1]=4.2% [2]=1.3% [3]=0.6% [4]=0.3% [5+]=0.6% [10+]=1.0%
+info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=829 attempts (14.6% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info string SEE pruning final: 3533/7063 captures pruned (50.0%) [Conservative mode]
+bestmove d5d4
+readyok
+info depth 1 seldepth 6 score cp -1419 nodes 21 nps 0 time 0 tthits 0.00 hashfull 0 pv b7d6
+info depth 2 seldepth 8 score cp -1440 nodes 220 nps 0 time 0 moveeff 75.00 tthits 68.18 hashfull 0 pv b7c5
+info depth 3 seldepth 8 score cp -1470 ebf 9.48 nodes 446 nps 446000 time 0 moveeff 86.49 tthits 89.55 hashfull 0 pv b7c5 e6c5
+info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
+info depth 4 seldepth 8 score cp -1470 ebf 4.47 nodes 742 nps 742000 time 0 moveeff 95.28 tthits 76.36 hashfull 0 pv b7c5 e6c5 f7c7 c5d3
+info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
+info depth 5 seldepth 10 score cp -1436 bound [-1485,-1455] ebf 3.07 nodes 1304 nps 652000 time 0 moveeff 94.92 tthits 75.00 hashfull 0 pv b7c5 a1c1
+info string Countermoves: updates=7 hits=1 hitRate=14.3% bonus=7960
+info string MoveOrdering: totalCutoffs=228 TT=178 Cap=44 Kill=1 nodes=1304
+info string MoveOrdering cutoffs: TT=78.1% 1stCap=19.3% Killer=0.4% Counter=0.0% Quiet=2.2% BadCap=0.0%
+info string Cutoff by index: [0]=94.9% [1]=3.4% [2]=0.4% [3]=0.0% [4]=0.0% [5+]=0.4% [10+]=0.8%
+info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 6 seldepth 11 score cp -1475 string fail-high(1) bound [-1470,-1425] string unstable ebf 1.53 nodes 2571 nps 642750 time 0 moveeff 92.47 tthits 62.24 hashfull 0 pv b7c5 a1c1 c5e6 d5e6 f7e7 a8d5
+info string Countermoves: updates=41 hits=9 hitRate=22.0% bonus=7960
+info depth 7 seldepth 13 score cp -1496 string fail-low(1) bound [-1484,-1436] string unstable ebf 1.93 nodes 5259 nps 751285 time 0 moveeff 93.03 tthits 57.52 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7
+info string Countermoves: updates=135 hits=48 hitRate=35.6% bonus=7960
+info depth 8 seldepth 15 score cp -1509 string fail-low(1) bound [-1523,-1475] string unstable ebf 2.12 nodes 8128 nps 738909 time 0 moveeff 93.76 tthits 55.40 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8
+info string Countermoves: updates=226 hits=89 hitRate=39.4% bonus=7960
+info depth 9 seldepth 17 score cp -1519 bound [-1513,-1479] string unstable ebf 1.68 nodes 12591 nps 740647 time 0 moveeff 92.87 tthits 56.55 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8 d7f7
+info string Countermoves: updates=384 hits=137 hitRate=35.7% bonus=7960
+info depth 10 seldepth 17 score cp -1537 bound [-1526,-1492] ebf 1.52 nodes 19678 nps 728814 time 0 moveeff 92.56 tthits 57.32 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 c7d7
+info string Countermoves: updates=657 hits=242 hitRate=36.8% bonus=7960
+info string MoveOrdering: totalCutoffs=2924 TT=1754 Cap=755 Kill=248 nodes=19678
+info string MoveOrdering cutoffs: TT=60.0% 1stCap=25.8% Killer=8.5% Counter=0.6% Quiet=4.7% BadCap=0.4%
+info string Cutoff by index: [0]=92.6% [1]=4.0% [2]=1.0% [3]=0.4% [4]=0.4% [5+]=0.9% [10+]=0.7%
+info string Bad captures: QxP=28 attempts (21.4% cutoff) RxP=158 attempts (3.8% cutoff)
+info string Phase distribution: Opening=0.0% Middle=98.9% Endgame=1.1%
+info string SEE pruning final: 2594/6764 captures pruned (38.4%) [Conservative mode]
+bestmove b7c5
+readyok
+info depth 1 seldepth 2 score cp 171 nodes 38 nps 0 time 0 tthits 0.00 hashfull 0 pv e6e5
+info depth 2 seldepth 7 score cp 129 nodes 346 nps 0 time 0 moveeff 87.50 tthits 22.50 hashfull 0 pv g4a4
+info string Countermoves: updates=15 hits=0 hitRate=0.0% bonus=7960
+info depth 3 seldepth 7 score cp 140 ebf 8.11 nodes 1330 nps 1330000 time 0 moveeff 81.20 tthits 65.43 hashfull 0 pv b7b6
+info string Countermoves: updates=63 hits=24 hitRate=38.1% bonus=7960
+info depth 4 seldepth 7 score cp 147 ebf 5.16 nodes 2568 nps 856000 time 0 moveeff 85.14 tthits 64.06 hashfull 0 pv e8d7
+info string Countermoves: updates=107 hits=52 hitRate=48.6% bonus=7960
+info depth 5 seldepth 9 score cp 141 bound [125,155] string unstable ebf 3.43 nodes 4895 nps 979000 time 0 moveeff 88.65 tthits 65.36 hashfull 0 pv e8f7
+info string Countermoves: updates=219 hits=103 hitRate=47.0% bonus=7960
+info string MoveOrdering: totalCutoffs=593 TT=286 Cap=119 Kill=112 nodes=4895
+info string MoveOrdering cutoffs: TT=48.2% 1stCap=20.1% Killer=18.9% Counter=1.5% Quiet=6.4% BadCap=4.9%
+info string Cutoff by index: [0]=88.7% [1]=5.3% [2]=2.1% [3]=1.1% [4]=0.0% [5+]=1.1% [10+]=1.8%
+info string Bad captures: QxP=254 attempts (5.9% cutoff) RxP=114 attempts (12.3% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 6 seldepth 11 score cp 157 bound [132,162] string unstable ebf 1.96 nodes 7950 nps 883333 time 0 moveeff 89.81 tthits 59.28 hashfull 1 pv e8d7 d6c5 g4a4 b2b3
+info string Countermoves: updates=390 hits=145 hitRate=37.2% bonus=7960
+info depth 7 seldepth 17 score cp 146 string fail-high(1) bound [141,189] string unstable ebf 1.49 nodes 12764 nps 850933 time 0 moveeff 90.69 tthits 58.45 hashfull 1 pv e8d7 d6g3
+info string Countermoves: updates=636 hits=227 hitRate=35.7% bonus=7960
+info depth 8 seldepth 19 score cp 131 bound [141,173] string unstable ebf 1.56 nodes 27549 nps 810264 time 0 moveeff 89.07 tthits 51.66 hashfull 1 pv b7b6
+info string Countermoves: updates=1413 hits=465 hitRate=32.9% bonus=7960
+info depth 9 seldepth 19 score cp 147 bound [129,163] string unstable ebf 2.18 nodes 37023 nps 822733 time 0 moveeff 88.74 tthits 50.88 hashfull 2 pv b7b6 b2b3 e8f7
+info string Countermoves: updates=1809 hits=592 hitRate=32.7% bonus=7960
+info depth 10 seldepth 19 score cp 132 bound [114,148] string unstable ebf 1.66 nodes 53970 nps 805522 time 0 moveeff 89.55 tthits 49.70 hashfull 4 pv b7b6 b2b3 g4f5
+info string Countermoves: updates=2499 hits=796 hitRate=31.9% bonus=7960
+info string MoveOrdering: totalCutoffs=7584 TT=2786 Cap=2552 Kill=1315 nodes=53970
+info string MoveOrdering cutoffs: TT=36.7% 1stCap=33.6% Killer=17.3% Counter=1.5% Quiet=6.6% BadCap=4.2%
+info string Cutoff by index: [0]=89.6% [1]=4.5% [2]=1.6% [3]=0.9% [4]=0.5% [5+]=1.2% [10+]=1.8%
+info string Bad captures: QxP=2905 attempts (5.6% cutoff) RxP=1972 attempts (8.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=99.1% Endgame=0.9%
+info string SEE pruning final: 13372/19393 captures pruned (69.0%) [Conservative mode]
+bestmove b7b6
+readyok
+info depth 1 seldepth 8 score cp 68 nodes 44 nps 0 time 0 tthits 0.00 hashfull 0 pv d7d8
+info depth 2 seldepth 10 score cp 51 nodes 184 nps 0 time 0 moveeff 85.71 tthits 33.33 hashfull 0 pv d7d8 a1a6
+info string Countermoves: updates=22 hits=0 hitRate=0.0% bonus=7960
+info depth 3 seldepth 10 score cp 60 ebf 3.18 nodes 828 nps 828000 time 0 moveeff 89.04 tthits 69.29 hashfull 0 pv c7d6
+info string Countermoves: updates=36 hits=8 hitRate=22.2% bonus=7960
+info depth 4 seldepth 12 score cp 47 ebf 4.03 nodes 1880 nps 940000 time 0 moveeff 89.64 tthits 67.13 hashfull 0 pv d7d8
+info string Countermoves: updates=68 hits=21 hitRate=30.9% bonus=7960
+info depth 5 seldepth 15 score cp 63 bound [45,75] string unstable ebf 2.97 nodes 3169 nps 792250 time 0 moveeff 90.93 tthits 63.82 hashfull 0 pv d7d8 b2b3
+info string Countermoves: updates=144 hits=49 hitRate=34.0% bonus=7960
+info string MoveOrdering: totalCutoffs=382 TT=205 Cap=74 Kill=77 nodes=3169
+info string MoveOrdering cutoffs: TT=53.7% 1stCap=19.4% Killer=20.2% Counter=1.0% Quiet=5.8% BadCap=0.0%
+info string Cutoff by index: [0]=90.9% [1]=3.9% [2]=0.8% [3]=0.8% [4]=0.5% [5+]=1.0% [10+]=2.1%
+info string Bad captures: QxP=31 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info depth 6 seldepth 15 score cp 56 string fail-high(1) bound [47,92] string unstable ebf 2.11 nodes 4291 nps 715166 time 0 moveeff 90.88 tthits 62.03 hashfull 0 pv d7d8 b2b3 c4b3
+info string Countermoves: updates=168 hits=54 hitRate=32.1% bonus=7960
+info depth 7 seldepth 15 score cp 65 bound [47,79] ebf 1.16 nodes 7219 nps 802111 time 0 moveeff 90.11 tthits 58.39 hashfull 0 pv d7d8 e3f5
+info string Countermoves: updates=243 hits=79 hitRate=32.5% bonus=7960
+info depth 8 seldepth 19 score cp 51 bound [40,72] ebf 1.72 nodes 20444 nps 730142 time 0 moveeff 88.02 tthits 48.23 hashfull 1 pv d7d8 d2f3
+info string Countermoves: updates=571 hits=184 hitRate=32.2% bonus=7960
+info depth 9 seldepth 22 score cp 59 bound [48,82] string unstable ebf 3.07 nodes 28573 nps 732641 time 0 moveeff 89.10 tthits 49.70 hashfull 4 pv d7d8 d2f3 c7b6
+info string Countermoves: updates=843 hits=285 hitRate=33.8% bonus=7960
+info depth 10 seldepth 22 score cp 55 bound [34,68] ebf 2.36 nodes 43485 nps 737033 time 0 moveeff 90.00 tthits 49.96 hashfull 7 pv d7d8 d2f3 c7b7
+info string Countermoves: updates=1244 hits=409 hitRate=32.9% bonus=7960
+info string MoveOrdering: totalCutoffs=4979 TT=2031 Cap=1950 Kill=683 nodes=43485
+info string MoveOrdering cutoffs: TT=40.8% 1stCap=39.2% Killer=13.7% Counter=0.8% Quiet=4.6% BadCap=1.0%
+info string Cutoff by index: [0]=90.0% [1]=5.5% [2]=1.5% [3]=0.8% [4]=0.5% [5+]=0.9% [10+]=0.8%
+info string Bad captures: QxP=902 attempts (4.0% cutoff) RxP=153 attempts (7.8% cutoff)
+info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
+info string SEE pruning final: 12052/27028 captures pruned (44.6%) [Conservative mode]
+bestmove d7d8
+readyok
