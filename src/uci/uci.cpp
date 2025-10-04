@@ -2261,10 +2261,13 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     // Stage 13 Remediation: Handle aspiration window options
     else if (optionName == "AspirationWindow") {
         try {
-            int windowSize = std::stoi(value);
+            double dv = std::stod(value);
+            int windowSize = static_cast<int>(std::round(dv));
             if (windowSize >= 5 && windowSize <= 50) {
                 m_aspirationWindow = windowSize;
                 std::cerr << "info string Aspiration window set to: " << windowSize << " cp" << std::endl;
+            } else {
+                std::cerr << "info string AspirationWindow out of range: " << windowSize << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid AspirationWindow value: " << value << std::endl;
@@ -2272,10 +2275,13 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "AspirationMaxAttempts") {
         try {
-            int attempts = std::stoi(value);
+            double dv = std::stod(value);
+            int attempts = static_cast<int>(std::round(dv));
             if (attempts >= 3 && attempts <= 10) {
                 m_aspirationMaxAttempts = attempts;
                 std::cerr << "info string Aspiration max attempts set to: " << attempts << std::endl;
+            } else {
+                std::cerr << "info string AspirationMaxAttempts out of range: " << attempts << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid AspirationMaxAttempts value: " << value << std::endl;
@@ -2283,10 +2289,13 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
     }
     else if (optionName == "StabilityThreshold") {
         try {
-            int threshold = std::stoi(value);
+            double dv = std::stod(value);
+            int threshold = static_cast<int>(std::round(dv));
             if (threshold >= 3 && threshold <= 12) {
                 m_stabilityThreshold = threshold;
                 std::cerr << "info string Stability threshold set to: " << threshold << " iterations" << std::endl;
+            } else {
+                std::cerr << "info string StabilityThreshold out of range: " << threshold << std::endl;
             }
         } catch (...) {
             std::cerr << "info string Invalid StabilityThreshold value: " << value << std::endl;
