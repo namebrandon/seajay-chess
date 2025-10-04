@@ -149,7 +149,7 @@ bench <nodes>`
 
 ## 2025-10-04 Bad Capture Deferral
 
-- SEE-negative captures encountered in both shortlist extraction and legacy scan now feed a deferred `BadCaptures` stage that emits immediately after the SEE-nonnegative shortlist, matching legacy ordering (reference log: `logs/move_picker_depth10_stagewrap_badcaptures.log`).
+- SEE-negative captures encountered in both shortlist extraction and legacy scan now feed a deferred `BadCaptures` stage while retaining their original order (reference log: `logs/move_picker_depth10_stagewrap_badcaptures.log`).
 - Diff versus the stage-wrapped baseline is stored at `logs/move_picker_depth10_stagewrap_badcaptures.diff` (shows stage label migration only).
-- Release bench after the parity fix: `2228652 nodes / 1,315,263 nps`.
+- Release bench after deferral: `1971759 nodes / 1,350,872 nps`.
 - Follow-up: adjust quiet emission to consume `m_inShortlistMap` without relying on the legacy remainder walk, then re-run depth-10 probes and SPRT to validate ordering stability.
