@@ -652,7 +652,11 @@ Move RankedMovePicker::next() {
                         return move;
                     }
                 }
-                m_stage = MovePickerStage::GenerateKillers;
+                if (!m_inCheck && m_badCaptureIndex < m_badCaptureCount) {
+                    m_stage = MovePickerStage::GenerateBadCaptures;
+                } else {
+                    m_stage = MovePickerStage::GenerateKillers;
+                }
                 break;
             }
             case MovePickerStage::GenerateKillers:
@@ -670,11 +674,15 @@ Move RankedMovePicker::next() {
                 if (move != NO_MOVE) {
                     return move;
                 }
-                m_stage = MovePickerStage::GenerateBadCaptures;
+                m_stage = MovePickerStage::End;
                 break;
             }
             case MovePickerStage::GenerateBadCaptures:
-                m_stage = MovePickerStage::EmitBadCaptures;
+                if (!m_inCheck && m_badCaptureIndex < m_badCaptureCount) {
+                    m_stage = MovePickerStage::EmitBadCaptures;
+                } else {
+                    m_stage = MovePickerStage::GenerateKillers;
+                }
                 break;
             case MovePickerStage::EmitBadCaptures:
             {
@@ -682,7 +690,7 @@ Move RankedMovePicker::next() {
                 if (move != NO_MOVE) {
                     return move;
                 }
-                m_stage = MovePickerStage::End;
+                m_stage = MovePickerStage::GenerateKillers;
                 break;
             }
             case MovePickerStage::End:

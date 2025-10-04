@@ -15,10 +15,10 @@
 - Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
 - Captured depth-10 probes for `/tmp/fen_list.txt` with the legacy picker (`logs/move_picker_depth10.log`) to serve as telemetry baseline before reintroducing staged move picking.
 - Routed SEE-positive captures and promotion-only moves through the shortlist stage so stage logs tag good captures as `stage=Shortlist` instead of `stage=Remainder`.
-- Deferred SEE-negative captures to the `BadCaptures` stage; shortlist yields now skip them and stage logs confirm late emission (`logs/move_picker_depth10_stagewrap_badcaptures.log`).
+- Deferred SEE-negative captures to the `BadCaptures` stage and emit them immediately after good captures to preserve legacy ordering (`logs/move_picker_depth10_stagewrap_badcaptures.log`).
 
 ## Benchmarks (SEE off)
-- MP3 head: `1971759 nodes / 1,350,872 nps`
+- MP3 head: `2228652 nodes / 1,315,263 nps`
 - MP2 baseline: `2531668 nodes / 1,203,819 nps`
 
 ## SPRT

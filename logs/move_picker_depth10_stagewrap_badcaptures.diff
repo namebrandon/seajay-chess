@@ -1,6 +1,6 @@
 --- logs/move_picker_depth10_stagewrap.log	2025-10-03 21:26:46.833955327 -0500
-+++ logs/move_picker_depth10_stagewrap_badcaptures.log	2025-10-03 21:46:44.843327092 -0500
-@@ -179,380 +179,360 @@
++++ logs/move_picker_depth10_stagewrap_badcaptures.log	2025-10-03 22:21:09.829290627 -0500
+@@ -179,13 +179,13 @@
  info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
  uciok
  readyok
@@ -12,71 +12,17 @@
 -info string PickerStage ply=1 index=4 stage=Remainder bucket=BadCapture move=b6d5
 -info string PickerStage ply=1 index=5 stage=Remainder bucket=BadCapture move=f6e4
 -info string PickerStage ply=1 index=6 stage=Remainder bucket=BadCapture move=f6d5
--info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=b4b3
--info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=g6g5
--info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=c7c6
--info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=c7c5
--info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=d7d6
--info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=b6a4
--info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=b6c4
--info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=b6c8
--info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g4
--info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=f6h5
--info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=f6h7
--info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=f6g8
--info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=g7h6
--info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=g7f8
--info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=a8b8
--info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=a8c8
--info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=a8d8
--info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h4
--info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8h5
--info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8h6
--info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=h8h7
--info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=h8f8
--info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=h8g8
--info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7c5
--info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e7d6
--info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e7d8
--info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e7f8
--info string PickerStage ply=1 index=34 stage=Remainder bucket=QuietOther move=e8d8
--info string PickerStage ply=1 index=35 stage=Remainder bucket=QuietOther move=e8f8
--info string PickerStage ply=1 index=36 stage=Remainder bucket=QuietOther move=e8g8
 +info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=h3g2
 +info string PickerStage ply=1 index=3 stage=Shortlist bucket=GoodCapture move=e6d5
-+info string PickerStage ply=1 index=4 stage=Remainder bucket=QuietOther move=b4b3
-+info string PickerStage ply=1 index=5 stage=Remainder bucket=QuietOther move=g6g5
-+info string PickerStage ply=1 index=6 stage=Remainder bucket=QuietOther move=c7c6
-+info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=c7c5
-+info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=d7d6
-+info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=b6a4
-+info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=b6c4
-+info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=b6c8
-+info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=f6g4
-+info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=f6h5
-+info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=f6h7
-+info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g8
-+info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=g7h6
-+info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=g7f8
-+info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=a8b8
-+info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=a8c8
-+info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=a8d8
-+info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=h8h4
-+info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=h8h5
-+info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=h8h6
-+info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h7
-+info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8f8
-+info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8g8
-+info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=e7c5
-+info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=e7d6
-+info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=e7d8
-+info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7f8
-+info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e8d8
-+info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e8f8
-+info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e8g8
-+info string PickerStage ply=1 index=34 stage=BadCaptures bucket=BadCapture move=b6d5
-+info string PickerStage ply=1 index=35 stage=BadCaptures bucket=BadCapture move=f6e4
-+info string PickerStage ply=1 index=36 stage=BadCaptures bucket=BadCapture move=f6d5
++info string PickerStage ply=1 index=4 stage=BadCaptures bucket=BadCapture move=b6d5
++info string PickerStage ply=1 index=5 stage=BadCaptures bucket=BadCapture move=f6e4
++info string PickerStage ply=1 index=6 stage=BadCaptures bucket=BadCapture move=f6d5
+ info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=b4b3
+ info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=g6g5
+ info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=c7c6
+@@ -217,66 +217,67 @@
+ info string PickerStage ply=1 index=35 stage=Remainder bucket=QuietOther move=e8f8
+ info string PickerStage ply=1 index=36 stage=Remainder bucket=QuietOther move=e8g8
  info string PickerStage ply=1 index=1 stage=TT bucket=TT move=g7f6
 -info string PickerStage ply=1 index=1 stage=Remainder bucket=GoodCapture move=b4c3
 +info string PickerStage ply=1 index=1 stage=Shortlist bucket=GoodCapture move=b4c3
@@ -169,7 +115,7 @@
  info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
  info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
 -info depth 2 seldepth 9 score cp 90 nodes 155 nps 3974 time 0 moveeff 95.74 tthits 20.00 hashfull 0 pv e2a6 b4c3
-+info depth 2 seldepth 9 score cp 90 nodes 157 nps 11214 time 0 moveeff 93.62 tthits 20.00 hashfull 0 pv e2a6 b4c3
++info depth 2 seldepth 9 score cp 90 nodes 157 nps 10466 time 0 moveeff 93.62 tthits 20.00 hashfull 0 pv e2a6 b4c3
  info string PickerStage ply=1 index=1 stage=TT bucket=TT move=b4c3
 -info string PickerStage ply=2 index=1 stage=Remainder bucket=BadCapture move=f3f6
 -info string PickerStage ply=2 index=2 stage=Remainder bucket=GoodCapture move=g2h3
@@ -181,170 +127,39 @@
 -info string PickerStage ply=2 index=8 stage=Remainder bucket=BadCapture move=e5g6
 -info string PickerStage ply=2 index=9 stage=Remainder bucket=BadCapture move=f3h3
 -info string PickerStage ply=2 index=10 stage=Remainder bucket=GoodCapture move=f3c3
--info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=a2a3
--info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=a2a4
--info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=b2b3
--info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=b2b4
--info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=g2g3
--info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=g2g4
--info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=d5d6
--info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=e5d3
--info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=e5c4
--info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=e5g4
--info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=e5c6
--info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=d2c1
--info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=d2e3
--info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=d2f4
--info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=d2g5
--info string PickerStage ply=2 index=26 stage=Remainder bucket=QuietOther move=d2h6
--info string PickerStage ply=2 index=27 stage=Remainder bucket=QuietOther move=a6f1
--info string PickerStage ply=2 index=28 stage=Remainder bucket=QuietOther move=a6e2
--info string PickerStage ply=2 index=29 stage=Remainder bucket=QuietOther move=a6d3
--info string PickerStage ply=2 index=30 stage=Remainder bucket=QuietOther move=a6c4
--info string PickerStage ply=2 index=31 stage=Remainder bucket=QuietOther move=a6b5
--info string PickerStage ply=2 index=32 stage=Remainder bucket=QuietOther move=a6b7
--info string PickerStage ply=2 index=33 stage=Remainder bucket=QuietOther move=a6c8
--info string PickerStage ply=2 index=34 stage=Remainder bucket=QuietOther move=a1b1
--info string PickerStage ply=2 index=35 stage=Remainder bucket=QuietOther move=a1c1
--info string PickerStage ply=2 index=36 stage=Remainder bucket=QuietOther move=a1d1
--info string PickerStage ply=2 index=37 stage=Remainder bucket=QuietOther move=h1f1
--info string PickerStage ply=2 index=38 stage=Remainder bucket=QuietOther move=h1g1
--info string PickerStage ply=2 index=39 stage=Remainder bucket=QuietOther move=f3d1
--info string PickerStage ply=2 index=40 stage=Remainder bucket=QuietOther move=f3e2
--info string PickerStage ply=2 index=41 stage=Remainder bucket=QuietOther move=f3d3
--info string PickerStage ply=2 index=42 stage=Remainder bucket=QuietOther move=f3e3
--info string PickerStage ply=2 index=43 stage=Remainder bucket=QuietOther move=f3g3
--info string PickerStage ply=2 index=44 stage=Remainder bucket=QuietOther move=f3f4
--info string PickerStage ply=2 index=45 stage=Remainder bucket=QuietOther move=f3g4
--info string PickerStage ply=2 index=46 stage=Remainder bucket=QuietOther move=f3f5
--info string PickerStage ply=2 index=47 stage=Remainder bucket=QuietOther move=f3h5
--info string PickerStage ply=2 index=48 stage=Remainder bucket=QuietOther move=e1d1
--info string PickerStage ply=2 index=49 stage=Remainder bucket=QuietOther move=e1f1
--info string PickerStage ply=2 index=50 stage=Remainder bucket=QuietOther move=e1e2
--info string PickerStage ply=2 index=51 stage=Remainder bucket=QuietOther move=e1g1
--info string PickerStage ply=2 index=52 stage=Remainder bucket=QuietOther move=e1c1
--info string PickerStage ply=1 index=2 stage=Remainder bucket=GoodCapture move=h3g2
--info string PickerStage ply=1 index=3 stage=Remainder bucket=GoodCapture move=e6d5
--info string PickerStage ply=1 index=4 stage=Remainder bucket=BadCapture move=b6d5
--info string PickerStage ply=1 index=5 stage=Remainder bucket=BadCapture move=f6e4
--info string PickerStage ply=1 index=6 stage=Remainder bucket=BadCapture move=f6d5
--info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=b4b3
--info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=g6g5
--info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=c7c6
--info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=c7c5
--info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=d7d6
--info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=b6a4
--info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=b6c4
--info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=b6c8
--info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g4
--info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=f6h5
--info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=f6h7
--info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=f6g8
--info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=g7h6
--info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=g7f8
--info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=a8b8
--info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=a8c8
--info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=a8d8
--info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h4
--info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8h5
--info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8h6
--info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=h8h7
--info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=h8f8
--info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=h8g8
--info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7c5
--info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e7d6
--info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e7d8
--info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e7f8
--info string PickerStage ply=1 index=34 stage=Remainder bucket=QuietOther move=e8d8
--info string PickerStage ply=1 index=35 stage=Remainder bucket=QuietOther move=e8f8
--info string PickerStage ply=1 index=36 stage=Remainder bucket=QuietOther move=e8g8
 +info string PickerStage ply=2 index=1 stage=Shortlist bucket=GoodCapture move=g2h3
 +info string PickerStage ply=2 index=2 stage=Shortlist bucket=GoodCapture move=d5e6
 +info string PickerStage ply=2 index=3 stage=Shortlist bucket=GoodCapture move=b2c3
 +info string PickerStage ply=2 index=4 stage=Shortlist bucket=GoodCapture move=d2c3
 +info string PickerStage ply=2 index=5 stage=Shortlist bucket=GoodCapture move=f3c3
-+info string PickerStage ply=2 index=6 stage=Remainder bucket=QuietOther move=a2a3
-+info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=a2a4
-+info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=b2b3
-+info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=b2b4
-+info string PickerStage ply=2 index=10 stage=Remainder bucket=QuietOther move=g2g3
-+info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=g2g4
-+info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=d5d6
-+info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=e5d3
-+info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=e5c4
-+info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=e5g4
-+info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=e5c6
-+info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=d2c1
-+info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=d2e3
-+info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=d2f4
-+info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=d2g5
-+info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=d2h6
-+info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=a6f1
-+info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=a6e2
-+info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=a6d3
-+info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=a6c4
-+info string PickerStage ply=2 index=26 stage=Remainder bucket=QuietOther move=a6b5
-+info string PickerStage ply=2 index=27 stage=Remainder bucket=QuietOther move=a6b7
-+info string PickerStage ply=2 index=28 stage=Remainder bucket=QuietOther move=a6c8
-+info string PickerStage ply=2 index=29 stage=Remainder bucket=QuietOther move=a1b1
-+info string PickerStage ply=2 index=30 stage=Remainder bucket=QuietOther move=a1c1
-+info string PickerStage ply=2 index=31 stage=Remainder bucket=QuietOther move=a1d1
-+info string PickerStage ply=2 index=32 stage=Remainder bucket=QuietOther move=h1f1
-+info string PickerStage ply=2 index=33 stage=Remainder bucket=QuietOther move=h1g1
-+info string PickerStage ply=2 index=34 stage=Remainder bucket=QuietOther move=f3d1
-+info string PickerStage ply=2 index=35 stage=Remainder bucket=QuietOther move=f3e2
-+info string PickerStage ply=2 index=36 stage=Remainder bucket=QuietOther move=f3d3
-+info string PickerStage ply=2 index=37 stage=Remainder bucket=QuietOther move=f3e3
-+info string PickerStage ply=2 index=38 stage=Remainder bucket=QuietOther move=f3g3
-+info string PickerStage ply=2 index=39 stage=Remainder bucket=QuietOther move=f3f4
-+info string PickerStage ply=2 index=40 stage=Remainder bucket=QuietOther move=f3g4
-+info string PickerStage ply=2 index=41 stage=Remainder bucket=QuietOther move=f3f5
-+info string PickerStage ply=2 index=42 stage=Remainder bucket=QuietOther move=f3h5
-+info string PickerStage ply=2 index=43 stage=Remainder bucket=QuietOther move=e1d1
-+info string PickerStage ply=2 index=44 stage=Remainder bucket=QuietOther move=e1f1
-+info string PickerStage ply=2 index=45 stage=Remainder bucket=QuietOther move=e1e2
-+info string PickerStage ply=2 index=46 stage=Remainder bucket=QuietOther move=e1g1
-+info string PickerStage ply=2 index=47 stage=Remainder bucket=QuietOther move=e1c1
-+info string PickerStage ply=2 index=48 stage=BadCaptures bucket=BadCapture move=f3f6
-+info string PickerStage ply=2 index=49 stage=BadCaptures bucket=BadCapture move=e5d7
-+info string PickerStage ply=2 index=50 stage=BadCaptures bucket=BadCapture move=e5f7
-+info string PickerStage ply=2 index=51 stage=BadCaptures bucket=BadCapture move=e5g6
-+info string PickerStage ply=2 index=52 stage=BadCaptures bucket=BadCapture move=f3h3
++info string PickerStage ply=2 index=6 stage=BadCaptures bucket=BadCapture move=f3f6
++info string PickerStage ply=2 index=7 stage=BadCaptures bucket=BadCapture move=e5d7
++info string PickerStage ply=2 index=8 stage=BadCaptures bucket=BadCapture move=e5f7
++info string PickerStage ply=2 index=9 stage=BadCaptures bucket=BadCapture move=e5g6
++info string PickerStage ply=2 index=10 stage=BadCaptures bucket=BadCapture move=f3h3
+ info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=a2a3
+ info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=a2a4
+ info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=b2b3
+@@ -319,11 +320,11 @@
+ info string PickerStage ply=2 index=50 stage=Remainder bucket=QuietOther move=e1e2
+ info string PickerStage ply=2 index=51 stage=Remainder bucket=QuietOther move=e1g1
+ info string PickerStage ply=2 index=52 stage=Remainder bucket=QuietOther move=e1c1
+-info string PickerStage ply=1 index=2 stage=Remainder bucket=GoodCapture move=h3g2
+-info string PickerStage ply=1 index=3 stage=Remainder bucket=GoodCapture move=e6d5
+-info string PickerStage ply=1 index=4 stage=Remainder bucket=BadCapture move=b6d5
+-info string PickerStage ply=1 index=5 stage=Remainder bucket=BadCapture move=f6e4
+-info string PickerStage ply=1 index=6 stage=Remainder bucket=BadCapture move=f6d5
 +info string PickerStage ply=1 index=2 stage=Shortlist bucket=GoodCapture move=h3g2
 +info string PickerStage ply=1 index=3 stage=Shortlist bucket=GoodCapture move=e6d5
-+info string PickerStage ply=1 index=4 stage=Remainder bucket=QuietOther move=b4b3
-+info string PickerStage ply=1 index=5 stage=Remainder bucket=QuietOther move=g6g5
-+info string PickerStage ply=1 index=6 stage=Remainder bucket=QuietOther move=c7c6
-+info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=c7c5
-+info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=d7d6
-+info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=b6a4
-+info string PickerStage ply=1 index=10 stage=Remainder bucket=QuietOther move=b6c4
-+info string PickerStage ply=1 index=11 stage=Remainder bucket=QuietOther move=b6c8
-+info string PickerStage ply=1 index=12 stage=Remainder bucket=QuietOther move=f6g4
-+info string PickerStage ply=1 index=13 stage=Remainder bucket=QuietOther move=f6h5
-+info string PickerStage ply=1 index=14 stage=Remainder bucket=QuietOther move=f6h7
-+info string PickerStage ply=1 index=15 stage=Remainder bucket=QuietOther move=f6g8
-+info string PickerStage ply=1 index=16 stage=Remainder bucket=QuietOther move=g7h6
-+info string PickerStage ply=1 index=17 stage=Remainder bucket=QuietOther move=g7f8
-+info string PickerStage ply=1 index=18 stage=Remainder bucket=QuietOther move=a8b8
-+info string PickerStage ply=1 index=19 stage=Remainder bucket=QuietOther move=a8c8
-+info string PickerStage ply=1 index=20 stage=Remainder bucket=QuietOther move=a8d8
-+info string PickerStage ply=1 index=21 stage=Remainder bucket=QuietOther move=h8h4
-+info string PickerStage ply=1 index=22 stage=Remainder bucket=QuietOther move=h8h5
-+info string PickerStage ply=1 index=23 stage=Remainder bucket=QuietOther move=h8h6
-+info string PickerStage ply=1 index=24 stage=Remainder bucket=QuietOther move=h8h7
-+info string PickerStage ply=1 index=25 stage=Remainder bucket=QuietOther move=h8f8
-+info string PickerStage ply=1 index=26 stage=Remainder bucket=QuietOther move=h8g8
-+info string PickerStage ply=1 index=27 stage=Remainder bucket=QuietOther move=e7c5
-+info string PickerStage ply=1 index=28 stage=Remainder bucket=QuietOther move=e7d6
-+info string PickerStage ply=1 index=29 stage=Remainder bucket=QuietOther move=e7d8
-+info string PickerStage ply=1 index=30 stage=Remainder bucket=QuietOther move=e7f8
-+info string PickerStage ply=1 index=31 stage=Remainder bucket=QuietOther move=e8d8
-+info string PickerStage ply=1 index=32 stage=Remainder bucket=QuietOther move=e8f8
-+info string PickerStage ply=1 index=33 stage=Remainder bucket=QuietOther move=e8g8
-+info string PickerStage ply=1 index=34 stage=BadCaptures bucket=BadCapture move=b6d5
-+info string PickerStage ply=1 index=35 stage=BadCaptures bucket=BadCapture move=f6e4
-+info string PickerStage ply=1 index=36 stage=BadCaptures bucket=BadCapture move=f6d5
++info string PickerStage ply=1 index=4 stage=BadCaptures bucket=BadCapture move=b6d5
++info string PickerStage ply=1 index=5 stage=BadCaptures bucket=BadCapture move=f6e4
++info string PickerStage ply=1 index=6 stage=BadCaptures bucket=BadCapture move=f6d5
+ info string PickerStage ply=1 index=7 stage=Remainder bucket=QuietOther move=b4b3
+ info string PickerStage ply=1 index=8 stage=Remainder bucket=QuietOther move=g6g5
+ info string PickerStage ply=1 index=9 stage=Remainder bucket=QuietOther move=c7c6
+@@ -355,12 +356,12 @@
+ info string PickerStage ply=1 index=35 stage=Remainder bucket=QuietOther move=e8f8
+ info string PickerStage ply=1 index=36 stage=Remainder bucket=QuietOther move=e8g8
  info string PickerStage ply=1 index=1 stage=TT bucket=TT move=g7f6
 -info string PickerStage ply=2 index=1 stage=Remainder bucket=GoodCapture move=e2a6
 -info string PickerStage ply=2 index=2 stage=Remainder bucket=GoodCapture move=d5e6
@@ -352,71 +167,39 @@
 -info string PickerStage ply=2 index=4 stage=Remainder bucket=BadCapture move=e5d7
 -info string PickerStage ply=2 index=5 stage=Remainder bucket=BadCapture move=e5f7
 -info string PickerStage ply=2 index=6 stage=Remainder bucket=BadCapture move=e5g6
--info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=a2a3
--info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=a2a4
--info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=b2b3
--info string PickerStage ply=2 index=10 stage=Remainder bucket=QuietOther move=f2f3
--info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=f2f4
--info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=g2g3
--info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=g2g4
--info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=d5d6
--info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=c3b1
--info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=c3d1
--info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=c3a4
--info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=c3b5
--info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=e5d3
--info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=e5f3
--info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=e5c4
--info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=e5g4
--info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=e5c6
--info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=d2c1
--info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=d2e3
--info string PickerStage ply=2 index=26 stage=Remainder bucket=QuietOther move=d2f4
--info depth 3 seldepth 18 score cp 9 ebf 2.16 nodes 815 nps 5469 time 0 moveeff 95.79 tthits 70.13 hashfull 0 pv e2a6 b4c3 d2c3
--info depth 4 seldepth 18 score cp 9 ebf 4.60 nodes 1691 nps 7226 time 0 moveeff 98.33 tthits 42.70 hashfull 0 pv e2a6 b4c3 d2c3 h3g2
 +info string PickerStage ply=2 index=1 stage=Shortlist bucket=GoodCapture move=e2a6
 +info string PickerStage ply=2 index=2 stage=Shortlist bucket=GoodCapture move=d5e6
 +info string PickerStage ply=2 index=3 stage=Shortlist bucket=GoodCapture move=g2h3
-+info string PickerStage ply=2 index=4 stage=Remainder bucket=QuietOther move=a2a3
-+info string PickerStage ply=2 index=5 stage=Remainder bucket=QuietOther move=a2a4
-+info string PickerStage ply=2 index=6 stage=Remainder bucket=QuietOther move=b2b3
-+info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=f2f3
-+info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=f2f4
-+info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=g2g3
-+info string PickerStage ply=2 index=10 stage=Remainder bucket=QuietOther move=g2g4
-+info string PickerStage ply=2 index=11 stage=Remainder bucket=QuietOther move=d5d6
-+info string PickerStage ply=2 index=12 stage=Remainder bucket=QuietOther move=c3b1
-+info string PickerStage ply=2 index=13 stage=Remainder bucket=QuietOther move=c3d1
-+info string PickerStage ply=2 index=14 stage=Remainder bucket=QuietOther move=c3a4
-+info string PickerStage ply=2 index=15 stage=Remainder bucket=QuietOther move=c3b5
-+info string PickerStage ply=2 index=16 stage=Remainder bucket=QuietOther move=e5d3
-+info string PickerStage ply=2 index=17 stage=Remainder bucket=QuietOther move=e5f3
-+info string PickerStage ply=2 index=18 stage=Remainder bucket=QuietOther move=e5c4
-+info string PickerStage ply=2 index=19 stage=Remainder bucket=QuietOther move=e5g4
-+info string PickerStage ply=2 index=20 stage=Remainder bucket=QuietOther move=e5c6
-+info string PickerStage ply=2 index=21 stage=Remainder bucket=QuietOther move=d2c1
-+info string PickerStage ply=2 index=22 stage=Remainder bucket=QuietOther move=d2e3
-+info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=d2f4
-+info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=d2g5
-+info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=d2h6
-+info depth 3 seldepth 18 score cp 9 ebf 2.20 nodes 855 nps 47500 time 0 moveeff 92.78 tthits 70.06 hashfull 0 pv e2a6 b4c3 d2c3
-+info depth 4 seldepth 18 score cp 9 ebf 4.76 nodes 1731 nps 86550 time 0 moveeff 97.10 tthits 42.80 hashfull 0 pv e2a6 b4c3 d2c3 h3g2
++info string PickerStage ply=2 index=4 stage=BadCaptures bucket=BadCapture move=e5d7
++info string PickerStage ply=2 index=5 stage=BadCaptures bucket=BadCapture move=e5f7
++info string PickerStage ply=2 index=6 stage=BadCaptures bucket=BadCapture move=e5g6
+ info string PickerStage ply=2 index=7 stage=Remainder bucket=QuietOther move=a2a3
+ info string PickerStage ply=2 index=8 stage=Remainder bucket=QuietOther move=a2a4
+ info string PickerStage ply=2 index=9 stage=Remainder bucket=QuietOther move=b2b3
+@@ -380,179 +381,161 @@
+ info string PickerStage ply=2 index=23 stage=Remainder bucket=QuietOther move=e5c6
+ info string PickerStage ply=2 index=24 stage=Remainder bucket=QuietOther move=d2c1
+ info string PickerStage ply=2 index=25 stage=Remainder bucket=QuietOther move=d2e3
+-info string PickerStage ply=2 index=26 stage=Remainder bucket=QuietOther move=d2f4
+-info depth 3 seldepth 18 score cp 9 ebf 2.16 nodes 815 nps 5469 time 0 moveeff 95.79 tthits 70.13 hashfull 0 pv e2a6 b4c3 d2c3
+-info depth 4 seldepth 18 score cp 9 ebf 4.60 nodes 1691 nps 7226 time 0 moveeff 98.33 tthits 42.70 hashfull 0 pv e2a6 b4c3 d2c3 h3g2
++info depth 3 seldepth 18 score cp 9 ebf 2.20 nodes 822 nps 43263 time 0 moveeff 92.78 tthits 70.06 hashfull 0 pv e2a6 b4c3 d2c3
++info depth 4 seldepth 18 score cp 9 ebf 4.58 nodes 1698 nps 80857 time 0 moveeff 97.10 tthits 42.80 hashfull 0 pv e2a6 b4c3 d2c3 h3g2
  info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
 -info depth 5 seldepth 21 score cp -17 bound [-6,24] ebf 3.15 nodes 6236 nps 7070 time 0 moveeff 97.14 tthits 52.78 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5
-+info depth 5 seldepth 21 score cp -17 bound [-6,24] ebf 3.20 nodes 6216 nps 200516 time 0 moveeff 96.97 tthits 53.57 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5
++info depth 5 seldepth 21 score cp -17 bound [-6,24] ebf 3.13 nodes 6201 nps 182382 time 0 moveeff 96.97 tthits 53.26 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5
  info string Countermoves: updates=4 hits=2 hitRate=50.0% bonus=7960
 -info string MoveOrdering: totalCutoffs=650 TT=496 Cap=150 Kill=0 nodes=6236
 -info string MoveOrdering cutoffs: TT=76.3% 1stCap=23.1% Killer=0.0% Counter=0.0% Quiet=0.2% BadCap=0.5%
 -info string Cutoff by index: [0]=97.1% [1]=1.2% [2]=0.2% [3]=0.8% [4]=0.2% [5+]=0.5% [10+]=0.2%
--info string Bad captures: QxP=454 attempts (0.7% cutoff) RxP=6 attempts (0.0% cutoff)
++info string MoveOrdering: totalCutoffs=643 TT=497 Cap=142 Kill=0 nodes=6201
++info string MoveOrdering cutoffs: TT=77.3% 1stCap=22.1% Killer=0.0% Counter=0.0% Quiet=0.2% BadCap=0.5%
++info string Cutoff by index: [0]=97.0% [1]=1.7% [2]=0.9% [3]=0.2% [4]=0.2% [5+]=0.0% [10+]=0.2%
+ info string Bad captures: QxP=454 attempts (0.7% cutoff) RxP=6 attempts (0.0% cutoff)
 -info string Phase distribution: Opening=87.8% Middle=12.2% Endgame=0.0%
 -info depth 6 seldepth 21 score cp -17 string fail-low(1) bound [-36,9] string unstable ebf 4.13 nodes 10549 nps 7535 time 0 moveeff 98.00 tthits 45.22 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5 h3g2
-+info string MoveOrdering: totalCutoffs=643 TT=497 Cap=142 Kill=0 nodes=6216
-+info string MoveOrdering cutoffs: TT=77.3% 1stCap=22.1% Killer=0.0% Counter=0.0% Quiet=0.2% BadCap=0.5%
-+info string Cutoff by index: [0]=97.0% [1]=1.7% [2]=0.8% [3]=0.2% [4]=0.2% [5+]=0.0% [10+]=0.3%
-+info string Bad captures: QxP=453 attempts (0.7% cutoff) RxP=6 attempts (0.0% cutoff)
 +info string Phase distribution: Opening=87.9% Middle=12.1% Endgame=0.0%
-+info depth 6 seldepth 21 score cp -17 string fail-low(1) bound [-36,9] string unstable ebf 4.13 nodes 9418 nps 254540 time 0 moveeff 97.98 tthits 48.56 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5 h3g2
++info depth 6 seldepth 21 score cp -17 string fail-low(1) bound [-36,9] string unstable ebf 4.09 nodes 10483 nps 243790 time 0 moveeff 97.98 tthits 45.21 hashfull 0 pv e2a6 b4c3 d2c3 e6d5 e4d5 h3g2
  info string Countermoves: updates=6 hits=4 hitRate=66.7% bonus=7960
 -info depth 7 seldepth 23 score cp -65 nodes 24576 nps 7680 time 0 hashfull 4 currmove d2f4 currmovenumber 29 pv e2a6
 -info depth 7 seldepth 23 score cp -73 nodes 36864 nps 7838 time 0 hashfull 4 currmove h1f1 currmovenumber 46 pv d5e6
@@ -441,79 +224,74 @@
 -info string Phase distribution: Opening=33.8% Middle=66.2% Endgame=0.0%
 -info string SEE pruning final: 35268/105716 captures pruned (33.4%) [Conservative mode]
 -info string MovePickerStats: bestMoveRank: [1]=14102 [2-5]=756 [6-10]=158 [11+]=62 shortlistHits=943 SEE(lazy): calls=0 captures=34670 ttFirstYield=15463 remainderYields=346383 buckets TT=15463 GoodCapture=40242 BadCapture=15774 Promotion=2318 Killer=6810 Counter=1095 QuietCMH=1176 QuietHist=13556 QuietOther=279970
--bestmove e2a6
++info depth 7 seldepth 23 score cp -106 nodes 32768 nps 341333 time 0 hashfull 1 pv e2a6
++info depth 7 seldepth 23 score cp -73 bound [-33,-1] ebf 2.43 nodes 37055 nps 356298 time 0 moveeff 95.72 tthits 53.16 hashfull 1 pv d5e6
++info string Countermoves: updates=49 hits=27 hitRate=55.1% bonus=7960
++info depth 8 seldepth 23 score cp -63 string fail-low(2) bound [-193,-1] string unstable ebf 4.22 nodes 51026 nps 380791 time 0 moveeff 95.94 tthits 52.18 hashfull 2 pv d5e6 a6e2 e6f7 e8d8 e1e2 h3g2
++info string Countermoves: updates=78 hits=38 hitRate=48.7% bonus=7960
++info depth 9 seldepth 23 score cp -46 bound [-90,-56] ebf 2.51 nodes 73975 nps 408701 time 0 moveeff 95.64 tthits 52.06 hashfull 4 pv d5e6 a6e2 c3e2 e7e6 d2f4 h3g2 f3g2 e6h3
++info string Countermoves: updates=152 hits=66 hitRate=43.4% bonus=7960
++info depth 10 seldepth 23 score cp -63 nodes 98304 nps 418314 time 0 hashfull 5 pv e2a6
++info depth 10 seldepth 26 score cp -63 string fail-high(1) bound [-63,-12] string unstable ebf 2.28 nodes 114109 nps 427374 time 0 moveeff 94.84 tthits 51.91 hashfull 6 pv e2a6
++info string Countermoves: updates=295 hits=129 hitRate=43.7% bonus=7960
++info string MoveOrdering: totalCutoffs=12939 TT=8572 Cap=4039 Kill=88 nodes=114109
++info string MoveOrdering cutoffs: TT=66.2% 1stCap=31.2% Killer=0.7% Counter=0.2% Quiet=0.7% BadCap=1.0%
++info string Cutoff by index: [0]=94.8% [1]=2.4% [2]=0.8% [3]=0.4% [4]=0.5% [5+]=0.7% [10+]=0.3%
++info string Bad captures: QxP=6707 attempts (1.9% cutoff) RxP=469 attempts (1.1% cutoff)
++info string Phase distribution: Opening=36.9% Middle=63.1% Endgame=0.0%
++info string SEE pruning final: 31669/95246 captures pruned (33.2%) [Conservative mode]
+ bestmove e2a6
 -info depth 1 seldepth 4 score cp 38 nodes 38 nps 12666 time 0 tthits 0.00 hashfull 1 pv a8e8
 -info depth 2 seldepth 6 score cp 25 nodes 255 nps 19615 time 0 moveeff 75.76 tthits 60.53 hashfull 1 pv d5d4
-+info depth 7 seldepth 23 score cp -65 bound [-33,-1] ebf 2.30 nodes 28954 nps 376025 time 0 moveeff 95.01 tthits 48.60 hashfull 1 pv e2a6 e6d5 e1c1
-+info string Countermoves: updates=54 hits=26 hitRate=48.1% bonus=7960
-+info depth 8 seldepth 23 score cp -73 string fail-low(2) bound [-193,-1] string unstable ebf 4.09 nodes 43844 nps 405962 time 0 moveeff 94.48 tthits 46.67 hashfull 2 pv d5e6
-+info string Countermoves: updates=98 hits=48 hitRate=49.0% bonus=7960
-+info depth 9 seldepth 23 score cp -56 bound [-82,-48] string unstable ebf 2.53 nodes 61275 nps 431514 time 0 moveeff 94.61 tthits 48.40 hashfull 4 pv d5e6 a6e2 c3e2 e7e6 d2f4 h3g2 f3g2 e6h3
-+info string Countermoves: updates=157 hits=71 hitRate=45.2% bonus=7960
-+info depth 10 seldepth 23 score cp -66 string fail-high(1) bound [-73,-22] string unstable ebf 2.13 nodes 88889 nps 448934 time 0 moveeff 94.79 tthits 50.51 hashfull 5 pv d5e6 a6e2 c3e2 e7e6 d2f4 h3g2 f3g2 f6h5
-+info string Countermoves: updates=248 hits=115 hitRate=46.4% bonus=7960
-+info string MoveOrdering: totalCutoffs=10187 TT=6715 Cap=3228 Kill=81 nodes=88889
-+info string MoveOrdering cutoffs: TT=65.9% 1stCap=31.7% Killer=0.8% Counter=0.1% Quiet=0.6% BadCap=0.9%
-+info string Cutoff by index: [0]=94.8% [1]=2.5% [2]=1.2% [3]=0.4% [4]=0.4% [5+]=0.4% [10+]=0.3%
-+info string Bad captures: QxP=5198 attempts (1.7% cutoff) RxP=416 attempts (1.0% cutoff)
-+info string Phase distribution: Opening=41.2% Middle=58.8% Endgame=0.0%
-+info string SEE pruning final: 30229/83862 captures pruned (36.0%) [Conservative mode]
-+bestmove d5e6
 +readyok
 +info depth 1 seldepth 4 score cp 38 nodes 38 nps 0 time 0 tthits 0.00 hashfull 0 pv a8e8
-+info depth 2 seldepth 6 score cp 25 nodes 235 nps 0 time 0 moveeff 100.00 tthits 60.53 hashfull 0 pv d5d4
++info depth 2 seldepth 6 score cp 25 nodes 243 nps 0 time 0 moveeff 93.94 tthits 60.53 hashfull 0 pv d5d4
  info string Countermoves: updates=2 hits=0 hitRate=0.0% bonus=7960
 -info depth 3 seldepth 6 score cp 52 ebf 5.71 nodes 453 nps 22650 time 0 moveeff 76.32 tthits 81.25 hashfull 1 pv d5d4 c3e4 h7g8
-+info depth 3 seldepth 6 score cp 52 ebf 5.18 nodes 432 nps 0 time 0 moveeff 97.37 tthits 81.25 hashfull 0 pv d5d4 c3e4 h7g8
++info depth 3 seldepth 6 score cp 52 ebf 5.39 nodes 441 nps 0 time 0 moveeff 92.11 tthits 81.25 hashfull 0 pv d5d4 c3e4 h7g8
  info string Countermoves: updates=3 hits=0 hitRate=0.0% bonus=7960
 -info depth 4 seldepth 13 score cp 44 ebf 2.83 nodes 851 nps 18911 time 0 moveeff 82.42 tthits 80.54 hashfull 1 pv d5d4 c3e4 a8c8
-+info depth 4 seldepth 13 score cp 44 ebf 2.67 nodes 811 nps 811000 time 0 moveeff 96.63 tthits 82.12 hashfull 0 pv d5d4 c3e4 a8c8
++info depth 4 seldepth 13 score cp 44 ebf 2.74 nodes 827 nps 827000 time 0 moveeff 92.13 tthits 82.12 hashfull 0 pv d5d4 c3e4 a8c8
  info string Countermoves: updates=8 hits=0 hitRate=0.0% bonus=7960
 -info depth 5 seldepth 13 score cp 69 bound [37,67] ebf 2.47 nodes 1432 nps 18358 time 0 moveeff 88.27 tthits 80.21 hashfull 1 pv d5d4 c3e4 a8c8 e4c5
--info string Countermoves: updates=34 hits=4 hitRate=11.8% bonus=7960
++info depth 5 seldepth 13 score cp 69 bound [37,67] ebf 2.39 nodes 1408 nps 704000 time 0 moveeff 93.30 tthits 80.54 hashfull 0 pv d5d4 c3e4 a8c8 e4c5
+ info string Countermoves: updates=34 hits=4 hitRate=11.8% bonus=7960
 -info string MoveOrdering: totalCutoffs=195 TT=127 Cap=30 Kill=23 nodes=1432
 -info string MoveOrdering cutoffs: TT=65.1% 1stCap=15.4% Killer=11.8% Counter=0.0% Quiet=3.1% BadCap=4.6%
 -info string Cutoff by index: [0]=88.3% [1]=6.6% [2]=1.0% [3]=1.5% [4]=0.5% [5+]=1.0% [10+]=1.0%
 -info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=54 attempts (16.7% cutoff)
-+info depth 5 seldepth 13 score cp 69 bound [37,67] ebf 2.34 nodes 1425 nps 712500 time 0 moveeff 94.85 tthits 80.54 hashfull 0 pv d5d4 c3e4 a8c8 e4c5
-+info string Countermoves: updates=36 hits=4 hitRate=11.1% bonus=7960
-+info string MoveOrdering: totalCutoffs=203 TT=126 Cap=36 Kill=24 nodes=1425
-+info string MoveOrdering cutoffs: TT=62.1% 1stCap=17.7% Killer=11.8% Counter=0.0% Quiet=3.4% BadCap=4.9%
-+info string Cutoff by index: [0]=94.8% [1]=1.0% [2]=1.0% [3]=1.0% [4]=0.5% [5+]=0.0% [10+]=1.5%
-+info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=46 attempts (21.7% cutoff)
++info string MoveOrdering: totalCutoffs=204 TT=127 Cap=38 Kill=23 nodes=1408
++info string MoveOrdering cutoffs: TT=62.3% 1stCap=18.6% Killer=11.3% Counter=0.0% Quiet=2.9% BadCap=4.9%
++info string Cutoff by index: [0]=93.3% [1]=1.5% [2]=1.0% [3]=1.5% [4]=0.5% [5+]=1.0% [10+]=1.0%
++info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=55 attempts (18.2% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info depth 6 seldepth 13 score cp 66 string fail-high(1) bound [44,89] string unstable ebf 1.52 nodes 2704 nps 17445 time 0 moveeff 88.50 tthits 78.78 hashfull 1 pv d5d4 c3e2
--info string Countermoves: updates=52 hits=9 hitRate=17.3% bonus=7960
++info depth 6 seldepth 13 score cp 66 string fail-high(1) bound [44,89] string unstable ebf 1.53 nodes 2693 nps 897666 time 0 moveeff 91.86 tthits 78.48 hashfull 0 pv d5d4 c3e2
+ info string Countermoves: updates=52 hits=9 hitRate=17.3% bonus=7960
 -info depth 7 seldepth 13 score cp 80 bound [53,85] ebf 1.91 nodes 5081 nps 18342 time 0 moveeff 81.30 tthits 71.58 hashfull 2 pv d5d4 c3e2 e6e5 e2g3
--info string Countermoves: updates=111 hits=19 hitRate=17.1% bonus=7960
++info depth 7 seldepth 13 score cp 80 bound [53,85] ebf 1.92 nodes 5055 nps 1011000 time 0 moveeff 84.54 tthits 71.86 hashfull 0 pv d5d4 c3e2 e6e5 e2g3
+ info string Countermoves: updates=111 hits=19 hitRate=17.1% bonus=7960
 -info depth 8 seldepth 16 score cp 63 bound [50,82] string unstable ebf 1.88 nodes 8024 nps 18703 time 0 moveeff 80.76 tthits 67.41 hashfull 2 pv d5d4 c3e2 e6e5 e2g3 a8e8 a1d1 f7f6
--info string Countermoves: updates=153 hits=26 hitRate=17.0% bonus=7960
++info depth 8 seldepth 13 score cp 63 bound [50,82] string unstable ebf 1.89 nodes 7965 nps 995625 time 0 moveeff 84.90 tthits 67.58 hashfull 0 pv d5d4 c3e2 e6e5 e2g3 a8e8 a1d1 f7f6
+ info string Countermoves: updates=153 hits=26 hitRate=17.0% bonus=7960
 -info depth 9 seldepth 19 score cp 65 string fail-low(1) bound [29,80] string unstable ebf 1.66 nodes 12534 nps 16689 time 0 moveeff 79.42 tthits 64.45 hashfull 5 pv d5d4 c3e2 e6e5 e2c1
--info string Countermoves: updates=292 hits=105 hitRate=36.0% bonus=7960
++info depth 9 seldepth 19 score cp 65 string fail-low(1) bound [29,80] string unstable ebf 1.65 nodes 12411 nps 954692 time 0 moveeff 83.95 tthits 64.53 hashfull 0 pv d5d4 c3e2 e6e5 e2c1
+ info string Countermoves: updates=292 hits=105 hitRate=36.0% bonus=7960
 -info depth 10 seldepth 19 score cp 81 bound [46,80] ebf 1.51 nodes 18938 nps 15574 time 0 moveeff 80.38 tthits 63.64 hashfull 5 pv d5d4 c3e2 e6e5 e2g3
--info string Countermoves: updates=412 hits=151 hitRate=36.7% bonus=7960
++info depth 10 seldepth 19 score cp 81 bound [46,80] ebf 1.50 nodes 18685 nps 889761 time 0 moveeff 86.05 tthits 63.70 hashfull 0 pv d5d4 c3e2 e6e5 e2g3
+ info string Countermoves: updates=412 hits=151 hitRate=36.7% bonus=7960
 -info string MoveOrdering: totalCutoffs=2152 TT=1153 Cap=557 Kill=213 nodes=18938
 -info string MoveOrdering cutoffs: TT=53.6% 1stCap=25.9% Killer=9.9% Counter=0.7% Quiet=3.4% BadCap=6.6%
 -info string Cutoff by index: [0]=80.4% [1]=7.5% [2]=6.0% [3]=3.2% [4]=0.7% [5+]=1.4% [10+]=0.7%
 -info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=1133 attempts (12.5% cutoff)
-+info depth 6 seldepth 13 score cp 66 string fail-high(1) bound [44,89] string unstable ebf 1.58 nodes 2672 nps 890666 time 0 moveeff 95.04 tthits 77.03 hashfull 0 pv d5d4 c3e2
-+info string Countermoves: updates=61 hits=9 hitRate=14.8% bonus=7960
-+info depth 7 seldepth 13 score cp 80 bound [53,85] ebf 1.87 nodes 4854 nps 970800 time 0 moveeff 93.66 tthits 70.87 hashfull 0 pv d5d4 c3e2 e6e5 e2g3
-+info string Countermoves: updates=119 hits=21 hitRate=17.6% bonus=7960
-+info depth 8 seldepth 13 score cp 63 bound [50,82] string unstable ebf 1.81 nodes 7926 nps 990750 time 0 moveeff 93.24 tthits 67.12 hashfull 0 pv d5d4 c3e2 e6e5 e2g3 a8e8 a1d1 f7f6
-+info string Countermoves: updates=173 hits=32 hitRate=18.5% bonus=7960
-+info depth 9 seldepth 13 score cp 74 string fail-low(1) bound [29,80] string unstable ebf 1.66 nodes 10690 nps 971818 time 0 moveeff 93.02 tthits 65.09 hashfull 0 pv d5d4 c3e2 e6e5 e2g3 a8e8 g3e4
-+info string Countermoves: updates=276 hits=98 hitRate=35.5% bonus=7960
-+info depth 10 seldepth 18 score cp 73 bound [46,80] string unstable ebf 1.26 nodes 18219 nps 958894 time 0 moveeff 91.98 tthits 65.31 hashfull 0 pv d5d4 c3e2 e6e5 e2c1
-+info string Countermoves: updates=482 hits=170 hitRate=35.3% bonus=7960
-+info string MoveOrdering: totalCutoffs=2125 TT=1051 Cap=582 Kill=293 nodes=18219
-+info string MoveOrdering cutoffs: TT=49.5% 1stCap=27.4% Killer=13.8% Counter=0.5% Quiet=3.2% BadCap=5.7%
-+info string Cutoff by index: [0]=92.0% [1]=4.2% [2]=1.3% [3]=0.6% [4]=0.3% [5+]=0.6% [10+]=1.0%
-+info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=829 attempts (14.6% cutoff)
++info string MoveOrdering: totalCutoffs=2284 TT=1154 Cap=679 Kill=213 nodes=18685
++info string MoveOrdering cutoffs: TT=50.5% 1stCap=29.7% Killer=9.3% Counter=0.6% Quiet=3.2% BadCap=6.6%
++info string Cutoff by index: [0]=86.0% [1]=2.5% [2]=5.4% [3]=3.2% [4]=0.7% [5+]=1.4% [10+]=0.7%
++info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=1139 attempts (13.3% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info string SEE pruning final: 3378/7466 captures pruned (45.2%) [Conservative mode]
 -info string MovePickerStats: bestMoveRank: [1]=1731 [2-5]=377 [6-10]=30 [11+]=16 shortlistHits=22 SEE(lazy): calls=0 captures=1124 ttFirstYield=1751 remainderYields=34977 buckets TT=1751 GoodCapture=1408 BadCapture=1120 Killer=1108 Counter=96 QuietCMH=400 QuietHist=2359 QuietOther=28847
-+info string SEE pruning final: 3533/7063 captures pruned (50.0%) [Conservative mode]
++info string SEE pruning final: 3331/7204 captures pruned (46.2%) [Conservative mode]
  bestmove d5d4
 -info depth 1 seldepth 6 score cp -1419 nodes 21 nps 5250 time 0 tthits 0.00 hashfull 0 pv b7d6
 -info depth 2 seldepth 8 score cp -1440 nodes 220 nps 14666 time 0 moveeff 75.00 tthits 68.18 hashfull 1 pv b7c5
@@ -521,26 +299,25 @@
 +readyok
 +info depth 1 seldepth 6 score cp -1419 nodes 21 nps 0 time 0 tthits 0.00 hashfull 0 pv b7d6
 +info depth 2 seldepth 8 score cp -1440 nodes 220 nps 0 time 0 moveeff 75.00 tthits 68.18 hashfull 0 pv b7c5
-+info depth 3 seldepth 8 score cp -1470 ebf 9.48 nodes 446 nps 446000 time 0 moveeff 86.49 tthits 89.55 hashfull 0 pv b7c5 e6c5
++info depth 3 seldepth 8 score cp -1470 ebf 9.48 nodes 403 nps 0 time 0 moveeff 83.78 tthits 89.55 hashfull 0 pv b7c5 e6c5
  info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
 -info depth 4 seldepth 8 score cp -1470 ebf 4.34 nodes 691 nps 11327 time 0 moveeff 94.49 tthits 74.09 hashfull 1 pv b7c5 e6c5 f7c7 c5d3
-+info depth 4 seldepth 8 score cp -1470 ebf 4.47 nodes 742 nps 742000 time 0 moveeff 95.28 tthits 76.36 hashfull 0 pv b7c5 e6c5 f7c7 c5d3
++info depth 4 seldepth 8 score cp -1470 ebf 4.34 nodes 691 nps 691000 time 0 moveeff 94.49 tthits 74.09 hashfull 0 pv b7c5 e6c5 f7c7 c5d3
  info string Countermoves: updates=1 hits=0 hitRate=0.0% bonus=7960
 -info depth 5 seldepth 10 score cp -1436 bound [-1485,-1455] ebf 3.11 nodes 1199 nps 11871 time 0 moveeff 94.40 tthits 75.42 hashfull 1 pv b7c5 a1c1
-+info depth 5 seldepth 10 score cp -1436 bound [-1485,-1455] ebf 3.07 nodes 1304 nps 652000 time 0 moveeff 94.92 tthits 75.00 hashfull 0 pv b7c5 a1c1
++info depth 5 seldepth 10 score cp -1436 bound [-1485,-1455] ebf 3.11 nodes 1199 nps 599500 time 0 moveeff 94.40 tthits 75.42 hashfull 0 pv b7c5 a1c1
  info string Countermoves: updates=7 hits=1 hitRate=14.3% bonus=7960
--info string MoveOrdering: totalCutoffs=224 TT=174 Cap=44 Kill=1 nodes=1199
--info string MoveOrdering cutoffs: TT=77.7% 1stCap=19.6% Killer=0.4% Counter=0.0% Quiet=2.2% BadCap=0.0%
--info string Cutoff by index: [0]=94.4% [1]=3.4% [2]=0.9% [3]=0.4% [4]=0.0% [5+]=0.4% [10+]=0.4%
-+info string MoveOrdering: totalCutoffs=228 TT=178 Cap=44 Kill=1 nodes=1304
-+info string MoveOrdering cutoffs: TT=78.1% 1stCap=19.3% Killer=0.4% Counter=0.0% Quiet=2.2% BadCap=0.0%
-+info string Cutoff by index: [0]=94.9% [1]=3.4% [2]=0.4% [3]=0.0% [4]=0.0% [5+]=0.4% [10+]=0.8%
+ info string MoveOrdering: totalCutoffs=224 TT=174 Cap=44 Kill=1 nodes=1199
+ info string MoveOrdering cutoffs: TT=77.7% 1stCap=19.6% Killer=0.4% Counter=0.0% Quiet=2.2% BadCap=0.0%
+ info string Cutoff by index: [0]=94.4% [1]=3.4% [2]=0.9% [3]=0.4% [4]=0.0% [5+]=0.4% [10+]=0.4%
  info string Bad captures: QxP=0 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info depth 6 seldepth 11 score cp -1475 string fail-high(1) bound [-1470,-1425] string unstable ebf 1.51 nodes 2646 nps 11454 time 0 moveeff 87.42 tthits 59.44 hashfull 1 pv b7c5 a1c1 c5e6 d5e6 f7e7 a8d5
--info string Countermoves: updates=37 hits=7 hitRate=18.9% bonus=7960
++info depth 6 seldepth 11 score cp -1475 string fail-high(1) bound [-1470,-1425] string unstable ebf 1.51 nodes 2588 nps 647000 time 0 moveeff 90.25 tthits 60.32 hashfull 0 pv b7c5 a1c1 c5e6 d5e6 f7e7 a8d5
+ info string Countermoves: updates=37 hits=7 hitRate=18.9% bonus=7960
 -info depth 7 seldepth 11 score cp -1496 string fail-low(1) bound [-1484,-1436] string unstable ebf 2.20 nodes 5688 nps 12668 time 0 moveeff 85.92 tthits 56.60 hashfull 4 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7
--info string Countermoves: updates=128 hits=38 hitRate=29.7% bonus=7960
++info depth 7 seldepth 11 score cp -1496 string fail-low(1) bound [-1484,-1436] string unstable ebf 2.15 nodes 5583 nps 697875 time 0 moveeff 88.41 tthits 57.20 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7
+ info string Countermoves: updates=128 hits=38 hitRate=29.7% bonus=7960
 -info depth 8 seldepth 16 score cp -1509 string fail-low(1) bound [-1523,-1475] string unstable ebf 2.28 nodes 9416 nps 12880 time 0 moveeff 85.51 tthits 53.59 hashfull 6 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8
 -info string Countermoves: updates=235 hits=72 hitRate=30.6% bonus=7960
 -info depth 9 seldepth 17 score cp -1518 bound [-1513,-1479] string unstable ebf 1.88 nodes 15520 nps 13287 time 0 moveeff 85.77 tthits 53.34 hashfull 6 pv b7c5 e6c5 f7c7 c5d3 g8g7
@@ -554,51 +331,46 @@
 -info string Phase distribution: Opening=0.0% Middle=98.1% Endgame=1.9%
 -info string SEE pruning final: 2795/7845 captures pruned (35.6%) [Conservative mode]
 -info string MovePickerStats: bestMoveRank: [1]=3040 [2-5]=474 [6-10]=49 [11+]=31 shortlistHits=207 SEE(lazy): calls=0 captures=2764 ttFirstYield=3241 remainderYields=50667 buckets TT=3241 GoodCapture=3049 BadCapture=1018 Promotion=256 Killer=1791 Counter=318 QuietCMH=955 QuietHist=4819 QuietOther=39716
-+info depth 6 seldepth 11 score cp -1475 string fail-high(1) bound [-1470,-1425] string unstable ebf 1.53 nodes 2571 nps 642750 time 0 moveeff 92.47 tthits 62.24 hashfull 0 pv b7c5 a1c1 c5e6 d5e6 f7e7 a8d5
-+info string Countermoves: updates=41 hits=9 hitRate=22.0% bonus=7960
-+info depth 7 seldepth 13 score cp -1496 string fail-low(1) bound [-1484,-1436] string unstable ebf 1.93 nodes 5259 nps 751285 time 0 moveeff 93.03 tthits 57.52 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7
-+info string Countermoves: updates=135 hits=48 hitRate=35.6% bonus=7960
-+info depth 8 seldepth 15 score cp -1509 string fail-low(1) bound [-1523,-1475] string unstable ebf 2.12 nodes 8128 nps 738909 time 0 moveeff 93.76 tthits 55.40 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8
-+info string Countermoves: updates=226 hits=89 hitRate=39.4% bonus=7960
-+info depth 9 seldepth 17 score cp -1519 bound [-1513,-1479] string unstable ebf 1.68 nodes 12591 nps 740647 time 0 moveeff 92.87 tthits 56.55 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8 d7f7
-+info string Countermoves: updates=384 hits=137 hitRate=35.7% bonus=7960
-+info depth 10 seldepth 17 score cp -1537 bound [-1526,-1492] ebf 1.52 nodes 19678 nps 728814 time 0 moveeff 92.56 tthits 57.32 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 c7d7
-+info string Countermoves: updates=657 hits=242 hitRate=36.8% bonus=7960
-+info string MoveOrdering: totalCutoffs=2924 TT=1754 Cap=755 Kill=248 nodes=19678
-+info string MoveOrdering cutoffs: TT=60.0% 1stCap=25.8% Killer=8.5% Counter=0.6% Quiet=4.7% BadCap=0.4%
-+info string Cutoff by index: [0]=92.6% [1]=4.0% [2]=1.0% [3]=0.4% [4]=0.4% [5+]=0.9% [10+]=0.7%
-+info string Bad captures: QxP=28 attempts (21.4% cutoff) RxP=158 attempts (3.8% cutoff)
-+info string Phase distribution: Opening=0.0% Middle=98.9% Endgame=1.1%
-+info string SEE pruning final: 2594/6764 captures pruned (38.4%) [Conservative mode]
++info depth 8 seldepth 16 score cp -1509 string fail-low(1) bound [-1523,-1475] string unstable ebf 2.26 nodes 9228 nps 709846 time 0 moveeff 87.76 tthits 54.36 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 h5f6 a1c1 c7d7 c1c8
++info string Countermoves: updates=233 hits=72 hitRate=30.9% bonus=7960
++info depth 9 seldepth 16 score cp -1518 bound [-1513,-1479] string unstable ebf 1.87 nodes 15398 nps 733238 time 0 moveeff 87.32 tthits 52.76 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 g8g7
++info string Countermoves: updates=418 hits=132 hitRate=31.6% bonus=7960
++info depth 10 seldepth 16 score cp -1536 bound [-1526,-1492] ebf 1.64 nodes 23745 nps 719545 time 0 moveeff 86.77 tthits 54.28 hashfull 0 pv b7c5 e6c5 f7c7 c5d3 c7d7
++info string Countermoves: updates=718 hits=241 hitRate=33.6% bonus=7960
++info string MoveOrdering: totalCutoffs=3517 TT=1929 Cap=1089 Kill=273 nodes=23745
++info string MoveOrdering cutoffs: TT=54.8% 1stCap=31.0% Killer=7.8% Counter=0.8% Quiet=5.2% BadCap=0.4%
++info string Cutoff by index: [0]=86.8% [1]=6.5% [2]=2.7% [3]=1.1% [4]=0.8% [5+]=1.3% [10+]=0.8%
++info string Bad captures: QxP=36 attempts (19.4% cutoff) RxP=193 attempts (3.6% cutoff)
++info string Phase distribution: Opening=0.0% Middle=98.2% Endgame=1.8%
++info string SEE pruning final: 2845/7823 captures pruned (36.4%) [Conservative mode]
  bestmove b7c5
 -info depth 1 seldepth 2 score cp 171 nodes 38 nps 19000 time 0 tthits 0.00 hashfull 0 pv e6e5
 -info depth 2 seldepth 7 score cp 129 nodes 429 nps 16500 time 0 moveeff 40.62 tthits 22.50 hashfull 0 pv g4a4
 +readyok
 +info depth 1 seldepth 2 score cp 171 nodes 38 nps 0 time 0 tthits 0.00 hashfull 0 pv e6e5
-+info depth 2 seldepth 7 score cp 129 nodes 346 nps 0 time 0 moveeff 87.50 tthits 22.50 hashfull 0 pv g4a4
++info depth 2 seldepth 7 score cp 129 nodes 417 nps 0 time 0 moveeff 53.12 tthits 22.50 hashfull 0 pv g4a4
  info string Countermoves: updates=15 hits=0 hitRate=0.0% bonus=7960
 -info depth 3 seldepth 7 score cp 140 ebf 10.29 nodes 1569 nps 18903 time 0 moveeff 57.46 tthits 72.69 hashfull 0 pv b7b6
-+info depth 3 seldepth 7 score cp 140 ebf 8.11 nodes 1330 nps 1330000 time 0 moveeff 81.20 tthits 65.43 hashfull 0 pv b7b6
++info depth 3 seldepth 7 score cp 140 ebf 9.97 nodes 1553 nps 776500 time 0 moveeff 61.19 tthits 72.69 hashfull 0 pv b7b6
  info string Countermoves: updates=63 hits=24 hitRate=38.1% bonus=7960
 -info depth 4 seldepth 10 score cp 147 ebf 5.87 nodes 3148 nps 15584 time 0 moveeff 67.94 tthits 64.04 hashfull 0 pv e8d7
--info string Countermoves: updates=116 hits=54 hitRate=46.6% bonus=7960
++info depth 4 seldepth 10 score cp 147 ebf 5.79 nodes 3094 nps 1031333 time 0 moveeff 72.22 tthits 65.76 hashfull 0 pv e8d7
+ info string Countermoves: updates=116 hits=54 hitRate=46.6% bonus=7960
 -info depth 5 seldepth 11 score cp 141 bound [125,155] string unstable ebf 3.87 nodes 5649 nps 15779 time 0 moveeff 71.99 tthits 65.04 hashfull 2 pv e8f7
--info string Countermoves: updates=214 hits=99 hitRate=46.3% bonus=7960
++info depth 5 seldepth 10 score cp 141 bound [125,155] string unstable ebf 3.82 nodes 5579 nps 929833 time 0 moveeff 76.08 tthits 65.99 hashfull 2 pv e8f7
+ info string Countermoves: updates=214 hits=99 hitRate=46.3% bonus=7960
 -info string MoveOrdering: totalCutoffs=632 TT=349 Cap=91 Kill=107 nodes=5649
 -info string MoveOrdering cutoffs: TT=55.2% 1stCap=14.4% Killer=16.9% Counter=1.7% Quiet=6.8% BadCap=4.9%
 -info string Cutoff by index: [0]=72.0% [1]=3.6% [2]=6.0% [3]=3.6% [4]=4.6% [5+]=8.1% [10+]=2.1%
 -info string Bad captures: QxP=578 attempts (2.4% cutoff) RxP=358 attempts (4.7% cutoff)
-+info depth 4 seldepth 7 score cp 147 ebf 5.16 nodes 2568 nps 856000 time 0 moveeff 85.14 tthits 64.06 hashfull 0 pv e8d7
-+info string Countermoves: updates=107 hits=52 hitRate=48.6% bonus=7960
-+info depth 5 seldepth 9 score cp 141 bound [125,155] string unstable ebf 3.43 nodes 4895 nps 979000 time 0 moveeff 88.65 tthits 65.36 hashfull 0 pv e8f7
-+info string Countermoves: updates=219 hits=103 hitRate=47.0% bonus=7960
-+info string MoveOrdering: totalCutoffs=593 TT=286 Cap=119 Kill=112 nodes=4895
-+info string MoveOrdering cutoffs: TT=48.2% 1stCap=20.1% Killer=18.9% Counter=1.5% Quiet=6.4% BadCap=4.9%
-+info string Cutoff by index: [0]=88.7% [1]=5.3% [2]=2.1% [3]=1.1% [4]=0.0% [5+]=1.1% [10+]=1.8%
-+info string Bad captures: QxP=254 attempts (5.9% cutoff) RxP=114 attempts (12.3% cutoff)
++info string MoveOrdering: totalCutoffs=651 TT=345 Cap=114 Kill=107 nodes=5579
++info string MoveOrdering cutoffs: TT=53.0% 1stCap=17.5% Killer=16.4% Counter=1.7% Quiet=6.6% BadCap=4.8%
++info string Cutoff by index: [0]=76.1% [1]=3.2% [2]=3.2% [3]=3.0% [4]=4.5% [5+]=7.9% [10+]=2.1%
++info string Bad captures: QxP=566 attempts (2.7% cutoff) RxP=323 attempts (5.0% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info depth 6 seldepth 11 score cp 157 bound [132,162] string unstable ebf 1.81 nodes 9055 nps 14942 time 0 moveeff 71.49 tthits 61.36 hashfull 3 pv e8d7 d6c5 g4a4 b2b3
--info string Countermoves: updates=369 hits=137 hitRate=37.1% bonus=7960
++info depth 6 seldepth 11 score cp 157 bound [132,162] string unstable ebf 1.83 nodes 8947 nps 813363 time 0 moveeff 74.93 tthits 61.88 hashfull 2 pv e8d7 d6c5 g4a4 b2b3
+ info string Countermoves: updates=369 hits=137 hitRate=37.1% bonus=7960
 -info depth 7 seldepth 16 score cp 109 nodes 20480 nps 12427 time 0 hashfull 6 pv e8d7
 -info depth 7 seldepth 16 score cp 108 string fail-high(1) bound [141,189] string unstable ebf 1.44 nodes 27516 nps 12668 time 0 moveeff 77.40 tthits 50.48 hashfull 6 pv e8f7
 -info string Countermoves: updates=1181 hits=434 hitRate=36.7% bonus=7960
@@ -625,49 +397,45 @@
 -bestmove e8d7
 -info depth 1 seldepth 8 score cp 68 nodes 44 nps 14666 time 0 tthits 0.00 hashfull 0 pv d7d8
 -info depth 2 seldepth 10 score cp 51 nodes 270 nps 15882 time 0 moveeff 37.14 tthits 33.33 hashfull 0 pv d7d8 a1a6
-+info depth 6 seldepth 11 score cp 157 bound [132,162] string unstable ebf 1.96 nodes 7950 nps 883333 time 0 moveeff 89.81 tthits 59.28 hashfull 1 pv e8d7 d6c5 g4a4 b2b3
-+info string Countermoves: updates=390 hits=145 hitRate=37.2% bonus=7960
-+info depth 7 seldepth 17 score cp 146 string fail-high(1) bound [141,189] string unstable ebf 1.49 nodes 12764 nps 850933 time 0 moveeff 90.69 tthits 58.45 hashfull 1 pv e8d7 d6g3
-+info string Countermoves: updates=636 hits=227 hitRate=35.7% bonus=7960
-+info depth 8 seldepth 19 score cp 131 bound [141,173] string unstable ebf 1.56 nodes 27549 nps 810264 time 0 moveeff 89.07 tthits 51.66 hashfull 1 pv b7b6
-+info string Countermoves: updates=1413 hits=465 hitRate=32.9% bonus=7960
-+info depth 9 seldepth 19 score cp 147 bound [129,163] string unstable ebf 2.18 nodes 37023 nps 822733 time 0 moveeff 88.74 tthits 50.88 hashfull 2 pv b7b6 b2b3 e8f7
-+info string Countermoves: updates=1809 hits=592 hitRate=32.7% bonus=7960
-+info depth 10 seldepth 19 score cp 132 bound [114,148] string unstable ebf 1.66 nodes 53970 nps 805522 time 0 moveeff 89.55 tthits 49.70 hashfull 4 pv b7b6 b2b3 g4f5
-+info string Countermoves: updates=2499 hits=796 hitRate=31.9% bonus=7960
-+info string MoveOrdering: totalCutoffs=7584 TT=2786 Cap=2552 Kill=1315 nodes=53970
-+info string MoveOrdering cutoffs: TT=36.7% 1stCap=33.6% Killer=17.3% Counter=1.5% Quiet=6.6% BadCap=4.2%
-+info string Cutoff by index: [0]=89.6% [1]=4.5% [2]=1.6% [3]=0.9% [4]=0.5% [5+]=1.2% [10+]=1.8%
-+info string Bad captures: QxP=2905 attempts (5.6% cutoff) RxP=1972 attempts (8.0% cutoff)
-+info string Phase distribution: Opening=0.0% Middle=99.1% Endgame=0.9%
-+info string SEE pruning final: 13372/19393 captures pruned (69.0%) [Conservative mode]
-+bestmove b7b6
++info depth 7 seldepth 16 score cp 108 string fail-high(1) bound [141,189] string unstable ebf 1.44 nodes 28417 nps 768027 time 0 moveeff 79.23 tthits 51.15 hashfull 3 pv e8f7
++info string Countermoves: updates=1184 hits=443 hitRate=37.4% bonus=7960
++info depth 8 seldepth 16 score cp 126 string fail-low(2) bound [-19,173] string unstable ebf 3.38 nodes 37548 nps 766285 time 0 moveeff 79.49 tthits 52.91 hashfull 4 pv e8d7
++info string Countermoves: updates=1556 hits=571 hitRate=36.7% bonus=7960
++info depth 9 seldepth 19 score cp 141 string fail-high(1) bound [108,159] string unstable ebf 2.44 nodes 48246 nps 765809 time 0 moveeff 80.46 tthits 53.50 hashfull 4 pv e8f7
++info string Countermoves: updates=1960 hits=710 hitRate=36.2% bonus=7960
++info depth 10 seldepth 19 score cp 121 bound [109,143] string unstable ebf 1.96 nodes 77422 nps 751669 time 0 moveeff 83.81 tthits 52.14 hashfull 9 pv e8f7 c1c7
++info string Countermoves: updates=2893 hits=1003 hitRate=34.7% bonus=7960
++info string MoveOrdering: totalCutoffs=11722 TT=5389 Cap=3971 Kill=1246 nodes=77422
++info string MoveOrdering cutoffs: TT=46.0% 1stCap=33.9% Killer=10.6% Counter=1.3% Quiet=5.0% BadCap=3.3%
++info string Cutoff by index: [0]=83.8% [1]=3.4% [2]=2.3% [3]=1.9% [4]=2.5% [5+]=4.8% [10+]=1.3%
++info string Bad captures: QxP=7236 attempts (2.9% cutoff) RxP=5138 attempts (3.4% cutoff)
++info string Phase distribution: Opening=0.0% Middle=96.6% Endgame=3.4%
++info string SEE pruning final: 13821/24444 captures pruned (56.5%) [Conservative mode]
++bestmove e8f7
 +readyok
 +info depth 1 seldepth 8 score cp 68 nodes 44 nps 0 time 0 tthits 0.00 hashfull 0 pv d7d8
-+info depth 2 seldepth 10 score cp 51 nodes 184 nps 0 time 0 moveeff 85.71 tthits 33.33 hashfull 0 pv d7d8 a1a6
++info depth 2 seldepth 10 score cp 51 nodes 270 nps 0 time 0 moveeff 37.14 tthits 33.33 hashfull 0 pv d7d8 a1a6
  info string Countermoves: updates=22 hits=0 hitRate=0.0% bonus=7960
 -info depth 3 seldepth 10 score cp 60 ebf 5.14 nodes 937 nps 15360 time 0 moveeff 60.27 tthits 71.65 hashfull 0 pv c7d6
-+info depth 3 seldepth 10 score cp 60 ebf 3.18 nodes 828 nps 828000 time 0 moveeff 89.04 tthits 69.29 hashfull 0 pv c7d6
++info depth 3 seldepth 10 score cp 60 ebf 5.14 nodes 937 nps 937000 time 0 moveeff 60.27 tthits 71.65 hashfull 0 pv c7d6
  info string Countermoves: updates=36 hits=8 hitRate=22.2% bonus=7960
 -info depth 4 seldepth 12 score cp 47 ebf 3.83 nodes 2123 nps 15496 time 0 moveeff 72.64 tthits 69.11 hashfull 0 pv d7d8
--info string Countermoves: updates=67 hits=20 hitRate=29.9% bonus=7960
++info depth 4 seldepth 12 score cp 47 ebf 3.83 nodes 2123 nps 707666 time 0 moveeff 72.64 tthits 69.11 hashfull 0 pv d7d8
+ info string Countermoves: updates=67 hits=20 hitRate=29.9% bonus=7960
 -info depth 5 seldepth 15 score cp 63 bound [45,75] string unstable ebf 2.92 nodes 3537 nps 15581 time 0 moveeff 72.84 tthits 66.90 hashfull 2 pv d7d8 b2b3
--info string Countermoves: updates=140 hits=47 hitRate=33.6% bonus=7960
++info depth 5 seldepth 15 score cp 63 bound [45,75] string unstable ebf 2.92 nodes 3531 nps 706200 time 0 moveeff 73.60 tthits 66.90 hashfull 0 pv d7d8 b2b3
+ info string Countermoves: updates=140 hits=47 hitRate=33.6% bonus=7960
 -info string MoveOrdering: totalCutoffs=387 TT=220 Cap=67 Kill=75 nodes=3537
 -info string MoveOrdering cutoffs: TT=56.8% 1stCap=17.3% Killer=19.4% Counter=1.0% Quiet=5.4% BadCap=0.0%
 -info string Cutoff by index: [0]=72.8% [1]=3.0% [2]=5.1% [3]=6.6% [4]=6.3% [5+]=4.1% [10+]=2.0%
--info string Bad captures: QxP=104 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
-+info depth 4 seldepth 12 score cp 47 ebf 4.03 nodes 1880 nps 940000 time 0 moveeff 89.64 tthits 67.13 hashfull 0 pv d7d8
-+info string Countermoves: updates=68 hits=21 hitRate=30.9% bonus=7960
-+info depth 5 seldepth 15 score cp 63 bound [45,75] string unstable ebf 2.97 nodes 3169 nps 792250 time 0 moveeff 90.93 tthits 63.82 hashfull 0 pv d7d8 b2b3
-+info string Countermoves: updates=144 hits=49 hitRate=34.0% bonus=7960
-+info string MoveOrdering: totalCutoffs=382 TT=205 Cap=74 Kill=77 nodes=3169
-+info string MoveOrdering cutoffs: TT=53.7% 1stCap=19.4% Killer=20.2% Counter=1.0% Quiet=5.8% BadCap=0.0%
-+info string Cutoff by index: [0]=90.9% [1]=3.9% [2]=0.8% [3]=0.8% [4]=0.5% [5+]=1.0% [10+]=2.1%
-+info string Bad captures: QxP=31 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
++info string MoveOrdering: totalCutoffs=390 TT=220 Cap=70 Kill=75 nodes=3531
++info string MoveOrdering cutoffs: TT=56.4% 1stCap=17.9% Killer=19.2% Counter=1.0% Quiet=5.4% BadCap=0.0%
++info string Cutoff by index: [0]=73.6% [1]=2.3% [2]=5.1% [3]=6.6% [4]=6.3% [5+]=4.1% [10+]=2.0%
+ info string Bad captures: QxP=104 attempts (0.0% cutoff) RxP=3 attempts (0.0% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info depth 6 seldepth 15 score cp 56 string fail-high(1) bound [47,92] string unstable ebf 1.78 nodes 4773 nps 14333 time 0 moveeff 76.14 tthits 64.04 hashfull 2 pv d7d8 b2b3 c4b3
--info string Countermoves: updates=165 hits=51 hitRate=30.9% bonus=7960
++info depth 6 seldepth 15 score cp 56 string fail-high(1) bound [47,92] string unstable ebf 1.78 nodes 4757 nps 679571 time 0 moveeff 76.97 tthits 63.98 hashfull 0 pv d7d8 b2b3 c4b3
+ info string Countermoves: updates=165 hits=51 hitRate=30.9% bonus=7960
 -info depth 7 seldepth 15 score cp 65 bound [47,79] ebf 1.18 nodes 8231 nps 13974 time 0 moveeff 77.51 tthits 54.97 hashfull 2 pv d7d8 e3f5
 -info string Countermoves: updates=251 hits=85 hitRate=33.9% bonus=7960
 -info depth 8 seldepth 19 score cp 59 bound [40,72] ebf 1.80 nodes 14724 nps 14063 time 0 moveeff 78.44 tthits 56.50 hashfull 3 pv d7d8 d2f3
@@ -684,24 +452,23 @@
 -info string MoveOrdering cutoffs: TT=39.2% 1stCap=44.1% Killer=10.7% Counter=1.2% Quiet=4.2% BadCap=0.7%
 -info string Cutoff by index: [0]=82.1% [1]=4.1% [2]=3.1% [3]=4.6% [4]=2.8% [5+]=2.4% [10+]=0.8%
 -info string Bad captures: QxP=2735 attempts (1.8% cutoff) RxP=244 attempts (7.0% cutoff)
-+info depth 6 seldepth 15 score cp 56 string fail-high(1) bound [47,92] string unstable ebf 2.11 nodes 4291 nps 715166 time 0 moveeff 90.88 tthits 62.03 hashfull 0 pv d7d8 b2b3 c4b3
-+info string Countermoves: updates=168 hits=54 hitRate=32.1% bonus=7960
-+info depth 7 seldepth 15 score cp 65 bound [47,79] ebf 1.16 nodes 7219 nps 802111 time 0 moveeff 90.11 tthits 58.39 hashfull 0 pv d7d8 e3f5
-+info string Countermoves: updates=243 hits=79 hitRate=32.5% bonus=7960
-+info depth 8 seldepth 19 score cp 51 bound [40,72] ebf 1.72 nodes 20444 nps 730142 time 0 moveeff 88.02 tthits 48.23 hashfull 1 pv d7d8 d2f3
-+info string Countermoves: updates=571 hits=184 hitRate=32.2% bonus=7960
-+info depth 9 seldepth 22 score cp 59 bound [48,82] string unstable ebf 3.07 nodes 28573 nps 732641 time 0 moveeff 89.10 tthits 49.70 hashfull 4 pv d7d8 d2f3 c7b6
-+info string Countermoves: updates=843 hits=285 hitRate=33.8% bonus=7960
-+info depth 10 seldepth 22 score cp 55 bound [34,68] ebf 2.36 nodes 43485 nps 737033 time 0 moveeff 90.00 tthits 49.96 hashfull 7 pv d7d8 d2f3 c7b7
-+info string Countermoves: updates=1244 hits=409 hitRate=32.9% bonus=7960
-+info string MoveOrdering: totalCutoffs=4979 TT=2031 Cap=1950 Kill=683 nodes=43485
-+info string MoveOrdering cutoffs: TT=40.8% 1stCap=39.2% Killer=13.7% Counter=0.8% Quiet=4.6% BadCap=1.0%
-+info string Cutoff by index: [0]=90.0% [1]=5.5% [2]=1.5% [3]=0.8% [4]=0.5% [5+]=0.9% [10+]=0.8%
-+info string Bad captures: QxP=902 attempts (4.0% cutoff) RxP=153 attempts (7.8% cutoff)
++info depth 7 seldepth 15 score cp 65 bound [47,79] ebf 1.18 nodes 8211 nps 746454 time 0 moveeff 78.37 tthits 54.64 hashfull 0 pv d7d8 e3f5
++info string Countermoves: updates=251 hits=83 hitRate=33.1% bonus=7960
++info depth 8 seldepth 19 score cp 59 bound [40,72] ebf 1.81 nodes 14685 nps 699285 time 0 moveeff 79.25 tthits 56.32 hashfull 1 pv d7d8 d2f3
++info string Countermoves: updates=409 hits=140 hitRate=34.2% bonus=7960
++info depth 9 seldepth 21 score cp 55 bound [48,82] ebf 1.97 nodes 39710 nps 661833 time 0 moveeff 80.94 tthits 43.42 hashfull 5 pv c7b7
++info string Countermoves: updates=1100 hits=424 hitRate=38.5% bonus=7960
++info depth 10 seldepth 21 score cp 56 nodes 73728 nps 652460 time 0 hashfull 10 pv c7d8
++info depth 10 seldepth 21 score cp 56 bound [42,76] string unstable ebf 2.97 nodes 74104 nps 650035 time 0 moveeff 83.34 tthits 41.01 hashfull 10 pv c7d8
++info string Countermoves: updates=1738 hits=644 hitRate=37.1% bonus=7960
++info string MoveOrdering: totalCutoffs=8752 TT=3344 Cap=4004 Kill=902 nodes=74104
++info string MoveOrdering cutoffs: TT=38.2% 1stCap=45.7% Killer=10.3% Counter=0.9% Quiet=4.0% BadCap=0.8%
++info string Cutoff by index: [0]=83.3% [1]=3.3% [2]=2.6% [3]=5.1% [4]=2.5% [5+]=2.2% [10+]=1.0%
++info string Bad captures: QxP=2573 attempts (2.0% cutoff) RxP=234 attempts (9.0% cutoff)
  info string Phase distribution: Opening=0.0% Middle=100.0% Endgame=0.0%
 -info string SEE pruning final: 17196/40611 captures pruned (42.3%) [Conservative mode]
 -info string MovePickerStats: bestMoveRank: [1]=7397 [2-5]=1335 [6-10]=216 [11+]=72 shortlistHits=771 SEE(lazy): calls=0 captures=9331 ttFirstYield=5125 remainderYields=158998 buckets TT=5125 GoodCapture=9958 BadCapture=6960 Promotion=23 Killer=5286 Counter=934 QuietCMH=3769 QuietHist=11676 QuietOther=124432
 -bestmove c7b7
-+info string SEE pruning final: 12052/27028 captures pruned (44.6%) [Conservative mode]
-+bestmove d7d8
++info string SEE pruning final: 17662/42289 captures pruned (41.8%) [Conservative mode]
++bestmove c7d8
 +readyok
