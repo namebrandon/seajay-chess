@@ -139,3 +139,39 @@ bench <nodes>`
 - Iterative deepening now disables aspiration for one depth whenever the root PV changes. That single widened iteration keeps non-PV coverage ≥40 % about one ply deeper on WAC.049 (ply 9 vs 8) without touching picker heuristics.
 - Full aspiration disable still pushes the cliff to ply 10–11, and unordered move picking keeps coverage high everywhere, confirming the gap is caused by root oscillation rather than TT replacement pressure.
 - Suggested diagnostic order: (1) leave the guard in place, (2) sweep `UseAspirationWindows`, `AspirationWindow`, `AspirationGrowth`, `AspirationMaxAttempts` via SPSA or manual tuning, and (3) use `LogRootTTStores=true` during every run so the coverage tables verify each tweak before we commit.
+
+## Reboot Checklist (TT Coverage & Aspiration Guard)
+
+If resuming after a long pause:
+
+1. **Branch / Commit**
+   - Branch: `feature/20251002-move-picking`
+   - Last commit: `bee16a0 feat: improve TT diagnostics and aspiration guard` (`bench 2549006`)
+
+2. **Instrumentation**
+   - TT coverage buckets are exposed via `debug tt` (`Coverage PV/NonPV/Q`).
+   - Root probe/store tracing is available with `setoption name LogRootTTStores value true`.
+   - Coverage logs for baseline diagnostics live in `logs/tt_probe/` (`wac049_*_ttcoverage.log`, `wac002_*`).
+
+3. **Aspiration Guard**
+   - Iterative deepening now disables aspiration for one iteration whenever the root PV changes (`src/search/negamax.cpp` around the iterative deepening loop).
+   - This keeps non-PV coverage ≥40 % to ply 9 on WAC.049 (ordered) without touching move ordering.
+
+4. **Telemetry Commands**
+   - Ordered harness: `printf 'uci\nsetoption name LogRootTTStores value true\nposition fen <FEN>\ngo depth 10\ndebug tt\nquit\n' | ./bin/seajay > logs/tt_probe/<name>.log`
+   - SEE-off control: add `setoption name SEEPruning value off` and `setoption name QSEEPruning value off` before `go`.
+
+5. **Next Experiments**
+   - Optional SPSA over `AspirationWindow`, `AspirationMaxAttempts`, `StabilityThreshold` (keep `LogRootTTStores=true` during runs).
+   - If coverage still collapses at ply 9, evaluate root-ordering tweaks before touching deeper move-picker heuristics.
+
+6. **Key Files**
+   - Coverage data structures: `src/core/transposition_table.h/.cpp`
+   - Search integration: `src/search/negamax.cpp`, `src/search/quiescence*.cpp`, `src/search/negamax_legacy.inc`
+   - UCI options & telemetry: `src/uci/uci.cpp/.h`
+
+7. **Telemetry Summary**
+   - Latest ordered vs SEE-off coverage logs: `logs/tt_probe/wac049_*_ttcoverage*.log`, `logs/tt_probe/wac002_*_ttcoverage*.log`
+   - Aspiration-off / unordered control logs present for comparison.
+
+Re-run the WAC depth-10 harness with the above commands after any tuning or code change to confirm TT coverage and first-move fail-high metrics remain stable before proceeding to SPRT.

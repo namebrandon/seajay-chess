@@ -49,3 +49,6 @@
 - Captured MP2 baseline `MOVE_ORDER_DUMP` traces for comparison with MP3 instrumentation.
 - Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
 - Added move ordering telemetry (`firstCutoff` buckets, TT availability) and the `UseUnorderedMovePicker` diagnostic toggle (see `docs/project_docs/move_ordering_telemetry.md`).
+- Added depth-aware TT coverage counters (PV / non-PV / quiescence) and the `LogRootTTStores` UCI toggle; `debug tt` now reports per-ply coverage so we can track where availability collapses.
+- Added an aspiration guard that skips the window for one iteration whenever the root PV changes; WAC.049 keeps non-PV coverage ≥40% through ply 9 without touching move ordering.
+- See `docs/project_docs/Move_Picking_Optimization_Plan.md` ("Reboot Checklist") for a quick-start guide when resuming this work.
