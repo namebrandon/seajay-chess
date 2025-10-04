@@ -116,3 +116,40 @@ bench <nodes>`
 - SPRT 771 (`a0beed684257c008e1985b7809c367b25f579abf` vs `main`) failed at −39 ± 14 Elo, so the staged picker rewrite was reverted.
 - A control SPRT on the same commit with `UseRankedMovePicker=false` vs `true` produced +22 ± 10 Elo, confirming the regression is isolated to the new picker code path.
 - Next iteration should restart from `16152a47c5e77570ea3d8c22dfff86b85d0cbd3b`, reintroducing incremental stages gradually while preserving feature parity and validating each change with telemetry.
+
+## 2025-10-04 Instrumentation Baseline
+
+- Captured depth-10 probes for the five `/tmp/fen_list.txt` positions using the legacy picker (`UseRankedMovePicker=true`, refactor/excluded-move toggles off) with `-DSEARCH_STATS` builds.
+- Store raw output at `logs/move_picker_depth10.log`; buckets confirm TT → capture → quiet sequencing with quiet traffic dominated by `QuietOther` while shortlist hits remain low.
+- This log is the control dataset for staged rewrite parity checks (best-move rank distribution, shortlist hits, bucket totals, seldepth and node throughput).
+
+### Resumption Strategy (MP3 Revival)
+
+1. **Wrap Legacy Shortlist in Staged Driver**  
+   Implement the stage machine around the existing shortlist/quiet reorder logic so `next()` uses staged sequencing without altering scoring. Re-run the depth-10 probe and ensure bucket ratios and seldepth match the baseline log within noise.
+
+2. **Introduce Capture Stages Incrementally**  
+   Move TT and good-capture emission into dedicated stages, keeping SEE gates identical. After each slice, rerun the probe and compare `GoodCapture`/`BadCapture` buckets and shortlist hits against `logs/move_picker_depth10.log`. Any drift in seldepth or node totals triggers a rollback.
+
+3. **Port Quiet Stages Last**  
+   Only after capture stages are stable should we replace `reorderQuietSection*`. Preserve killer/counter/CMH handling and verify `QuietHist`, `QuietCMH`, and `QuietOther` counts stay aligned with the baseline before deleting the legacy reorder path.
+
+4. **Validation Loop**  
+   For every meaningful change: rebuild (Release + Debug), run the bench, rerun the depth-10 probe, and launch a short SPRT vs `main`. If telemetry flags regressions, toggle `UseRankedMovePicker=false` to confirm the culprit slice, then fix or revert before moving on.
+
+5. **Post-Stabilisation Tuning**  
+   When staged picking matches the control telemetry and SPRTs are neutral/positive, evaluate CMH weight, LMR defaults, and move-count thresholds individually—each change backed by the telemetry + SPRT gate.
+
+## 2025-10-04 Capture Stage Logging Update
+
+- Stage driver now yields SEE-nonnegative captures and non-capture promotions via the shortlist path, removing them from the legacy remainder iterator.
+- `MOVE_PICKER_STAGE_LOG=4:200 ./bin/seajay ... go depth 10` reproduces `logs/move_picker_depth10_stagewrap.log` bucket totals with the expected `stage=Shortlist` tag for good captures while leaving bad captures under `stage=Remainder`.
+- Release bench after the change: `2479551 nodes / 1,347,662 nps` (`echo "bench" | ./bin/seajay`).
+- Next slice: isolate SEE-negative capture handling before touching quiet ordering so stage telemetry remains parity-checked against `logs/move_picker_depth10.log`.
+
+## 2025-10-04 Bad Capture Deferral
+
+- SEE-negative captures encountered in both shortlist extraction and legacy scan now feed a deferred `BadCaptures` stage that emits immediately after the SEE-nonnegative shortlist, matching legacy ordering (reference log: `logs/move_picker_depth10_stagewrap_badcaptures.log`).
+- Diff versus the stage-wrapped baseline is stored at `logs/move_picker_depth10_stagewrap_badcaptures.diff` (shows stage label migration only).
+- Release bench after the parity fix: `2228652 nodes / 1,315,263 nps`.
+- Follow-up: adjust quiet emission to consume `m_inShortlistMap` without relying on the legacy remainder walk, then re-run depth-10 probes and SPRT to validate ordering stability.

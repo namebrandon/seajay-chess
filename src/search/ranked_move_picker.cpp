@@ -12,9 +12,36 @@
 #endif
 
 #include "../core/board_safety.h"
+#include "../core/see.h"
 
 namespace seajay {
 namespace search {
+
+const char* movePickerBucketName(MovePickerBucket bucket) noexcept {
+    switch (bucket) {
+        case MovePickerBucket::TT:
+            return "TT";
+        case MovePickerBucket::GoodCapture:
+            return "GoodCapture";
+        case MovePickerBucket::BadCapture:
+            return "BadCapture";
+        case MovePickerBucket::Promotion:
+            return "Promotion";
+        case MovePickerBucket::Killer:
+            return "Killer";
+        case MovePickerBucket::CounterMove:
+            return "Counter";
+        case MovePickerBucket::QuietCounterHistory:
+            return "QuietCMH";
+        case MovePickerBucket::QuietHistory:
+            return "QuietHist";
+        case MovePickerBucket::QuietFallback:
+            return "QuietOther";
+        case MovePickerBucket::Other:
+        default:
+            return "Other";
+    }
+}
 
 namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
@@ -49,6 +76,36 @@ const DumpMoveOrderConfig& dumpMoveOrderConfig() {
 bool dumpMoveOrderEnabled() {
     return dumpMoveOrderConfig().enabled;
 }
+
+struct StageLogConfig {
+    bool enabled = false;
+    int plyLimit = 2;
+    int countLimit = 64;
+};
+
+const StageLogConfig& stageLogConfig() {
+    static const StageLogConfig cfg = [] {
+        StageLogConfig config;
+        const char* flag = std::getenv("MOVE_PICKER_STAGE_LOG");
+        if (!flag || flag[0] == '\0') {
+            return config;
+        }
+        config.enabled = true;
+        int parsedPly = 0;
+        int parsedCount = 0;
+        if (std::sscanf(flag, "%d:%d", &parsedPly, &parsedCount) >= 1) {
+            if (parsedPly > 0) config.plyLimit = parsedPly;
+            if (parsedCount > 0) config.countLimit = parsedCount;
+        }
+        return config;
+    }();
+    return cfg;
+}
+
+bool stageLogEnabled() {
+    return stageLogConfig().enabled;
+}
+
 }
 
 // Use the MVV-LVA constants from move_ordering.h
@@ -282,6 +339,9 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     , m_effectiveShortlistSize(0)  // Will be set based on depth
     , m_inCheck(board.isAttacked(board.kingSquare(board.sideToMove()), ~board.sideToMove()))
     , m_moveIndex(0)
+    , m_captureScanIndex(0)
+    , m_badCaptureCount(0)
+    , m_badCaptureIndex(0)
     , m_ttMoveYielded(false)
     , m_yieldIndex(0)  // Phase 2b.2-fix: Always initialize
 #ifdef DEBUG
@@ -295,6 +355,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
     // Phase 2a.5b: Initialize arrays to prevent UB
     std::fill(std::begin(m_shortlist), std::end(m_shortlist), NO_MOVE);
     std::fill(std::begin(m_shortlistScores), std::end(m_shortlistScores), 0);
+    std::fill(std::begin(m_badCaptures), std::end(m_badCaptures), NO_MOVE);
     
     // Calculate depth-based shortlist size (K)
     // Shallow depths: less overhead, fewer moves in shortlist
@@ -525,7 +586,7 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 #ifdef DEBUG
                 // Phase 2a.5b: Assert bounds before array write
                 assert(m_shortlistSize >= 0 && m_shortlistSize < MAX_SHORTLIST_SIZE);
-                assert(i < MAX_MOVES && "Move index out of bounds for shortlist map");
+                assert(i < ::seajay::MAX_MOVES && "Move index out of bounds for shortlist map");
 #endif
                 
 #ifdef SEARCH_STATS
@@ -570,118 +631,366 @@ RankedMovePicker::RankedMovePicker(const Board& board,
 }
 
 Move RankedMovePicker::next() {
-    // Phase 2a.4: Yield TT move first if legal and not yet yielded
-    if (m_ttMove != NO_MOVE && !m_ttMoveYielded) {
-        m_ttMoveYielded = true;
-        
-        // Check if TT move is in our move list
-        // For in-check: TT must be a valid evasion (in m_moves)
-        // For normal: TT must be pseudo-legal (in m_moves)
-        bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
-        
-#ifdef DEBUG
-        // Phase 2a.8a: Assert TT move validity when in check
-        if (m_inCheck && ttMoveInList) {
-            // TT move must be a legal evasion (present in the evasion list)
-            assert(std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end() 
-                   && "TT move must be in evasion list when in check");
-        }
-#endif
-        
-        if (ttMoveInList) {
-            // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
-            m_yieldIndex++;  // Increment yield index for TT move
-            
-#ifdef SEARCH_STATS
-            // Additional telemetry when stats are requested
-            if (m_limits && m_limits->showMovePickerStats) {
-                // Phase 2a.6b: Track TT first yield
-                if (m_searchData) {
-                    m_searchData->movePickerStats.ttFirstYield++;
+    while (m_stage != MovePickerStage::End) {
+        switch (m_stage) {
+            case MovePickerStage::TT: {
+                Move move = emitTTMove();
+                if (move != NO_MOVE) {
+                    return move;
                 }
+                m_stage = m_inCheck ? MovePickerStage::GenerateQuiets
+                                     : MovePickerStage::GenerateGoodCaptures;
+                break;
             }
-#endif
-#ifdef DEBUG
-            m_yieldedCount++;
-#endif
-            return m_ttMove;
+            case MovePickerStage::GenerateGoodCaptures:
+                m_stage = MovePickerStage::EmitGoodCaptures;
+                break;
+            case MovePickerStage::EmitGoodCaptures: {
+                if (!m_inCheck) {
+                    Move move = emitShortlistMove();
+                    if (move != NO_MOVE) {
+                        return move;
+                    }
+                }
+                if (!m_inCheck && m_badCaptureIndex < m_badCaptureCount) {
+                    m_stage = MovePickerStage::GenerateBadCaptures;
+                } else {
+                    m_stage = MovePickerStage::GenerateKillers;
+                }
+                break;
+            }
+            case MovePickerStage::GenerateKillers:
+                m_stage = MovePickerStage::EmitKillers;
+                break;
+            case MovePickerStage::EmitKillers:
+                // Legacy picker handles killer/counter moves within the remainder walk.
+                m_stage = MovePickerStage::GenerateQuiets;
+                break;
+            case MovePickerStage::GenerateQuiets:
+                m_stage = MovePickerStage::EmitQuiets;
+                break;
+            case MovePickerStage::EmitQuiets: {
+                Move move = emitRemainderMove();
+                if (move != NO_MOVE) {
+                    return move;
+                }
+                m_stage = MovePickerStage::End;
+                break;
+            }
+            case MovePickerStage::GenerateBadCaptures:
+                if (!m_inCheck && m_badCaptureIndex < m_badCaptureCount) {
+                    m_stage = MovePickerStage::EmitBadCaptures;
+                } else {
+                    m_stage = MovePickerStage::GenerateKillers;
+                }
+                break;
+            case MovePickerStage::EmitBadCaptures:
+            {
+                Move move = emitBadCaptureMove();
+                if (move != NO_MOVE) {
+                    return move;
+                }
+                m_stage = MovePickerStage::GenerateKillers;
+                break;
+            }
+            case MovePickerStage::End:
+                break;
         }
-        // If TT move not in list, skip it and continue
     }
-    
-    // Phase 2a.4: Yield shortlist moves (only if not in check)
-    if (!m_inCheck && m_shortlistIndex < m_shortlistSize) {
+
 #ifdef DEBUG
-        // Phase 2a.5b: Assert shortlist bounds
+    assert(m_yieldedCount == m_generatedCount && "Coverage mismatch: not all moves yielded");
+#endif
+    return NO_MOVE;
+}
+
+Move RankedMovePicker::emitTTMove() {
+    if (m_ttMove == NO_MOVE || m_ttMoveYielded) {
+        return NO_MOVE;
+    }
+
+    m_ttMoveYielded = true;
+
+    const bool ttMoveInList = std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end();
+
+#ifdef DEBUG
+    if (m_inCheck && ttMoveInList) {
+        assert(std::find(m_moves.begin(), m_moves.end(), m_ttMove) != m_moves.end()
+               && "TT move must be in evasion list when in check");
+    }
+#endif
+
+    if (!ttMoveInList) {
+        return NO_MOVE;
+    }
+
+    m_yieldIndex++;
+
+#ifdef SEARCH_STATS
+    if (m_limits && m_limits->showMovePickerStats && m_searchData) {
+        m_searchData->movePickerStats.ttFirstYield++;
+    }
+#endif
+
+    recordLegacyYield(m_ttMove, classifyLegacyYield(m_ttMove, LegacyYieldStage::TT), LegacyYieldStage::TT);
+
+#ifdef DEBUG
+    m_yieldedCount++;
+#endif
+    return m_ttMove;
+}
+
+Move RankedMovePicker::emitShortlistMove() {
+    if (m_inCheck) {
+        return NO_MOVE;
+    }
+
+    while (m_shortlistIndex < m_shortlistSize) {
+#ifdef DEBUG
         assert(m_shortlistIndex >= 0 && m_shortlistIndex < m_shortlistSize);
         assert(m_shortlistSize <= MAX_SHORTLIST_SIZE);
-        // Phase 2a.8a: Assert we're not in check when using shortlist
         assert(!m_inCheck && "Shortlist should not be used when in check");
 #endif
+
         Move move = m_shortlist[m_shortlistIndex++];
-        
-        // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
-        m_yieldIndex++;  // Increment yield index for shortlist move
-        
-#ifdef SEARCH_STATS
-        // No additional telemetry needed here
-#endif
+
+        const bool isCaptureMove = isCapture(move) || isEnPassant(move);
+        const bool isPromo = isPromotion(move);
+
+        if (isCaptureMove && !isPromo) {
+            int seeScore = ::seajay::seeSign(m_board, move);
+            if (seeScore < 0) {
+                if (m_badCaptureCount < static_cast<int>(::seajay::MAX_MOVES)) {
+                    m_badCaptures[m_badCaptureCount++] = move;
+                }
+                continue;
+            }
+        }
+
+        m_yieldIndex++;
+
+        recordLegacyYield(move, classifyLegacyYield(move, LegacyYieldStage::Shortlist), LegacyYieldStage::Shortlist);
+
 #ifdef DEBUG
         m_yieldedCount++;
 #endif
         return move;
     }
-    
-    // Yield moves from m_moves in legacy order
-    // For in-check: these are check evasions (MVV-LVA/SEE ordered)
-    // For normal: these are pseudo-legal moves (skipping TT and shortlist)
+
+    // After K shortlist entries, continue scanning legacy-ordered list for remaining
+    // profitable captures/promotions so telemetry tags them as shortlist-stage yields.
+    while (m_captureScanIndex < m_moves.size()) {
+        const size_t index = m_captureScanIndex++;
+        const Move move = m_moves[index];
+
+        if (move == m_ttMove) {
+            continue;
+        }
+
+        if (index < ::seajay::MAX_MOVES && m_inShortlistMap[index]) {
+            continue;
+        }
+
+        const bool isPromo = isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+        const bool isCaptureMove = isCapture(move) || isEnPassant(move);
+
+        if (!isPromo && !isCaptureMove) {
+            continue;
+        }
+
+        if (index < ::seajay::MAX_MOVES) {
+            m_inShortlistMap[index] = true;
+        }
+
+        bool yieldCapture = isPromo;
+        if (isCaptureMove && !yieldCapture) {
+            int seeScore = ::seajay::seeSign(m_board, move);
+            yieldCapture = (seeScore >= 0);
+        }
+
+        if (!yieldCapture) {
+            if (isCaptureMove && m_badCaptureCount < static_cast<int>(::seajay::MAX_MOVES)) {
+                m_badCaptures[m_badCaptureCount++] = move;
+            }
+            continue;
+        }
+
+        m_yieldIndex++;
+
+        recordLegacyYield(move, classifyLegacyYield(move, LegacyYieldStage::Shortlist), LegacyYieldStage::Shortlist);
+
+#ifdef DEBUG
+        m_yieldedCount++;
+#endif
+        return move;
+    }
+
+    return NO_MOVE;
+}
+
+Move RankedMovePicker::emitRemainderMove() {
     while (m_moveIndex < m_moves.size()) {
 #ifdef DEBUG
-        // Phase 2a.5b: Assert iterator bounds
         assert(m_moveIndex <= m_moves.size() && "Move index out of bounds");
 #endif
         size_t currentIndex = m_moveIndex;
         Move move = m_moves[m_moveIndex++];
-        
-        // Skip TT move since we already yielded it (or tried to)
+
         if (move == m_ttMove) {
             continue;
         }
-        
-        // Skip moves that are in the shortlist (already yielded) - only when not in check
-        // Use O(1) lookup instead of linear search
-        if (!m_inCheck && currentIndex < MAX_MOVES && m_inShortlistMap[currentIndex]) {
-#ifdef DEBUG
-            // Phase 2a.5b: Additional bounds check for paranoia
-            assert(currentIndex < MAX_MOVES && "Current index must be within MAX_MOVES");
-#endif
+
+        if (!m_inCheck && currentIndex < ::seajay::MAX_MOVES && m_inShortlistMap[currentIndex]) {
             continue;
         }
-        
-        // Phase 2b.2-fix: Always increment yield index for accurate rank tracking
-        m_yieldIndex++;  // Increment yield index for remainder move
-        
+
+        m_yieldIndex++;
+
 #ifdef SEARCH_STATS
-        // Additional telemetry when stats are requested
-        if (m_limits && m_limits->showMovePickerStats) {
-            // Phase 2a.6b: Track remainder yields
-            if (m_searchData) {
-                m_searchData->movePickerStats.remainderYields++;
-            }
+        if (m_limits && m_limits->showMovePickerStats && m_searchData) {
+            m_searchData->movePickerStats.remainderYields++;
         }
 #endif
+
+        recordLegacyYield(move, classifyLegacyYield(move, LegacyYieldStage::Remainder), LegacyYieldStage::Remainder);
+
 #ifdef DEBUG
         m_yieldedCount++;
 #endif
         return move;
     }
-    
-#ifdef DEBUG
-    // Assert coverage: all generated moves should be yielded exactly once
-    assert(m_yieldedCount == m_generatedCount && "Coverage mismatch: not all moves yielded");
-#endif
-    
+
     return NO_MOVE;
+}
+
+Move RankedMovePicker::emitBadCaptureMove() {
+    if (m_badCaptureIndex >= m_badCaptureCount) {
+        return NO_MOVE;
+    }
+
+    Move move = m_badCaptures[m_badCaptureIndex++];
+
+    if (move == NO_MOVE) {
+        return NO_MOVE;
+    }
+
+    m_yieldIndex++;
+
+    recordLegacyYield(move, classifyLegacyYield(move, LegacyYieldStage::BadCapture), LegacyYieldStage::BadCapture);
+
+#ifdef DEBUG
+    m_yieldedCount++;
+#endif
+    return move;
+}
+
+MovePickerBucket RankedMovePicker::classifyLegacyYield(Move move, LegacyYieldStage stage) const {
+    if (stage == LegacyYieldStage::TT) {
+        return MovePickerBucket::TT;
+    }
+
+    if (stage == LegacyYieldStage::BadCapture) {
+        return MovePickerBucket::BadCapture;
+    }
+
+    const bool isCaptureMove = isCapture(move) || isEnPassant(move);
+    const bool isPromo = isPromotion(move) && !isCapture(move) && !isEnPassant(move);
+
+    if (isPromo) {
+        return MovePickerBucket::Promotion;
+    }
+
+    if (isCaptureMove) {
+        if (stage == LegacyYieldStage::Shortlist) {
+            return MovePickerBucket::GoodCapture;
+        }
+        auto seeScore = ::seajay::seeSign(m_board, move);
+        if (seeScore >= 0) {
+            return MovePickerBucket::GoodCapture;
+        }
+        return MovePickerBucket::BadCapture;
+    }
+
+    if (m_killers && m_killers->isKiller(m_ply, move)) {
+        return MovePickerBucket::Killer;
+    }
+
+    if (m_counterMoves && m_prevMove != NO_MOVE &&
+        m_counterMoves->getCounterMove(m_prevMove) == move) {
+        return MovePickerBucket::CounterMove;
+    }
+
+    if (m_counterMoveHistory && m_prevMove != NO_MOVE) {
+        int cmhScore = m_counterMoveHistory->getScore(m_prevMove, move);
+        if (cmhScore > 0) {
+            return MovePickerBucket::QuietCounterHistory;
+        }
+    }
+
+    if (m_history) {
+        int histScore = m_history->getScore(m_board.sideToMove(), moveFrom(move), moveTo(move));
+        if (histScore > 0) {
+            return MovePickerBucket::QuietHistory;
+        }
+    }
+
+    if (!isCapture(move) && !isEnPassant(move)) {
+        return MovePickerBucket::QuietFallback;
+    }
+
+    return MovePickerBucket::Other;
+}
+
+void RankedMovePicker::recordLegacyYield(Move move,
+                                        MovePickerBucket bucket,
+                                        LegacyYieldStage stage) const {
+#ifdef SEARCH_STATS
+    if (m_limits && m_limits->showMovePickerStats && m_searchData) {
+        const auto index = static_cast<size_t>(bucket);
+        if (index < m_searchData->movePickerStats.legacyYields.size()) {
+            m_searchData->movePickerStats.legacyYields[index]++;
+        }
+    }
+#endif
+
+    if (!stageLogEnabled()) {
+        return;
+    }
+
+    const StageLogConfig& cfg = stageLogConfig();
+    if (m_ply > cfg.plyLimit) {
+        return;
+    }
+
+    static int emitted = 0;
+    if (cfg.countLimit > 0 && emitted >= cfg.countLimit) {
+        return;
+    }
+
+    const char* stageLabel = "Unknown";
+    switch (stage) {
+        case LegacyYieldStage::TT:
+            stageLabel = "TT";
+            break;
+        case LegacyYieldStage::Shortlist:
+            stageLabel = "Shortlist";
+            break;
+        case LegacyYieldStage::Remainder:
+            stageLabel = "Remainder";
+            break;
+        case LegacyYieldStage::BadCapture:
+            stageLabel = "BadCaptures";
+            break;
+    }
+
+    std::ostringstream oss;
+    oss << "info string PickerStage ply=" << m_ply
+        << " index=" << m_yieldIndex
+        << " stage=" << stageLabel
+        << " bucket=" << movePickerBucketName(bucket)
+        << " move=" << SafeMoveExecutor::moveToString(move);
+    std::cout << oss.str() << std::endl;
+    ++emitted;
 }
 
 /**

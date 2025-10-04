@@ -13,9 +13,12 @@
 - Benchmarked SEE production toggle (confirmed ~–7% NPS, still off by default).
 - Captured MP2 baseline `MOVE_ORDER_DUMP` traces for comparison with MP3 instrumentation.
 - Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
+- Captured depth-10 probes for `/tmp/fen_list.txt` with the legacy picker (`logs/move_picker_depth10.log`) to serve as telemetry baseline before reintroducing staged move picking.
+- Routed SEE-positive captures and promotion-only moves through the shortlist stage so stage logs tag good captures as `stage=Shortlist` instead of `stage=Remainder`.
+- Deferred SEE-negative captures to the `BadCaptures` stage and emit them immediately after good captures to preserve legacy ordering (`logs/move_picker_depth10_stagewrap_badcaptures.log`).
 
 ## Benchmarks (SEE off)
-- MP3 head: `2441603 nodes / 1,310,720 nps`
+- MP3 head: `2228652 nodes / 1,315,263 nps`
 - MP2 baseline: `2531668 nodes / 1,203,819 nps`
 
 ## SPRT
@@ -33,8 +36,9 @@
 ## Open Questions / Next Tasks
 1. Expand MOVE_ORDER_DUMP comparisons beyond the initial sample (ensure remaining hashes match MP2 now that gating is fixed).
 2. Evaluate the impact of the new quiet selection helpers on LMR/LMP statistics (rank buckets, cutoff indices).
-3. Plan staged picker integration (fully incremental `NextMove()` pipeline) to eliminate bulk quiet reorder.
-4. Re-run SPRT after addressing the above to confirm recovery.
+3. Wrap the legacy shortlist/quiet reorder with the stage machine, validating each step against `logs/move_picker_depth10.log` to keep bucket distributions aligned.
+4. Incrementally migrate capture and quiet stages into the staged pipeline (next: rework quiet emission and killer injection) while continuing the bench + depth-10 probe + SPRT loop after every change.
+5. Re-run SPRT after addressing the above to confirm recovery.
 
 ## Notes
 - SEE production remains disabled; enabling it still costs ~7% NPS with no proven Elo benefit.
