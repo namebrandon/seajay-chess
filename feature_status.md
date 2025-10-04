@@ -13,6 +13,7 @@
 - Benchmarked SEE production toggle (confirmed ~–7% NPS, still off by default).
 - Captured MP2 baseline `MOVE_ORDER_DUMP` traces for comparison with MP3 instrumentation.
 - Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
+- Added move ordering telemetry (`firstCutoff` buckets, TT availability) and the `UseUnorderedMovePicker` diagnostic toggle (see `docs/project_docs/move_ordering_telemetry.md`).
 
 ## Benchmarks (SEE off)
 - MP3 head: `2441603 nodes / 1,310,720 nps`
@@ -39,3 +40,8 @@
 ## Notes
 - SEE production remains disabled; enabling it still costs ~7% NPS with no proven Elo benefit.
 - No outstanding tactical regressions observed yet; perft parity intact (spot-check).
+- Added `MOVE_ORDER_DUMP=ply:count` instrumentation in both `negamax` and `RankedMovePicker`.
+- Benchmarked SEE production toggle (confirmed ~–7% NPS, still off by default).
+- Captured MP2 baseline `MOVE_ORDER_DUMP` traces for comparison with MP3 instrumentation.
+- Restored MP2-style countermove gating (only reserve the slot when `countermoveBonus > 0`).
+- Added move ordering telemetry (`firstCutoff` buckets, TT availability) and the `UseUnorderedMovePicker` diagnostic toggle (see `docs/project_docs/move_ordering_telemetry.md`).

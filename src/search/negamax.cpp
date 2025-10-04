@@ -15,6 +15,7 @@
 #include "singular_extension.h"       // Stage 6d: verification helper scaffold
 #include "../core/board.h"
 #include "../core/board_safety.h"
+#include "../core/see.h"
 #include "../core/move_generation.h"
 #include "../core/move_list.h"
 #include "../core/engine_config.h"    // Phase 4: Runtime configuration
@@ -37,6 +38,57 @@ namespace seajay::search {
 namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
 constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
+
+#ifdef SEARCH_STATS
+static MovePickerBucket classifyCutoffMove(const Board& board,
+                                           Move move,
+                                           Move ttMove,
+                                           const KillerMoves* killers,
+                                           const HistoryHeuristic* history,
+                                           const CounterMoves* counterMoves,
+                                           const CounterMoveHistory* counterMoveHistory,
+                                           Move prevMove,
+                                           int ply) {
+    if (ttMove != NO_MOVE && move == ttMove) {
+        return MovePickerBucket::TT;
+    }
+
+    const bool captures = isCapture(move) || isEnPassant(move);
+    const bool promotion = isPromotion(move) && !captures;
+
+    if (promotion) {
+        return MovePickerBucket::Promotion;
+    }
+
+    if (captures) {
+        int seeScore = ::seajay::seeSign(board, move);
+        return seeScore >= 0 ? MovePickerBucket::GoodCapture : MovePickerBucket::BadCapture;
+    }
+
+    if (killers && killers->isKiller(ply, move)) {
+        return MovePickerBucket::Killer;
+    }
+
+    if (counterMoves && prevMove != NO_MOVE && counterMoves->getCounterMove(prevMove) == move) {
+        return MovePickerBucket::CounterMove;
+    }
+
+    if (counterMoveHistory && prevMove != NO_MOVE) {
+        if (counterMoveHistory->getScore(prevMove, move) > 0) {
+            return MovePickerBucket::QuietCounterHistory;
+        }
+    }
+
+    if (history) {
+        int histScore = history->getScore(board.sideToMove(), moveFrom(move), moveTo(move));
+        if (histScore > 0) {
+            return MovePickerBucket::QuietHistory;
+        }
+    }
+
+    return MovePickerBucket::QuietFallback;
+}
+#endif
 
 // TODO(SE1): Delete once legacy negamax is removed and NodeContext handles singular exclusions end-to-end.
 struct ExcludedMoveGuard {
@@ -1102,7 +1154,10 @@ eval::Score negamax(Board& board,
     // Phase 2a: Use RankedMovePicker if enabled (skip at root for safety)
     // Use optional to avoid dynamic allocation (stack allocation instead)
     std::optional<RankedMovePicker> rankedPicker;
-    if (limits.useRankedMovePicker && ply > 0) {
+#ifdef SEARCH_STATS
+    bool firstCutoffLogged = false;
+#endif
+    if (limits.useRankedMovePicker && !limits.useUnorderedMovePicker && ply > 0) {
         // Predict whether history/countermove history ordering will be active
         auto historyCtx = SearchData::HistoryContext::None;
         const bool hasHistoryInfra = info.killers && info.history && info.counterMoves;
@@ -1133,7 +1188,9 @@ eval::Score negamax(Board& board,
         // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
         // CM3.3: Pass prevMove and bonus for countermove ordering
         // Phase 4.3.a-fix2: Pass depth for CMH gating
-        orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+        if (!limits.useUnorderedMovePicker) {
+            orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+        }
     }
     
     // Node explosion diagnostics: Track TT move ordering effectiveness
@@ -2251,6 +2308,28 @@ eval::Score negamax(Board& board,
                             info.movePickerStats.shortlistHits++;
                         }
                     }
+
+                    if (limits.showMovePickerStats) {
+                        MovePickerBucket bucket = classifyCutoffMove(board, move, ttMove,
+                                                                       info.killers, info.history,
+                                                                       info.counterMoves, info.counterMoveHistory,
+                                                                       prevMove, ply);
+                        auto bucketIndex = static_cast<size_t>(bucket);
+                        auto& pickerStats = info.movePickerStats;
+                        pickerStats.cutoffBuckets[bucketIndex]++;
+                        pickerStats.cutoffTotal++;
+                        if (!firstCutoffLogged) {
+                            pickerStats.firstCutoffBuckets[bucketIndex]++;
+                            pickerStats.firstCutoffTotal++;
+                            if (ttMove != NO_MOVE) {
+                                pickerStats.firstCutoffTTAvailable++;
+                            }
+                            if (bucket == MovePickerBucket::TT) {
+                                pickerStats.firstCutoffTTUsed++;
+                            }
+                            firstCutoffLogged = true;
+                        }
+                    }
 #endif
                     if (debugTrackedMove) {
                         std::ostringstream extra;
@@ -2924,17 +3003,49 @@ Move searchIterativeTest(Board& board, const SearchLimits& limits, Transposition
     
     // Phase 2a.6c: Output move picker statistics if requested
 #ifdef SEARCH_STATS
-    if (limits.showMovePickerStats && limits.useRankedMovePicker) {
+    if (limits.showMovePickerStats) {
         std::cout << "info string MovePickerStats:";
-        std::cout << " bestMoveRank: [1]=" << info.movePickerStats.bestMoveRank[0];
-        std::cout << " [2-5]=" << info.movePickerStats.bestMoveRank[1];
-        std::cout << " [6-10]=" << info.movePickerStats.bestMoveRank[2];
-        std::cout << " [11+]=" << info.movePickerStats.bestMoveRank[3];
-        std::cout << " shortlistHits=" << info.movePickerStats.shortlistHits;
+        if (limits.useRankedMovePicker) {
+            std::cout << " bestMoveRank: [1]=" << info.movePickerStats.bestMoveRank[0];
+            std::cout << " [2-5]=" << info.movePickerStats.bestMoveRank[1];
+            std::cout << " [6-10]=" << info.movePickerStats.bestMoveRank[2];
+            std::cout << " [11+]=" << info.movePickerStats.bestMoveRank[3];
+            std::cout << " shortlistHits=" << info.movePickerStats.shortlistHits;
+        }
         std::cout << " SEE(lazy): calls=" << info.movePickerStats.seeCallsLazy;
         std::cout << " captures=" << info.movePickerStats.capturesTotal;
         std::cout << " ttFirstYield=" << info.movePickerStats.ttFirstYield;
         std::cout << " remainderYields=" << info.movePickerStats.remainderYields;
+
+        if (info.movePickerStats.firstCutoffTotal > 0) {
+            std::cout << " firstCutoffs=" << info.movePickerStats.firstCutoffTotal;
+            if (info.movePickerStats.firstCutoffTTAvailable > 0) {
+                double ttRate = 100.0 * info.movePickerStats.firstCutoffTTUsed /
+                                static_cast<double>(info.movePickerStats.firstCutoffTTAvailable);
+                std::cout << " firstCutoffTT=" << info.movePickerStats.firstCutoffTTUsed
+                          << "/" << info.movePickerStats.firstCutoffTTAvailable
+                          << " (" << std::fixed << std::setprecision(1) << ttRate << "%)";
+            }
+            std::cout << std::defaultfloat << std::setprecision(6);
+            std::cout << " firstBuckets";
+            for (size_t i = 0; i < static_cast<size_t>(MovePickerBucket::Count); ++i) {
+                uint64_t count = info.movePickerStats.firstCutoffBuckets[i];
+                if (count == 0) continue;
+                std::cout << ' ' << movePickerBucketName(static_cast<MovePickerBucket>(i))
+                          << '=' << count;
+            }
+        }
+
+        if (info.movePickerStats.cutoffTotal > 0) {
+            std::cout << " buckets";
+            for (size_t i = 0; i < static_cast<size_t>(MovePickerBucket::Count); ++i) {
+                uint64_t count = info.movePickerStats.cutoffBuckets[i];
+                if (count == 0) continue;
+                std::cout << ' ' << movePickerBucketName(static_cast<MovePickerBucket>(i))
+                          << '=' << count;
+            }
+        }
+
         std::cout << std::endl;
     }
 #endif

@@ -185,6 +185,7 @@ struct SearchLimits {
     
     // Phase 2a: Ranked MovePicker
     bool useRankedMovePicker = false;    // Enable ranked move picker (Phase 2a)
+    bool useUnorderedMovePicker = false; // Diagnostic: bypass all move ordering for baseline comparisons
     
     // Phase 2a.6: Telemetry for move picker analysis (UCI toggle)
     bool showMovePickerStats = false;     // Show move picker statistics at end of search
@@ -979,6 +980,37 @@ struct SearchData {
     // This struct tracks effectiveness of the ranked move picker
     // All fields are thread-local, no atomics needed for single-thread OB
 #ifdef SEARCH_STATS
+enum class MovePickerBucket : uint8_t {
+    TT = 0,
+    GoodCapture,
+    BadCapture,
+    Promotion,
+    Killer,
+    CounterMove,
+    QuietCounterHistory,
+    QuietHistory,
+    QuietFallback,
+    Other,
+    Count
+};
+
+ALWAYS_INLINE constexpr const char* movePickerBucketName(MovePickerBucket bucket) noexcept {
+    switch (bucket) {
+        case MovePickerBucket::TT: return "TT";
+        case MovePickerBucket::GoodCapture: return "GoodCapture";
+        case MovePickerBucket::BadCapture: return "BadCapture";
+        case MovePickerBucket::Promotion: return "Promotion";
+        case MovePickerBucket::Killer: return "Killer";
+        case MovePickerBucket::CounterMove: return "Counter";
+        case MovePickerBucket::QuietCounterHistory: return "QuietCMH";
+        case MovePickerBucket::QuietHistory: return "QuietHist";
+        case MovePickerBucket::QuietFallback: return "QuietOther";
+        case MovePickerBucket::Other:
+        default:
+            return "Other";
+    }
+}
+
     struct MovePickerStats {
         // Best move rank distribution
         // [0]=rank 1, [1]=ranks 2-5, [2]=ranks 6-10, [3]=ranks 11+
@@ -994,7 +1026,14 @@ struct SearchData {
         // Optional: Additional tracking
         uint64_t ttFirstYield = 0;       // TT move yielded first
         uint64_t remainderYields = 0;    // Moves from remainder (not TT or shortlist)
-        
+
+        std::array<uint64_t, static_cast<size_t>(MovePickerBucket::Count)> firstCutoffBuckets{{0}};
+        std::array<uint64_t, static_cast<size_t>(MovePickerBucket::Count)> cutoffBuckets{{0}};
+        uint64_t firstCutoffTotal = 0;
+        uint64_t cutoffTotal = 0;
+        uint64_t firstCutoffTTAvailable = 0;
+        uint64_t firstCutoffTTUsed = 0;
+
         void reset() {
             for (int i = 0; i < 4; i++) bestMoveRank[i] = 0;
             shortlistHits = 0;
@@ -1002,6 +1041,12 @@ struct SearchData {
             capturesTotal = 0;
             ttFirstYield = 0;
             remainderYields = 0;
+            firstCutoffBuckets.fill(0);
+            cutoffBuckets.fill(0);
+            firstCutoffTotal = 0;
+            cutoffTotal = 0;
+            firstCutoffTTAvailable = 0;
+            firstCutoffTTUsed = 0;
         }
     } movePickerStats;
     

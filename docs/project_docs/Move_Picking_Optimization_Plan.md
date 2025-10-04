@@ -116,3 +116,10 @@ bench <nodes>`
 - SPRT 771 (`a0beed684257c008e1985b7809c367b25f579abf` vs `main`) failed at −39 ± 14 Elo, so the staged picker rewrite was reverted.
 - A control SPRT on the same commit with `UseRankedMovePicker=false` vs `true` produced +22 ± 10 Elo, confirming the regression is isolated to the new picker code path.
 - Next iteration should restart from `16152a47c5e77570ea3d8c22dfff86b85d0cbd3b`, reintroducing incremental stages gradually while preserving feature parity and validating each change with telemetry.
+
+## 2025-10-04 Telemetry & Diagnostics
+
+- Extended `MovePickerStats` output to capture first-cutoff buckets and TT availability (see `docs/project_docs/move_ordering_telemetry.md`).
+- Added UCI option `UseUnorderedMovePicker` to bypass move ordering for diagnostic baselines.
+- Ordered vs unordered depth-10 comparison on `r3k2r/...`: ~127k nodes vs ~3.19M nodes (≈96% reduction with ordering); first-cutoff TT usage ≈65%.
+- Next focus area: improve first-move fail-high rate (current average ~87%) using the new bucket telemetry.

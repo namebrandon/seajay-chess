@@ -672,7 +672,7 @@ static eval::Score negamax_legacy(Board& board,
     // Phase 2a: Use RankedMovePicker if enabled (skip at root for safety)
     // Use optional to avoid dynamic allocation (stack allocation instead)
     std::optional<RankedMovePicker> rankedPicker;
-    if (limits.useRankedMovePicker && ply > 0) {
+    if (limits.useRankedMovePicker && !limits.useUnorderedMovePicker && ply > 0) {
         // Predict whether history/countermove history ordering will be active
         auto historyCtx = SearchData::HistoryContext::None;
         const bool hasHistoryInfra = info.killers && info.history && info.counterMoves;
@@ -703,7 +703,9 @@ static eval::Score negamax_legacy(Board& board,
         // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
         // CM3.3: Pass prevMove and bonus for countermove ordering
         // Phase 4.3.a-fix2: Pass depth for CMH gating
-        orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+        if (!limits.useUnorderedMovePicker) {
+            orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+        }
     }
     
     // Node explosion diagnostics: Track TT move ordering effectiveness

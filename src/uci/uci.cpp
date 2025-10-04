@@ -311,6 +311,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name UseClusteredTT type check default true" << std::endl;
     std::cout << "option name UseStagedMovePicker type check default false" << std::endl;
     std::cout << "option name UseRankedMovePicker type check default true" << std::endl;
+    std::cout << "option name UseUnorderedMovePicker type check default false" << std::endl;
     std::cout << "option name ShowMovePickerStats type check default false" << std::endl;  // Phase 2a.6
     std::cout << "option name UseInCheckClassOrdering type check default true" << std::endl;  // Phase 2a.8a
     std::cout << "option name UseRankAwareGates type check default true" << std::endl;   // Phase 2b (default ON for integration)
@@ -780,6 +781,7 @@ void UCIEngine::searchThreadFunc(const SearchParams& params) {
 void UCIEngine::applyConfigurationToLimits(search::SearchLimits& limits) const {
     limits.useQuiescence = m_useQuiescence;
     limits.useRankedMovePicker = m_useRankedMovePicker;
+    limits.useUnorderedMovePicker = m_useUnorderedMovePicker;
     limits.showMovePickerStats = m_showMovePickerStats;
     limits.useInCheckClassOrdering = m_useInCheckClassOrdering;
     limits.useRankAwareGates = m_useRankAwareGates;
@@ -1199,6 +1201,15 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
         } else if (value == "false") {
             m_useRankedMovePicker = false;
             std::cerr << "info string Ranked MovePicker disabled" << std::endl;
+        }
+    }
+    else if (optionName == "UseUnorderedMovePicker") {
+        if (value == "true") {
+            m_useUnorderedMovePicker = true;
+            std::cerr << "info string Unordered move picker enabled (diagnostic mode)" << std::endl;
+        } else if (value == "false") {
+            m_useUnorderedMovePicker = false;
+            std::cerr << "info string Unordered move picker disabled" << std::endl;
         }
     }
     // Phase 2a.6: ShowMovePickerStats
