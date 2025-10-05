@@ -16,7 +16,8 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 
 ## Current Findings
 - 2025-10-09: Depth-18 rerun completed alongside the original depth-14 sweep. Deviations persist (many outliers still ±150–300 cp) but depth-18 scores often diverge further, confirming root-cause issues in static evaluation and king-safety scaling.
-- Largest gaps continue to map to queen/slider pressure and exposed-king motifs (`docs/issues/eval_bias_tracker.md`).
+- Instrumented queen-sacrifice case (`r1b1k2r/p2n1p2/...`) shows the reference move `g3e4` generated every iteration yet collapsing under pruning; once LMR/null/futility/SEE gates are disabled the engine plays `g3e4`, proving the move exists but is suppressed by selectivity (logs in `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_*.txt`).
+- Second outlier (`6k1/p1p2pp1/...`) already chooses Komodo’s `h4g3` yet scores ≈−100 cp, underscoring the evaluation bias component (`docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt`).
 - TT telemetry remains healthy; the −44 nELO regression observed in MP3 is still attributed primarily to evaluation optimism.
 
 ## Workflow
@@ -32,10 +33,18 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 6. Once local deltas trend toward zero and tactical suites stay neutral, queue an SPRT vs `main` before merging.
 
 ## Open Questions / Next Tasks
-1. K-factor scaling for exposed kings on open files (positions `4r1k1/b1p3pp/...` and `8/p2r1k1p/...` remain outliers at both depths).
-2. Slider pressure on undefended backbone squares (`2r3k1/2p1n1b1/...` cases show optimistic SeaJay scores).
-3. Queen mobility penalties when trapped behind own pieces (`2r3k1/Qpb1qp1p/...` delta +228 cp needs investigation).
-4. Interaction between PST bonuses and piece coordination—evaluate whether PST weights remain tuned after recent aspiration defaults.
+1. Triage selectivity settings (LMR/null/futility/SEE) on sacrificial motifs to prevent over-reduction while keeping overall pruning effective.
+2. K-factor scaling for exposed kings on open files (positions `4r1k1/b1p3pp/...` and `8/p2r1k1p/...` remain outliers at both depths).
+3. Slider pressure on undefended backbone squares (`2r3k1/2p1n1b1/...` cases show optimistic SeaJay scores).
+4. Queen mobility penalties when trapped behind own pieces (`2r3k1/Qpb1qp1p/...` delta +228 cp needs investigation).
+5. Interaction between PST bonuses and piece coordination—evaluate whether PST weights remain tuned after recent aspiration defaults.
+
+## Telemetry Artifacts (2025-10-09)
+- `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_default.txt` – baseline search trace for the Komodo queen-sacrifice FEN highlighting pruning pressure on `g3e4`.
+- `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_heuristics_off.txt` – LMR/SEE-only disable; move remains suppressed until deeper pruning toggles are removed.
+- `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_selectivity_off.txt` – null and futility disabled alongside LMR/SEE, yielding `g3e4` despite negative eval.
+- `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_legal_moves.txt` – python-chess dump confirming `g3e4` generation (38 legal moves).
+- `docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt` – exposed-king FEN where move selection matches Komodo yet eval lags behind.
 
 ## Reporting
 - Update this index whenever new tools or datasets are added.
