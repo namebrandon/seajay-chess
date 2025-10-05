@@ -25,6 +25,6 @@
 ### Automated Probe Snapshot
 - Script: `tools/selectivity_probe.py` (movetime 2000 ms per run)
 - Dataset: 29 FENs from `docs/issues/eval_bias_tracker.json` (prefers depth-18 Komodo references)
-- Baseline matches (current heuristics): **12 / 29**
+- Baseline matches (current heuristics, `NullMoveDesperationMargin=0`, `FutilitySeeMargin=20`): **9 / 29**
 - Relaxed matches (LMR/SEE/null/futility disabled): **11 / 29**
-- Interpretation: the targeted null-move / futility guards recover three Komodo-aligned moves (including the queen sac) without resorting to blanket heuristic disables. Score deltas remain large overall, so evaluation drift is still the dominant factor, with pruning contributing in a smaller subset (notably FEN A).
+- Interpretation: the lighter safeguards keep the queen sacrifice alive while restoring the original search volume. Relaxing all pruning still buys at most two additional wins, so evaluation remains the dominant source of the Komodo gaps.

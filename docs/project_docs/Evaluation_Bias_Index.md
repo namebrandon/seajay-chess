@@ -46,7 +46,7 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_legal_moves.txt` – python-chess dump confirming `g3e4` generation (38 legal moves).
 - `docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt` – exposed-king FEN where move selection matches Komodo yet eval lags behind.
 - `docs/project_docs/telemetry/eval_bias/selectivity_bounds_*.txt` – stepwise LMR/null/futility toggling logs for representative FENs; `selectivity_bounds_summary.md` captures the minimal heuristic sets required to surface Komodo’s choices.
-- `docs/project_docs/telemetry/eval_bias/selectivity_probe_results.(json|md)` – automated sweep (movetime 2000 ms) comparing baseline vs relaxed selectivity; baseline now matches 12/29 Komodo moves after the targeted guards, relaxed configuration 11/29, reaffirming evaluation as the primary gap.
+- `docs/project_docs/telemetry/eval_bias/selectivity_probe_results.(json|md)` – automated sweep (movetime 2000 ms) comparing baseline vs relaxed selectivity; with the lighter guards (`NullMoveDesperationMargin=0`, `FutilitySeeMargin=20`) the baseline hits 9/29 Komodo moves, the relaxed configuration 11/29, reaffirming that pruning tweaks help only marginally while evaluation still drives most deltas.
 
 ## Reporting
 - Update this index whenever new tools or datasets are added.
