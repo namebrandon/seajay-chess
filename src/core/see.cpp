@@ -354,9 +354,9 @@ SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
         // If we capture a more valuable piece with a less valuable one,
         // and the captured piece is undefended, it's always good
         if (gain > pieceValue(movingType)) [[likely]] {
-            // Quick check: if opponent has no pieces that can reach this square,
-            // this is a free capture
-            Bitboard occupied = board.occupied() ^ squareBB(from);
+            Bitboard occupied = board.occupied();
+            occupied ^= squareBB(from);   // remove moving piece
+            occupied ^= squareBB(to);     // remove captured piece
             Bitboard opponentAttackers = attackersTo(board, to, occupied) & board.pieces(~stm);
             if (!opponentAttackers) {
                 m_stats.earlyExits.fetch_add(1, std::memory_order_relaxed);
@@ -380,9 +380,12 @@ SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
     
     // Start with occupied squares
     Bitboard occupied = board.occupied();
-    
-    // CRITICAL: Remove the moving piece from occupied (#1 SEE bug!)
+
+    // Apply the capture to the occupancy: remove moving piece and the captured piece
     occupied ^= squareBB(from);
+    if (capturedPiece != NO_PIECE) {
+        occupied ^= squareBB(to);
+    }
     
     // Handle en passant capture square
     if (isEnPassant(move)) {
@@ -390,12 +393,12 @@ SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
         occupied ^= squareBB(epCaptureSquare);
     }
     
-    // Get all attackers to the destination square
+    // Get all attackers to the destination square (after capture applied)
     Bitboard attackers = attackersTo(board, to, occupied);
-    
-    // Remove the moving piece from attackers (it already moved)
+
+    // Restrict attackers to pieces still present in the post-capture occupancy
     attackers &= occupied;
-    
+
     // If there are no attackers, return the simple gain
     // For promotions, add the difference in value
     if (!attackers) [[likely]] {
