@@ -164,6 +164,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000" << std::endl;
     std::cout << "option name AggressiveNullRequirePositiveBeta type check default true" << std::endl;
     std::cout << "option name NullMoveStaticMargin type spin default 87 min 50 max 300" << std::endl;  // SPSA-tuned
+    std::cout << "option name NullMoveDesperationMargin type spin default 180 min 0 max 400" << std::endl;
     std::cout << "option name NullMoveMinDepth type spin default 2 min 2 max 5" << std::endl;
     std::cout << "option name NullMoveReductionBase type spin default 4 min 1 max 6" << std::endl;
     std::cout << "option name NullMoveReductionDepth6 type spin default 4 min 2 max 6" << std::endl;
@@ -366,6 +367,7 @@ void UCIEngine::handleUCI() {
     std::cout << "option name FutilityMaxDepth type spin default 7 min 0 max 10" << std::endl;
     std::cout << "option name FutilityBase type spin default 240 min 50 max 500" << std::endl;
     std::cout << "option name FutilityScale type spin default 73 min 20 max 200" << std::endl;
+    std::cout << "option name FutilitySeeMargin type spin default 80 min 0 max 300" << std::endl;
     
     // Important notice about evaluation scoring
     std::cout << "info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning." << std::endl;
@@ -1708,6 +1710,25 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             std::cerr << "info string Invalid NullMoveStaticMargin value: " << value << std::endl;
         }
     }
+    else if (optionName == "NullMoveDesperationMargin") {
+        try {
+            int margin = 0;
+            try {
+                double dv = std::stod(value);
+                margin = static_cast<int>(std::round(dv));
+            } catch (...) {
+                margin = std::stoi(value);
+            }
+            if (margin >= 0 && margin <= 400) {
+                seajay::getConfig().nullMoveDesperationMargin = margin;
+                std::cerr << "info string Null move desperation margin set to: " << margin << " cp" << std::endl;
+            } else {
+                std::cerr << "info string Invalid NullMoveDesperationMargin value: " << margin << " (must be 0-400)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid NullMoveDesperationMargin value: " << value << std::endl;
+        }
+    }
     else if (optionName == "NullMoveMinDepth") {
         try {
             // SPSA-safe parsing: handle float values from OpenBench
@@ -2022,6 +2043,26 @@ void UCIEngine::handleSetOption(const std::vector<std::string>& tokens) {
             }
         } catch (...) {
             std::cerr << "info string Invalid FutilityScale value: " << value << std::endl;
+        }
+    }
+    else if (optionName == "FutilitySeeMargin") {
+        try {
+            int paramValue = 0;
+            try {
+                double dv = std::stod(value);
+                paramValue = static_cast<int>(std::round(dv));
+            } catch (...) {
+                paramValue = std::stoi(value);
+            }
+
+            if (paramValue >= 0 && paramValue <= 300) {
+                seajay::getConfig().futilitySeeMargin = paramValue;
+                std::cerr << "info string FutilitySeeMargin set to " << paramValue << std::endl;
+            } else {
+                std::cerr << "info string Invalid FutilitySeeMargin value: " << paramValue << " (must be 0-300)" << std::endl;
+            }
+        } catch (...) {
+            std::cerr << "info string Invalid FutilitySeeMargin value: " << value << std::endl;
         }
     }
     // Stage 22 Phase P3.5: Handle ShowPVSStats option

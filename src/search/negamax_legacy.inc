@@ -339,6 +339,8 @@ static eval::Score negamax_legacy(Board& board,
     
     // Regular null move pruning
     // Check if we can do null move
+    const auto& config = seajay::getConfig();
+
     bool canDoNull = !isPvNode                                  // Phase P2: No null in PV nodes!
                     && !weAreInCheck                              // Not in check
                     && depth >= limits.nullMoveMinDepth          // Minimum depth (UCI configurable)
@@ -346,6 +348,12 @@ static eval::Score negamax_legacy(Board& board,
                     && !searchInfo.wasNullMove(ply - 1)         // No consecutive nulls
                     && board.nonPawnMaterial(board.sideToMove()) > ZUGZWANG_THRESHOLD  // Original detection
                     && std::abs(beta.value()) < MATE_BOUND - MAX_PLY;  // Not near mate
+
+    if (canDoNull && staticEvalComputed && config.nullMoveDesperationMargin > 0) {
+        if (staticEval <= alpha - eval::Score(config.nullMoveDesperationMargin)) {
+            canDoNull = false;
+        }
+    }
     
     if (canDoNull && limits.useNullMove) {
         info.nullMoveStats.attempts++;
@@ -1021,6 +1029,12 @@ static eval::Score negamax_legacy(Board& board,
             }
         }
         
+        bool futilitySeeGuard = false;
+        if (!isCapture(move) && !isPromotion(move) && config.futilitySeeMargin > 0
+            && depth <= config.futilityMaxDepth + 1) {
+            futilitySeeGuard = seeGE(board, move, -config.futilitySeeMargin);
+        }
+
         // Phase 3.2: Try to make the move with lazy legality checking
         Board::UndoInfo undo;
         if (!board.tryMakeMove(move, undo)) {
@@ -1087,7 +1101,6 @@ static eval::Score negamax_legacy(Board& board,
         
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
         // Following notes: Apply after confirming legality but before recursion
-        const auto& config = seajay::getConfig();
         bool canPruneFutility = (depth <= 6) ? (legalMoveCount > 1) : (legalMoveCount >= 1);
         
         // Check if this is a special move that shouldn't be pruned
@@ -1100,7 +1113,7 @@ static eval::Score negamax_legacy(Board& board,
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
-            && !isKillerMove && !isCounterMove) {
+            && !isKillerMove && !isCounterMove && !futilitySeeGuard) {
             
             // Calculate what reduction this move would get from LMR
             int reduction = 0;

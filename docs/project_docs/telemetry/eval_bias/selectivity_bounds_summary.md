@@ -25,6 +25,6 @@
 ### Automated Probe Snapshot
 - Script: `tools/selectivity_probe.py` (movetime 2000 ms per run)
 - Dataset: 29 FENs from `docs/issues/eval_bias_tracker.json` (prefers depth-18 Komodo references)
-- Baseline matches (all heuristics on): **9 / 29**
+- Baseline matches (current heuristics): **12 / 29**
 - Relaxed matches (LMR/SEE/null/futility disabled): **11 / 29**
-- Interpretation: turning off the major pruning heuristics recovers only two additional Komodo-aligned moves, while score deltas remain large. Evaluation drift is the dominant factor across this sample, with pruning contributing in a smaller subset (notably FEN A).
+- Interpretation: the targeted null-move / futility guards recover three Komodo-aligned moves (including the queen sac) without resorting to blanket heuristic disables. Score deltas remain large overall, so evaluation drift is still the dominant factor, with pruning contributing in a smaller subset (notably FEN A).

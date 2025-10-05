@@ -4,10 +4,10 @@
     "komodo_move": "Rb5",
     "komodo_score": -223,
     "baseline": {
-      "bestmove_uci": "b8b5",
-      "bestmove_san": "Rb5",
-      "score_cp": -32,
-      "depth": 16
+      "bestmove_uci": "h7h5",
+      "bestmove_san": "h5",
+      "score_cp": -42,
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "b8b5",
@@ -21,10 +21,10 @@
     "komodo_move": "Rg5",
     "komodo_score": 203,
     "baseline": {
-      "bestmove_uci": "f6e6",
-      "bestmove_san": "Rfe6",
-      "score_cp": 60,
-      "depth": 16
+      "bestmove_uci": "e5g5",
+      "bestmove_san": "Rg5",
+      "score_cp": 92,
+      "depth": 17
     },
     "relaxed": {
       "bestmove_uci": "f6e6",
@@ -40,7 +40,7 @@
     "baseline": {
       "bestmove_uci": "e3c5",
       "bestmove_san": "Bc5",
-      "score_cp": 13,
+      "score_cp": 22,
       "depth": 13
     },
     "relaxed": {
@@ -57,7 +57,7 @@
     "baseline": {
       "bestmove_uci": "c3d1",
       "bestmove_san": "Nd1",
-      "score_cp": 44,
+      "score_cp": 55,
       "depth": 14
     },
     "relaxed": {
@@ -74,8 +74,8 @@
     "baseline": {
       "bestmove_uci": "d8d2",
       "bestmove_san": "Rxd2",
-      "score_cp": -54,
-      "depth": 14
+      "score_cp": 34,
+      "depth": 13
     },
     "relaxed": {
       "bestmove_uci": "d8d2",
@@ -89,10 +89,10 @@
     "komodo_move": "Qg4",
     "komodo_score": 289,
     "baseline": {
-      "bestmove_uci": "d4c5",
-      "bestmove_san": "Bc5",
-      "score_cp": -46,
-      "depth": 16
+      "bestmove_uci": "h5f6",
+      "bestmove_san": "Nf6",
+      "score_cp": -4,
+      "depth": 15
     },
     "relaxed": {
       "bestmove_uci": "d7e6",
@@ -108,7 +108,7 @@
     "baseline": {
       "bestmove_uci": "d6f5",
       "bestmove_san": "Nf5",
-      "score_cp": 108,
+      "score_cp": 126,
       "depth": 19
     },
     "relaxed": {
@@ -123,10 +123,10 @@
     "komodo_move": "Bxe3",
     "komodo_score": 190,
     "baseline": {
-      "bestmove_uci": "a7e3",
-      "bestmove_san": "Bxe3",
-      "score_cp": 100,
-      "depth": 16
+      "bestmove_uci": "c6c5",
+      "bestmove_san": "c5",
+      "score_cp": 17,
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "a7e3",
@@ -142,8 +142,8 @@
     "baseline": {
       "bestmove_uci": "b6a6",
       "bestmove_san": "Qa6",
-      "score_cp": -79,
-      "depth": 17
+      "score_cp": -82,
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "b6a6",
@@ -159,7 +159,7 @@
     "baseline": {
       "bestmove_uci": "g1f1",
       "bestmove_san": "Kf1",
-      "score_cp": -61,
+      "score_cp": -98,
       "depth": 17
     },
     "relaxed": {
@@ -176,7 +176,7 @@
     "baseline": {
       "bestmove_uci": "c1e3",
       "bestmove_san": "Be3",
-      "score_cp": -49,
+      "score_cp": -50,
       "depth": 17
     },
     "relaxed": {
@@ -191,10 +191,10 @@
     "komodo_move": "Rf6",
     "komodo_score": 364,
     "baseline": {
-      "bestmove_uci": "b7b6",
-      "bestmove_san": "Qb6",
+      "bestmove_uci": "g5h5",
+      "bestmove_san": "Rxh5",
       "score_cp": 146,
-      "depth": 16
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "b7b6",
@@ -210,8 +210,8 @@
     "baseline": {
       "bestmove_uci": "e6d7",
       "bestmove_san": "Qd7",
-      "score_cp": 79,
-      "depth": 17
+      "score_cp": 90,
+      "depth": 18
     },
     "relaxed": {
       "bestmove_uci": "e6d7",
@@ -227,8 +227,8 @@
     "baseline": {
       "bestmove_uci": "h4g3",
       "bestmove_san": "Qg3",
-      "score_cp": -112,
-      "depth": 15
+      "score_cp": -116,
+      "depth": 17
     },
     "relaxed": {
       "bestmove_uci": "h4g3",
@@ -244,7 +244,7 @@
     "baseline": {
       "bestmove_uci": "c4c3",
       "bestmove_san": "c3",
-      "score_cp": 45,
+      "score_cp": 44,
       "depth": 14
     },
     "relaxed": {
@@ -261,8 +261,8 @@
     "baseline": {
       "bestmove_uci": "g2f3",
       "bestmove_san": "Bf3",
-      "score_cp": -55,
-      "depth": 13
+      "score_cp": -73,
+      "depth": 12
     },
     "relaxed": {
       "bestmove_uci": "g2f3",
@@ -276,10 +276,10 @@
     "komodo_move": "Re1",
     "komodo_score": -342,
     "baseline": {
-      "bestmove_uci": "a1a4",
-      "bestmove_san": "R1a4",
-      "score_cp": -70,
-      "depth": 16
+      "bestmove_uci": "a1a7",
+      "bestmove_san": "R1a7",
+      "score_cp": -111,
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "a1a4",
@@ -295,13 +295,13 @@
     "baseline": {
       "bestmove_uci": "g3e4",
       "bestmove_san": "Nxe4",
-      "score_cp": 126,
-      "depth": 14
+      "score_cp": 153,
+      "depth": 17
     },
     "relaxed": {
       "bestmove_uci": "g3e4",
       "bestmove_san": "Nxe4",
-      "score_cp": 74,
+      "score_cp": 42,
       "depth": 10
     }
   },
@@ -312,7 +312,7 @@
     "baseline": {
       "bestmove_uci": "d1d6",
       "bestmove_san": "Qd6",
-      "score_cp": 65,
+      "score_cp": 61,
       "depth": 19
     },
     "relaxed": {
@@ -327,10 +327,10 @@
     "komodo_move": "Rf8",
     "komodo_score": -21,
     "baseline": {
-      "bestmove_uci": "a5c3",
-      "bestmove_san": "Qxc3",
-      "score_cp": 87,
-      "depth": 17
+      "bestmove_uci": "e8f8",
+      "bestmove_san": "Rf8",
+      "score_cp": 47,
+      "depth": 15
     },
     "relaxed": {
       "bestmove_uci": "a5c3",
@@ -346,8 +346,8 @@
     "baseline": {
       "bestmove_uci": "h5g6",
       "bestmove_san": "Kg6",
-      "score_cp": 93,
-      "depth": 17
+      "score_cp": 92,
+      "depth": 15
     },
     "relaxed": {
       "bestmove_uci": "h5g6",
@@ -363,8 +363,8 @@
     "baseline": {
       "bestmove_uci": "e1e5",
       "bestmove_san": "Re5+",
-      "score_cp": -116,
-      "depth": 16
+      "score_cp": -98,
+      "depth": 14
     },
     "relaxed": {
       "bestmove_uci": "e1e5",
@@ -378,9 +378,9 @@
     "komodo_move": "Qe7",
     "komodo_score": -546,
     "baseline": {
-      "bestmove_uci": "e8e7",
-      "bestmove_san": "Re7",
-      "score_cp": -101,
+      "bestmove_uci": "d8e7",
+      "bestmove_san": "Qe7",
+      "score_cp": -110,
       "depth": 14
     },
     "relaxed": {
@@ -395,9 +395,9 @@
     "komodo_move": "Nd7",
     "komodo_score": -70,
     "baseline": {
-      "bestmove_uci": "d8d7",
-      "bestmove_san": "Rd7",
-      "score_cp": 33,
+      "bestmove_uci": "e6a2",
+      "bestmove_san": "Qxa2",
+      "score_cp": 44,
       "depth": 14
     },
     "relaxed": {
@@ -414,7 +414,7 @@
     "baseline": {
       "bestmove_uci": "h5h4",
       "bestmove_san": "Qh4",
-      "score_cp": 49,
+      "score_cp": 48,
       "depth": 15
     },
     "relaxed": {
@@ -429,10 +429,10 @@
     "komodo_move": "Nd4",
     "komodo_score": -233,
     "baseline": {
-      "bestmove_uci": "f3g5",
-      "bestmove_san": "Ng5",
-      "score_cp": 56,
-      "depth": 14
+      "bestmove_uci": "f3d4",
+      "bestmove_san": "Nd4",
+      "score_cp": 73,
+      "depth": 12
     },
     "relaxed": {
       "bestmove_uci": "h1g1",
@@ -448,8 +448,8 @@
     "baseline": {
       "bestmove_uci": "h4h5",
       "bestmove_san": "h5",
-      "score_cp": 31,
-      "depth": 19
+      "score_cp": 22,
+      "depth": 18
     },
     "relaxed": {
       "bestmove_uci": "h4h5",
@@ -463,10 +463,10 @@
     "komodo_move": "Qf6",
     "komodo_score": 317,
     "baseline": {
-      "bestmove_uci": "f4c1",
-      "bestmove_san": "Qc1",
-      "score_cp": 50,
-      "depth": 16
+      "bestmove_uci": "f4f6",
+      "bestmove_san": "Qf6",
+      "score_cp": 110,
+      "depth": 17
     },
     "relaxed": {
       "bestmove_uci": "f4f6",
@@ -482,7 +482,7 @@
     "baseline": {
       "bestmove_uci": "a8b8",
       "bestmove_san": "Rb8",
-      "score_cp": 158,
+      "score_cp": 152,
       "depth": 16
     },
     "relaxed": {
