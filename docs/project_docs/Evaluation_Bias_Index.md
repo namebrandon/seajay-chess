@@ -13,6 +13,7 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - `docs/issues/eval_bias_tracker.json` – Raw comparison data maintained by the script.
 - `docs/issues/eval_bias_tracker.md` – Human-readable table generated from the JSON file.
 - Legacy helpers: `tools/analyze_position.sh`, `external/problem_positions.txt` for deeper multi-engine snapshots.
+- `docs/project_docs/Queen_Sack_Investigation_Plan.md` – staged remediation plan for queen/slider capture-check motifs (2025-10-09).
 
 ## Current Findings
 - 2025-10-09: Depth-18 rerun completed alongside the original depth-14 sweep. Deviations persist (many outliers still ±150–300 cp) but depth-18 scores often diverge further, confirming root-cause issues in static evaluation and king-safety scaling.

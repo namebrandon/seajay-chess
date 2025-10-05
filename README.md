@@ -213,6 +213,7 @@ SeaJay is free and open-source software. You can redistribute it and/or modify i
   - [4ku](https://github.com/kz04px/4ku)
   - [stash](https://github.com/mhouppin/stash-bot/tree/9328141bc001913585fb76e6b38efe640eff2701)
   - [Laser](https://github.com/jeffreyan11/laser-chess-engine)
+  - [Perseus](https://github.com/TheRealGioviok/Perseus-Engine)
   - [Ethereal](https://github.com/AndyGrant/Ethereal)
   - [Stockfish](https://github.com/official-stockfish/Stockfish)
   - [Winter](https://github.com/rosenthj/Winter)
