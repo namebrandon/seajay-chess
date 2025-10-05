@@ -30,13 +30,13 @@ public:
     int futilityMaxDepth = 7;           // Maximum depth for futility pruning (extended from 4 to 7 for Phase 1.1)
     int futilityBase = 150;             // Base margin for futility pruning (reset to original for exponential scaling)
     int futilityScale = 79;             // Scale factor per depth for futility margin (SPSA-tuned from 60)
-    int futilitySeeMargin = 80;         // SEE guard margin (cp) to skip futility when tactical opportunities exist
+    int futilitySeeMargin = 40;         // SEE guard margin (cp) to skip futility when tactical opportunities exist
 
     // King attack scaling (applied to offensive king-safety evaluation)
     int kingAttackScale = 2;            // Percentage boost (2 = default boost for king attack scoring)
 
     // Null-move desperation guard
-    int nullMoveDesperationMargin = 180; // Skip null move when static eval trails alpha by this margin (cp)
+    int nullMoveDesperationMargin = 0;   // Skip null move when static eval trails alpha by this margin (cp)
 
     // Phase SE1: Singular extension runtime controls (mirrored from UCI for SPSA sweeps)
     bool useSingularExtensions = true;           // Master singular toggle (enabled post-SE4 tuning)

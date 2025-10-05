@@ -1102,6 +1102,10 @@ static eval::Score negamax_legacy(Board& board,
         // Phase 1: Effective-Depth Futility Pruning (AFTER legality, BEFORE child search)
         // Following notes: Apply after confirming legality but before recursion
         bool canPruneFutility = (depth <= 6) ? (legalMoveCount > 1) : (legalMoveCount >= 1);
+        bool futilitySeeFails = false;
+        if (!isCapture(move) && !isPromotion(move) && config.futilitySeeMargin > 0) {
+            futilitySeeFails = !seeGE(board, move, -config.futilitySeeMargin);
+        }
         
         // Check if this is a special move that shouldn't be pruned
         bool isKillerMove = info.killers->isKiller(ply, move);
@@ -1113,7 +1117,7 @@ static eval::Score negamax_legacy(Board& board,
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
-            && !isKillerMove && !isCounterMove && !futilitySeeGuard) {
+            && !isKillerMove && !isCounterMove) {
             
             // Calculate what reduction this move would get from LMR
             int reduction = 0;
@@ -1144,6 +1148,9 @@ static eval::Score negamax_legacy(Board& board,
             
             // Apply futility at effective depth
             if (effectiveDepth <= config.futilityMaxDepth) {
+                if (futilitySeeFails && effectiveDepth <= 4) {
+                    goto skip_futility_prune;
+                }
                 // Handle leaf-like positions (eff <= 0)
                 if (effectiveDepth <= 0) {
                     // Very shallow effective depth - use minimal margin
@@ -1208,6 +1215,7 @@ static eval::Score negamax_legacy(Board& board,
                     }
                 }
             }
+skip_futility_prune:;
         }
         
         // Phase PV3: Acquire child PV storage from arena when needed

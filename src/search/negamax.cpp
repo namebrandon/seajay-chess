@@ -1522,10 +1522,9 @@ eval::Score negamax(Board& board,
             }
         }
         
-        bool futilitySeeGuard = false;
-        if (!isCapture(move) && !isPromotion(move) && config.futilitySeeMargin > 0
-            && depth <= config.futilityMaxDepth + 1) {
-            futilitySeeGuard = seeGE(board, move, -config.futilitySeeMargin);
+        bool futilitySeeFails = false;
+        if (!isCapture(move) && !isPromotion(move) && config.futilitySeeMargin > 0) {
+            futilitySeeFails = !seeGE(board, move, -config.futilitySeeMargin);
         }
 
         // Phase 3.2: Try to make the move with lazy legality checking
@@ -1699,7 +1698,7 @@ eval::Score negamax(Board& board,
         if (config.useFutilityPruning && !childIsPV && depth > 0 && !weAreInCheck
             && canPruneFutility && !isCapture(move) && !isPromotion(move)
             && staticEvalComputed && move != ttMove 
-            && !isKillerMove && !isCounterMove && !futilitySeeGuard) {
+            && !isKillerMove && !isCounterMove) {
 #ifdef DEBUG
             assert(!context.hasExcludedMove() &&
                    "Futility pruning should bypass nodes with excluded move context");
@@ -1745,6 +1744,11 @@ eval::Score negamax(Board& board,
             
             // Apply futility at effective depth
             if (effectiveDepth <= config.futilityMaxDepth) {
+                if (futilitySeeFails && effectiveDepth <= 4) {
+                    // SEE indicates the move may swing materially; skip futility pruning
+                    goto skip_futility_prune;
+                }
+
                 // Handle leaf-like positions (eff <= 0)
                 if (effectiveDepth <= 0) {
                     // Very shallow effective depth - use minimal margin
@@ -1809,6 +1813,7 @@ eval::Score negamax(Board& board,
                     }
                 }
             }
+skip_futility_prune:;
         }
         
         // Phase PV3: Acquire child PV storage from arena when needed
