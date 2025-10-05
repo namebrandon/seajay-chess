@@ -21,3 +21,10 @@
 ### Next Steps
 1. Prototype targeted reductions for checking captures/SEE-positive trades instead of global heuristics-off; recreate the above table once a candidate change exists.
 2. For FEN B, run EvalExtended to see which king-safety/slider terms mis-score `h3`. Use Komodo delta to guide tuning.
+
+### Automated Probe Snapshot
+- Script: `tools/selectivity_probe.py` (movetime 2000 ms per run)
+- Dataset: 29 FENs from `docs/issues/eval_bias_tracker.json` (prefers depth-18 Komodo references)
+- Baseline matches (all heuristics on): **9 / 29**
+- Relaxed matches (LMR/SEE/null/futility disabled): **11 / 29**
+- Interpretation: turning off the major pruning heuristics recovers only two additional Komodo-aligned moves, while score deltas remain large. Evaluation drift is the dominant factor across this sample, with pruning contributing in a smaller subset (notably FEN A).
