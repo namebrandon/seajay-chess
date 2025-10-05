@@ -45,6 +45,7 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_selectivity_off.txt` – null and futility disabled alongside LMR/SEE, yielding `g3e4` despite negative eval.
 - `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_legal_moves.txt` – python-chess dump confirming `g3e4` generation (38 legal moves).
 - `docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt` – exposed-king FEN where move selection matches Komodo yet eval lags behind.
+- `docs/project_docs/telemetry/eval_bias/selectivity_bounds_*.txt` – stepwise LMR/null/futility toggling logs for representative FENs; `selectivity_bounds_summary.md` captures the minimal heuristic sets required to surface Komodo’s choices.
 
 ## Reporting
 - Update this index whenever new tools or datasets are added.
