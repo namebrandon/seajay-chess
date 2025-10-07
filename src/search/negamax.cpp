@@ -2214,11 +2214,6 @@ skip_futility_prune:;
         // Unmake the move
         board.unmakeMove(move, undo);
 
-        if (isQueenContactCheck && info.history && !(score > bestScore)) {
-            Color mover = board.sideToMove();
-            info.history->relaxCheckingCapture(mover, moveFrom(move), moveTo(move));
-        }
-
         // Phase 2b.7: Record PVS re-search statistics for smoothing
         // Only record for non-PV nodes that were searched (not pruned)
         if (limits.useRankAwareGates && !isPvNode && depth >= 4 && legalMoveCount > 1) {
@@ -2256,10 +2251,6 @@ skip_futility_prune:;
             bestMove = move;
 
             if (isQueenContactCheck) {
-                if (info.history) {
-                    Color mover = board.sideToMove();
-                    info.history->boostCheckingCapture(mover, moveFrom(move), moveTo(move), depth);
-                }
                 info.registerContactCheckReplay(ply, move, board.zobristKey());
             }
             
