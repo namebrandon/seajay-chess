@@ -9,6 +9,7 @@
 - Focused telemetry on WAC.049 confirms `Qxh7+` is generated but remains ≈−500 cp until depth ≥9, so history/SEE pressure buries it after the first fail-low (`docs/issues/WAC.049_Tactical_Investigation.md:5-87`).
 - Evaluation bias tracker still reports +150–300 cp optimism whenever the queen is boxed behind friendly pieces or sliders lack pressure penalties (`docs/issues/eval_bias_tracker.md:11-44`).
 - Selectivity probes only add two Komodo move matches when pruning guards are relaxed, confirming that evaluation and move prioritisation—not legality—drive the failure (`docs/project_docs/telemetry/eval_bias/selectivity_probe_results.md:1-35`).
+- 2025-10-06 update: forcing queen contact capture-checks now bypass LMR/LMP/move-count pruning; the 200 ms queen-sack sweep improved from 2/20 to 4/20 solved, indicating search coverage gains with evaluation work still pending (`docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-06_19-38-59.csv`).
 
 ## Assets
 
@@ -39,6 +40,8 @@
 | QS.WAC245 | `4rrn1/ppq3bk/3pPnpp/2p5/2PB4/2NQ1RPB/PP5P/5R1K w - - 0 1` | Qxg6+ | c3d5 |
 | QS.WAC263 | `rnbqr2k/pppp1Qpp/8/b2NN3/2B1n3/8/PPPP1PPP/R1B1K2R w KQ - 0 1` | Qg8+ | f7h5 |
 
+- Latest telemetry (200 ms, 2025-10-06): `docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-06_19-38-59.csv` – 4/20 successes with the search gating in place.
+
 ### Evaluation Bias FENs
 - Queen mobility and slider-pressure deltas remain in the tracker (`docs/issues/eval_bias_tracker.md:11-44`); re-run `tools/eval_compare.py` against these after each phase to ensure eval drift is shrinking.
 - Selectivity logs for `r1b1k2r/p2n1p2/...` capture how `g3e4` depends on LMR/null/SEE guards and will be reused as regression harness (`docs/project_docs/telemetry/eval_bias/selectivity_bounds_g3e4.txt:194-451`).
@@ -65,6 +68,7 @@
 - Scope
   - Add a dedicated queen/slider check bucket that bypasses the first fail-low reduction and forces a PV re-search when the move returns >= beta/4 within reduced windows (`src/search/negamax.cpp:351-470`).
   - Tag queen contact checks so LMR uses a lower `minMoveNumber` threshold, preventing them from falling into the “late move” bucket (`src/search/lmr.cpp:59-179`).
+- Status (2025-10-06): queen contact capture-checks temporarily skip LMR/LMP reductions and re-search as full PV nodes; move-count pruning is disabled for those motifs until evaluation reinforcements land.
 - Validation
   - Queen-sack suite must pick the forcing move in ≥12/20 positions within 1 s.
   - No regression on `tools/mini_wac.sh` baseline run and no >2% slowdown via `bench`.

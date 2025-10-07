@@ -1580,6 +1580,9 @@ eval::Score negamax(Board& board,
 
         bool givesCheckMove = inCheck(board);
         bool wasCaptureMove = (undo.capturedPiece != NO_PIECE);
+        const Piece movedPiece = board.pieceAt(moveTo(move));
+        const PieceType movedPieceType = movedPiece != NO_PIECE ? typeOf(movedPiece) : NO_PIECE_TYPE;
+        const bool isQueenContactCheck = wasCaptureMove && givesCheckMove && movedPieceType == QUEEN;
 
         if (pendingMoveCountPrune && !givesCheckMove && !wasCaptureMove) {
 #ifdef DEBUG
@@ -1941,7 +1944,7 @@ skip_futility_prune:;
                             firstMoveChildPV);  // Phase PV3: Pass child PV for PV nodes
         } else {
             // Later moves: use PVS with LMR
-            
+
             // Phase 3: Late Move Reductions (LMR)
             int reduction = 0;
             
@@ -2097,57 +2100,76 @@ skip_futility_prune:;
                 }
             }
             
-            // Scout search (possibly reduced, with extension)
-            info.pvsStats.scoutSearches++;
-            score = -negamax(board, childContext, depth - 1 - reduction + extension, ply + 1,
-                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr);  // Phase PV3: Scout searches don't need PV
-            
-            // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
-            // didReSearch already declared outside the if/else
-            
-        // If reduced scout fails high, re-search without reduction
-        if (score > alpha && reduction > 0) {
-            info.lmrStats.reSearches++;
-            // Node explosion diagnostics: Track LMR re-search
-            if (limits.nodeExplosionDiagnostics) {
-                g_nodeExplosionStats.recordLMRReSearch(depth);
-            }
-            score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
-                            -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
-                            nullptr);  // Phase PV3: Still a scout search
-        }
-            
-            // If scout search fails high, do full window re-search
-            if (score > alpha) {
-                info.pvsStats.reSearches++;
-                auto histCtx = info.historyContextAt(ply);
-                if (histCtx == SearchData::HistoryContext::Basic) {
-                    info.historyStats.basicReSearches++;
-                } else if (histCtx == SearchData::HistoryContext::Counter) {
-                    info.historyStats.counterReSearches++;
-                }
-                didReSearch = true;  // Phase 2b.7: Mark that we did a re-search
-                // B1 Fix: Only the first legal move should be a PV node
-                // Re-searches after scout failures are NOT PV nodes
-                TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
-                if (ply == 0) {
-                    ensureRootWindow(alpha, beta);
-                }
+            if (isQueenContactCheck) {
+                moveRank = rankedPicker ? rankedPicker->currentYieldIndex() : moveCount;
+                TriangularPV* forcingPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
                 score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
-                                reSearchChildPV);  // B1 Fix: Re-search is NOT a PV node!
-            } else if (reduction > 0 && score <= alpha) {
-                // Reduction was successful (move was bad as expected)
-                info.lmrStats.successfulReductions++;
+                                forcingPV);
+                reduction = 0;
+                appliedReduction = 0;
+            } else {
+                // Scout search (possibly reduced, with extension)
+                info.pvsStats.scoutSearches++;
+                score = -negamax(board, childContext, depth - 1 - reduction + extension, ply + 1,
+                                -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                nullptr);  // Phase PV3: Scout searches don't need PV
+                
+                // Phase 2b.7: Track re-search for smoothing (only for non-PV nodes)
+                // didReSearch already declared outside the if/else
+                
+                // If reduced scout fails high, re-search without reduction
+                if (score > alpha && reduction > 0) {
+                    info.lmrStats.reSearches++;
+                    // Node explosion diagnostics: Track LMR re-search
+                    if (limits.nodeExplosionDiagnostics) {
+                        g_nodeExplosionStats.recordLMRReSearch(depth);
+                    }
+                    score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+                                    -(alpha + eval::Score(1)), -alpha, searchInfo, info, limits, tt,
+                                    nullptr);  // Phase PV3: Still a scout search
+                }
+                
+                // If scout search fails high, do full window re-search
+                if (score > alpha) {
+                    info.pvsStats.reSearches++;
+                    auto histCtx = info.historyContextAt(ply);
+                    if (histCtx == SearchData::HistoryContext::Basic) {
+                        info.historyStats.basicReSearches++;
+                    } else if (histCtx == SearchData::HistoryContext::Counter) {
+                        info.historyStats.counterReSearches++;
+                    }
+                    didReSearch = true;  // Phase 2b.7: Mark that we did a re-search
+                    // B1 Fix: Only the first legal move should be a PV node
+                    // Re-searches after scout failures are NOT PV nodes
+                    TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
+                    if (ply == 0) {
+                        ensureRootWindow(alpha, beta);
+                    }
+                    score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
+                                    -beta, -alpha, searchInfo, info, limits, tt,
+                                    reSearchChildPV);  // B1 Fix: Re-search is NOT a PV node!
+                } else if (reduction > 0 && score <= alpha) {
+                    // Reduction was successful (move was bad as expected)
+                    info.lmrStats.successfulReductions++;
+                }
+                appliedReduction = reduction;
+                if (debugTrackedMove && reduction > 0) {
+                    std::ostringstream extra;
+                    extra << "value=" << reduction
+                          << " reSearch=" << (didReSearch ? 1 : 0);
+                    logTrackedEvent("lmr_applied", extra.str());
+                }
             }
-            appliedReduction = reduction;
-            if (debugTrackedMove && reduction > 0) {
-                std::ostringstream extra;
-                extra << "value=" << reduction
-                      << " reSearch=" << (didReSearch ? 1 : 0);
-                logTrackedEvent("lmr_applied", extra.str());
+
+            if (isQueenContactCheck && limits.useRankAwareGates && moveRank == 0 && rankedPicker) {
+                moveRank = rankedPicker->currentYieldIndex();
             }
+
+            if (isQueenContactCheck) {
+                pendingMoveCountPrune = false;
+            }
+
         }
 
         int childStaticEval = 0;
