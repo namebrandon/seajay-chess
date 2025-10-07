@@ -213,6 +213,24 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         }
     }
 
+    // QS2: Replay queen contact checks near the front to survive the second pass
+    if (searchData) {
+        Hash nodeHash = board.zobristKey();
+        Move contactReplay = searchData->contactCheckReplayAt(ply, nodeHash);
+        if (contactReplay != NO_MOVE && contactReplay != ttMove) {
+            auto it = std::find(moves.begin(), moves.end(), contactReplay);
+            if (it != moves.end()) {
+                auto target = moves.begin();
+                if (ttMove != NO_MOVE && !moves.empty() && moves.front() == ttMove) {
+                    ++target;
+                }
+                if (it != target) {
+                    std::rotate(target, it, it + 1);
+                }
+            }
+        }
+    }
+
     // Sub-phase 4E: TT Move Ordering
     // Put TT move first AFTER all other ordering (only do this once!)
     if (ttMove != NO_MOVE) {
@@ -2196,6 +2214,11 @@ skip_futility_prune:;
         // Unmake the move
         board.unmakeMove(move, undo);
 
+        if (isQueenContactCheck && info.history && !(score > bestScore)) {
+            Color mover = board.sideToMove();
+            info.history->relaxCheckingCapture(mover, moveFrom(move), moveTo(move));
+        }
+
         // Phase 2b.7: Record PVS re-search statistics for smoothing
         // Only record for non-PV nodes that were searched (not pruned)
         if (limits.useRankAwareGates && !isPvNode && depth >= 4 && legalMoveCount > 1) {
@@ -2231,6 +2254,14 @@ skip_futility_prune:;
         if (score > bestScore) {
             bestScore = score;
             bestMove = move;
+
+            if (isQueenContactCheck) {
+                if (info.history) {
+                    Color mover = board.sideToMove();
+                    info.history->boostCheckingCapture(mover, moveFrom(move), moveTo(move), depth);
+                }
+                info.registerContactCheckReplay(ply, move, board.zobristKey());
+            }
             
             // Phase PV3: Update PV at all depths
             if (pv != nullptr && isPvNode) {

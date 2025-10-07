@@ -931,6 +931,8 @@ struct SearchData {
     };
 
     std::array<uint8_t, KillerMoves::MAX_PLY> historyContext = {};
+    std::array<Move, KillerMoves::MAX_PLY> contactCheckReplay = {};
+    std::array<Hash, KillerMoves::MAX_PLY> contactCheckReplayHash = {};
 
     ALWAYS_INLINE void clearHistoryContext(int ply) {
         if (ply >= 0 && ply < static_cast<int>(historyContext.size())) {
@@ -960,6 +962,29 @@ struct SearchData {
             return HistoryContext::None;
         }
         return static_cast<HistoryContext>(historyContext[ply]);
+    }
+
+    ALWAYS_INLINE void registerContactCheckReplay(int ply, Move move, Hash hash) {
+        if (ply >= 0 && ply < static_cast<int>(contactCheckReplay.size())) {
+            contactCheckReplay[ply] = move;
+            contactCheckReplayHash[ply] = hash;
+        }
+    }
+
+    ALWAYS_INLINE Move contactCheckReplayAt(int ply, Hash hash) const {
+        if (ply >= 0 && ply < static_cast<int>(contactCheckReplay.size())) {
+            if (contactCheckReplayHash[ply] == hash) {
+                return contactCheckReplay[ply];
+            }
+        }
+        return NO_MOVE;
+    }
+
+    ALWAYS_INLINE void clearContactCheckReplay(int ply) {
+        if (ply >= 0 && ply < static_cast<int>(contactCheckReplay.size())) {
+            contactCheckReplay[ply] = NO_MOVE;
+            contactCheckReplayHash[ply] = 0;
+        }
     }
 
     // B0: Legality telemetry (lazy legality path)
@@ -1197,6 +1222,8 @@ struct SearchData {
         razoringCutoffs = 0;     // Phase 4: Reset razoring counter (legacy)
         historyStats.reset();    // Phase 4.1: Reset history gating telemetry
         historyContext.fill(static_cast<uint8_t>(HistoryContext::None));
+        contactCheckReplay.fill(NO_MOVE);
+        contactCheckReplayHash.fill(0);
 #ifdef SEARCH_STATS
         movePickerStats.reset(); // Phase 2a.6: Reset move picker stats
         rankGates.reset();       // Phase 2b: Reset rank gate stats

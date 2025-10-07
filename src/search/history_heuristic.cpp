@@ -71,4 +71,35 @@ void HistoryHeuristic::ageHistory() {
     }
 }
 
+void HistoryHeuristic::boostCheckingCapture(Color side, Square from, Square to, int depth) {
+    if (side >= NUM_COLORS || from >= 64 || to >= 64) {
+        return;
+    }
+
+    int16_t& entry = m_history[from][to][side];
+    if (entry < 0) {
+        entry = static_cast<int16_t>(entry / 2);  // Nudge penalties toward neutral first
+    }
+
+    // Slightly higher bonus than quiet history to compensate for MVV-LVA suppression
+    int16_t bonus = static_cast<int16_t>(std::min(depth * depth * 3, 1200));
+    int32_t newValue = static_cast<int32_t>(entry) + bonus;
+    if (newValue > HISTORY_MAX) {
+        entry = HISTORY_MAX;
+    } else {
+        entry = static_cast<int16_t>(newValue);
+    }
+}
+
+void HistoryHeuristic::relaxCheckingCapture(Color side, Square from, Square to) {
+    if (side >= NUM_COLORS || from >= 64 || to >= 64) {
+        return;
+    }
+
+    int16_t& entry = m_history[from][to][side];
+    if (entry < 0) {
+        entry = static_cast<int16_t>(entry / 2);  // Gradually decay penalties toward zero
+    }
+}
+
 } // namespace seajay::search

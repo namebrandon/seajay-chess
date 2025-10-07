@@ -21,6 +21,7 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - Second outlier (`6k1/p1p2pp1/...`) already chooses Komodo’s `h4g3` yet scores ≈−100 cp, underscoring the evaluation bias component (`docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt`).
 - TT telemetry remains healthy; the −44 nELO regression observed in MP3 is still attributed primarily to evaluation optimism.
 - 2025-10-06: queen contact capture-checks now bypass LMR/LMP/move-count pruning in search (QS1). The 200 ms queen-sack sweep improved from 2/20 to 4/20 solved, confirming coverage gains while leaving evaluation optimism as the dominant blocker (`docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-06_19-38-59.csv`).
+- 2025-10-07: QS2 adds a checking-capture history kicker plus contact-check replay slot so sacrificial queen checks stay near the front even without TT help (`src/search/history_heuristic.cpp`, `src/search/negamax.cpp`); telemetry reruns pending to size the ordering lift.
 
 ## Workflow
 1. **Select FEN** from `external/problem_positions.txt` or new observations.

@@ -78,6 +78,18 @@ public:
      * Called automatically when any value reaches HISTORY_MAX
      */
     void ageHistory();
+
+    /**
+     * Apply a positive bonus for checking captures that need reinforcement.
+     * Used by the queen contact-check remediation to keep sacrificial checks searchable.
+     */
+    void boostCheckingCapture(Color side, Square from, Square to, int depth);
+
+    /**
+     * Relax penalties on checking captures so repeated fail-lows do not clamp history.
+     * Gradually moves negative scores toward zero.
+     */
+    void relaxCheckingCapture(Color side, Square from, Square to);
     
 private:
     // History table: [from][to][side]

@@ -77,6 +77,7 @@
 - Scope
   - Introduce positive history kickers for checking captures and ensure fail-low penalties decay instead of saturating for these motifs (`src/search/history_heuristic.cpp:13-57`).
   - Inject a temporary “contact-check killer” slot so the move reappears early on the second pass even without TT help (`src/search/move_ordering.cpp:200-320`).
+- Status (2025-10-07): Checking-capture history kicker and contact-check replay slot wired in (`src/search/history_heuristic.cpp:1`, `src/search/negamax.cpp:100-260`); awaiting telemetry to confirm ≥12/20 coverage.
 - Validation
   - Track proportion of queen checks searched before quiet moves via `NodeExplosionStats`; require ≥70% ordering rate in telemetry rerun (`docs/project_docs/telemetry/eval_bias/selectivity_bounds_g3e4.txt:194-451`).
   - Confirm no regressions on the broader 54-position WAC subset.
