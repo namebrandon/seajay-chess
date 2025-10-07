@@ -77,10 +77,15 @@
 - Scope
   - Introduce positive history kickers for checking captures and ensure fail-low penalties decay instead of saturating for these motifs (`src/search/history_heuristic.cpp:13-57`).
   - Inject a temporary “contact-check killer” slot so the move reappears early on the second pass even without TT help (`src/search/move_ordering.cpp:200-320`).
-- Status (2025-10-07): Checking-capture history kicker and contact-check replay slot wired in (`src/search/history_heuristic.cpp:1`, `src/search/negamax.cpp:100-260`); awaiting telemetry to confirm ≥12/20 coverage.
+- Status (2025-10-07): **Code landed in `fd569d9` (`bench 2501279`)** – checking-capture history kicker plus contact-check replay hash per ply (`src/search/history_heuristic.cpp`, `src/search/types.h`, `src/search/negamax.cpp`). Ordering reruns and history telemetry still pending.
 - Validation
   - Track proportion of queen checks searched before quiet moves via `NodeExplosionStats`; require ≥70% ordering rate in telemetry rerun (`docs/project_docs/telemetry/eval_bias/selectivity_bounds_g3e4.txt:194-451`).
   - Confirm no regressions on the broader 54-position WAC subset.
+- TODO before advancing:
+  - [ ] Rebuild Release (`./build.sh Release`) and re-run `tools/tactical_investigation.py --suite queen-sack --time 200` capturing CSV under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
+  - [ ] Run `tools/eval_compare.py --suite queen_sack_suite.epd --depth 18` to see eval deltas with the new ordering; append Markdown diff to `docs/issues/eval_bias_tracker.md`.
+  - [ ] Collect `SearchData` stats (move ordering/histories) from a 1M-node search log to confirm contact-check hits; stash under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
+  - [ ] Update this plan + Evaluation Bias Index with telemetry outcomes and decision on QS2 readiness.
 
 ### Phase QS3 – Evaluation Reinforcement
 - Scope
@@ -102,6 +107,7 @@
 - Track progress in `feature_status.md` whenever a queen-sack branch is active (`docs/project_docs/feature_guidelines.md:232-335`).
 - Update the Evaluation Bias Index after each completed phase with new deltas and telemetry summaries (`docs/project_docs/Evaluation_Bias_Index.md:6-49`).
 - Each phase concludes with a package containing: queen-sack suite results, eval-compare output, and perf summary.
+- Current checkpoint (2025-10-07): Head commit `fd569d9` (`bench 2501279`). QS2 code merged; telemetry + validation runs outstanding (see TODO list above). Leave all fresh artifacts under `docs/project_docs/telemetry/queen_sack/2025-10-07/` for continuity.
 
 ## Open Questions
 - Do we need an explicit TT retry trigger when a sacrificial check fails low purely on static eval?

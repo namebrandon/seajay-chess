@@ -61,6 +61,9 @@ We commit to responsible practices by:
 
 Active development is messy. I've done my best to keep main neat, but the code is currently a bit disorganized and things are not as clean as I'd like. Many features and capabilities are in a "I'll fix that later" state. If you're wondering if you should test out SeaJay against stockfish, the answer is probably not. The following items have not yet been implemented, though are on the roadmap. The priority is sound functionality before expanding to widely.
 
+- October 2025 focus: the queen-sack tactical remediation (QS-series) and the broader evaluation bias initiative. QS2 is now in-progress with reinforced history bonuses and contact-check replay in search; telemetry reruns are queued to confirm coverage ≥12/20 before shifting to QS3 evaluation reinforcements.
+- Latest Release build benchmark: `bench 2501279` nodes on the reference workstation (Release build via `./build.sh Release`, single-threaded bench command `echo "bench" | ./bin/seajay`).
+
 - Multi-threaded / Multi-core support
 - Tablebases
 - Opening book support

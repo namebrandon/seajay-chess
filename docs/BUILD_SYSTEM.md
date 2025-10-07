@@ -108,6 +108,8 @@ rm -rf build && ./build.sh Release
 echo "bench" | ./bin/seajay
 ```
 
-Expected NPS (as of 2025-08-29):
-- ~500K nps on modern CPUs
-- Benchmark: 19191913 nodes
+Expected bench reference (as of 2025-10-07 on the project workstation):
+- Nodes: `bench 2501279`
+- NPS: ~1.39M (single-thread, Release build)
+
+Use these numbers as sanity checks only—hardware differences will shift both figures.

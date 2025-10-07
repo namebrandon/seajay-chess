@@ -4,14 +4,14 @@
 
 **EVERY commit MUST include "bench <node-count>" in the EXACT format:**
 ```
-bench 19191913
+bench 2501279
 ```
 
 **NOT:**
-- ❌ "Bench: 19191913"
-- ❌ "benchmark 19191913"  
-- ❌ "bench count: 19191913"
-- ❌ "19191913 nodes"
+- ❌ "Bench: 2501279"
+- ❌ "benchmark 2501279"  
+- ❌ "bench count: 2501279"
+- ❌ "2501279 nodes"
 
 **WHY THIS MATTERS:**
 - OpenBench REQUIRES this exact format to parse commits
@@ -95,7 +95,7 @@ Example: PP1, PP2, PP3a, PP3b
    ```bash
    # STEP 1: Get the bench count (MANDATORY)
    echo "bench" | ./seajay | grep "Benchmark complete" | awk '{print $4}'
-   # Example output: 19191913
+# Example output: 2501279
    
    # STEP 2: Include in commit message in EXACT format
    git add -A
@@ -103,7 +103,7 @@ Example: PP1, PP2, PP3a, PP3b
    
    Detailed explanation of changes...
    
-   bench 19191913"  # <-- EXACT FORMAT: "bench <number>"
+   bench 2501279"  # <-- EXACT FORMAT: "bench <number>"
    ```
 
 4. **Push to Remote**

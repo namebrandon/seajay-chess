@@ -141,7 +141,7 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   # Implement just the data structures, no integration
   vim src/search/killer_moves.h src/search/killer_moves.cpp
   git add -A
-  git commit -m "feat: Add killer moves infrastructure (Phase A1) - bench 19191913"
+  git commit -m "feat: Add killer moves infrastructure (Phase A1) - bench 2501279"
   git push
 
   # Test in OpenBench (expect 0 ELO change)
@@ -155,7 +155,7 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   # Integrate into move ordering, but don't update the table yet
   vim src/search/move_ordering.cpp
   git add -A
-  git commit -m "feat: Integrate killers in move ordering (Phase A2) - bench 19191913"
+  git commit -m "feat: Integrate killers in move ordering (Phase A2) - bench 2501279"
   git push
 
   # Test in OpenBench
@@ -166,7 +166,7 @@ Git Branch Management for SeaJay Development / OpenBench Testing
   # Add the update logic
   vim src/search/negamax.cpp
   git add -A
-  git commit -m "feat: Update killers on beta cutoffs (Phase A3) - bench 19191913"
+  git commit -m "feat: Update killers on beta cutoffs (Phase A3) - bench 2501279"
   git push
 
   # Test in OpenBench

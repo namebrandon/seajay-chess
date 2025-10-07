@@ -21,7 +21,7 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - Second outlier (`6k1/p1p2pp1/...`) already chooses Komodo’s `h4g3` yet scores ≈−100 cp, underscoring the evaluation bias component (`docs/project_docs/telemetry/eval_bias/fen_6k1_default.txt`).
 - TT telemetry remains healthy; the −44 nELO regression observed in MP3 is still attributed primarily to evaluation optimism.
 - 2025-10-06: queen contact capture-checks now bypass LMR/LMP/move-count pruning in search (QS1). The 200 ms queen-sack sweep improved from 2/20 to 4/20 solved, confirming coverage gains while leaving evaluation optimism as the dominant blocker (`docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-06_19-38-59.csv`).
-- 2025-10-07: QS2 adds a checking-capture history kicker plus contact-check replay slot so sacrificial queen checks stay near the front even without TT help (`src/search/history_heuristic.cpp`, `src/search/negamax.cpp`); telemetry reruns pending to size the ordering lift.
+- 2025-10-07: QS2 adds a checking-capture history kicker plus contact-check replay slot so sacrificial queen checks stay near the front even without TT help. Commit `fd569d9` landed on `feature/20251009-eval-bias` with `bench 2501279`, awaiting fresh telemetry to validate ordering lift (`src/search/history_heuristic.cpp`, `src/search/negamax.cpp`, `src/search/types.h`).
 
 ## Workflow
 1. **Select FEN** from `external/problem_positions.txt` or new observations.
@@ -41,6 +41,8 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 3. Slider pressure on undefended backbone squares (`2r3k1/2p1n1b1/...` cases show optimistic SeaJay scores).
 4. Queen mobility penalties when trapped behind own pieces (`2r3k1/Qpb1qp1p/...` delta +228 cp needs investigation).
 5. Interaction between PST bonuses and piece coordination—evaluate whether PST weights remain tuned after recent aspiration defaults.
+6. **New (2025-10-07)**: Re-run queen-sack suite (`tools/tactical_investigation.py --suite queen-sack`) and node-explosion diagnostics to confirm ≥12/20 contact-check coverage with QS2 changes; archive outputs under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
+7. Capture updated history/ordering stats (`moveOrderingStats`, `historyStats`) from a 1M-node search trace to ensure the new bonuses are being exercised.
 
 ## Telemetry Artifacts (2025-10-09)
 - `docs/project_docs/telemetry/eval_bias/fen_r1b1k2r_default.txt` – baseline search trace for the Komodo queen-sacrifice FEN highlighting pruning pressure on `g3e4`.
@@ -56,3 +58,4 @@ Use this when resuming work on branch `feature/20251009-eval-bias`.
 - Update this index whenever new tools or datasets are added.
 - Summarise major evaluation fixes and their measured impact (bench, SPRT, eval deltas).
 - Once the bias curve flattens, prepare a merge plan for `feature/20251009-eval-bias` and notify the move-picking effort to rebase.
+- **Next Check-in Prep**: Before pausing, drop the latest commit SHA, bench count, telemetry directory, and outstanding tasks into this index so resumption is frictionless. Current head: `fd569d9` (`bench 2501279`), telemetry pending.
