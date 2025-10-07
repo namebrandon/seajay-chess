@@ -8,7 +8,7 @@ import json
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Dict, Iterable, List
 
 import chess
 import chess.engine
@@ -16,12 +16,36 @@ import chess.engine
 CLAMP_DEPTH = 18
 DEFAULT_TIMEOUT = 240.0
 
+SUITE_PATHS: Dict[str, Path] = {
+    "queen-sack": Path("tests/positions/queen_sack_suite.epd"),
+}
+
 
 @dataclass
 class EngineResult:
     depth: int | None
     score_cp: int | None
     bestmove: str | None
+
+
+def load_fens_from_epd(path: Path) -> List[str]:
+    """Load FEN strings from a simple EPD file."""
+    fens: List[str] = []
+    with path.open() as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if " bm " in line:
+                fen_part = line.split(" bm ", 1)[0].strip()
+            else:
+                fen_part = line.split(";", 1)[0].strip()
+            if not fen_part:
+                continue
+            if len(fen_part.split()) == 4:
+                fen_part = f"{fen_part} 0 1"
+            fens.append(fen_part)
+    return fens
 
 
 def analyse(engine_path: Path, fen: str, depth: int, timeout: float) -> EngineResult:
@@ -180,6 +204,12 @@ def main() -> None:
     parser.add_argument("--komodo", type=Path, default=Path("external/engines/komodo/komodo-14.1-linux"))
     parser.add_argument("--output", type=Path, default=Path("docs/issues/eval_bias_tracker.json"))
     parser.add_argument("--markdown", type=Path, default=Path("docs/issues/eval_bias_tracker.md"))
+    parser.add_argument(
+        "--suite",
+        choices=sorted(SUITE_PATHS.keys()),
+        help="Load all FENs from a named tactical suite",
+    )
+    parser.add_argument("--epd", type=Path, help="Load all FENs from the provided EPD file")
     parser.add_argument("--all", action="store_true", help="Run against every FEN already tracked in the output file")
     parser.add_argument("--force", action="store_true", help="Recompute even if data for the requested depth already exists")
     parser.add_argument("--convert-only", action="store_true", help="Rewrite output/markdown without running engines")
@@ -188,15 +218,41 @@ def main() -> None:
     depth = min(args.depth, CLAMP_DEPTH)
     entries = load_entries(args.output)
 
+    if args.suite and args.epd:
+        parser.error("--suite and --epd are mutually exclusive")
+
+    suite_fens: List[str] = []
+    suite_source: Path | None = None
+    if args.suite:
+        suite_source = SUITE_PATHS[args.suite]
+    elif args.epd:
+        suite_source = args.epd
+
+    if suite_source:
+        if not suite_source.exists():
+            parser.error(f"suite file not found: {suite_source}")
+        suite_fens = load_fens_from_epd(suite_source)
+        if not suite_fens:
+            parser.error(f"no FENs found in {suite_source}")
+        for fen in suite_fens:
+            entries.setdefault(fen, {"evaluations": {}})
+
     if args.convert_only:
         dump_entries(args.output, entries)
         write_markdown(args.markdown, entries)
         return
 
-    if not args.all and not args.fen:
-        parser.error("provide a FEN or use --all")
+    if not args.all and not args.fen and not suite_fens:
+        parser.error("provide a FEN, use --suite/--epd, or pass --all")
 
-    fens = list(iter_fens(entries, args.fen))
+    if suite_fens:
+        fens = suite_fens
+    else:
+        if args.all:
+            fens = list(iter_fens(entries, None))
+        else:
+            fens = list(iter_fens(entries, args.fen))
+
     if args.all and not fens:
         parser.error("no existing FENs to process; add one via positional argument first")
 

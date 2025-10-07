@@ -38,6 +38,19 @@ namespace {
 constexpr int HISTORY_GATING_DEPTH = 2;
 constexpr int AGGRESSIVE_NULL_MARGIN_OFFSET = 120; // Phase 4.2: extra margin over standard null pruning
 
+inline void ensureRootWindow(eval::Score& alpha, eval::Score& beta) {
+    if (beta <= alpha) {
+        if (alpha >= eval::Score::infinity()) {
+            beta = eval::Score::infinity();
+            if (alpha >= beta) {
+                alpha = eval::Score(beta.value() - 1);
+            }
+        } else {
+            beta = alpha + eval::Score(1);
+        }
+    }
+}
+
 // TODO(SE1): Delete once legacy negamax is removed and NodeContext handles singular exclusions end-to-end.
 struct ExcludedMoveGuard {
     SearchInfo& info;
@@ -267,6 +280,25 @@ eval::Score negamax(Board& board,
     assert(ply < 128);  // Prevent stack overflow
     
     // Debug assertion for valid search window
+#ifdef DEBUG
+    if (alpha >= beta) {
+        const auto& stack = searchInfo.getStackEntry(ply);
+        const auto& parentStack = searchInfo.getStackEntry(std::max(ply - 1, 0));
+        const auto parentMove = parentStack.move;
+        const auto currentMove = stack.move;
+
+        std::cerr << "[ASSERT] Invalid window entering negamax: depth=" << depth
+                  << " ply=" << ply
+                  << " alpha=" << alpha.value()
+                  << " beta=" << beta.value()
+                  << " pv=" << isPvNode
+                  << " excluded=" << context.hasExcludedMove()
+                  << " parentMove=" << seajay::SafeMoveExecutor::moveToString(parentMove)
+                  << " currentMove=" << seajay::SafeMoveExecutor::moveToString(currentMove)
+                  << std::endl
+                  << std::flush;
+    }
+#endif
     assert(alpha < beta && "Alpha must be less than beta in negamax search");
     
     // In release mode, still handle invalid window gracefully
@@ -589,6 +621,10 @@ eval::Score negamax(Board& board,
                 }
             }
         }
+    }
+
+    if (ply == 0) {
+        ensureRootWindow(alpha, beta);
     }
 
     if (isSingularVerificationNode && !verificationNodeReturnedViaTT) {
@@ -2095,6 +2131,9 @@ skip_futility_prune:;
                 // B1 Fix: Only the first legal move should be a PV node
                 // Re-searches after scout failures are NOT PV nodes
                 TriangularPV* reSearchChildPV = (pv != nullptr && isPvNode) ? childPVPtr : nullptr;
+                if (ply == 0) {
+                    ensureRootWindow(alpha, beta);
+                }
                 score = -negamax(board, childContext, depth - 1 + extension, ply + 1,
                                 -beta, -alpha, searchInfo, info, limits, tt,
                                 reSearchChildPV);  // B1 Fix: Re-search is NOT a PV node!
@@ -2197,6 +2236,9 @@ skip_futility_prune:;
             // Update alpha (best score we can guarantee)
             if (score > alpha) {
                 alpha = score;
+                if (ply == 0) {
+                    ensureRootWindow(alpha, beta);
+                }
                 
                 // Beta cutoff - prune remaining moves
                 // This is a fail-high, meaning the opponent won't choose this position

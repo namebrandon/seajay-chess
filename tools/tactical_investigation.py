@@ -25,6 +25,14 @@ except ImportError as exc:  # pragma: no cover - this script requires python-che
 INFO_RE = re.compile(r"depth (\\d+).*?nodes (\\d+).*?nps (\\d+)")
 SCORE_RE = re.compile(r"score (cp|mate) (-?\\d+)")
 
+DEFAULT_EPD = Path("tests/positions/wac_failures_20250918.epd")
+SUITE_PATHS: Dict[str, Path] = {
+    "queen-sack": Path("tests/positions/queen_sack_suite.epd"),
+}
+SUITE_OUTPUT_DIRS: Dict[str, Path] = {
+    "queen-sack": Path("docs/project_docs/telemetry/queen_sack"),
+}
+
 
 @dataclass
 class EngineResult:
@@ -214,7 +222,16 @@ def load_ids_from_csv(csv_path: Path) -> List[str]:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Targeted tactical investigation harness")
     parser.add_argument("--engine", default="bin/seajay", help="Path to SeaJay binary")
-    parser.add_argument("--epd", default="tests/positions/wac_failures_20250918.epd", help="EPD file with positions")
+    parser.add_argument(
+        "--suite",
+        choices=sorted(SUITE_PATHS.keys()),
+        help="Named tactical suite preset (overrides --epd)",
+    )
+    parser.add_argument(
+        "--epd",
+        type=Path,
+        help=f"EPD file with positions (default: {DEFAULT_EPD})",
+    )
     parser.add_argument("--ids", nargs="*", help="Specific position IDs to run (defaults to all in EPD)")
     parser.add_argument("--ids-from-csv", dest="ids_csv", help="CSV file with position_id column to filter")
     parser.add_argument("--time-ms", type=int, nargs="+", default=[850], help="List of movetime values in ms")
@@ -234,7 +251,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not engine_path.exists():
         parser.error(f"engine not found: {engine_path}")
 
-    epd_path = Path(args.epd)
+    suite_name = args.suite
+    if suite_name and args.epd:
+        parser.error("--suite and --epd are mutually exclusive")
+    if suite_name:
+        epd_path = SUITE_PATHS[suite_name]
+    elif args.epd:
+        epd_path = args.epd
+    else:
+        epd_path = DEFAULT_EPD
+
     if not epd_path.exists():
         parser.error(f"EPD file not found: {epd_path}")
 
@@ -252,7 +278,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         parser.error(f"positions not found in {epd_path}: {', '.join(missing)}")
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_path = Path(args.output) if args.output else Path(f"tools/tactical_investigation_{timestamp}.csv")
+    if args.output:
+        output_path = Path(args.output)
+    elif suite_name:
+        target_dir = SUITE_OUTPUT_DIRS.get(suite_name, Path("tools"))
+        output_path = target_dir / f"tactical_{suite_name}_{timestamp}.csv"
+    else:
+        output_path = Path(f"tools/tactical_investigation_{timestamp}.csv")
 
     rows: List[Dict[str, object]] = []
 
@@ -296,6 +328,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "score",
     ]
 
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
