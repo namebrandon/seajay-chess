@@ -1,0 +1,362 @@
+[
+  {
+    "fen": "1r1rb1k1/2p3pp/p2q1p2/3PpP1Q/Pp1bP2N/1B5R/1P4PP/2B4K w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 1,
+          "bestmove": "Qxh7+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 585,
+          "bestmove": "Qxh7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "2b3k1/4rrpp/p2p4/2pP2RQ/1pP1Pp1N/1P3P1P/1q6/6RK w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": -56,
+          "bestmove": "Qh6"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31994,
+          "bestmove": "Qxh7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "2rq1rk1/pp3ppp/2n2b2/4NR2/3P4/PB5Q/1P4PP/3R2K1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 199,
+          "bestmove": "Rxf6"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31994,
+          "bestmove": "Qxh7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "3r3k/3r1P1p/pp1Nn3/2pp4/7Q/6R1/Pq4PP/5RK1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 10,
+          "score_cp": 31996,
+          "bestmove": "Nb7"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31996,
+          "bestmove": "Qxd8+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "3rr1k1/ppp2ppp/8/5Q2/4n3/1B5R/PPP1qPP1/5RK1 b - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 484,
+          "bestmove": "Qxf1+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 664,
+          "bestmove": "Qxf1+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "4R3/4q1kp/6p1/1Q3b2/1P1b1P2/6KP/8/8 b - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 364,
+          "bestmove": "Qh4+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31997,
+          "bestmove": "Qh4+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "4kn2/r4p1r/p3bQ2/q1nNP1Np/1p5P/8/PPP3P1/2KR3R w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 11,
+          "score_cp": 31998,
+          "bestmove": "Qe7+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31998,
+          "bestmove": "Qe7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "4r1k1/p1qr1p2/2pb1Bp1/1p5p/3P1n1R/1B3P2/PP3PK1/2Q4R w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": -110,
+          "bestmove": "Qxf4"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31994,
+          "bestmove": "Qxf4"
+        }
+      }
+    }
+  },
+  {
+    "fen": "4rrn1/ppq3bk/3pPnpp/2p5/2PB4/2NQ1RPB/PP5P/5R1K w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 251,
+          "bestmove": "Qxg6+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 1108,
+          "bestmove": "Qxg6+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "5bk1/p4ppp/Qp6/4B3/1P6/Pq2P1P1/2rr1P1P/R4RK1 b - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 198,
+          "bestmove": "Qxe3"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31992,
+          "bestmove": "Qxe3"
+        }
+      }
+    }
+  },
+  {
+    "fen": "5r1k/pp4pp/2p5/2b1P3/4Pq2/1PB1p3/P3Q1PP/3N2K1 b - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 572,
+          "bestmove": "Qf1+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 905,
+          "bestmove": "Qf1+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "5rk1/2p4p/2p4r/3P4/4p1b1/1Q2NqPp/PP3P1K/R4R2 b - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 51,
+          "bestmove": "cxd5"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 82,
+          "bestmove": "cxd5"
+        }
+      }
+    }
+  },
+  {
+    "fen": "6k1/5p2/p5np/4B3/3P4/1PP1q3/P3r1QP/6RK w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 11,
+          "score_cp": 31997,
+          "bestmove": "Qa8+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31997,
+          "bestmove": "Qa8+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "r1bq2kr/p1pp1ppp/1pn1p3/4P3/2Pb2Q1/BR6/P4PPP/3K1BNR w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": -139,
+          "bestmove": "Qxg7+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 524,
+          "bestmove": "Qxg7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "r2rb1k1/pp1q1p1p/2n1p1p1/2bp4/5P2/PP1BPR1Q/1BPN2PP/R5K1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 183,
+          "bestmove": "Ne4"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31996,
+          "bestmove": "Qxh7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "r3kb1r/1pp3p1/p3bp1p/5q2/3QN3/1P6/PBP3P1/3RR1K1 w kq - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 16,
+          "score_cp": 31995,
+          "bestmove": "Qd7+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31995,
+          "bestmove": "Qd7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "r3r1k1/pp1q1pp1/4b1p1/3p2B1/3Q1R2/8/PPP3PP/4R1K1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": -102,
+          "bestmove": "Rff1"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31996,
+          "bestmove": "Qxg7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "r6r/pp3ppp/3k1b2/2pb4/B4Pq1/2P1Q3/P5PP/1RBR2K1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 321,
+          "bestmove": "Qd2"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31996,
+          "bestmove": "Qxc5+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "rn1qr2Q/pbppk1p1/1p2pb2/4N3/3P4/2N5/PPP3PP/R4RK1 w - - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 63,
+          "bestmove": "Qxg7+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31995,
+          "bestmove": "Qxg7+"
+        }
+      }
+    }
+  },
+  {
+    "fen": "rnbqr2k/pppp1Qpp/8/b2NN3/2B1n3/8/PPPP1PPP/R1B1K2R w KQ - 0 1",
+    "evaluations": {
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 12,
+          "score_cp": 31996,
+          "bestmove": "Qg8+"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 31996,
+          "bestmove": "Qg8+"
+        }
+      }
+    }
+  }
+]

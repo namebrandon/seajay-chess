@@ -77,14 +77,14 @@
 - Scope
   - Introduce positive history kickers for checking captures and ensure fail-low penalties decay instead of saturating for these motifs (`src/search/history_heuristic.cpp:13-57`).
   - Inject a temporary “contact-check killer” slot so the move reappears early on the second pass even without TT help (`src/search/move_ordering.cpp:200-320`).
-- Status (2025-10-07): **Code landed in `fd569d9` (`bench 2501279`)** – checking-capture history kicker plus contact-check replay hash per ply (`src/search/history_heuristic.cpp`, `src/search/types.h`, `src/search/negamax.cpp`). Ordering reruns and history telemetry still pending.
+- Status (2025-10-07): **Code landed in `fd569d9` (`bench 2501279`)** – checking-capture history kicker plus contact-check replay hash per ply (`src/search/history_heuristic.cpp`, `src/search/types.h`, `src/search/negamax.cpp`). Ordering reruns and history telemetry still pending. First follow-up run (`tactical_queen-sack_2025-10-07_23-37-00.csv`) shows 4/20 hits (unchanged from QS1), so the search changes alone are not enough yet.
 - Validation
   - Track proportion of queen checks searched before quiet moves via `NodeExplosionStats`; require ≥70% ordering rate in telemetry rerun (`docs/project_docs/telemetry/eval_bias/selectivity_bounds_g3e4.txt:194-451`).
   - Confirm no regressions on the broader 54-position WAC subset.
 - TODO before advancing:
-  - [ ] Rebuild Release (`./build.sh Release`) and re-run `tools/tactical_investigation.py --suite queen-sack --time 200` capturing CSV under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
-  - [ ] Run `tools/eval_compare.py --suite queen_sack_suite.epd --depth 18` to see eval deltas with the new ordering; append Markdown diff to `docs/issues/eval_bias_tracker.md`.
-  - [ ] Collect `SearchData` stats (move ordering/histories) from a 1M-node search log to confirm contact-check hits; stash under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
+  - [x] Rebuild Release (`./build.sh Release`) and re-run `tools/tactical_investigation.py --suite queen-sack --time 200` capturing CSV under `docs/project_docs/telemetry/queen_sack/2025-10-07/` (`tactical_queen-sack_2025-10-07_23-37-00.csv` → 4/20).
+  - [x] Run `tools/eval_compare.py --suite queen_sack_suite.epd --depth 18` to see eval deltas with the new ordering; append Markdown diff to `docs/issues/eval_bias_tracker.md`. (Output captured in `docs/project_docs/telemetry/queen_sack/2025-10-07/eval_compare_queen_sack_depth18.{json,md}` – large negative deltas remain because the forcing moves still aren’t preferred.)
+  - [ ] Collect `SearchData` stats (move ordering/histories). Retry with a bounded `go nodes 300000` run (prior 1M-node attempt stalled); stash the log under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
   - [ ] Update this plan + Evaluation Bias Index with telemetry outcomes and decision on QS2 readiness.
 
 ### Phase QS3 – Evaluation Reinforcement
