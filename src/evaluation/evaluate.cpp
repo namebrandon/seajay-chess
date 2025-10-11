@@ -427,8 +427,10 @@ void populateContext(EvalContext& ctx, const Board& board) noexcept {
 inline Score evaluateKingSafetyWithContext(const Board& board,
                                            search::GamePhase gamePhase,
                                            Color side,
-                                           const EvalContext& ctx) noexcept {
+                                           const EvalContext& ctx,
+                                           int* dangerPenaltyOut = nullptr) noexcept {
     const int colorIdx = static_cast<int>(side);
+    const int enemyIdx = 1 - colorIdx;
 
     Square kingSquare = ctx.kingSquare[colorIdx];
     if (kingSquare == NO_SQUARE) {
@@ -452,6 +454,11 @@ inline Score evaluateKingSafetyWithContext(const Board& board,
     const auto& params = KingSafety::getParams();
     int rawScore = 0;
 
+    const auto& config = seajay::getConfig();
+    const Color enemy = static_cast<Color>(side ^ 1);
+    const Bitboard enemyQueens = board.pieces(enemy, QUEEN);
+    int dangerPenalty = 0;
+
     switch (gamePhase) {
         case search::GamePhase::OPENING:
         case search::GamePhase::MIDDLEGAME:
@@ -460,12 +467,69 @@ inline Score evaluateKingSafetyWithContext(const Board& board,
             if (hasLuft) {
                 rawScore += params.airSquareBonusMg;
             }
+
+            if (config.useQS3KingSafety && enemyQueens) {
+                const Bitboard queenContacts = ctx.queenAttacks[enemyIdx] & ctx.kingRing[colorIdx];
+                if (queenContacts) {
+                    // Squares not defended by us are considered "safe" landing squares for the attacking queen.
+                    Bitboard safeContacts = queenContacts & ~ctx.attackedBy[colorIdx];
+                    if (safeContacts) {
+                        Bitboard forwardMask = 0ULL;
+                        const int kingRelRank = PawnStructure::relativeRank(side, kingSquare);
+                        Bitboard iter = safeContacts;
+                        while (iter) {
+                            Square sq = popLsb(iter);
+                            if (PawnStructure::relativeRank(side, sq) > kingRelRank) {
+                                forwardMask |= (1ULL << sq);
+                            }
+                        }
+
+                        if (forwardMask) {
+                            const Bitboard sliderSupport =
+                                forwardMask & (ctx.bishopAttacks[enemyIdx] | ctx.rookAttacks[enemyIdx]);
+                            const Bitboard friendlyPawns = board.pieces(side, PAWN);
+                            const Bitboard shieldPawns = forwardMask & friendlyPawns;
+                            const Bitboard missingShield = forwardMask & ~friendlyPawns;
+                            const Bitboard minorDefenders =
+                                (ctx.knightAttacks[colorIdx] | ctx.bishopAttacks[colorIdx]) & ctx.kingRing[colorIdx];
+
+                            const int safeCount = popCount(forwardMask);
+                            dangerPenalty += config.qs3SafeQueenContactPenalty * safeCount;
+
+                            if (sliderSupport) {
+                                dangerPenalty += config.qs3SliderSupportPenalty * popCount(sliderSupport);
+                            }
+
+                            if (missingShield) {
+                                dangerPenalty += config.qs3ShieldHolePenalty * popCount(missingShield);
+                            } else if (shieldPawns) {
+                                dangerPenalty -= (config.qs3ShieldHolePenalty / 2) * popCount(shieldPawns);
+                            }
+
+                            if (!minorDefenders) {
+                                dangerPenalty += config.qs3NoMinorDefenderPenalty;
+                            }
+
+                            const Bitboard kingEscapeSquares = ctx.kingAttacks[colorIdx] & ~ctx.attackedBy[enemyIdx];
+                            if (!(forwardMask & kingEscapeSquares)) {
+                                dangerPenalty += config.qs3KingExposurePenalty;
+                            }
+                        }
+                    }
+                }
+            }
             break;
         case search::GamePhase::ENDGAME:
             rawScore = directCount * params.directShieldEg +
                        advancedCount * params.advancedShieldEg;
             break;
     }
+
+    if (dangerPenaltyOut) {
+        *dangerPenaltyOut = dangerPenalty;
+    }
+
+    rawScore -= dangerPenalty;
 
     const int finalScore = rawScore * params.enableScoring;
     return Score(finalScore);
@@ -537,9 +601,14 @@ inline bool hasLowerValueAttacker(const EvalContext& ctx,
     return false;
 }
 
+struct ThreatTraceContext {
+    int suppressedQueenPenalty[2] = {0, 0};
+};
+
 inline int evaluateThreatsForSide(const Board& board,
                                   const EvalContext& ctx,
-                                  Color side) noexcept {
+                                  Color side,
+                                  ThreatTraceContext* traceCtx) noexcept {
     const Color enemy = static_cast<Color>(side ^ 1);
     const int sideIdx = static_cast<int>(side);
     const int enemyIdx = static_cast<int>(enemy);
@@ -547,48 +616,97 @@ inline int evaluateThreatsForSide(const Board& board,
     const Bitboard enemyPieces = board.pieces(enemy) & ~board.pieces(enemy, KING);
     const Bitboard sideAttacks = ctx.attackedBy[sideIdx];
     const Bitboard enemyAttacks = ctx.attackedBy[enemyIdx];
+    const Square enemyKingSq = board.kingSquare(enemy);
 
     Bitboard hanging = enemyPieces & sideAttacks & ~enemyAttacks;
     int score = 0;
 
     for (int pt = PAWN; pt <= QUEEN; ++pt) {
         const auto pieceType = static_cast<PieceType>(pt);
-        Bitboard targets = hanging & board.pieces(enemy, pieceType);
-        if (targets == 0ULL) {
+        Bitboard targetsAll = hanging & board.pieces(enemy, pieceType);
+        if (targetsAll == 0ULL) {
             continue;
         }
-        if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
+
+        if (!hasLowerValueAttacker(ctx, side, pieceType, targetsAll)) {
             continue;
         }
+
+        Bitboard penalisedTargets = targetsAll;
+        int suppressedCount = 0;
+        if (pieceType == QUEEN && enemyKingSq != NO_SQUARE) {
+            Bitboard contactTargets = 0ULL;
+            Bitboard tmp = targetsAll;
+            while (tmp) {
+                const Square sq = popLsb(tmp);
+                const Bitboard occupancy = ctx.occupied ^ (1ULL << sq);
+                if (MoveGenerator::getQueenAttacks(sq, occupancy) & (1ULL << enemyKingSq)) {
+                    contactTargets |= (1ULL << sq);
+                }
+            }
+            if (contactTargets) {
+                suppressedCount = popCount(contactTargets);
+                penalisedTargets &= ~contactTargets;
+            }
+        }
+
         const int bonus = threatHangingBonus(pieceType);
-        if (bonus != 0) {
-            score += popCount(targets) * bonus;
+        if (suppressedCount && bonus != 0 && traceCtx) {
+            traceCtx->suppressedQueenPenalty[sideIdx] += suppressedCount * bonus;
         }
+        if (penalisedTargets == 0ULL || bonus == 0) {
+            continue;
+        }
+        score += popCount(penalisedTargets) * bonus;
     }
 
     Bitboard doubleTargets = ctx.doubleAttacks[sideIdx] & enemyPieces;
     for (int pt = PAWN; pt <= QUEEN; ++pt) {
         const auto pieceType = static_cast<PieceType>(pt);
-        Bitboard targets = doubleTargets & board.pieces(enemy, pieceType);
-        if (targets == 0ULL) {
+        Bitboard targetsAll = doubleTargets & board.pieces(enemy, pieceType);
+        if (targetsAll == 0ULL) {
             continue;
         }
-        if (!hasLowerValueAttacker(ctx, side, pieceType, targets)) {
+        if (!hasLowerValueAttacker(ctx, side, pieceType, targetsAll)) {
             continue;
         }
+
+        Bitboard penalisedTargets = targetsAll;
+        int suppressedCount = 0;
+        if (pieceType == QUEEN && enemyKingSq != NO_SQUARE) {
+            Bitboard contactTargets = 0ULL;
+            Bitboard tmp = targetsAll;
+            while (tmp) {
+                const Square sq = popLsb(tmp);
+                const Bitboard occupancy = ctx.occupied ^ (1ULL << sq);
+                if (MoveGenerator::getQueenAttacks(sq, occupancy) & (1ULL << enemyKingSq)) {
+                    contactTargets |= (1ULL << sq);
+                }
+            }
+            if (contactTargets) {
+                suppressedCount = popCount(contactTargets);
+                penalisedTargets &= ~contactTargets;
+            }
+        }
+
         const int bonus = threatDoubleBonus(pieceType);
-        if (bonus != 0) {
-            score += popCount(targets) * bonus;
+        if (suppressedCount && bonus != 0 && traceCtx) {
+            traceCtx->suppressedQueenPenalty[sideIdx] += suppressedCount * bonus;
         }
+        if (penalisedTargets == 0ULL || bonus == 0) {
+            continue;
+        }
+        score += popCount(penalisedTargets) * bonus;
     }
 
     return score;
 }
 
 inline int evaluateThreats(const Board& board,
-                           const EvalContext& ctx) noexcept {
-    const int whiteThreats = evaluateThreatsForSide(board, ctx, WHITE);
-    const int blackThreats = evaluateThreatsForSide(board, ctx, BLACK);
+                           const EvalContext& ctx,
+                           ThreatTraceContext* traceCtx) noexcept {
+    const int whiteThreats = evaluateThreatsForSide(board, ctx, WHITE, traceCtx);
+    const int blackThreats = evaluateThreatsForSide(board, ctx, BLACK, traceCtx);
     return whiteThreats - blackThreats;
 }
 
@@ -1790,8 +1908,18 @@ Score evaluateImpl(const Board& board, const detail::EvalContext& ctx,
     }
     
     // Phase KS2: King safety evaluation (integrated but returns 0 score)
-    Score whiteKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, WHITE, ctx);
-    Score blackKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, BLACK, ctx);
+    int qs3DangerPenaltyWhite = 0;
+    int qs3DangerPenaltyBlack = 0;
+    int* qs3WhitePtr = nullptr;
+    int* qs3BlackPtr = nullptr;
+    if constexpr (Traced) {
+        if (trace) {
+            qs3WhitePtr = &qs3DangerPenaltyWhite;
+            qs3BlackPtr = &qs3DangerPenaltyBlack;
+        }
+    }
+    Score whiteKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, WHITE, ctx, qs3WhitePtr);
+    Score blackKingSafety = detail::evaluateKingSafetyWithContext(board, gamePhase, BLACK, ctx, qs3BlackPtr);
     
     // King safety is from each side's perspective, so we subtract black's from white's
     // Note: In Phase KS2, both will return 0 since enableScoring = 0
@@ -1805,14 +1933,30 @@ Score evaluateImpl(const Board& board, const detail::EvalContext& ctx,
     
     // Trace king safety score
     if constexpr (Traced) {
-        if (trace) trace->kingSafety = kingSafetyScore;
+        if (trace) {
+            trace->kingSafety = kingSafetyScore;
+            trace->qs3DangerPenalty[WHITE] = qs3DangerPenaltyWhite;
+            trace->qs3DangerPenalty[BLACK] = qs3DangerPenaltyBlack;
+        }
     }
 
-    const int threatValue = detail::evaluateThreats(board, ctx);
+    detail::ThreatTraceContext threatTraceCtx;
+    detail::ThreatTraceContext* threatCtxPtr = nullptr;
+    if constexpr (Traced) {
+        if (trace) {
+            threatCtxPtr = &threatTraceCtx;
+        }
+    }
+
+    const int threatValue = detail::evaluateThreats(board, ctx, threatCtxPtr);
     Score threatScore(threatValue);
 
     if constexpr (Traced) {
-        if (trace) trace->threats = threatScore;
+        if (trace) {
+            trace->threats = threatScore;
+            trace->threatSuppressedQueenPenalty[WHITE] = threatTraceCtx.suppressedQueenPenalty[WHITE];
+            trace->threatSuppressedQueenPenalty[BLACK] = threatTraceCtx.suppressedQueenPenalty[BLACK];
+        }
     }
 
     // Phase ROF2: Calculate rook file bonus score

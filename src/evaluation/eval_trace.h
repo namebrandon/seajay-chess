@@ -44,6 +44,8 @@ struct EvalTrace {
 
     // King safety
     Score kingSafety;
+    int qs3DangerPenalty[2] = {0, 0};
+    int threatSuppressedQueenPenalty[2] = {0, 0};
     
     // Pawn hash metadata
     uint64_t pawnKey = 0;        // Zobrist pawn hash key at evaluation time
@@ -143,6 +145,8 @@ struct EvalTrace {
         pawnSpanDetail = PawnSpanDetail();
         pawnKey = 0ULL;
         pawnCacheHit = false;
+        qs3DangerPenalty[WHITE] = qs3DangerPenalty[BLACK] = 0;
+        threatSuppressedQueenPenalty[WHITE] = threatSuppressedQueenPenalty[BLACK] = 0;
     }
     
     // Calculate total score
@@ -327,6 +331,22 @@ struct EvalTrace {
             std::ostringstream oss;
             oss << "total white_cp=" << totalWhite.value()
                 << " final_cp=" << finalScore.value();
+            pushLine(oss.str());
+        }
+
+        if (qs3DangerPenalty[WHITE] != 0 || qs3DangerPenalty[BLACK] != 0) {
+            std::ostringstream oss;
+            oss << "detail name=qs3_king_danger"
+                << " white_cp=" << qs3DangerPenalty[WHITE]
+                << " black_cp=" << qs3DangerPenalty[BLACK];
+            pushLine(oss.str());
+        }
+
+        if (threatSuppressedQueenPenalty[WHITE] != 0 || threatSuppressedQueenPenalty[BLACK] != 0) {
+            std::ostringstream oss;
+            oss << "detail name=threat_suppression"
+                << " white_cp=" << threatSuppressedQueenPenalty[WHITE]
+                << " black_cp=" << threatSuppressedQueenPenalty[BLACK];
             pushLine(oss.str());
         }
 

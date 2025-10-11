@@ -105,6 +105,14 @@ public:
     int threatDoubleRookBonus = 22;              // Bonus when a rook is forked by a cheaper attacker
     int threatDoubleQueenBonus = 32;             // Bonus when a queen is forked by a cheaper attacker
 
+    // QS3 king-safety experimentation toggles
+    bool useQS3KingSafety = true;                // Enable enhanced king-danger heuristics for queen sacs
+    int qs3SafeQueenContactPenalty = 48;         // Penalty per safe queen contact-check (cp)
+    int qs3ShieldHolePenalty = 28;               // Penalty per missing flank shield square (cp)
+    int qs3SliderSupportPenalty = 20;            // Extra penalty when sliders support the contact square (cp)
+    int qs3NoMinorDefenderPenalty = 24;          // Flat penalty when no minor defends the king ring (cp)
+    int qs3KingExposurePenalty = 32;             // Additional penalty when king stays exposed after contact capture
+
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11
     // etc.

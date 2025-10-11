@@ -90,7 +90,12 @@
 ### Phase QS3 – Evaluation Reinforcement
 - Scope
   - Expand king-danger scaling for open-file exposure and slider backbone pressure to reward sacrificing material for mating nets (`src/evaluation/king_safety.cpp:23-176`).
+  - Incorporate safe queen-check scoring and attacker counting inspired by Stashbot (`stash-bot/src/sources/evaluate.c#L760-L820`): reward queen contact checks only when the capture square yields a follow-up check on undefended king-ring squares.
+  - Port Laser-style flank-shield and pawn-storm penalties plus undefended-ring detection (`laser/src/eval.cpp#L392-L470`, `#L1061-L1190`) so missing h7/g7 shields and slider diagonals translate into immediate eval pressure.
   - Log new EvalExtended breakdowns for queen mobility penalties and integrate into the bias tracker.
+  - Stage changes behind a dedicated QS3 config toggle to simplify A/B telemetry while we iterate on weight tuning.
+- Status (2025-10-09_21-09-48): QS3 prototype with strengthened weights (`qs3SafeQueenContactPenalty=48`, `qs3ShieldHolePenalty=28`, `qs3SliderSupportPenalty=20`, `qs3NoMinorDefenderPenalty=24`) lifts 200 ms suite coverage to 5/20 and seven PV hits (`docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-09_21-09-48.csv`); corresponding diagnostics (`docs/project_docs/telemetry/queen_sack/node_explosion_queen-sack_2025-10-09_21-10-06.csv`) confirm search remains stable.
+- Status update (threats, 2025-10-09_21-30): Hanging-threat evaluator now skips queen contact-check penalties and traces suppressed Cp (`detail name=threat_suppression`), eliminating the −40 cp hit on post-sac nodes (`src/evaluation/evaluate.cpp:586-706`, `src/evaluation/eval_trace.h:21-115`). Qh6 setups still drift negative via material/PST, so further evaluation work is needed before targeting >5/20 solves.
 - Validation
   - Queen-sack suite must stay solved after enabling the eval tweaks.
   - Depth-18 eval deltas in `docs/issues/eval_bias_tracker.md:11-44` shrink by ≥50 cp without flipping sign.
