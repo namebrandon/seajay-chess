@@ -55,7 +55,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -1,
+          "score_cp": -196,
           "bestmove": "Qh6"
         },
         "komodo": {
@@ -380,7 +380,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -45,
+          "score_cp": 155,
           "bestmove": "Qxf4"
         },
         "komodo": {
@@ -447,7 +447,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 393,
+          "score_cp": 198,
           "bestmove": "Qxe3"
         },
         "komodo": {
@@ -1002,7 +1002,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 319,
+          "score_cp": 265,
           "bestmove": "Ne4"
         },
         "komodo": {
