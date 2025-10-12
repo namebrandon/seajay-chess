@@ -6,8 +6,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -3,
-          "bestmove": "Ng6"
+          "score_cp": -1,
+          "bestmove": "Qxh7+"
         },
         "komodo": {
           "depth": 18,
@@ -37,7 +37,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -44,
+          "score_cp": -49,
           "bestmove": "Rb5"
         },
         "komodo": {
@@ -55,7 +55,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -56,
+          "score_cp": -1,
           "bestmove": "Qh6"
         },
         "komodo": {
@@ -86,8 +86,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 62,
-          "bestmove": "Rfe6"
+          "score_cp": 94,
+          "bestmove": "Rg5"
         },
         "komodo": {
           "depth": 18,
@@ -117,7 +117,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -12,
+          "score_cp": -10,
           "bestmove": "Rd2"
         },
         "komodo": {
@@ -148,7 +148,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -15,
+          "score_cp": -12,
           "bestmove": "Nxe4"
         },
         "komodo": {
@@ -166,7 +166,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 230,
+          "score_cp": 214,
           "bestmove": "Rxf6"
         },
         "komodo": {
@@ -197,7 +197,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 39,
+          "score_cp": 23,
           "bestmove": "Rxd2"
         },
         "komodo": {
@@ -228,8 +228,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 37,
-          "bestmove": "Qg4"
+          "score_cp": 38,
+          "bestmove": "Bc5"
         },
         "komodo": {
           "depth": 18,
@@ -282,7 +282,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 371,
+          "score_cp": 363,
           "bestmove": "Qh4+"
         },
         "komodo": {
@@ -331,7 +331,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 86,
+          "score_cp": 126,
           "bestmove": "Nf5"
         },
         "komodo": {
@@ -362,7 +362,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 100,
+          "score_cp": 87,
           "bestmove": "Bxe3"
         },
         "komodo": {
@@ -380,7 +380,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -106,
+          "score_cp": -45,
           "bestmove": "Qxf4"
         },
         "komodo": {
@@ -411,8 +411,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -100,
-          "bestmove": "Qa6"
+          "score_cp": -143,
+          "bestmove": "Rd5"
         },
         "komodo": {
           "depth": 18,
@@ -429,7 +429,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 294,
+          "score_cp": 291,
           "bestmove": "Qxg6+"
         },
         "komodo": {
@@ -447,7 +447,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 198,
+          "score_cp": 393,
           "bestmove": "Qxe3"
         },
         "komodo": {
@@ -478,7 +478,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -103,
+          "score_cp": -89,
           "bestmove": "Kf1"
         },
         "komodo": {
@@ -496,7 +496,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 567,
+          "score_cp": 599,
           "bestmove": "Qf1+"
         },
         "komodo": {
@@ -545,7 +545,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -30,
+          "score_cp": -39,
           "bestmove": "Be3"
         },
         "komodo": {
@@ -576,7 +576,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 162,
+          "score_cp": 158,
           "bestmove": "Qb6"
         },
         "komodo": {
@@ -595,7 +595,7 @@
         "seajay": {
           "depth": 11,
           "score_cp": 31997,
-          "bestmove": "Qc6"
+          "bestmove": "Qa8+"
         },
         "komodo": {
           "depth": 18,
@@ -625,7 +625,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 102,
+          "score_cp": 78,
           "bestmove": "Qd7"
         },
         "komodo": {
@@ -656,7 +656,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -115,
+          "score_cp": -114,
           "bestmove": "Qg3"
         },
         "komodo": {
@@ -687,8 +687,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 28,
-          "bestmove": "c3"
+          "score_cp": 19,
+          "bestmove": "Kf6"
         },
         "komodo": {
           "depth": 18,
@@ -718,8 +718,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -9,
-          "bestmove": "Bf3"
+          "score_cp": -2,
+          "bestmove": "Bc6"
         },
         "komodo": {
           "depth": 18,
@@ -749,7 +749,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -123,
+          "score_cp": -120,
           "bestmove": "Rd1"
         },
         "komodo": {
@@ -780,7 +780,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 155,
+          "score_cp": 123,
           "bestmove": "Nxe4"
         },
         "komodo": {
@@ -811,7 +811,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 65,
+          "score_cp": 68,
           "bestmove": "Qd6"
         },
         "komodo": {
@@ -842,7 +842,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 98,
+          "score_cp": 91,
           "bestmove": "Qxc3"
         },
         "komodo": {
@@ -873,7 +873,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 92,
+          "score_cp": 113,
           "bestmove": "Kg6"
         },
         "komodo": {
@@ -904,8 +904,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -115,
-          "bestmove": "Nd8"
+          "score_cp": -97,
+          "bestmove": "Re5+"
         },
         "komodo": {
           "depth": 18,
@@ -922,7 +922,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -141,
+          "score_cp": -136,
           "bestmove": "Qxg7+"
         },
         "komodo": {
@@ -953,8 +953,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -106,
-          "bestmove": "Re7"
+          "score_cp": -124,
+          "bestmove": "Qd7"
         },
         "komodo": {
           "depth": 18,
@@ -984,7 +984,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 22,
+          "score_cp": 20,
           "bestmove": "Rd7"
         },
         "komodo": {
@@ -1002,7 +1002,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 185,
+          "score_cp": 319,
           "bestmove": "Ne4"
         },
         "komodo": {
@@ -1051,7 +1051,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 49,
+          "score_cp": 51,
           "bestmove": "Qh4"
         },
         "komodo": {
@@ -1083,7 +1083,7 @@
         "seajay": {
           "depth": 18,
           "score_cp": 38,
-          "bestmove": "Nd4"
+          "bestmove": "Ng5"
         },
         "komodo": {
           "depth": 18,
@@ -1100,8 +1100,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": -100,
-          "bestmove": "Rf2"
+          "score_cp": -112,
+          "bestmove": "Rh4"
         },
         "komodo": {
           "depth": 18,
@@ -1131,7 +1131,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 24,
+          "score_cp": 27,
           "bestmove": "h5"
         },
         "komodo": {
@@ -1162,7 +1162,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 88,
+          "score_cp": 78,
           "bestmove": "Qf6"
         },
         "komodo": {
@@ -1180,8 +1180,8 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 311,
-          "bestmove": "g3"
+          "score_cp": 317,
+          "bestmove": "Qf2"
         },
         "komodo": {
           "depth": 18,
@@ -1211,7 +1211,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 163,
+          "score_cp": 160,
           "bestmove": "Rb8"
         },
         "komodo": {
@@ -1229,7 +1229,7 @@
         "target_depth": 18,
         "seajay": {
           "depth": 18,
-          "score_cp": 62,
+          "score_cp": 61,
           "bestmove": "Qxg7+"
         },
         "komodo": {
@@ -1241,12 +1241,43 @@
     }
   },
   {
+    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    "evaluations": {
+      "1": {
+        "target_depth": 1,
+        "seajay": {
+          "depth": 1,
+          "score_cp": 49,
+          "bestmove": "Nc3"
+        },
+        "komodo": {
+          "depth": 1,
+          "score_cp": 84,
+          "bestmove": "e3"
+        }
+      },
+      "18": {
+        "target_depth": 18,
+        "seajay": {
+          "depth": 18,
+          "score_cp": 25,
+          "bestmove": "e4"
+        },
+        "komodo": {
+          "depth": 18,
+          "score_cp": 50,
+          "bestmove": "e4"
+        }
+      }
+    }
+  },
+  {
     "fen": "rnbqr2k/pppp1Qpp/8/b2NN3/2B1n3/8/PPPP1PPP/R1B1K2R w KQ - 0 1",
     "evaluations": {
       "18": {
         "target_depth": 18,
         "seajay": {
-          "depth": 11,
+          "depth": 12,
           "score_cp": 31996,
           "bestmove": "Qg8+"
         },

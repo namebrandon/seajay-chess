@@ -112,6 +112,7 @@ public:
     int qs3SliderSupportPenalty = 20;            // Extra penalty when sliders support the contact square (cp)
     int qs3NoMinorDefenderPenalty = 24;          // Flat penalty when no minor defends the king ring (cp)
     int qs3KingExposurePenalty = 32;             // Additional penalty when king stays exposed after contact capture
+    int qs3AttackerCompensationPercent = 60;     // Percentage of defender danger penalty granted back to attacker
 
     // Future options can be added here
     // bool useMVVLVA = true;        // Stage 11

@@ -468,11 +468,15 @@ inline Score evaluateKingSafetyWithContext(const Board& board,
                 rawScore += params.airSquareBonusMg;
             }
 
-            if (config.useQS3KingSafety && enemyQueens) {
-                const Bitboard queenContacts = ctx.queenAttacks[enemyIdx] & ctx.kingRing[colorIdx];
-                if (queenContacts) {
-                    // Squares not defended by us are considered "safe" landing squares for the attacking queen.
-                    Bitboard safeContacts = queenContacts & ~ctx.attackedBy[colorIdx];
+            if (config.useQS3KingSafety) {
+                const Bitboard queenContacts = enemyQueens ? (ctx.queenAttacks[enemyIdx] & ctx.kingRing[colorIdx]) : 0ULL;
+                const Bitboard sliderContacts =
+                    (ctx.bishopAttacks[enemyIdx] | ctx.rookAttacks[enemyIdx]) & ctx.kingRing[colorIdx];
+                Bitboard contactSquares = queenContacts | sliderContacts;
+                if (contactSquares) {
+                    // Treat squares defended only by the king as unsafe for the defender.
+                    Bitboard friendlyNonKingDefenders = ctx.attackedBy[colorIdx] & ~ctx.kingAttacks[colorIdx];
+                    Bitboard safeContacts = contactSquares & ~friendlyNonKingDefenders;
                     if (safeContacts) {
                         Bitboard forwardMask = 0ULL;
                         const int kingRelRank = PawnStructure::relativeRank(side, kingSquare);
@@ -1949,7 +1953,15 @@ Score evaluateImpl(const Board& board, const detail::EvalContext& ctx,
     }
 
     const int threatValue = detail::evaluateThreats(board, ctx, threatCtxPtr);
-    Score threatScore(threatValue);
+    const auto& cfg = seajay::getConfig();
+    int threatAdjustedValue = threatValue;
+    if (qs3DangerPenaltyBlack > 0) {
+        threatAdjustedValue += (qs3DangerPenaltyBlack * cfg.qs3AttackerCompensationPercent + 50) / 100;
+    }
+    if (qs3DangerPenaltyWhite > 0) {
+        threatAdjustedValue -= (qs3DangerPenaltyWhite * cfg.qs3AttackerCompensationPercent + 50) / 100;
+    }
+    Score threatScore(threatAdjustedValue);
 
     if constexpr (Traced) {
         if (trace) {

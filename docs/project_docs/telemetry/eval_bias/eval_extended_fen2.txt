@@ -1,0 +1,211 @@
+SeaJay Chess Engine v20251002
+Author: Brandon Harris
+Type 'uci' for UCI mode
+
+id name SeaJay v20251002
+id author Brandon Harris
+option name UseMagicBitboards type check default true
+option name UseQuiescence type check default true
+option name QSearchNodeLimit type spin default 0 min 0 max 10000000
+option name QSearchMaxCaptures type spin default 32 min 4 max 128
+option name MaxCheckPly type spin default 6 min 0 max 10
+option name RootKingPenalty type spin default 0 min 0 max 1000
+option name SEEMode type combo default off var off var testing var shadow var production
+option name SEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name QSEEPruning type combo default conservative var off var conservative var moderate var aggressive
+option name LMREnabled type check default true
+option name LMRMinDepth type spin default 2 min 0 max 10
+option name LMRMinMoveNumber type spin default 2 min 0 max 20
+option name LMRBaseReduction type spin default 50 min 0 max 200
+option name LMRDepthFactor type spin default 225 min 100 max 400
+option name LMRHistoryThreshold type spin default 50 min 10 max 90
+option name LMRPvReduction type spin default 1 min 0 max 2
+option name LMRNonImprovingBonus type spin default 1 min 0 max 3
+option name UseNullMove type check default true
+option name UseAggressiveNullMove type check default false
+option name AggressiveNullMinEval type spin default 600 min 0 max 2000
+option name AggressiveNullMaxApplications type spin default 64 min 0 max 10000
+option name AggressiveNullRequirePositiveBeta type check default true
+option name NullMoveStaticMargin type spin default 87 min 50 max 300
+option name NullMoveDesperationMargin type spin default 0 min 0 max 400
+option name NullMoveMinDepth type spin default 2 min 2 max 5
+option name NullMoveReductionBase type spin default 4 min 1 max 6
+option name NullMoveReductionDepth6 type spin default 4 min 2 max 6
+option name NullMoveReductionDepth12 type spin default 5 min 3 max 7
+option name NullMoveVerifyDepth type spin default 10 min 6 max 14
+option name NullMoveEvalMargin type spin default 198 min 100 max 400
+option name UsePSTInterpolation type check default true
+option name ShowPhaseInfo type check default true
+option name SearchStats type check default false
+option name DebugTrackedMoves type string default
+option name NodeExplosionDiagnostics type check default false
+option name EvalExtended type check default false
+option name EvalLogFile type string default
+option name EvalPasserPhaseP4 type check default true
+option name EvalPasserPathFreeBonus type spin default 4 min -64 max 64
+option name EvalPasserPathSafeBonus type spin default -1 min -64 max 64
+option name EvalPasserPathDefendedBonus type spin default -1 min -64 max 64
+option name EvalPasserPathAttackedPenalty type spin default 22 min -64 max 64
+option name EvalPasserStopDefendedBonus type spin default 13 min -64 max 64
+option name EvalPasserStopAttackedPenalty type spin default 15 min -64 max 64
+option name EvalPasserRookSupportBonus type spin default 9 min -64 max 64
+option name EvalPasserEnemyRookBehindPenalty type spin default 0 min -64 max 64
+option name EvalPasserKingDistanceScale type spin default 10 min -32 max 32
+option name EvalThreatHangingPawn type spin default 12 min -64 max 64
+option name EvalThreatHangingKnight type spin default 18 min -64 max 64
+option name EvalThreatHangingBishop type spin default 18 min -64 max 64
+option name EvalThreatHangingRook type spin default 26 min -64 max 64
+option name EvalThreatHangingQueen type spin default 40 min -64 max 64
+option name EvalThreatDoublePawn type spin default 8 min -64 max 64
+option name EvalThreatDoubleKnight type spin default 14 min -64 max 64
+option name EvalThreatDoubleBishop type spin default 14 min -64 max 64
+option name EvalThreatDoubleRook type spin default 22 min -64 max 64
+option name EvalThreatDoubleQueen type spin default 32 min -64 max 64
+option name EvalSemiOpenLiabilityPenalty type spin default 12 min 0 max 64
+option name EvalSemiOpenGuardRebate type spin default 4 min 0 max 32
+option name EvalLoosePawnOwnHalfPenalty type spin default 6 min 0 max 32
+option name EvalLoosePawnEnemyHalfPenalty type spin default 13 min 0 max 64
+option name EvalLoosePawnPhalanxRebate type spin default 3 min 0 max 32
+option name EvalPasserPhalanxSupportBonus type spin default 3 min 0 max 64
+option name EvalPasserPhalanxAdvanceBonus type spin default 16 min 0 max 64
+option name EvalPasserPhalanxRookBonus type spin default 4 min 0 max 64
+option name EvalCandidateLeverBaseBonus type spin default 5 min 0 max 32
+option name EvalCandidateLeverAdvanceBonus type spin default 9 min 0 max 32
+option name EvalCandidateLeverSupportBonus type spin default 5 min 0 max 32
+option name EvalCandidateLeverRankBonus type spin default 4 min 0 max 16
+option name EvalBishopColorHarmonyBonus type spin default 2 min -16 max 16
+option name EvalBishopColorTensionPenalty type spin default 2 min 0 max 16
+option name EvalBishopColorBlockedPenalty type spin default 3 min 0 max 32
+option name EvalPawnInfiltrationBonus type spin default 25 min -32 max 32
+option name EvalPawnTensionPenalty type spin default 3 min 0 max 16
+option name EvalPawnPushThreatBonus type spin default 6 min 0 max 16
+option name ProfileSquareAttacks type check default false
+option name PawnValueMg type spin default 71 min 50 max 130
+option name KnightValueMg type spin default 325 min 280 max 360
+option name BishopValueMg type spin default 344 min 290 max 370
+option name RookValueMg type spin default 487 min 450 max 570
+option name QueenValueMg type spin default 895 min 850 max 1050
+option name PawnValueEg type spin default 92 min 60 max 140
+option name KnightValueEg type spin default 311 min 270 max 340
+option name BishopValueEg type spin default 327 min 300 max 380
+option name RookValueEg type spin default 510 min 480 max 600
+option name QueenValueEg type spin default 932 min 830 max 1030
+option name UseRazoring type check default true
+option name RazorMargin1 type spin default 274 min 100 max 800
+option name RazorMargin2 type spin default 468 min 200 max 1200
+option name UseFutilityPruning type check default true
+option name FutilityMargin1 type spin default 240 min 50 max 400
+option name FutilityMargin2 type spin default 313 min 100 max 500
+option name FutilityMargin3 type spin default 386 min 150 max 600
+option name FutilityMargin4 type spin default 459 min 200 max 700
+option name KingAttackScale type spin default 2 min 0 max 500
+option name pawn_eg_r3_d type spin default 8 min 0 max 30
+option name pawn_eg_r3_e type spin default 7 min 0 max 30
+option name pawn_eg_r4_d type spin default 18 min 10 max 50
+option name pawn_eg_r4_e type spin default 16 min 10 max 50
+option name pawn_eg_r5_d type spin default 29 min 20 max 70
+option name pawn_eg_r5_e type spin default 27 min 20 max 70
+option name pawn_eg_r6_d type spin default 51 min 30 max 100
+option name pawn_eg_r6_e type spin default 48 min 30 max 100
+option name pawn_eg_r7_center type spin default 75 min 50 max 150
+option name knight_eg_center type spin default 15 min 5 max 25
+option name knight_eg_extended type spin default 10 min 0 max 20
+option name knight_eg_edge type spin default -25 min -40 max -10
+option name knight_eg_corner type spin default -40 min -50 max -20
+option name bishop_eg_long_diag type spin default 19 min 10 max 35
+option name bishop_eg_center type spin default 14 min 5 max 25
+option name bishop_eg_edge type spin default -5 min -15 max 5
+option name rook_eg_7th type spin default 20 min 15 max 40
+option name rook_eg_active type spin default 12 min 5 max 20
+option name rook_eg_passive type spin default 5 min 0 max 15
+option name queen_eg_center type spin default 9 min 5 max 20
+option name queen_eg_active type spin default 7 min 0 max 20
+option name queen_eg_back type spin default -5 min -10 max 5
+option name KingSafetyDirectShieldMg type spin default 19 min 0 max 50
+option name KingSafetyAdvancedShieldMg type spin default 6 min 0 max 40
+option name KingSafetyEnableScoring type spin default 1 min 0 max 1
+option name king_mg_e1 type spin default 21 min -50 max 50
+option name king_mg_b1 type spin default -5 min -50 max 50
+option name king_mg_g1 type spin default 16 min -50 max 50
+option name king_mg_a1 type spin default 25 min -50 max 50
+option name king_mg_h1 type spin default 12 min -50 max 50
+option name king_mg_c1 type spin default 8 min -50 max 50
+option name king_mg_d1 type spin default -27 min -50 max 50
+option name king_mg_f1 type spin default -28 min -50 max 50
+option name Hash type spin default 128 min 1 max 16384
+option name UseTranspositionTable type check default true
+option name UseClusteredTT type check default true
+option name UseStagedMovePicker type check default false
+option name UseRankedMovePicker type check default true
+option name ShowMovePickerStats type check default false
+option name UseInCheckClassOrdering type check default true
+option name UseRankAwareGates type check default true
+option name UseSearchNodeAPIRefactor type check default true
+option name EnableExcludedMoveParam type check default true
+option name UseSingularExtensions type check default true
+option name AllowStackedExtensions type check default true
+option name BypassSingularTTExact type check default false
+option name DisableCheckDuringSingular type check default false
+option name SingularDepthMin type spin default 7 min 4 max 20
+option name SingularMarginBase type spin default 51 min 20 max 200
+option name SingularVerificationReduction type spin default 4 min 2 max 5
+option name SingularExtensionDepth type spin default 2 min 1 max 2
+option name Threads type spin default 1 min 1 max 1024
+option name AspirationWindow type spin default 13 min 5 max 50
+option name ShowPVSStats type check default false
+option name CountermoveBonus type spin default 7960 min 0 max 20000
+option name MoveCountPruning type check default true
+option name MoveCountLimit3 type spin default 7 min 3 max 50
+option name MoveCountLimit4 type spin default 15 min 5 max 60
+option name MoveCountLimit5 type spin default 20 min 8 max 70
+option name MoveCountLimit6 type spin default 25 min 10 max 80
+option name MoveCountLimit7 type spin default 36 min 12 max 90
+option name MoveCountLimit8 type spin default 42 min 15 max 100
+option name MoveCountMaxDepth type spin default 8 min 3 max 20
+option name MoveCountHistoryThreshold type spin default 0 min 0 max 5000
+option name MoveCountHistoryBonus type spin default 6 min 0 max 20
+option name MoveCountImprovingRatio type spin default 75 min 50 max 100
+option name AspirationMaxAttempts type spin default 5 min 3 max 10
+option name StabilityThreshold type spin default 6 min 3 max 12
+option name UseAspirationWindows type check default true
+option name AspirationGrowth type combo default exponential var linear var moderate var exponential var adaptive
+option name UsePhaseStability type check default true
+option name OpeningStability type spin default 4 min 2 max 8
+option name MiddlegameStability type spin default 6 min 3 max 10
+option name EndgameStability type spin default 8 min 4 max 12
+option name FutilityPruning type check default true
+option name FutilityMaxDepth type spin default 7 min 0 max 10
+option name FutilityBase type spin default 240 min 50 max 500
+option name FutilityScale type spin default 73 min 20 max 200
+option name FutilitySeeMargin type spin default 40 min 0 max 300
+info string NOTE: SeaJay uses negamax scoring - all evaluations are from the side-to-move perspective. Positive scores mean the current player to move is winning.
+uciok
+info eval header version=1
+info eval summary side=white total_white_cp=155 final_cp=155
+info eval phase value=213 mg_pct=83 eg_pct=16
+info eval pawn_cache key=0xf0951e3b64e5d794 hit=0
+info eval term name=material cp=-56 mg=-52 eg=-76
+info eval term name=pst cp=-24 mg=-26 eg=-12
+info eval term name=passed_pawns cp=-12 white=0 black=1 black_cp=-16 black_protected=1 black_blockaded=1 black_max_rank=3 black_king_dist=7 black_enemy_king_dist=1
+info eval term name=candidate_pawns cp=0
+info eval term name=isolated_pawns cp=-38
+info eval term name=doubled_pawns cp=-8
+info eval term name=backward_pawns cp=8
+info eval term name=semi_open_liability cp=12
+info eval term name=loose_pawns cp=-6
+info eval term name=pawn_islands cp=-5
+info eval term name=bishop_pair cp=20
+info eval term name=bishop_color cp=-14
+info eval term name=pawn_tension cp=0
+info eval term name=pawn_push_threats cp=-12
+info eval term name=pawn_infiltration cp=0
+info eval term name=mobility cp=10 wn=0 wb=9 wr=9 wq=13 bn=6 bb=3 br=11 bq=6
+info eval term name=knight_outposts cp=0
+info eval term name=rook_files cp=-10
+info eval term name=rook_king_proximity cp=0
+info eval term name=threats cp=118
+info eval term name=king_safety cp=172
+info eval detail name=bishop_color white_light_bishops=1 white_dark_bishops=1 white_light_pawns=2 white_dark_pawns=3 white_harmony_pairs=5 white_tension_pairs=5 white_blocked_same=2 black_light_bishops=0 black_dark_bishops=1 black_light_pawns=5 black_dark_pawns=1 black_harmony_pairs=5 black_tension_pairs=1 black_blocked_same=0
+info eval detail name=pawn_span white_tension=0 white_push_ready=1 white_infiltration=0 black_tension=0 black_push_ready=3 black_infiltration=0
+info eval total white_cp=155 final_cp=155
+info eval detail name=qs3_king_danger white_cp=0 black_cp=196

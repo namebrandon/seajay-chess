@@ -6,15 +6,17 @@ from __future__ import annotations
 import argparse
 import json
 import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 import chess
 import chess.engine
 
 CLAMP_DEPTH = 18
 DEFAULT_TIMEOUT = 240.0
+DEFAULT_STATUS_INTERVAL = 30.0
 
 SUITE_PATHS: Dict[str, Path] = {
     "queen-sack": Path("tests/positions/queen_sack_suite.epd"),
@@ -48,12 +50,25 @@ def load_fens_from_epd(path: Path) -> List[str]:
     return fens
 
 
-def analyse(engine_path: Path, fen: str, depth: int, timeout: float) -> EngineResult:
+def analyse(
+    engine_path: Path,
+    fen: str,
+    depth: int,
+    timeout: float,
+    status_interval: Optional[float],
+) -> EngineResult:
     board = chess.Board(fen)
     limit = chess.engine.Limit(depth=depth)
     engine = chess.engine.SimpleEngine.popen_uci(str(engine_path))
     result: EngineResult | None = None
     exc: Exception | None = None
+    start = time.time()
+    deadline = start + timeout if timeout else None
+    next_status = (
+        start + status_interval
+        if status_interval and status_interval > 0.0
+        else None
+    )
 
     def worker() -> None:
         nonlocal result, exc
@@ -76,14 +91,38 @@ def analyse(engine_path: Path, fen: str, depth: int, timeout: float) -> EngineRe
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
-    thread.join(timeout)
+    while thread.is_alive():
+        now = time.time()
+        remaining = None
+        if deadline is not None:
+            remaining = max(0.0, deadline - now)
+            if remaining == 0.0:
+                break
+        join_slice = 1.0
+        if remaining is not None:
+            join_slice = min(join_slice, remaining)
+        thread.join(join_slice)
+        if not thread.is_alive():
+            break
+        if next_status and time.time() >= next_status:
+            elapsed = time.time() - start
+            print(
+                f"[{engine_path.name}] depth {depth}, elapsed {elapsed:.1f}s... still analysing",
+                flush=True,
+            )
+            next_status = time.time() + status_interval if status_interval else None
+
     if thread.is_alive():
         try:
             engine.kill()
         except Exception:
             pass
         thread.join(1)
-        raise TimeoutError(f"Engine {engine_path} exceeded {timeout}s at depth {depth}")
+        elapsed = time.time() - start
+        raise TimeoutError(
+            f"Engine {engine_path} exceeded {timeout}s at depth {depth} "
+            f"after {elapsed:.1f}s"
+        )
     try:
         engine.quit()
     except Exception:
@@ -173,13 +212,14 @@ def run_for_fen(
     timeout: float,
     seajay_path: Path,
     komodo_path: Path,
+    status_interval: Optional[float],
 ) -> None:
     entry = entries.setdefault(fen, {"evaluations": {}})
     evals = entry["evaluations"]
     depth_key = str(depth)
 
-    komodo = analyse(komodo_path, fen, depth, timeout)
-    seajay = analyse(seajay_path, fen, depth, timeout)
+    komodo = analyse(komodo_path, fen, depth, timeout, status_interval)
+    seajay = analyse(seajay_path, fen, depth, timeout, status_interval)
     evals[depth_key] = {
         "target_depth": depth,
         "seajay": seajay.__dict__,
@@ -213,6 +253,12 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="Run against every FEN already tracked in the output file")
     parser.add_argument("--force", action="store_true", help="Recompute even if data for the requested depth already exists")
     parser.add_argument("--convert-only", action="store_true", help="Rewrite output/markdown without running engines")
+    parser.add_argument(
+        "--status-interval",
+        type=float,
+        default=DEFAULT_STATUS_INTERVAL,
+        help="Seconds between progress messages while engines are thinking (0 disables)",
+    )
     args = parser.parse_args()
 
     depth = min(args.depth, CLAMP_DEPTH)
@@ -262,9 +308,17 @@ def main() -> None:
         if not args.force and depth_key in existing:
             print(f"Skipping FEN at depth {depth} (already recorded): {fen}")
             continue
-        print(f"Analysing depth {depth}: {fen}")
+        print(f"Analysing depth {depth}: {fen}", flush=True)
         try:
-            run_for_fen(entries, fen, depth, args.timeout, args.seajay, args.komodo)
+            run_for_fen(
+                entries,
+                fen,
+                depth,
+                args.timeout,
+                args.seajay,
+                args.komodo,
+                args.status_interval,
+            )
         except TimeoutError as exc:
             print(f"Timeout: {exc}")
             continue
