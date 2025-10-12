@@ -10,8 +10,7 @@
 - Evaluation bias tracker still reports +150–300 cp optimism whenever the queen is boxed behind friendly pieces or sliders lack pressure penalties (`docs/issues/eval_bias_tracker.md:11-44`).
 - Selectivity probes only add two Komodo move matches when pruning guards are relaxed, confirming that evaluation and move prioritisation—not legality—drive the failure (`docs/project_docs/telemetry/eval_bias/selectivity_probe_results.md:1-35`).
 - 2025-10-06 update: forcing queen contact capture-checks now bypass LMR/LMP/move-count pruning; the 200 ms queen-sack sweep improved from 2/20 to 4/20 solved, indicating search coverage gains with evaluation work still pending (`docs/project_docs/telemetry/queen_sack/tactical_queen-sack_2025-10-06_19-38-59.csv`).
-- 2025-10-11 update: QS3 king-danger now treats king-only defenses and slider contact checks as unsafe and rebates part of the penalty to the attacker. Static evals on the six worst motifs jump by 150–400 cp (`docs/project_docs/telemetry/eval_bias/eval_extended_r3r1k1.txt`, `eval_extended_fen3.txt`), but depth-18 search still prefers quiet continuations, so follow-up work moves to search selectivity and move ordering.
-- 2025-10-11 regression note: widening QS3 to slider/attacker heuristics caused a ∼−95 nELO SPRT hit; those static tweaks were reverted. Future improvements should concentrate on search-side handling (ordering, extensions, selective reductions) before re-introducing broader evaluation penalties.
+- 2025-10-11 update: QS3 king-danger now treats king-only defenses as unsafe. Slider/attacker heuristics were rolled back after a ~−95 nELO regression; focus shifts to search extensions, LMR gating, and SEE tweaks. SEE now rewards checking captures (`CHECK_FOLLOWUP_BONUS=60`) to keep sacrificial lines alive while we pursue search-side fixes (`src/core/see.cpp:500-505`).
 
 ## Assets
 
