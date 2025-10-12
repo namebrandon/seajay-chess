@@ -35,6 +35,9 @@ namespace SEEValues {
     // Binary fingerprint for validation (Stage 15 signature)
     constexpr uint32_t SEE_FINGERPRINT = 0x5EE15000;  // "SEE 15.0"
     constexpr uint32_t SEE_VERSION = 1;
+
+    // Bonus applied when a capture yields an immediate check
+    constexpr int CHECK_FOLLOWUP_BONUS = 60;
 }
 
 // SEE result type
@@ -122,6 +125,8 @@ private:
     // Swap algorithm implementation (Day 1.3)
     [[nodiscard]] SEEValue computeSEE(const Board& board, Square to, Color stm, 
                                       Bitboard attackers, Bitboard occupied) const noexcept;
+
+    [[nodiscard]] bool givesImmediateCheck(const Board& board, Move move) const noexcept;
     
     // Helper to get piece value
     // Day 4.2: Force inline for hot path

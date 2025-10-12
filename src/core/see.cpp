@@ -498,7 +498,13 @@ SEEValue SEECalculator::see(const Board& board, Move move) const noexcept {
     }
     
     SEEValue result = m_swapList.gains[0];
-    
+
+    if (result < 0 && (isCapture(move) || isEnPassant(move))) {
+        if (givesImmediateCheck(board, move)) {
+            result = std::min<SEEValue>(0, result + SEEValues::CHECK_FOLLOWUP_BONUS);
+        }
+    }
+
     // Day 4.3: Store result in cache
     storeCache(cacheKey, result);
     
@@ -623,8 +629,15 @@ SEEValue SEECalculator::computeSEE(const Board& board, Square to, Color stm,
         m_swapList.gains[m_swapList.depth - 1] = 
             -std::max(-m_swapList.gains[m_swapList.depth - 1], m_swapList.gains[m_swapList.depth]);
     }
-    
+
     return m_swapList.gains[0];
+}
+
+bool SEECalculator::givesImmediateCheck(const Board& board, Move move) const noexcept {
+    Board tempBoard(board);
+    Board::UndoInfo undo;
+    tempBoard.makeMove(move, undo);
+    return MoveGenerator::inCheck(tempBoard);
 }
 
 } // namespace seajay
