@@ -219,14 +219,8 @@ inline void orderMoves(const Board& board, MoveContainer& moves, Move ttMove = N
         Move contactReplay = searchData->contactCheckReplayAt(ply, nodeHash);
         if (contactReplay != NO_MOVE && contactReplay != ttMove) {
             auto it = std::find(moves.begin(), moves.end(), contactReplay);
-            if (it != moves.end()) {
-                auto target = moves.begin();
-                if (ttMove != NO_MOVE && !moves.empty() && moves.front() == ttMove) {
-                    ++target;
-                }
-                if (it != target) {
-                    std::rotate(target, it, it + 1);
-                }
+            if (it != moves.end() && it != moves.begin()) {
+                std::rotate(moves.begin(), it, it + 1);
             }
         }
     }
@@ -1184,12 +1178,53 @@ eval::Score negamax(Board& board,
         
         // CM4.1: Track countermove availability (removed from here to avoid double-counting)
         // Hit tracking now happens only when countermove causes a cutoff or is tried first
-        
+
+        bool queenContactAvailable = false;
+        if (!moves.empty()) {
+            Hash parentHash = board.zobristKey();
+            if (info.contactCheckReplayAt(ply, parentHash) != NO_MOVE) {
+                queenContactAvailable = true;
+            } else {
+                for (const Move& candidate : moves) {
+                    if (!isCapture(candidate)) {
+                        continue;
+                    }
+                    Piece mover = board.pieceAt(moveFrom(candidate));
+                    if (mover == NO_PIECE || typeOf(mover) != QUEEN) {
+                        continue;
+                    }
+                    Board::UndoInfo probeUndo;
+                    if (!board.tryMakeMove(candidate, probeUndo)) {
+                        continue;
+                    }
+                    bool givesCheck = inCheck(board);
+                    board.unmakeMove(candidate, probeUndo);
+                    if (givesCheck) {
+                        queenContactAvailable = true;
+                        if (info.contactCheckReplayAt(ply, parentHash) == NO_MOVE) {
+                            info.registerContactCheckReplay(ply, candidate, parentHash);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        int contactAwareCounterBonus = info.countermoveBonus;
+        const SearchLimits* limitsForOrdering = &limits;
+        SearchLimits contactAdjustedLimits;
+        if (queenContactAvailable) {
+            contactAwareCounterBonus = 0;
+            contactAdjustedLimits = limits;
+            contactAdjustedLimits.counterMoveHistoryWeight *= 0.25f;
+            limitsForOrdering = &contactAdjustedLimits;
+        }
+
         // Order moves for better alpha-beta pruning
         // TT move first, then promotions (especially queen), then captures (MVV-LVA), then killers, then quiet moves
         // CM3.3: Pass prevMove and bonus for countermove ordering
         // Phase 4.3.a-fix2: Pass depth for CMH gating
-        orderMoves(board, moves, ttMove, &info, ply, prevMove, info.countermoveBonus, &limits, depth);
+        orderMoves(board, moves, ttMove, &info, ply, prevMove, contactAwareCounterBonus, limitsForOrdering, depth);
     }
     
     // Node explosion diagnostics: Track TT move ordering effectiveness
@@ -2213,6 +2248,13 @@ skip_futility_prune:;
 
         // Unmake the move
         board.unmakeMove(move, undo);
+
+        if (isQueenContactCheck) {
+            Hash parentHash = board.zobristKey();
+            if (info.contactCheckReplayAt(ply, parentHash) == NO_MOVE) {
+                info.registerContactCheckReplay(ply, move, parentHash);
+            }
+        }
 
         if (isQueenContactCheck && info.history && !(score > bestScore)) {
             Color mover = board.sideToMove();

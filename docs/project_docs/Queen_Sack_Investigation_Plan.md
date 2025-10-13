@@ -85,8 +85,15 @@
 - TODO before advancing:
   - [x] Rebuild Release (`./build.sh Release`) and re-run `tools/tactical_investigation.py --suite queen-sack --time 200` capturing CSV under `docs/project_docs/telemetry/queen_sack/2025-10-07/` (`tactical_queen-sack_2025-10-07_23-37-00.csv` → 4/20).
   - [x] Run `tools/eval_compare.py --suite queen_sack_suite.epd --depth 18` to see eval deltas with the new ordering; append Markdown diff to `docs/issues/eval_bias_tracker.md`. (Output captured in `docs/project_docs/telemetry/queen_sack/2025-10-07/eval_compare_queen_sack_depth18.{json,md}` – large negative deltas remain because the forcing moves still aren’t preferred.)
-  - [ ] Collect `SearchData` stats (move ordering/histories). Retry with a bounded `go nodes 300000` run (prior 1M-node attempt stalled); stash the log under `docs/project_docs/telemetry/queen_sack/2025-10-07/`.
-  - [ ] Update this plan + Evaluation Bias Index with telemetry outcomes and decision on QS2 readiness.
+  - [x] Collect `SearchData` stats (move ordering/histories). Bounded `go depth 12` runs (capped at 180 s via `timeout`) finished quickly and produced ordering telemetry under `docs/project_docs/telemetry/queen_sack/2025-10-07/searchdata_r1b1k2r_depth12.log` and `searchdata_wac049_depth12.log`. Summary:
+    - `r1b1k2r/p2n1p2/...`: 263k nodes, TT cutoffs 48%, first-capture cutoffs 40%, history apps 52k (61% counter-move). Best move remains `b4d6`; queen check `g3e4` never surfaces before move 8 despite SEE bonus.
+    - `QS.WAC049`: 42k nodes, TT cutoffs 63%, contact-check counter history hit rate 43%. Best move still `h5h6`, confirming sacrificial line ordering is incomplete.
+  - [x] Update this plan + Evaluation Bias Index with telemetry outcomes and decision on QS2 readiness.
+  - 2025-10-12: Additional QS2 iteration throttles counter-history when a queen contact capture is present, records contact replays on fail-lows, and forces the replayed move ahead of TT ordering. Comparative telemetry:
+    - Pre-throttle sweep: `tactical_queen-sack_2025-10-12_after_qs2b.csv` (4/20, unchanged).
+    - Post-throttle sweep: `tactical_queen-sack_2025-10-12_after_qs2c.csv` (5/20, +1).
+    - Depth traces: `searchdata_r1b1k2r_depth12_after_qs2c.log`, `searchdata_wac049_depth12_after_qs2c.log` – contact checks now surface immediately in the move list even when TT prefers quiet play.
+    - Extended 500 ms rerun `tactical_queen-sack_2025-10-12_after_qs2c_500ms.csv` climbs to 9/20 hits; corresponding `tools/tactical_test_2025-10-12_21-17-33.csv` and `tools/tactical_failures_2025-10-12_21-17-33.csv` capture the detailed pass/fail set for follow-up QS3 tuning.
 
 ### Phase QS3 – Evaluation Reinforcement
 - Scope
